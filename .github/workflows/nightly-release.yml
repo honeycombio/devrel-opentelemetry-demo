@@ -13,5 +13,6 @@ jobs:
     if: github.repository == 'open-telemetry/opentelemetry-demo'
     with:
       push: true
+      push_dockerhub: true
       version: nightly-${{ github.run_id }}
     secrets: inherit
