@@ -1,0 +1,17 @@
+# Copyright The OpenTelemetry Authors
+# SPDX-License-Identifier: Apache-2.0
+name: "[DevRel] Build and Publish"
+
+on:
+  push:
+    tags:
+      - '*.*.*-**'
+  workflow_dispatch:
+
+jobs:
+  build_and_push_images:
+    uses: ./.github/workflows/component-build-images.yml
+    with:
+      push: true
+      version: ${{ github.ref_name }}
+    secrets: inherit
