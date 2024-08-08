@@ -1,0 +1,20 @@
+components:
+  accountingService:
+    resources:
+      limits:
+        memory: 80Mi
+
+opentelemetry-collector:
+  enabled: false
+
+jaeger:
+  enabled: false
+
+prometheus:
+  enabled: false
+
+grafana:
+  enabled: false
+
+opensearch:
+  enabled: false

@@ -1,0 +1,76 @@
+mode: daemonset
+
+presets:
+  kubeletMetrics:
+    enabled: true
+  kubernetesAttributes:
+    enabled: true
+    extractAllPodLabels: true
+    extractAllPodAnnotations: true
+image:
+  repository: "ghcr.io/open-telemetry/opentelemetry-collector-releases/opentelemetry-collector-contrib"
+
+service:
+  enabled: true
+
+config:
+  receivers:
+    jaeger: null
+    zipkin: null
+    kubeletstats:
+      insecure_skip_verify: true
+      collection_interval: 30s
+      metric_groups:
+        - node
+        - pod
+      metrics:
+        k8s.node.uptime:
+          enabled: true
+        k8s.pod.uptime:
+          enabled: true
+        k8s.pod.cpu_limit_utilization:
+          enabled: true
+        k8s.pod.cpu_request_utilization:
+          enabled: true
+        k8s.pod.memory_limit_utilization:
+          enabled: true
+        k8s.pod.memory_request_utilization:
+          enabled: true
+    otlp:
+      protocols:
+        grpc:
+        http:
+          cors:
+            allowed_origins:
+              - http://*
+              - https://*
+          endpoint: 0.0.0.0:4318
+  exporters:
+    otlp/traces:
+      endpoint: api.honeycomb.io:443
+      headers:
+        x-honeycomb-team: ${HONEYCOMB_API_KEY}
+
+    otlp/metrics:
+      endpoint: api.honeycomb.io:443
+      headers:
+        x-honeycomb-team: ${HONEYCOMB_API_KEY}
+        x-honeycomb-dataset: service-metrics
+
+    otlp/logging:
+      endpoint: api.honeycomb.io:443
+      headers:
+        x-honeycomb-team: ${HONEYCOMB_API_KEY}
+        x-honeycomb-dataset: service-logs
+
+  service:
+    pipelines:
+      metrics:
+        exporters: 
+          - otlp/metrics
+      logs:
+        exporters: 
+          - otlp/logging
+      traces:
+        exporters: 
+          - otlp/traces
