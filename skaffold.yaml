@@ -1,0 +1,86 @@
+apiVersion: skaffold/v4beta11
+kind: Config
+build:
+  artifacts:
+  - image: mainacra1e0ec0b.azurecr.io/cartservice
+    context: .
+    docker:
+      dockerfile: src/cartservice/src/Dockerfile
+  - image: mainacra1e0ec0b.azurecr.io/checkoutservice
+    context: .
+    docker:
+      dockerfile: src/checkoutservice/src/Dockerfile
+  - image: mainacra1e0ec0b.azurecr.io/currencyservice
+    context: .
+    docker:
+      dockerfile: src/currencyservice/src/Dockerfile
+  - image: mainacra1e0ec0b.azurecr.io/emailservice
+    context: .
+    docker:
+      dockerfile: src/emailservice/src/Dockerfile
+  - image: mainacra1e0ec0b.azurecr.io/frontend
+    context: .
+    docker:
+      dockerfile: src/frontend/src/Dockerfile
+  - image: mainacra1e0ec0b.azurecr.io/loadgenerator
+    context: .
+    docker:
+      dockerfile: src/loadgenerator/src/Dockerfile
+  - image: mainacra1e0ec0b.azurecr.io/productcatalogservice
+    context: .
+    docker:
+      dockerfile: src/productcatalogservice/src/Dockerfile
+  platforms:
+    - linux/amd64
+  local:
+    useDockerCLI: true
+deploy:
+  helm:
+    releases:
+      - name: martin-local
+        createNamespace: true
+        namespace: martin-local
+        repo: https://open-telemetry.github.io/opentelemetry-helm-charts
+        remoteChart: opentelemetry-demo
+        recreatePods: false
+        skipBuildDependencies: false
+        setValues:
+          default:
+            image:
+              pullPolicy: IfNotPresent
+        setValueTemplates:
+          # components.adService.imageOverride.repository: "{{.IMAGE_REPO_adservice}}"
+          # components.adService.imageOverride.tag:  "{{.IMAGE_TAG_adservice}}@{{.IMAGE_DIGEST_adservice}}"
+          # components.accountingService.imageOverride.repository: "{{.IMAGE_REPO_accountingservice}}"
+          # components.accountingService.imageOverride.tag:  "{{.IMAGE_TAG_accountingservice}}@{{.IMAGE_DIGEST_accountingservice}}"
+          components.cartService.imageOverride.repository: "{{.IMAGE_REPO_cartservice}}"
+          components.cartService.imageOverride.tag:  "{{.IMAGE_TAG_cartservice}}@{{.IMAGE_DIGEST_cartservice}}"
+          components.checkoutService.imageOverride.repository: "{{.IMAGE_REPO_checkoutservice}}"
+          components.checkoutService.imageOverride.tag:  "{{.IMAGE_TAG_checkoutservice}}@{{.IMAGE_DIGEST_checkoutservice}}"
+          components.currencyService.imageOverride.repository: "{{.IMAGE_REPO_currencyservice}}"
+          components.currencyService.imageOverride.tag:  "{{.IMAGE_TAG_currencyservice}}@{{.IMAGE_DIGEST_currencyservice}}"
+          components.emailService.imageOverride.repository: "{{.IMAGE_REPO_emailservice}}"
+          components.emailService.imageOverride.tag:  "{{.IMAGE_TAG_emailservice}}@{{.IMAGE_DIGEST_emailservice}}"
+          # components.frauddetectionService.imageOverride.repository: "{{.IMAGE_REPO_frauddetectionservice}}"
+          # components.frauddetectionService.imageOverride.tag:  "{{.IMAGE_TAG_frauddetectionservice}}@{{.IMAGE_DIGEST_frauddetectionservice}}"
+          components.frontend.imageOverride.repository: "{{.IMAGE_REPO_frontend}}"
+          components.frontend.imageOverride.tag:  "{{.IMAGE_TAG_frontend}}@{{.IMAGE_DIGEST_frontend}}"
+          # components.frontendProxy.imageOverride.repository: "{{.IMAGE_REPO_frontendproxy}}"
+          # components.frontendProxy.imageOverride.tag:  "{{.IMAGE_TAG_frontendproxy}}@{{.IMAGE_DIGEST_frontendproxy}}"
+          # components.featureflagService.imageOverride.repository: "{{.IMAGE_REPO_featureflagservice}}"
+          # components.featureflagService.imageOverride.tag:  "{{.IMAGE_TAG_featureflagservice}}@{{.IMAGE_DIGEST_featureflagservice}}"
+          components.loadgenerator.imageOverride.repository: "{{.IMAGE_REPO_loadgenerator}}"
+          components.loadgenerator.imageOverride.tag:  "{{.IMAGE_TAG_loadgenerator}}@{{.IMAGE_DIGEST_loadgenerator}}"
+          # components.recommendationService.imageOverride.repository: "{{.IMAGE_REPO_recommendationservice}}"
+          # components.recommendationService.imageOverride.tag:  "{{.IMAGE_TAG_recommendationservice}}@{{.IMAGE_DIGEST_recommendationservice}}"
+          # components.quoteService.imageOverride.repository: "{{.IMAGE_REPO_quoteservice}}"
+          # components.quoteService.imageOverride.tag:  "{{.IMAGE_TAG_quoteservice}}@{{.IMAGE_DIGEST_quoteservice}}"
+          components.productCatalogService.imageOverride.repository: "{{.IMAGE_REPO_productcatalogservice}}"
+          components.productCatalogService.imageOverride.tag:  "{{.IMAGE_TAG_productcatalogservice}}@{{.IMAGE_DIGEST_productcatalogservice}}"
+          # components.paymentService.imageOverride.repository: "{{.IMAGE_REPO_paymentservice}}"
+          # components.paymentService.imageOverride.tag:  "{{.IMAGE_TAG_paymentservice}}@{{.IMAGE_DIGEST_paymentservice}}"
+          # components.shippingService.imageOverride.repository: "{{.IMAGE_REPO_shippingservice}}"
+          # components.shippingService.imageOverride.tag:  "{{.IMAGE_TAG_shippingservice}}@{{.IMAGE_DIGEST_shippingservice}}"
+        upgradeOnChange: true
+        useHelmSecrets: false
+        wait: true
