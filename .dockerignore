@@ -45,3 +45,8 @@ src/*/*/Dockerfile
 ./src/featureflagservice/priv/static/cache_manifest.json
 ###################################
 
+###################################
+# cartservice
+src/cartservice/src/bin
+src/cartservice/src/obj
+###################################
