@@ -47,6 +47,10 @@ public class CartService : Oteldemo.CartService.CartServiceBase
         var totalCart = 0;
         foreach (var item in cart.Items)
         {
+            if (cart.Items.Count > 5)
+            {
+                await Task.Delay(random.Next(200, 300));
+            }
             totalCart += item.Quantity;
         }
         activity?.SetTag("app.cart.items.count", totalCart);
