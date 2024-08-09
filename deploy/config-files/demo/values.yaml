@@ -1,3 +1,8 @@
+default:
+  image:
+    repository: "ghcr.io/honeycombio/devrel-opentelemetry-demo"
+    tag: "0.0.5-pre"
+
 components:
   accountingService:
     resources:
