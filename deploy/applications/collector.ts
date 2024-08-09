@@ -46,6 +46,7 @@ export class Collector extends pulumi.ComponentResource {
             valueYamlFiles: [new pulumi.asset.FileAsset(args.valuesFile)]
         }, { provider: opts.provider! });
 
-        this.collectorName = pulumi.output(`${collectorRelease.name}-opentelemetry-collector.${collectorRelease.namespace}`);
+        this.collectorName = pulumi.interpolate `${collectorRelease.name}-opentelemetry-collector.${collectorRelease.namespace}`;
+
     }
 }

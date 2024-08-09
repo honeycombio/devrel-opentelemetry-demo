@@ -19,24 +19,18 @@ export class OtelDemo extends pulumi.ComponentResource {
         opts: pulumi.ComponentResourceOptions = {}) {
         super("devrel:otel-demo", name, args, opts);
 
-        let values = args.collectorHostName.apply(collectorHostName => {
-            {
-                return {
-                    "default": {
-                        "replicas": 1,
-                        "blah": collectorHostName,
-                        "envOverrides": [
-                            {
-                                "name": "OTEL_COLLECTOR_NAME",
-                                "value": collectorHostName
-                            }
-                        ]
+        const values =
+        {
+            "default": {
+                "replicas": 1,
+                "envOverrides": [
+                    {
+                        "name": "OTEL_COLLECTOR_NAME",
+                        "value": args.collectorHostName
                     }
-                };
+                ]
             }
-        })
-
-        values.apply(console.log);
+        };
 
         const demoRelease = new Release(`${name}-demo-release`, {
             chart: "opentelemetry-demo",
