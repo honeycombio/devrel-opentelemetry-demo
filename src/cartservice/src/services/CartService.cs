@@ -45,6 +45,7 @@ public class CartService : Oteldemo.CartService.CartServiceBase
 
         var cart = await _cartStore.GetCartAsync(request.UserId);
         var totalCart = 0;
+        activity?.SetTag("app.cart.unique_items.count", cart.Items.Count);
         foreach (var item in cart.Items)
         {
             if (cart.Items.Count > 5)
