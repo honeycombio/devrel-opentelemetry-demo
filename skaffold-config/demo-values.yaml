@@ -1,0 +1,43 @@
+opentelemetry-collector:
+  enabled: true
+  config:
+    receivers:
+      otlp:
+        protocols:
+          grpc:
+          http:
+            cors:
+              allowed_origins:
+                - http://*
+                - https://*
+            endpoint: 0.0.0.0:4318
+    exporters:
+      otlp/traces:
+        endpoint: api.honeycomb.io:443
+        headers:
+          x-honeycomb-team: ${HONEYCOMB_API_KEY}
+
+      otlp/metrics:
+        endpoint: api.honeycomb.io:443
+        headers:
+          x-honeycomb-team: ${HONEYCOMB_API_KEY}
+          x-honeycomb-dataset: service-metrics
+
+      otlp/logging:
+        endpoint: api.honeycomb.io:443
+        headers:
+          x-honeycomb-team: ${HONEYCOMB_API_KEY}
+          x-honeycomb-dataset: service-logs
+
+    service:
+      pipelines:
+        metrics:
+          exporters: 
+            - otlp/metrics
+        logs:
+          exporters: 
+            - otlp/logging
+        traces:
+          exporters: 
+            - otlp/traces
+            - spanmetrics
