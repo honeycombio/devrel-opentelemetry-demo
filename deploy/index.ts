@@ -10,13 +10,13 @@ const apiKey = config.require("honeycombApiKey");
 const ingressClassName = config.require("ingressClassName");
 const infrastack = new pulumi.StackReference("honeycomb-devrel/infra-azure/prod");
 
-const clusterResourceGroup = infrastack.getOutput("clusterResourceGroup");
-const clusterName = infrastack.getOutput("clusterName");
+const demoClusterResourceGroup = infrastack.getOutput("clusterResourceGroup");
+const demoClusterName = infrastack.getOutput("clusterName");
 
 
 const kubeconfig = listManagedClusterUserCredentialsOutput({
-    resourceGroupName: clusterResourceGroup,
-    resourceName: clusterName
+    resourceGroupName: demoClusterResourceGroup,
+    resourceName: demoClusterName
 })
     .apply(x => x.kubeconfigs[0].value)
     .apply(x => (Buffer.from(x, 'base64')).toString('utf8'))
@@ -72,4 +72,7 @@ var demo = new OtelDemo("otel-demo", {
 }, { provider: provider });
 
 // Export some values for use elsewhere
-export const demoUrk = demo.domainName;
+
+export const clusterResourceGroup = demoClusterResourceGroup;
+export const clusterName = demoClusterName;
+export const demoUrl = demo.domainName;
