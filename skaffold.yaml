@@ -74,6 +74,11 @@ build:
     - linux/amd64
   local:
     useDockerCLI: true
+portForward:
+- resourceType: service
+  resourceName: "{{.USER}}-frontendproxy"
+  namespace: "{{.USER}}-local"
+  port: 9191
 deploy:
   helm:
     releases:
