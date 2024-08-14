@@ -48,7 +48,7 @@ public class CartService : Oteldemo.CartService.CartServiceBase
         activity?.SetTag("app.cart.unique_items.count", cart.Items.Count);
         foreach (var item in cart.Items)
         {
-            if (cart.Items.Count > 5)
+            if (cart.Items.Count > 2)
             {
                 await Task.Delay(random.Next(200, 300));
             }
