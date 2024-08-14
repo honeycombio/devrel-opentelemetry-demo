@@ -21,6 +21,8 @@ This is the public one that we will keep and up and usable. That pushes Honeycom
 
 This version gets the cluster-level collector data, with kubernetes events. This is deployed in ./deploy
 
+The k8s namespace for this one is devrel-demo.
+
 ## Iteration
 
 We can deploy from local to the cluster in a new namespace, using `skaffold`
@@ -62,14 +64,49 @@ pulumi stack select honeycomb-devrel/prod
 
 ### get
 
-### login to ACR
+### connect to k8s
 
 ```shell
-az acr login -n {registry name}
+./scripts/set-kubecontext.sh
 ```
+
+### (optional) see what's going on in k8s
+
+Run `k9s`
+
+Type `:context`
+
+Choose devrel-azure
+
+Type `:namespace`
+
+Choose all
+
+### log in to ACR
+
+```shell
+./scripts/acr-login.sh
+```
+
+#TODO create
 
 ### run skaffold
 
-```shell
+where acrName is the name of the azure container registry, TODO make that easy
 
+and cartservice is a comma-separated list of services to build locally.
+
+and yourkey is an ingest key; you can use devrel-demo/development env if you want.
+
+```shell
+export HONEYCOMB_API_KEY=yourkey
+skaffold run -d acrName.azurecr.io -b cartservice
+```
+
+It makes a whole yourname-local namespace with all the stuff in it.
+
+### shut down your iterative environment
+
+```shell
+skaffold delete
 ```
