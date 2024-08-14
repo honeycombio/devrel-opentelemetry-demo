@@ -53,6 +53,15 @@ brew update && brew install azure-cli
 az login
 ```
 
+### log in to pulumi
+
+```shell
+pulumi login
+pulumi stack select honeycomb-devrel/prod
+```
+
+### get
+
 ### login to ACR
 
 ```shell
