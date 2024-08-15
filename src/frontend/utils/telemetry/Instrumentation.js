@@ -20,6 +20,9 @@ const sdk = new opentelemetry.NodeSDK({
       '@opentelemetry/instrumentation-fs': {
         enabled: false,
       },
+      '@opentelemetry/instrumentation-http': {
+        enabled: false,
+      },
     })
   ],
   metricReader: new PeriodicExportingMetricReader({
