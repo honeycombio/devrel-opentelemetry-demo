@@ -78,7 +78,8 @@ portForward:
 - resourceType: service
   resourceName: "{{.USER}}-frontendproxy"
   namespace: "{{.USER}}-local"
-  port: 9191
+  port: 8080
+  localPort: 9191
 deploy:
   helm:
     releases:
