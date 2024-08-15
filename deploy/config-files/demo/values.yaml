@@ -2,12 +2,19 @@ default:
   image:
     repository: "ghcr.io/honeycombio/devrel-opentelemetry-demo"
     tag: "1.0.0-release"
-
 components:
   accountingService:
     resources:
       limits:
         memory: 150Mi
+  frontend:
+    podAnnotations:
+      devrel/servicename-override: "api-gateway"
+    envOverrides:
+      - name: OTEL_SERVICE_NAME
+        valueFrom:
+          fieldRef:
+            fieldPath: metadata.annotations['devrel/servicename-override']
 
 opentelemetry-collector:
   enabled: false
