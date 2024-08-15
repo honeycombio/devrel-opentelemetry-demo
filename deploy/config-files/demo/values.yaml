@@ -7,7 +7,7 @@ components:
   accountingService:
     resources:
       limits:
-        memory: 80Mi
+        memory: 150Mi
 
 opentelemetry-collector:
   enabled: false
