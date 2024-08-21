@@ -45,6 +45,27 @@ config:
               - http://*
               - https://*
           endpoint: 0.0.0.0:4318
+  processors:
+    transform/service_names:
+      error_mode: ignore
+      log_statements:
+        - context: resource
+          statements:
+            - set(attributes["service.name"], "frontend") where attributes["service.name"] == "frontend-web"
+            - set(attributes["service.name"], "api-gateway") where attributes["service.name"] == "frontend"
+            - set(attributes["service.name"], "ingress-gateway") where attributes["service.name"] == "frontendproxy"
+      metric_statements:
+        - context: resource
+          statements:
+            - set(attributes["service.name"], "frontend") where attributes["service.name"] == "frontend-web"
+            - set(attributes["service.name"], "api-gateway") where attributes["service.name"] == "frontend"
+            - set(attributes["service.name"], "ingress-gateway") where attributes["service.name"] == "frontendproxy"
+      trace_statements:
+        - context: resource
+          statements:
+            - set(attributes["service.name"], "frontend") where attributes["service.name"] == "frontend-web"
+            - set(attributes["service.name"], "api-gateway") where attributes["service.name"] == "frontend"
+            - set(attributes["service.name"], "ingress-gateway") where attributes["service.name"] == "frontendproxy"
   exporters:
     otlp/traces:
       endpoint: api.honeycomb.io:443
@@ -68,9 +89,15 @@ config:
       metrics:
         exporters: 
           - otlp/metrics
+        processors:
+          - transform/service_names
       logs:
         exporters: 
           - otlp/logging
+        processors:
+          - transform/service_names
       traces:
         exporters: 
           - otlp/traces
+        processors:
+          - transform/service_names

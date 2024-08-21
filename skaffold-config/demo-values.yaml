@@ -11,6 +11,36 @@ opentelemetry-collector:
                 - http://*
                 - https://*
             endpoint: 0.0.0.0:4318
+    processors:
+      transform/service_names:
+        error_mode: ignore
+        log_statements:
+          - context: resource
+            statements:
+              - set(attributes["service.name"], "frontend") where attributes["service.name"] == "frontend-web"
+              - set(attributes["service.name"], "api-gateway") where attributes["service.name"] == "frontend"
+              - set(attributes["service.name"], "ingress-gateway") where attributes["service.name"] == "frontendproxy"
+        metric_statements:
+          - context: resource
+            statements:
+              - set(attributes["service.name"], "frontend") where attributes["service.name"] == "frontend-web"
+              - set(attributes["service.name"], "api-gateway") where attributes["service.name"] == "frontend"
+              - set(attributes["service.name"], "ingress-gateway") where attributes["service.name"] == "frontendproxy"
+        trace_statements:
+          - context: resource
+            statements:
+              - set(attributes["service.name"], "frontend") where attributes["service.name"] == "frontend-web"
+              - set(attributes["service.name"], "api-gateway") where attributes["service.name"] == "frontend"
+              - set(attributes["service.name"], "ingress-gateway") where attributes["service.name"] == "frontendproxy"
+      transform/gateway_route:
+        error_mode: ignore
+        trace_statements:
+          - context: span
+            conditions:
+              - resource.attributes["service.name"] == "api-gateway" and attributes["http.route"] != nil
+            statements:
+              - set(attributes["gateway.http.route"], attributes["http.route"])
+
     exporters:
       otlp/traces:
         endpoint: api.honeycomb.io:443
@@ -34,10 +64,17 @@ opentelemetry-collector:
         metrics:
           exporters: 
             - otlp/metrics
+          processors:
+            - transform/service_names
         logs:
           exporters: 
             - otlp/logging
+          processors:
+            - transform/service_names
         traces:
           exporters: 
             - otlp/traces
             - spanmetrics
+          processors:
+            - transform/service_names
+            - transform/gateway_route
