@@ -7,6 +7,8 @@ components:
     resources:
       limits:
         memory: 150Mi
+  loadgenerator:
+    replicas: 3
 
 opentelemetry-collector:
   enabled: false
