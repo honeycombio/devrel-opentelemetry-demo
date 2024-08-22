@@ -61,6 +61,7 @@ Action<ResourceBuilder> appResourceBuilder =
 builder.Services.AddOpenTelemetry()
     .ConfigureResource(appResourceBuilder)
     .WithTracing(tracerBuilder => tracerBuilder
+        .AddSource(CartService.ActivitySource.Name)
         .AddRedisInstrumentation(
             options => options.SetVerboseDatabaseStatements = true)
         .AddAspNetCoreInstrumentation()
