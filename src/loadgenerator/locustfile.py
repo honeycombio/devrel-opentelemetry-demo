@@ -62,10 +62,10 @@ trace.set_tracer_provider(tracer_provider)
 tracer_provider.add_span_processor(BatchSpanProcessor(OTLPSpanExporter()))
 
 # Instrumenting manually to avoid error with locust gevent monkey
-Jinja2Instrumentor().instrument()
-RequestsInstrumentor().instrument()
-SystemMetricsInstrumentor().instrument()
-URLLib3Instrumentor().instrument()
+#Jinja2Instrumentor().instrument()
+#RequestsInstrumentor().instrument()
+#SystemMetricsInstrumentor().instrument()
+#URLLib3Instrumentor().instrument()
 logging.info("Instrumentation complete")
 
 # Initialize Flagd provider
