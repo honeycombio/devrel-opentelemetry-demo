@@ -80,6 +80,11 @@ portForward:
   namespace: "{{.USER}}-local"
   port: 8080
   localPort: 9191
+- resourceType: service
+  resourceName: "{{.USER}}-loadgenerator"
+  namespace: "{{.USER}}-local"
+  port: 8089
+  localPort: 9192
 deploy:
   helm:
     releases:
