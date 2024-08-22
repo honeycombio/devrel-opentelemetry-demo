@@ -53,7 +53,7 @@ public class CartService : Oteldemo.CartService.CartServiceBase
             dbActivity?.SetTag("app.product.id", item.ProductId);
             dbActivity?.SetTag("db.statement", "SELECT * FROM products WHERE id = @id");
             dbActivity?.SetTag("db.type", "sql");
-            if (cart.Items.Count > 7)
+            if (cart.Items.Count > 6)
             {
                 await Task.Delay(random.Next(100, 300));
             }
