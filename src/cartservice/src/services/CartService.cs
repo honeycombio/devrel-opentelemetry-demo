@@ -8,6 +8,7 @@ using OpenTelemetry.Trace;
 using cartservice.cartstore;
 using OpenFeature;
 using Oteldemo;
+using OpenFeature.Model;
 
 namespace cartservice.services;
 
@@ -47,15 +48,32 @@ public class CartService : Oteldemo.CartService.CartServiceBase
         var cart = await _cartStore.GetCartAsync(request.UserId);
         var totalCart = 0;
         activity?.SetTag("app.cart.unique_items.count", cart.Items.Count);
-        foreach (var item in cart.Items)
+
+        _featureFlagHelper.SetContext(
+            EvaluationContext.Builder()
+                .Set("cart.unique_items.count", cart.Items.Count)
+                .Set("user.id", request.UserId)
+                .Build());
+
+        var shouldDoDatabaseCall = await _featureFlagHelper.GetBooleanValueAsync("cartservice.add-db-call", false);
+        if (!shouldDoDatabaseCall)
         {
             using var dbActivity = ActivitySource.StartActivity("SELECT * FROM products WHERE id = @id", ActivityKind.Client);
-            dbActivity?.SetTag("app.product.id", item.ProductId);
-            dbActivity?.SetTag("db.statement", "SELECT * FROM products WHERE id = @id");
-            dbActivity?.SetTag("db.type", "sql");
-            if (cart.Items.Count > 6)
+                dbActivity?.SetTag("db.statement", "SELECT * FROM products WHERE id IN @ids");
+                dbActivity?.SetTag("db.type", "sql");
+        }
+        foreach (var item in cart.Items)
+        {
+            if (shouldDoDatabaseCall)
             {
-                await Task.Delay(random.Next(100, 300));
+                using var dbActivity = ActivitySource.StartActivity("SELECT * FROM products WHERE id = @id", ActivityKind.Client);
+                dbActivity?.SetTag("app.product.id", item.ProductId);
+                dbActivity?.SetTag("db.statement", "SELECT * FROM products WHERE id = @id");
+                dbActivity?.SetTag("db.type", "sql");
+                if (cart.Items.Count > 6)
+                {
+                    await Task.Delay(random.Next(100, 300));
+                }
             }
             totalCart += item.Quantity;
         }
@@ -73,7 +91,7 @@ public class CartService : Oteldemo.CartService.CartServiceBase
         try
         {
             // Throw 1/10 of the time to simulate a failure when the feature flag is enabled
-            if (await _featureFlagHelper.GetBooleanValue("cartServiceFailure", false) && random.Next(10) == 0)
+            if (await _featureFlagHelper.GetBooleanValueAsync("cartServiceFailure", false) && random.Next(10) == 0)
             {
                 await _badCartStore.EmptyCartAsync(request.UserId);
             }
