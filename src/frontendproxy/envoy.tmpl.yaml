@@ -51,6 +51,10 @@ static_resources:
                           route: { cluster: flagservice, prefix_rewrite: "/", timeout: 0s }
                         - match: { prefix: "/" }
                           route: { cluster: frontend }
+                access_log:
+                  - name: envoy.access_loggers.file
+                    typed_config:
+                      "@type": type.googleapis.com/envoy.extensions.access_loggers.stream.v3.StdoutAccessLog
                 http_filters:
                   - name: envoy.filters.http.fault
                     typed_config:
@@ -63,7 +67,7 @@ static_resources:
                   - name: envoy.filters.http.router
                     typed_config:
                       "@type": type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
-
+                      
   clusters:
     - name: opentelemetry_collector_grpc
       type: STRICT_DNS
