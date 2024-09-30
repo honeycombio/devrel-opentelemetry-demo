@@ -1,3 +1,9 @@
+########################
+#
+# This is the configuration for the Otel demo deployed to {you}-local, not the main demo.
+#
+########################
+
 opentelemetry-collector:
   enabled: true
   config:
