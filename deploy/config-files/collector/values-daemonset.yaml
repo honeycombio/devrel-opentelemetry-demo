@@ -45,13 +45,6 @@ config:
               - http://*
               - https://*
           endpoint: 0.0.0.0:4318
-    filelog:
-      include_file_path: true
-      include:
-        - /var/log/pods/*/*frontendproxy*/*.log
-      operators:
-        - id: container-parser
-          type: container
   processors:
     transform/service_names:
       error_mode: ignore
