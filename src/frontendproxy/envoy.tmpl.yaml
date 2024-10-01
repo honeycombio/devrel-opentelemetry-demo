@@ -25,7 +25,7 @@ static_resources:
                         envoy_grpc:
                           cluster_name: opentelemetry_collector_grpc
                         timeout: 0.250s
-                      service_name: frontend-proxy
+                      service_name: ingress-gateway
                       resource_detectors:
                         - name: envoy.tracers.opentelemetry.resource_detectors.environment
                           typed_config:
@@ -50,7 +50,7 @@ static_resources:
                         - match: { prefix: "/flagservice/" }
                           route: { cluster: flagservice, prefix_rewrite: "/", timeout: 0s }
                         - match: { prefix: "/" }
-                          route: { cluster: frontend }
+                          route: { cluster: api-gateway }
                 access_log:
                   - name: envoy.access_loggers.open_telemetry
                     typed_config:
@@ -67,11 +67,11 @@ static_resources:
                         values:
                           - key: "service.name"
                             value: 
-                              string_value: "ingress-gateway"
+                              string_value: "access-logs"
                           - key: "hostname"
                             value: 
                               string_value: "%HOSTNAME%"
-                      attributes: 
+                      attributes:
                         values:
                         - key: "user_agent.original"
                           value: 
@@ -85,9 +85,6 @@ static_resources:
                         - key: "http.request.start_time"
                           value: 
                             string_value: "%START_TIME%"
-                        - key: "http.request.method"  
-                          value: 
-                            string_value: "%REQ(:METHOD)%"
                         - key: "server.address"
                           value: 
                             string_value: "%DOWNSTREAM_LOCAL_ADDRESS%"
@@ -118,18 +115,12 @@ static_resources:
                         - key: "upstream.cluster"
                           value: 
                             string_value: "%UPSTREAM_CLUSTER%"
-                        - key: "upstream.local_address"
+                        - key: "destination.address"
                           value: 
-                            string_value: "%UPSTREAM_LOCAL_ADDRESS%"
-                        - key: "upstream.remote_address"
+                            string_value: "%UPSTREAM_REMOTE_ADDRESS_WITHOUT_PORT%"
+                        - key: "source.address"
                           value: 
-                            string_value: "%UPSTREAM_REMOTE_ADDRESS%"
-                        - key: "downstream.remote_address"
-                          value: 
-                            string_value: "%DOWNSTREAM_REMOTE_ADDRESS%"
-                        - key: "downstream.local_address"
-                          value: 
-                            string_value: "%DOWNSTREAM_LOCAL_ADDRESS%"
+                            string_value: "%DOWNSTREAM_REMOTE_ADDRESS_WITHOUT_PORT%"
                         - key: "http.protocol"
                           value: 
                             string_value: "%PROTOCOL%"
@@ -139,7 +130,18 @@ static_resources:
                         - key: "http.request.id"
                           value: 
                             string_value: "%STREAM_ID%"
-                        
+                        - key: "http.request.method"  
+                          value: 
+                            string_value: "%REQ(:METHOD)%"
+                        - key: "url.path"
+                          value: 
+                            string_value: "%REQ(:URL_PATH)%"
+                        - key: "url.query"
+                          value: 
+                            string_value: "%REQ(:QUERY)%"
+                        - key: "url.full"
+                          value: 
+                            string_value: "%REQ(:SCHEME)%://%REQ(:AUTHORITY)%%REQ(:PATH)%"
 
                 http_filters:
                   - name: envoy.filters.http.fault
@@ -184,11 +186,11 @@ static_resources:
                     socket_address:
                       address: ${OTEL_COLLECTOR_HOST}
                       port_value: ${OTEL_COLLECTOR_PORT_HTTP}
-    - name: frontend
+    - name: api-gateway
       type: STRICT_DNS
       lb_policy: ROUND_ROBIN
       load_assignment:
-        cluster_name: frontend
+        cluster_name: api-gateway
         endpoints:
           - lb_endpoints:
               - endpoint:
