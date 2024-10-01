@@ -17,13 +17,6 @@ opentelemetry-collector:
                 - http://*
                 - https://*
             endpoint: 0.0.0.0:4318
-      filelog:
-        include_file_path: true
-        include:
-          - /var/log/pods/*/*frontendproxy*/*.log
-        operators:
-          - id: container-parser
-            type: container
     processors:
       transform/service_names:
         error_mode: ignore
@@ -60,6 +53,12 @@ opentelemetry-collector:
           x-honeycomb-team: ${HONEYCOMB_API_KEY}
           x-honeycomb-dataset: service-logs
 
+      otlp/k8s-logging:
+        endpoint: api.honeycomb.io:443
+        headers:
+          x-honeycomb-team: ${HONEYCOMB_API_KEY}
+          x-honeycomb-dataset: k8s-logs
+
     service:
       pipelines:
         metrics:
@@ -72,8 +71,6 @@ opentelemetry-collector:
             - otlp/logging
           processors:
             - transform/service_names
-          receivers:
-            - filelog
         traces:
           exporters: 
             - otlp/traces
