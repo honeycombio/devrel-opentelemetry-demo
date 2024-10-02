@@ -1,0 +1,19 @@
+#/bin/bash
+
+set -e 
+
+SERVICES=$*
+if [[ -z "$SERVICES" ]]; then
+  SERVICES="regalions" # developer regalions
+  echo "Not building any services"
+fi
+
+if [[ -z "$HONEYCOMB_API_KEY" ]]; then
+  echo "please set HONEYCOMB_API_KEY, it's required"
+  exit 1
+fi
+
+set -x
+
+# maybe someday the container registry name will change, but this is what it is now
+skaffold run -d mainacra1e0ec0b.azurecr.io -b $SERVICES --port-forward=user -l skaffold.dev/run-id=static

@@ -93,6 +93,14 @@ This outputs the azure container registry name
 
 ### run skaffold
 
+cheat: 
+
+```shell
+./run
+```
+
+... which does this stuff
+
 where acrName is the name of the azure container registry, TODO make that easy
 
 and cartservice is a comma-separated list of services to build locally.
@@ -101,7 +109,7 @@ and yourkey is an ingest key; you can use devrel-demo/development env if you wan
 
 ```shell
 export HONEYCOMB_API_KEY=yourkey
-skaffold run -d <azure container registry name>.azurecr.io -b cartservice
+skaffold run -d <azure container registry name>.azurecr.io -b cartservice --port-forward=user -l skaffold.dev/run-id=static
 ```
 
 QUESTION: is `acrName` the thing
