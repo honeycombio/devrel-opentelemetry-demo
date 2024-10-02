@@ -91,7 +91,6 @@ Choose all
 This outputs the azure container registry name
 #TODO create
 
-
 ### run skaffold
 
 where acrName is the name of the azure container registry, TODO make that easy
@@ -105,7 +104,7 @@ export HONEYCOMB_API_KEY=yourkey
 skaffold run -d <azure container registry name>.azurecr.io -b cartservice
 ```
 
-QUESTION: is `acrName` the thing 
+QUESTION: is `acrName` the thing
 
 It makes a whole yourname-local namespace with all the stuff in it.
 
@@ -114,3 +113,25 @@ It makes a whole yourname-local namespace with all the stuff in it.
 ```shell
 skaffold delete
 ```
+
+### Troubleshooting
+
+If skaffold gives you:
+
+`Error: UPGRADE FAILED: another operation (install/upgrade/rollback) is in progress`
+
+then you need to either rollback or delete the help release, by name. See all of the helm releases with:
+
+```shell
+helm list -Aa
+```
+
+for "All namespaces, also the ones that aren't fucking deployed yet"
+
+Then see wtf it's doing, and if it's in the middle of an update you can
+
+`helm rollback -n <you>-local <you>`
+
+and if it's "pending install" you can
+
+`helm delete -n <you>-local <you>`
