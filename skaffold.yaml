@@ -105,6 +105,10 @@ deploy:
           opentelemetry-collector:
             extraEnvs:
               - name: HONEYCOMB_API_KEY
+              - name: NAMESPACE
+                valueFrom:
+                  fieldRef:
+                    fieldPath: metadata.namespace
         setValueTemplates:
           opentelemetry-collector.extraEnvs[0].value: "{{.HONEYCOMB_API_KEY}}"
           opentelemetry-collector.config.receivers.redis.endpoint: "{{.USER}}-valkey:6379"
