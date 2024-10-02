@@ -55,24 +55,24 @@ opentelemetry-collector:
       otlp/traces:
         endpoint: api.honeycomb.io:443
         headers:
-          x-honeycomb-team: ${HONEYCOMB_API_KEY}
+          x-honeycomb-team: ${env:HONEYCOMB_API_KEY}
 
       otlp/metrics:
         endpoint: api.honeycomb.io:443
         headers:
-          x-honeycomb-team: ${HONEYCOMB_API_KEY}
+          x-honeycomb-team: ${env:HONEYCOMB_API_KEY}
           x-honeycomb-dataset: service-metrics
 
       otlp/logging:
         endpoint: api.honeycomb.io:443
         headers:
-          x-honeycomb-team: ${HONEYCOMB_API_KEY}
+          x-honeycomb-team: ${env:HONEYCOMB_API_KEY}
           x-honeycomb-dataset: service-logs
 
       otlp/k8s-logging:
         endpoint: api.honeycomb.io:443
         headers:
-          x-honeycomb-team: ${HONEYCOMB_API_KEY}
+          x-honeycomb-team: ${env:HONEYCOMB_API_KEY}
           x-honeycomb-dataset: k8s-logs
 
     service:
