@@ -6,6 +6,10 @@
 default:
   replicas: 1
 
+components:
+  loadgenerator:
+    replicas: 1
+
 opentelemetry-collector:
   enabled: true
   config:
