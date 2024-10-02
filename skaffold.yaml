@@ -107,6 +107,7 @@ deploy:
               - name: HONEYCOMB_API_KEY
         setValueTemplates:
           opentelemetry-collector.extraEnvs[0].value: "{{.HONEYCOMB_API_KEY}}"
+          opentelemetry-collector.config.receivers.redis.endpoint: "{{.USER}}-valkey:6379"
           components.accountingService.imageOverride.repository: "{{if .IMAGE_REPO_accountingservice }}{{.IMAGE_REPO_accountingservice}}{{end}}"
           components.accountingService.imageOverride.tag:  "{{if .IMAGE_REPO_accountingservice }}{{.IMAGE_TAG_accountingservice}}@{{.IMAGE_DIGEST_accountingservice}}{{end}}"
           components.adService.imageOverride.repository: "{{if .IMAGE_REPO_adservice }}{{.IMAGE_REPO_adservice}}{{end}}"
