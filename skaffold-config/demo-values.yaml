@@ -12,6 +12,9 @@ components:
 
 opentelemetry-collector:
   enabled: true
+  mode: daemonset
+  service:
+    enabled: true      
   presets:
     logsCollection:
       enabled: true
@@ -90,3 +93,16 @@ opentelemetry-collector:
             - spanmetrics
           processors:
             - transform/service_names
+  ports:
+    otlp:
+      hostPort: 0
+    otlp-http:
+      hostPort: 0
+    jaeger-compact:
+      hostPort: 0
+    jaeger-thrift:
+      hostPort: 0
+    jaeger-grpc:
+      hostPort: 0
+    zipkin:
+      hostPort: 0
