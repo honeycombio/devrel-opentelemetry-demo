@@ -3,6 +3,8 @@
 # This is the configuration for the Otel demo deployed to {you}-local, not the main demo.
 #
 ########################
+default:
+  replicas: 1
 
 opentelemetry-collector:
   enabled: true
