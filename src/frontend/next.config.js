@@ -27,6 +27,15 @@ const {
 } = process.env;
 
 const nextConfig = {
+  experimental: {
+    instrumentationHook: true,
+  },
+  logging: {
+    fetches: {
+      fullUrl: true,
+      hmrRefreshes: true,
+    },
+  },
   reactStrictMode: true,
   output: 'standalone',
   swcMinify: true,
