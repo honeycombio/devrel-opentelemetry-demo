@@ -85,10 +85,12 @@ Choose all
 ### log in to ACR
 
 ```shell
-./scripts/acr-login.sh
+./scripts/login-acr.sh
 ```
 
+This outputs the azure container registry name
 #TODO create
+
 
 ### run skaffold
 
@@ -100,8 +102,10 @@ and yourkey is an ingest key; you can use devrel-demo/development env if you wan
 
 ```shell
 export HONEYCOMB_API_KEY=yourkey
-skaffold run -d acrName.azurecr.io -b cartservice
+skaffold run -d <azure container registry name>.azurecr.io -b cartservice
 ```
+
+QUESTION: is `acrName` the thing 
 
 It makes a whole yourname-local namespace with all the stuff in it.
 
