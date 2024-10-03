@@ -6,6 +6,7 @@ export interface CollectorArgs {
     collectorHelmVersion: pulumi.Input<string>;
     namespace: pulumi.Input<string>;
     honeycombSecret: Secret;
+    honeycombDogfoodSecret: Secret;
     valuesFile: string;
 }
 
@@ -26,6 +27,15 @@ export class Collector extends pulumi.ComponentResource {
                     "valueFrom": {
                         "secretKeyRef": {
                             "name": args.honeycombSecret.id.apply(id => id.split("/")[1]),
+                            "key": "honeycomb-api-key"
+                        }
+                    }
+                },
+                {
+                    "name": "HONEYCOMB_API_KEY_DOGFOOD",
+                    "valueFrom": {
+                        "secretKeyRef": {
+                            "name": args.honeycombDogfoodSecret.id.apply(id => id.split("/")[1]),
                             "key": "honeycomb-api-key"
                         }
                     }

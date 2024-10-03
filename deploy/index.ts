@@ -7,6 +7,7 @@ import { listManagedClusterUserCredentialsOutput } from "@pulumi/azure-native/co
 
 const config = new pulumi.Config();
 const apiKey = config.require("honeycombApiKey");
+const dogfoodApiKey = config.require("honeycombApiKeyDogfood");
 const ingressClassName = config.require("ingressClassName");
 const infrastack = new pulumi.StackReference("honeycomb-devrel/infra-azure/prod");
 
@@ -44,20 +45,31 @@ const secretApiKey = new Secret("honey", {
     }
 }, { provider: provider })
 
+const secretDogfoodApiKey = new Secret("honey-dogfood", {
+    metadata: {
+        name: "honeycomb-api-dogfood",
+        namespace: demoNamespace.metadata.name
+    },
+    stringData: {
+        ["honeycomb-api-key"]: dogfoodApiKey
+    }
+}, { provider: provider })
 
 var podTelemetryCollector = new Collector("pod-telemetry-collector", {
-    collectorHelmVersion: "0.97.1",
+    collectorHelmVersion: "0.107.0",
     namespace: demoNamespace.metadata.name,
     honeycombSecret: secretApiKey,
+    honeycombDogfoodSecret: secretDogfoodApiKey,
     valuesFile: "./config-files/collector/values-daemonset.yaml"
 }, { provider: provider });
 
 
 
 var clusterTelemetryCollector = new Collector("cluster-telemetry-collector", {
-    collectorHelmVersion: "0.97.1",
+    collectorHelmVersion: "0.107.0",
     namespace: demoNamespace.metadata.name,
     honeycombSecret: secretApiKey,
+    honeycombDogfoodSecret: secretDogfoodApiKey,
     valuesFile: "./config-files/collector/values-deployment.yaml"
 }, { provider: provider });
 
@@ -67,7 +79,7 @@ var demo = new OtelDemo("otel-demo", {
     domainName: "demo.onlyspans.com",
     namespace: demoNamespace.metadata.name,
     collectorHostName: podTelemetryCollector.collectorName,
-    demoVersion: "0.32.0",
+    demoVersion: "0.32.8",
     ingressClassName: ingressClassName
 }, { provider: provider });
 
