@@ -9,7 +9,13 @@ export function middleware(request: NextRequest) {
     const requestId = request.headers.get('x-request-id');
     const response = NextResponse.next();
     const duration = Date.now() - startTime;
-    logger.info({"http.method": request.method, "request.id": requestId }, c
+    const headerList = JSON.stringify(Object.keys(request.headers));
+    logger.info({"http.method": request.method, 
+        "request.id": requestId, 
+        "http.headers": headerList, 
+        "http.url": request.url, 
+        "http.status": response.status, 
+        "duration_ms": duration},
         `${request.method} ${request.url} ${response.status} ${duration}ms request_id=${requestId}`);
     return response;
 }
