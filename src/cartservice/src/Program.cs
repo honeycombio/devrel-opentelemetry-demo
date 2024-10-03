@@ -17,7 +17,7 @@ using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
 using OpenFeature;
 using OpenFeature.Contrib.Providers.Flagd;
-using OpenFeature.Contrib.Hooks.Otel;
+using cartservice;
 
 var builder = WebApplication.CreateBuilder(args);
 string valkeyAddress = builder.Configuration["VALKEY_ADDR"];
@@ -39,7 +39,10 @@ builder.Services.AddSingleton<ICartStore>(x=>
 });
 
 builder.Services.AddSingleton<IFeatureClient>(x => {
+    var logger = x.GetRequiredService<ILogger<Program>>();
+    logger.LogInformation("Using Flagd feature flag provider");
     var flagdProvider = new FlagdProvider();
+    Api.Instance.AddHooks(new DemoTracingHook());
     Api.Instance.SetProviderAsync(flagdProvider).GetAwaiter().GetResult();
     var client = Api.Instance.GetClient();
     return client;
@@ -73,7 +76,6 @@ builder.Services.AddOpenTelemetry()
         .AddRuntimeInstrumentation()
         .AddAspNetCoreInstrumentation()
         .AddOtlpExporter());
-OpenFeature.Api.Instance.AddHooks(new TracingHook());
 builder.Services.AddGrpc();
 builder.Services.AddGrpcHealthChecks()
     .AddCheck("Sample", () => HealthCheckResult.Healthy());
