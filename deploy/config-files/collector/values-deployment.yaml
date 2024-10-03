@@ -45,10 +45,32 @@ config:
         "x-honeycomb-team": "${env:HONEYCOMB_API_KEY}"
         "x-honeycomb-dataset": "k8s-metrics"
 
+    otlp/logging-dogfood:
+      endpoint: api-dogfood.honeycomb.io:443
+      headers:
+        x-honeycomb-team: ${env:HONEYCOMB_API_KEY_DOGFOOD}
+        x-honeycomb-dataset: "k8s-events"
+    otlp/k8s-metrics-dogfood:
+      endpoint: "api-dogfood.honeycomb.io:443"
+      headers:
+        "x-honeycomb-team": "${env:HONEYCOMB_API_KEY_DOGFOOD}"
+        "x-honeycomb-dataset": "k8s-metrics"
+
+
   service:
     pipelines:
       metrics:
-        exporters: [ otlp/k8s-metrics]
+        exporters: [ otlp/k8s-metrics, otlp/k8s-metrics-dogfood ]
       logs:
         processors: [ memory_limiter, transform/events, batch ]
-        exporters: [ otlp/logging ]
+        exporters: [ otlp/logging, otlp/logging-dogfood ]
+
+clusterRole:
+  create: true
+  rules:
+    - apiGroups: 
+        - ""
+      resources:
+        - nodes/proxy
+      verbs:
+        - get

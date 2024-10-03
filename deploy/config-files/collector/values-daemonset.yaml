@@ -81,20 +81,53 @@ config:
         x-honeycomb-team: ${HONEYCOMB_API_KEY}
         x-honeycomb-dataset: service-logs
 
+    otlp/traces-dogfood:
+      endpoint: api-dogfood.honeycomb.io:443
+      headers:
+        x-honeycomb-team: ${HONEYCOMB_API_KEY_DOGFOOD}
+
+    otlp/metrics-dogfood:
+      endpoint: api-dogfood.honeycomb.io:443
+      headers:
+        x-honeycomb-team: ${HONEYCOMB_API_KEY_DOGFOOD}
+        x-honeycomb-dataset: service-metrics
+
+    otlp/logging-dogfood:
+      endpoint: api-dogfood.honeycomb.io:443
+      headers:
+        x-honeycomb-team: ${HONEYCOMB_API_KEY_DOGFOOD}
+        x-honeycomb-dataset: service-logs
+
+    debug:
+      verbosity: detailed
+
   service:
     pipelines:
       metrics:
         exporters: 
           - otlp/metrics
+          - otlp/metrics-dogfood
         processors:
           - transform/service_names
       logs:
         exporters: 
           - otlp/logging
+          - otlp/logging-dogfood
         processors:
           - transform/service_names
       traces:
         exporters: 
           - otlp/traces
+          - otlp/traces-dogfood
         processors:
           - transform/service_names
+          
+clusterRole:
+  create: true
+  rules:
+    - apiGroups: 
+        - ""
+      resources:
+        - nodes/proxy
+      verbs:
+        - get
