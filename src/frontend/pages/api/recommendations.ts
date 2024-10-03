@@ -6,6 +6,7 @@ import InstrumentationMiddleware from '../../utils/telemetry/InstrumentationMidd
 import RecommendationsGateway from '../../gateways/rpc/Recommendations.gateway';
 import { Empty, Product } from '../../protos/demo';
 import ProductCatalogService from '../../services/ProductCatalog.service';
+import { logger } from '../../utils/logger';
 
 type TResponse = Product[] | Empty;
 
@@ -13,6 +14,7 @@ const handler = async ({ method, query }: NextApiRequest, res: NextApiResponse<T
   switch (method) {
     case 'GET': {
       const { productIds = [], sessionId = '', currencyCode = '' } = query;
+      logger.info({ inputProductIds: JSON.stringify(productIds), session_id: sessionId, "app.currency": currencyCode });
       const { productIds: productList } = await RecommendationsGateway.listRecommendations(
         sessionId as string,
         productIds as string[]
