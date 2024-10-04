@@ -12,10 +12,10 @@ const {gcpDetector} = require('@opentelemetry/resource-detector-gcp');
 const {envDetector, hostDetector, osDetector, processDetector} = require('@opentelemetry/resources');
 
 // console.log("Otel, tell me wtf you are doing dammit")
-// opentelemetry.diag.setLogger(
-//   new opentelemetry.DiagConsoleLogger(),
-//   opentelemetry.DiagLogLevel.DEBUG
-// );
+opentelemetry.diag.setLogger(
+  new opentelemetry.DiagConsoleLogger(),
+  opentelemetry.DiagLogLevel.WARN
+);
 
 const sdk = new otelsdk.NodeSDK({
   traceExporter: new OTLPTraceExporter(),
