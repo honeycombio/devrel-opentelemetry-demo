@@ -10,13 +10,14 @@ export function middleware(request: NextRequest) {
     const response = NextResponse.next();
     const duration = Date.now() - startTime;
     const headerList = JSON.stringify(Object.keys(request.headers));
-    logger.info({"http.method": request.method, 
+    logger.info(JSON.stringify({
+      "timestamp": new Date().toISOString(),
+      "http.method": request.method, 
         "request.id": requestId, 
         "http.headers": headerList, 
         "http.url": request.url, 
         "http.status": response.status, 
-        "duration_ms": duration},
-        `${request.method} ${request.url} ${response.status} ${duration}ms request_id=${requestId}`);
+        "duration_ms": duration}));
     return response;
 }
  
