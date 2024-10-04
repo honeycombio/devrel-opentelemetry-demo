@@ -7,9 +7,9 @@ export function middleware(request: NextRequest) {
     console.log(`Received ${request.method} request to ${request.url} at ${new Date()}`);
     const startTime = Date.now();
     const requestId = request.headers.get('x-request-id');
-    const response = NextResponse.next();
     const duration = Date.now() - startTime;
     const headerList = JSON.stringify(Object.keys(request.headers));
+    const response = NextResponse.next();
     logger.info(JSON.stringify({
       "timestamp": new Date().toISOString(),
       "http.method": request.method, 
