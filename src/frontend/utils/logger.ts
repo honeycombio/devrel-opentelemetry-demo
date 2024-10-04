@@ -1,4 +1,7 @@
 
-const bunyan = require('bunyan');
+import pino from "pino";
 
-export const logger = bunyan.createLogger({ name: 'api-gateway-logs' });
+export const logger = pino({
+    level: process.env.PINO_LOG_LEVEL || 'debug',
+    timestamp: pino.stdTimeFunctions.isoTime,
+  });
