@@ -1,13 +1,11 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import { trace,context, SpanStatusCode } from '@opentelemetry/api';
-import { all } from 'cypress/types/bluebird';
 
 // Assuming you've set up a tracer provider elsewhere
 const tracer = trace.getTracer('memory-allocation-demo');
 
 // Global variable to store allocated memory
 const allocatedMemories: any[] = [];
-let memoriesAllocated = 0;
 
 const MAX_MEMORY_ALLOCATION = 100 * 1024 * 1024 * 1024; // 100GB max allocation
 const DEFAULT_ALLOCATION_SIZE = 100 * 1024 * 1024; // 100MB default allocation
@@ -27,7 +25,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }
 
       const retentionTime = Math.min(parseInt(req.query.retentionTime as string, 10) || 60, 300); // Max 5 minutes
-      let allocationSize = Math.min(
+      const allocationSize = Math.min(
         parseInt(req.query.allocationSize as string, 10) || DEFAULT_ALLOCATION_SIZE,
         MAX_MEMORY_ALLOCATION - getCurrentAllocation()
       );
