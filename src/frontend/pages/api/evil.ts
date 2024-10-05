@@ -5,7 +5,7 @@ import { trace,context, SpanStatusCode } from '@opentelemetry/api';
 const tracer = trace.getTracer('memory-allocation-demo');
 
 // Global variable to store allocated memory
-let allocatedMemories: Array<Buffer | null> = [];
+const allocatedMemories: Array<Buffer | null> = [];
 let memoriesAllocated = 0;
 
 const MAX_MEMORY_ALLOCATION = 100 * 1024 * 1024 * 1024; // 100GB max allocation
