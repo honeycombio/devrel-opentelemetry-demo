@@ -3,7 +3,7 @@
 
 import { NextApiHandler } from 'next';
 import {context, Exception, Span, SpanStatusCode, trace} from '@opentelemetry/api';
-import { SemanticAttributes } from '@opentelemetry/semantic-conventions';
+import { SEMATTRS_HTTP_STATUS_CODE } from '@opentelemetry/semantic-conventions';
 import { metrics } from '@opentelemetry/api';
 
 const meter = metrics.getMeter('frontend');
@@ -16,6 +16,16 @@ const InstrumentationMiddleware = (handler: NextApiHandler): NextApiHandler => {
 
     const span = trace.getSpan(context.active()) as Span;
 
+    const memoryUsage = recordMemoryUsage();
+    span?.setAttributes({
+      'memoryUsage.percentUsed': memoryUsage.heapUsed / memoryUsage.heapTotal,
+    });
+    if (memoryUsage.heapUsed > 0.8 * memoryUsage.heapTotal) {
+      // now... how do I sleep
+      const randomSleep = Math.floor(Math.random() * 1000);
+      await new Promise((resolve) => setTimeout(resolve, randomSleep));
+    }
+
     let httpStatus = 200;
     try {
       await runWithSpan(span, async () => handler(request, response));
@@ -27,7 +37,7 @@ const InstrumentationMiddleware = (handler: NextApiHandler): NextApiHandler => {
       throw error;
     } finally {
       requestCounter.add(1, { method, target, status: httpStatus });
-      span.setAttribute(SemanticAttributes.HTTP_STATUS_CODE, httpStatus);
+      span.setAttribute(SEMATTRS_HTTP_STATUS_CODE, httpStatus);
     }
   };
 };
@@ -35,6 +45,20 @@ const InstrumentationMiddleware = (handler: NextApiHandler): NextApiHandler => {
 async function runWithSpan(parentSpan: Span, fn: () => Promise<unknown>) {
   const ctx = trace.setSpan(context.active(), parentSpan);
   return await context.with(ctx, fn);
+}
+
+function recordMemoryUsage() {
+  const span = trace.getActiveSpan()
+   // Log memory usage
+   const memoryUsage = process.memoryUsage();
+   console.log('Memory usage:', memoryUsage);
+   span?.setAttributes({
+     'memoryUsage.rss': memoryUsage.rss,
+     'memoryUsage.heapTotal': memoryUsage.heapTotal,
+     'memoryUsage.heapUsed': memoryUsage.heapUsed,
+     'memoryUsage.external': memoryUsage.external,
+   });
+   return memoryUsage;
 }
 
 export default InstrumentationMiddleware;

@@ -1,5 +1,6 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import { trace,context, SpanStatusCode } from '@opentelemetry/api';
+import InstrumentationMiddleware from '../../utils/telemetry/InstrumentationMiddleware';
 
 // Assuming you've set up a tracer provider elsewhere
 const tracer = trace.getTracer('memory-allocation-demo');
@@ -15,7 +16,7 @@ function getCurrentAllocation() {
     return allocatedMemories.length * CHUNK_SIZE;
 }
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+async function handler(req: NextApiRequest, res: NextApiResponse) {
   return tracer.startActiveSpan('memory-allocation-handler', async (span) => {
     try {
       if (req.method !== 'GET') {
@@ -67,6 +68,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         message: 'Memory allocated', 
         retentionTime, 
         allocationSize,
+        currentAllocation: getCurrentAllocation(),
         memoryUsage
       });
     } catch (error) {
@@ -96,3 +98,5 @@ function recordMemoryUsage() {
      });
      return memoryUsage;
 }
+
+export default InstrumentationMiddleware(handler);
