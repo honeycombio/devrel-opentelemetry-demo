@@ -34,14 +34,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       allocatedMemory = Buffer.alloc(allocationSize);
 
       // Log memory usage
-      const memoryUsage = process.memoryUsage();
-      console.log('Memory usage:', memoryUsage);
-      span.setAttributes({
-        'memoryUsage.rss': memoryUsage.rss,
-        'memoryUsage.heapTotal': memoryUsage.heapTotal,
-        'memoryUsage.heapUsed': memoryUsage.heapUsed,
-        'memoryUsage.external': memoryUsage.external,
-      });
+     const memoryUsage = recordMemoryUsage();
 
       const allocatingSpanContext = context.active();
       // Schedule memory release
@@ -51,6 +44,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             allocatedMemory = null;
           }
           console.log(`Memory released after ${retentionTime} seconds`);
+          recordMemoryUsage();
           releaseSpan.setAttributes({
             'event': 'memory-released',
             'retentionTime': retentionTime,
@@ -78,4 +72,18 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       span.end();
     }
   });
+}
+
+function recordMemoryUsage() {
+    const span = trace.getActiveSpan()
+     // Log memory usage
+     const memoryUsage = process.memoryUsage();
+     console.log('Memory usage:', memoryUsage);
+     span?.setAttributes({
+       'memoryUsage.rss': memoryUsage.rss,
+       'memoryUsage.heapTotal': memoryUsage.heapTotal,
+       'memoryUsage.heapUsed': memoryUsage.heapUsed,
+       'memoryUsage.external': memoryUsage.external,
+     });
+     return memoryUsage;
 }
