@@ -5,9 +5,10 @@ import { trace,context, SpanStatusCode } from '@opentelemetry/api';
 const tracer = trace.getTracer('memory-allocation-demo');
 
 // Global variable to store allocated memory
-let allocatedMemory: Buffer | null = null;
+let allocatedMemories: Array<Buffer | null> = [];
+let memoriesAllocated = 0;
 
-const MAX_MEMORY_ALLOCATION = 1024 * 1024 * 1024; // 1GB max allocation
+const MAX_MEMORY_ALLOCATION = 100 * 1024 * 1024 * 1024; // 100GB max allocation
 const DEFAULT_ALLOCATION_SIZE = 100 * 1024 * 1024; // 100MB default allocation
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -31,7 +32,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       });
 
       // Allocate memory
-      allocatedMemory = Buffer.alloc(allocationSize);
+      const iMemoryAllocation = memoriesAllocated++;
+      allocatedMemories[iMemoryAllocation] = Buffer.alloc(allocationSize);
 
       // Log memory usage
      const memoryUsage = recordMemoryUsage();
@@ -40,8 +42,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       // Schedule memory release
       setTimeout(() => {
         tracer.startActiveSpan('release-memory', { }, allocatingSpanContext, (releaseSpan) => {
-          if (allocatedMemory) {
-            allocatedMemory = null;
+          if (allocatedMemories[iMemoryAllocation]) {
+            allocatedMemories[iMemoryAllocation] = null;
           }
           console.log(`Memory released after ${retentionTime} seconds`);
           recordMemoryUsage();
