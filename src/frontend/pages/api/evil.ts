@@ -1,15 +1,21 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import { trace,context, SpanStatusCode } from '@opentelemetry/api';
+import { all } from 'cypress/types/bluebird';
 
 // Assuming you've set up a tracer provider elsewhere
 const tracer = trace.getTracer('memory-allocation-demo');
 
 // Global variable to store allocated memory
-const allocatedMemories: Array<Buffer | null> = [];
+const allocatedMemories: any[] = [];
 let memoriesAllocated = 0;
 
 const MAX_MEMORY_ALLOCATION = 100 * 1024 * 1024 * 1024; // 100GB max allocation
 const DEFAULT_ALLOCATION_SIZE = 100 * 1024 * 1024; // 100MB default allocation
+const CHUNK_SIZE = 1024 * 1024; // 1MB chunks
+
+function getCurrentAllocation() {
+    return allocatedMemories.length * CHUNK_SIZE;
+}
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   return tracer.startActiveSpan('memory-allocation-handler', async (span) => {
@@ -21,19 +27,22 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }
 
       const retentionTime = Math.min(parseInt(req.query.retentionTime as string, 10) || 60, 300); // Max 5 minutes
-      const allocationSize = Math.min(
+      let allocationSize = Math.min(
         parseInt(req.query.allocationSize as string, 10) || DEFAULT_ALLOCATION_SIZE,
-        MAX_MEMORY_ALLOCATION
+        MAX_MEMORY_ALLOCATION - getCurrentAllocation()
       );
 
       span.setAttributes({
         'retentionTime': retentionTime,
         'allocationSize': allocationSize,
+        'currentAllocation': getCurrentAllocation(),
       });
 
       // Allocate memory
-      const iMemoryAllocation = memoriesAllocated++;
-      allocatedMemories[iMemoryAllocation] = Buffer.alloc(allocationSize);
+      const numChunks = Math.floor(allocationSize / CHUNK_SIZE);
+      for (let i = 0; i < numChunks; i++) {
+        allocatedMemories.push(new Array(CHUNK_SIZE).fill('🤐'));
+      }
 
       // Log memory usage
      const memoryUsage = recordMemoryUsage();
@@ -42,9 +51,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       // Schedule memory release
       setTimeout(() => {
         tracer.startActiveSpan('release-memory', { }, allocatingSpanContext, (releaseSpan) => {
-          if (allocatedMemories[iMemoryAllocation]) {
-            allocatedMemories[iMemoryAllocation] = null;
-          }
+          allocatedMemories.splice(-numChunks);  // Remove the chunks we added
+          global?.gc && global.gc(); // Force garbage collection if available
+          
           console.log(`Memory released after ${retentionTime} seconds`);
           recordMemoryUsage();
           releaseSpan.setAttributes({
