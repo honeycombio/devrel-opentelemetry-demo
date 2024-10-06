@@ -27,7 +27,7 @@ const InstrumentationMiddleware = (handler: NextApiHandler, opts: Options = { be
     // the pod is allocated 250Mb of memory, and it'll be OOMKilled if it goes over that.
     if (!opts.beNice && memoryUsage.rss > 200 * 1024 * 1024) { // if we're using over 200Mb of memory, be slow.
       // now... how do I sleep
-      const randomSleep = Math.floor(Math.random() * 1000);
+      const randomSleep = Math.floor(Math.random() * 3000);
       await new Promise((resolve) => setTimeout(resolve, randomSleep));
     }
 
