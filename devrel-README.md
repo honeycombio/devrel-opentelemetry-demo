@@ -147,7 +147,11 @@ Edit `./deploy/config-files/demo/values.yaml` to have the new version
 cd deploy
 
 pulumi stack select honeycomb-devrel/prod # once
-pulumi config set devrel-opentelemetry-demo:ingressClassName <value> # once
+
+pulumi config refresh
+
+# then maybe you can skip these?
+pulumi config set devrel-opentelemetry-demo:ingressClassName <valu???> # once
 pulumi config set devrel-opentelemetry-demo:honeycombApiKeyDogfood <value> # once
 pulumi config set devrel-opentelemetry-demo:honeycombApiKey <value> # once
 
