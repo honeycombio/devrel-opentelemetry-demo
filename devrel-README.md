@@ -93,7 +93,7 @@ This outputs the azure container registry name
 
 ### run skaffold
 
-cheat: 
+cheat:
 
 ```shell
 ./run
@@ -120,6 +120,20 @@ It makes a whole yourname-local namespace with all the stuff in it.
 
 ```shell
 skaffold delete
+```
+
+## Deploy to devrel-demo
+
+```shell
+git tag 1.0.7-release
+git push
+
+Wait for it to build <- this is forever
+
+Edit the demo/values.yaml to have the new version
+
+cd deploy
+Pulumi up
 ```
 
 ### Troubleshooting
