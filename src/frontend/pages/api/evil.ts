@@ -10,10 +10,11 @@ const allocatedMemories: any[] = [];
 
 const MAX_MEMORY_ALLOCATION = 300 * 1024 * 1024; // 300Mb max allocation (pod is allocated 250Mb)
 const DEFAULT_ALLOCATION_SIZE = 10 * 1024 * 1024; // 10MB default allocation
-const CHUNK_SIZE = 1024 * 1024 / 4; // 1MB chunks, where 🤐 is 4b, and that's what I'm filling the array with.
+const SIZE_OF_FILLER = 4; // 4 bytes per character
+const CHUNK_SIZE = 1024 * 1024 / SIZE_OF_FILLER; // 1MB chunks, where 🤐 is 4b, and that's what I'm filling the array with.
 
 function getCurrentAllocation() {
-    return allocatedMemories.length * CHUNK_SIZE;
+    return allocatedMemories.length * CHUNK_SIZE * SIZE_OF_FILLER;
 }
 
 async function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -25,7 +26,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
         return res.status(405).json({ error: 'Method not allowed' });
       }
 
-      const retentionTime = Math.min(parseInt(req.query.retentionTime as string, 10) || 60, 300); // Max 5 minutes
+      const retentionTime = Math.min(parseInt(req.query.retentionTime as string, 10) || 60, 3000); // Max 50 minutes
       const allocationSize = Math.min(
         parseInt(req.query.allocationSize as string, 10) || DEFAULT_ALLOCATION_SIZE,
         MAX_MEMORY_ALLOCATION - getCurrentAllocation()
