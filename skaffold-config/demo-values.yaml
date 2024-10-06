@@ -51,6 +51,19 @@ opentelemetry-collector:
             statements:
               - set(attributes["service.name"], "api-gateway") where attributes["service.name"] == "frontend"
               - set(attributes["service.name"], "ingress-gateway") where attributes["service.name"] == "frontendproxy"
+      transform/parse_json_body:
+        error_mode: ignore
+        log_statements:
+          - context: log
+            conditions:
+              - body != nil and Substring(body, 0, 2) == "{\""
+            statements:
+              - set(cache, ParseJSON(body))
+              - flatten(cache, "")
+              - merge_maps(attributes, cache, "upsert")
+          - context: log
+            statements:
+              - set(resource.attributes["service.name"], "api-gateway") where resource.attributes["k8s.container.name"] == "frontend"
     exporters:
       otlp/traces:
         endpoint: api-dogfood.honeycomb.io:443
@@ -86,6 +99,7 @@ opentelemetry-collector:
           exporters: 
             - otlp/logging
           processors:
+            - transform/parse_json_body
             - transform/service_names
         traces:
           exporters: 

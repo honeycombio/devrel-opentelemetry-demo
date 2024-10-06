@@ -39,6 +39,14 @@ export class Collector extends pulumi.ComponentResource {
                             "key": "honeycomb-api-key"
                         }
                     }
+                },
+                {
+                    "name": "NAMESPACE",
+                    "valueFrom": {
+                        "fieldRef": {
+                            "fieldPath": "metadata.namespace"
+                        }
+                    }
                 }
             ]
         }
