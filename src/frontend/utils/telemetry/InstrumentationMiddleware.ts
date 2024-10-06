@@ -5,11 +5,15 @@ import { NextApiHandler } from 'next';
 import {context, Exception, Span, SpanStatusCode, trace} from '@opentelemetry/api';
 import { SEMATTRS_HTTP_STATUS_CODE } from '@opentelemetry/semantic-conventions';
 import { metrics } from '@opentelemetry/api';
+import { logger } from '../logger';
 
 const meter = metrics.getMeter('frontend');
 const requestCounter = meter.createCounter('app.frontend.requests');
 
-const InstrumentationMiddleware = (handler: NextApiHandler): NextApiHandler => {
+type Options = {
+  beNice: boolean;
+}
+const InstrumentationMiddleware = (handler: NextApiHandler, opts: Options = { beNice: false }): NextApiHandler => {
   return async (request, response) => {
     const {method, url = ''} = request;
     const [target] = url.split('?');
@@ -21,7 +25,7 @@ const InstrumentationMiddleware = (handler: NextApiHandler): NextApiHandler => {
       'memoryUsage.percentUsed': memoryUsage.heapUsed / memoryUsage.heapTotal,
     });
     // the pod is allocated 250Mb of memory, and it'll be OOMKilled if it goes over that.
-    if (memoryUsage.rss > 200 * 1024 * 1024) { // if we're using over 200Mb of memory, be slow.
+    if (!opts.beNice && memoryUsage.rss > 200 * 1024 * 1024) { // if we're using over 200Mb of memory, be slow.
       // now... how do I sleep
       const randomSleep = Math.floor(Math.random() * 1000);
       await new Promise((resolve) => setTimeout(resolve, randomSleep));
@@ -30,6 +34,7 @@ const InstrumentationMiddleware = (handler: NextApiHandler): NextApiHandler => {
     let httpStatus = 200;
     try {
       await runWithSpan(span, async () => handler(request, response));
+      logger.info('Request handled', { 'http.method': method, 'url.path': target, 'http.status_code': httpStatus });
       httpStatus = response.statusCode;
     } catch (error) {
       span.recordException(error as Exception);
@@ -52,7 +57,6 @@ function recordMemoryUsage() {
   const span = trace.getActiveSpan()
    // Log memory usage
    const memoryUsage = process.memoryUsage();
-   console.log('Memory usage:', memoryUsage);
    span?.setAttributes({
      'memoryUsage.rss': memoryUsage.rss,
      'memoryUsage.heapTotal': memoryUsage.heapTotal,

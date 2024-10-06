@@ -54,7 +54,6 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
           allocatedMemories.splice(-numChunks);  // Remove the chunks we added
           global?.gc && global.gc(); // Force garbage collection if available
           
-          console.log(`Memory released after ${retentionTime} seconds`);
           recordMemoryUsage();
           releaseSpan.setAttributes({
             'event': 'memory-released',
@@ -90,7 +89,6 @@ function recordMemoryUsage() {
     const span = trace.getActiveSpan()
      // Log memory usage
      const memoryUsage = process.memoryUsage();
-     console.log('Memory usage:', memoryUsage);
      span?.setAttributes({
        'memoryUsage.rss': memoryUsage.rss,
        'memoryUsage.heapTotal': memoryUsage.heapTotal,
