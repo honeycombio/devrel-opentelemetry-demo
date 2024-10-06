@@ -124,14 +124,26 @@ skaffold delete
 
 ## Deploy to devrel-demo
 
+What is the next release number?
+
+```shell
+git fetch -a
+git tag --list
+```
+
+(replace 1.0.7 with something later)
+
 ```shell
 git tag 1.0.7-release
-git push
+git push origin 1.0.7-release
+```
 
 Wait for it to build <- this is forever
+Visit [https://github.com/honeycombio/devrel-opentelemetry-demo/actions]() to wait for it
 
-Edit the demo/values.yaml to have the new version
+Edit `./deploy/config-files/demo/values.yaml` to have the new version
 
+```shell
 cd deploy
 Pulumi up
 ```
