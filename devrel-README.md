@@ -145,7 +145,13 @@ Edit `./deploy/config-files/demo/values.yaml` to have the new version
 
 ```shell
 cd deploy
-Pulumi up
+
+pulumi stack select honeycomb-devrel/prod # once
+pulumi config set devrel-opentelemetry-demo:ingressClassName <value> # once
+pulumi config set devrel-opentelemetry-demo:honeycombApiKeyDogfood <value> # once
+pulumi config set devrel-opentelemetry-demo:honeycombApiKey <value> # once
+
+pulumi up
 ```
 
 ### Troubleshooting
