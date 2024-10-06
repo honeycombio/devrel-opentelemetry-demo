@@ -8,9 +8,9 @@ const tracer = trace.getTracer('memory-allocation-demo');
 // Global variable to store allocated memory
 const allocatedMemories: any[] = [];
 
-const MAX_MEMORY_ALLOCATION = 100 * 1024 * 1024 * 1024; // 100GB max allocation
-const DEFAULT_ALLOCATION_SIZE = 100 * 1024 * 1024; // 100MB default allocation
-const CHUNK_SIZE = 1024 * 1024; // 1MB chunks
+const MAX_MEMORY_ALLOCATION = 300 * 1024 * 1024; // 300Mb max allocation (pod is allocated 250Mb)
+const DEFAULT_ALLOCATION_SIZE = 10 * 1024 * 1024; // 10MB default allocation
+const CHUNK_SIZE = 1024 * 1024 / 4; // 1MB chunks, where 🤐 is 4b, and that's what I'm filling the array with.
 
 function getCurrentAllocation() {
     return allocatedMemories.length * CHUNK_SIZE;
