@@ -20,11 +20,6 @@ function getCurrentAllocation() {
 async function handler(req: NextApiRequest, res: NextApiResponse) {
   return tracer.startActiveSpan('memory-allocation-handler', async (span) => {
     try {
-      if (req.method !== 'GET') {
-        span.setStatus({ code: SpanStatusCode.ERROR, message: 'Method not allowed' });
-        span.end();
-        return res.status(405).json({ error: 'Method not allowed' });
-      }
 
       const retentionTime = Math.min(parseInt(req.query.retentionTime as string, 10) || 60, 3000); // Max 50 minutes
       const allocationSize = Math.min(
