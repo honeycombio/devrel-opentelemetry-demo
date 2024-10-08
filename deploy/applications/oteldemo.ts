@@ -22,7 +22,6 @@ export class OtelDemo extends pulumi.ComponentResource {
         const values =
         {
             "default": {
-                "replicas": 1,
                 "envOverrides": [
                     {
                         "name": "OTEL_COLLECTOR_NAME",
