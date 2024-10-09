@@ -34,11 +34,22 @@ opentelemetry-collector:
         include:
         - /var/log/pods/${env:NAMESPACE}_*/*/*.log
     processors:
+      k8sattributes:
+        extract:
+          annotations:
+          - from: pod
+            key_regex: (.*)
+            tag_name: $$1
+          labels:
+          - from: pod
+            key_regex: (.*)
+            tag_name: $$1
       transform/service_names:
         error_mode: ignore
         log_statements:
           - context: resource
             statements:
+              - set(attributes["service.name"], attributes["app.kubernetes.io/component"]) where attributes["service.name"] == nil and attributes["app.kubernetes.io/component"] != nil
               - set(attributes["service.name"], "api-gateway") where attributes["service.name"] == "frontend"
               - set(attributes["service.name"], "ingress-gateway") where attributes["service.name"] == "frontendproxy"
         metric_statements:
