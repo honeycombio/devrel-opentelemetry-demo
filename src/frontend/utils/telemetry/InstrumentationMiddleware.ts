@@ -15,6 +15,7 @@ type Options = {
 }
 const InstrumentationMiddleware = (handler: NextApiHandler, opts: Options = { beNice: false }): NextApiHandler => {
   return async (request, response) => {
+    const startTime = Date.now();
     const {method, url = ''} = request;
     const [target] = url.split('?');
 
@@ -34,9 +35,18 @@ const InstrumentationMiddleware = (handler: NextApiHandler, opts: Options = { be
     let httpStatus = 200;
     try {
       await runWithSpan(span, async () => handler(request, response));
-      logger.info('Request handled', { 'http.method': method, 'url.path': target, 'http.status_code': httpStatus });
+      logger.info('Request handled', { 
+        'http.method': method, 
+        'http.target': target, 
+        'http.status_code': httpStatus, 
+        'duration_ms': Date.now() - startTime });
       httpStatus = response.statusCode;
     } catch (error) {
+      logger.error('Request handled', { 
+        'http.method': method, 
+        'http.target': target, 
+        'http.status_code': httpStatus, 
+        'duration_ms': Date.now() - startTime });
       span.recordException(error as Exception);
       span.setStatus({ code: SpanStatusCode.ERROR });
       httpStatus = 500;

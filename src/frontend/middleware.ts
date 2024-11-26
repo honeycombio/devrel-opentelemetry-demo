@@ -6,14 +6,12 @@ import { logger } from './utils/logger';
 export function middleware(request: NextRequest) {
     const startTime = Date.now();
     const requestId = request.headers.get('x-request-id');
-    const headerList = JSON.stringify(Object.keys(request.headers));
     const response = NextResponse.next();
     const duration = Date.now() - startTime;
     logger.info(JSON.stringify({
       "timestamp": new Date().toISOString(),
       "http.method": request.method, 
         "request.id": requestId, 
-        "http.headers": headerList, 
         "http.url": request.url, 
         "http.status": response.status, 
         "duration_ms": duration}));
