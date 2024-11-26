@@ -55,6 +55,8 @@ brew update && brew install azure-cli
 az login
 ```
 
+If you get `Error when retrieving token from sso: Token has expired and refresh failed`, then do this step again.
+
 ### log in to pulumi
 
 ```shell
