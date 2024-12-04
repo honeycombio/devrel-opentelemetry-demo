@@ -8,6 +8,12 @@ However, when we deploy things ourselves using skaffold, we're pushing them to A
 
 The OpenTelemetry collector is deployed by this repo. For application telemetry, it uses a service instead of Martin's favorite nodeIP, because we want multiples in the cluster sending to different Honeycomb environments. This is doing something weird, because we are devrel and we do weird things.
 
+The collector config is not where you think it is!! Your collector config is in skaffold-config/demo-values.yaml
+
+QUESTION for Martin: how do you get skaffold to redeploy only the collector?
+
+The real collector config (for the public-facing demo) is in deploy/config-files/collector/values-daemonset.yaml
+
 ## The public one
 
 When we do CI, in github actions, that pushes release images to GHCR instead. (that was easier, they can be public we don't care)
@@ -55,9 +61,11 @@ brew update && brew install azure-cli
 az login
 ```
 
-If you get `Error when retrieving token from sso: Token has expired and refresh failed`, then do this step again.
+If you get `Error when retrieving token from sso: Token has expired and refresh failed`, then... it's probably trying to connect to EKS, and I should run `k config use-context devrel-azure` (because that's the name of my context for this cluster)
 
 ### log in to pulumi
+
+This is only needed if you're going to deploy to the main demo! To run in your own namespace, you don't have to do this.
 
 ```shell
 pulumi login
