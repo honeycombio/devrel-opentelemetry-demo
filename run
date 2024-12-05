@@ -13,7 +13,9 @@ if [[ -z "$HONEYCOMB_API_KEY" ]]; then
   exit 1
 fi
 
-echo "Logging in to ACR, because it's so annoying when we forget."
+# make sure we're logged in to the damn image repository
+# TODO: the list succeeds just fine if we're not logged in. f u chatgpt
+# the list check takes 1s; logging in takes like 6
 scripts/login-acr.sh
 
 set -x

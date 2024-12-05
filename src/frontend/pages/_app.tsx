@@ -30,18 +30,18 @@ declare global {
 if (typeof window !== 'undefined') {
     const configDefaults = {
         ignoreNetworkEvents: true,
-        // propagateTraceHeaderCorsUrls: [
-        // /.+/g, // Regex to match your backend URLs. Update to the domains you wish to include.
-        // ]
+        propagateTraceHeaderCorsUrls: [
+          /.+/g, // Regex to match your backend URLs. Update to the domains you wish to include.
+        ]
     };
 
-    console.log('************ booting the front-end');
+    // API key set in collector we proxy to
     const sdk = new HoneycombWebSDK({
-        endpoint: "http://localhost:9191/oltp-http/v1/traces", // Send to EU instance of Honeycomb. Defaults to sending to US instance.
+        endpoint: "/otlp-http/v1/traces",
         debug: true, // Set to false for production environment.
-        // TODO - pull from env
-        apiKey: process.env.NEXT_PUBLIC_HONEYCOMB_API_KEY, // Replace with your Honeycomb Ingest API Key.
-        serviceName: 'frontend-web', // Replace with your application name. Honeycomb uses this string to find your dataset when we receive your data. When no matching dataset exists, we create a new one with this name if your API Key has the appropriate permissions.
+        // ignores checking for things like api keys
+        skipOptionsValidation: true,
+       serviceName: 'frontend-web', // Replace with your application name. Honeycomb uses this string to find your dataset when we receive your data. When no matching dataset exists, we create a new one with this name if your API Key has the appropriate permissions.
         instrumentations: [getWebAutoInstrumentations({
             // Loads custom configuration for xml-http-request instrumentation.
             '@opentelemetry/instrumentation-xml-http-request': configDefaults,

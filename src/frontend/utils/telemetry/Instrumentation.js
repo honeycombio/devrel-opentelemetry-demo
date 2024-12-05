@@ -19,7 +19,7 @@ const {envDetector, hostDetector, osDetector, processDetector} = require('@opent
 
 const sdk = new otelsdk.NodeSDK({
   traceExporter: new OTLPTraceExporter(),
-//  logRecordProcessor: new otelsdk.logs.BatchLogRecordProcessor(new OTLPLogExporter()),
+  logRecordProcessor: new otelsdk.logs.BatchLogRecordProcessor(new OTLPLogExporter()),
   instrumentations: [
     getNodeAutoInstrumentations({
       // disable fs instrumentation to reduce noise
