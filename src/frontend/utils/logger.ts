@@ -1,8 +1,7 @@
-import bunyan from 'bunyan';
 
-export const logger = bunyan.createLogger({ name: 'myapp', level: 'info' });
+import pino from "pino";
 
-// export const logger = pino({
-//     level: process.env.PINO_LOG_LEVEL || 'debug',
-//     timestamp: pino.stdTimeFunctions.isoTime,
-//   });
+export const logger = pino({
+    level: process.env.PINO_LOG_LEVEL || 'debug',
+    timestamp: pino.stdTimeFunctions.isoTime,
+  });
