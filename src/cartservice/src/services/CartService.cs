@@ -35,8 +35,18 @@ public class CartService : Oteldemo.CartService.CartServiceBase
         activity?.SetTag("app.product.id", request.Item.ProductId);
         activity?.SetTag("app.product.quantity", request.Item.Quantity);
 
-        await _cartStore.AddItemAsync(request.UserId, request.Item.ProductId, request.Item.Quantity);
-        return Empty;
+        try
+        {
+            await _cartStore.AddItemAsync(request.UserId, request.Item.ProductId, request.Item.Quantity);
+
+            return Empty;
+        }
+        catch (RpcException ex)
+        {
+            activity?.RecordException(ex);
+            activity?.SetStatus(ActivityStatusCode.Error, ex.Message);
+            throw;
+        }
     }
 
     public override async Task<Cart> GetCart(GetCartRequest request, ServerCallContext context)
@@ -45,41 +55,50 @@ public class CartService : Oteldemo.CartService.CartServiceBase
         activity?.SetTag("app.user.id", request.UserId);
         activity?.AddEvent(new("Fetch cart"));
 
-        var cart = await _cartStore.GetCartAsync(request.UserId);
-        var totalCart = 0;
-        activity?.SetTag("app.cart.unique_items.count", cart.Items.Count);
-
-        _featureFlagHelper.SetContext(
-            EvaluationContext.Builder()
-                .Set("cart.unique_items.count", cart.Items.Count)
-                .Set("user.id", request.UserId)
-                .Build());
-
-        var shouldDoDatabaseCall = await _featureFlagHelper.GetBooleanValueAsync("cartservice.add-db-call", false);
-        if (!shouldDoDatabaseCall)
+        try
         {
-            using var dbActivity = ActivitySource.StartActivity("SELECT * FROM products WHERE id = @id", ActivityKind.Client);
-                dbActivity?.SetTag("db.statement", "SELECT * FROM products WHERE id IN @ids");
-                dbActivity?.SetTag("db.type", "sql");
-        }
-        foreach (var item in cart.Items)
-        {
-            if (shouldDoDatabaseCall)
+            var cart = await _cartStore.GetCartAsync(request.UserId);
+            var totalCart = 0;
+            activity?.SetTag("app.cart.unique_items.count", cart.Items.Count);
+
+            _featureFlagHelper.SetContext(
+                EvaluationContext.Builder()
+                    .Set("cart.unique_items.count", cart.Items.Count)
+                    .Set("user.id", request.UserId)
+                    .Build());
+
+            var shouldDoDatabaseCall = await _featureFlagHelper.GetBooleanValueAsync("cartservice.add-db-call", false);
+            if (!shouldDoDatabaseCall)
             {
                 using var dbActivity = ActivitySource.StartActivity("SELECT * FROM products WHERE id = @id", ActivityKind.Client);
-                dbActivity?.SetTag("app.product.id", item.ProductId);
-                dbActivity?.SetTag("db.statement", "SELECT * FROM products WHERE id = @id");
-                dbActivity?.SetTag("db.type", "sql");
-                if (cart.Items.Count > 6)
-                {
-                    await Task.Delay(random.Next(100, 300));
-                }
+                    dbActivity?.SetTag("db.statement", "SELECT * FROM products WHERE id IN @ids");
+                    dbActivity?.SetTag("db.type", "sql");
             }
-            totalCart += item.Quantity;
-        }
-        activity?.SetTag("app.cart.items.count", totalCart);
+            foreach (var item in cart.Items)
+            {
+                if (shouldDoDatabaseCall)
+                {
+                    using var dbActivity = ActivitySource.StartActivity("SELECT * FROM products WHERE id = @id", ActivityKind.Client);
+                    dbActivity?.SetTag("app.product.id", item.ProductId);
+                    dbActivity?.SetTag("db.statement", "SELECT * FROM products WHERE id = @id");
+                    dbActivity?.SetTag("db.type", "sql");
+                    if (cart.Items.Count > 6)
+                    {
+                        await Task.Delay(random.Next(100, 300));
+                    }
+                }
+                totalCart += item.Quantity;
+            }
+            activity?.SetTag("app.cart.items.count", totalCart);
 
-        return cart;
+            return cart;
+        }
+        catch (RpcException ex)
+        {
+            activity?.RecordException(ex);
+            activity?.SetStatus(ActivityStatusCode.Error, ex.Message);
+            throw;
+        }
     }
 
     public override async Task<Empty> EmptyCart(EmptyCartRequest request, ServerCallContext context)
@@ -90,8 +109,7 @@ public class CartService : Oteldemo.CartService.CartServiceBase
 
         try
         {
-            // Throw 1/10 of the time to simulate a failure when the feature flag is enabled
-            if (await _featureFlagHelper.GetBooleanValueAsync("cartServiceFailure", false) && random.Next(10) == 0)
+            if (await _featureFlagHelper.GetBooleanValueAsync("cartServiceFailure", false))
             {
                 await _badCartStore.EmptyCartAsync(request.UserId);
             }

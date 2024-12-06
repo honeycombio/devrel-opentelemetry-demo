@@ -27,6 +27,8 @@ services:
       dockerfile: ${AD_SERVICE_DOCKERFILE}
       cache_from:
         - ${IMAGE_NAME}:${IMAGE_VERSION}-adservice
+      args:
+        OTEL_JAVA_AGENT_VERSION: ${OTEL_JAVA_AGENT_VERSION}
     deploy:
       resources:
         limits:
@@ -133,6 +135,8 @@ services:
       dockerfile: ${CURRENCY_SERVICE_DOCKERFILE}
       cache_from:
         - ${IMAGE_NAME}:${IMAGE_VERSION}-currencyservice
+      args:
+        OPENTELEMETRY_CPP_VERSION: ${OPENTELEMETRY_CPP_VERSION}
     deploy:
       resources:
         limits:
@@ -265,9 +269,12 @@ services:
       - OTEL_COLLECTOR_PORT_GRPC
       - OTEL_COLLECTOR_PORT_HTTP
       - OTEL_RESOURCE_ATTRIBUTES
+      - OTEL_SERVICE_NAME=frontend-proxy
       - ENVOY_PORT
       - FLAGD_HOST
       - FLAGD_PORT
+      - FLAGD_UI_HOST
+      - FLAGD_UI_PORT
     depends_on:
       frontend:
         condition: service_started
@@ -497,7 +504,7 @@ services:
     deploy:
       resources:
         limits:
-          memory: 50M
+          memory: 75M
     environment:
       - FLAGD_OTEL_COLLECTOR_URI=${OTEL_COLLECTOR_HOST}:${OTEL_COLLECTOR_PORT_GRPC}
       - FLAGD_METRICS_EXPORTER=otel
@@ -553,7 +560,6 @@ services:
       - "${OTEL_COLLECTOR_PORT_GRPC}"
     environment:
       - METRICS_STORAGE_TYPE=prometheus
-      - COLLECTOR_OTLP_GRPC_HOST_PORT=${JAEGER_SERVICE_HOST}:${OTEL_COLLECTOR_PORT_GRPC}
     logging: *logging
 
   # Grafana
@@ -594,7 +600,10 @@ services:
       - "${OTEL_COLLECTOR_PORT_GRPC}"
       - "${OTEL_COLLECTOR_PORT_HTTP}"
     depends_on:
-      - jaeger
+      jaeger:
+        condition: service_started
+      opensearch:
+        condition: service_healthy
     logging: *logging
     environment:
       - ENVOY_PORT
@@ -654,4 +663,10 @@ services:
         hard: 65536
     ports:
       - "9200"
+    healthcheck:
+      test: curl -s http://localhost:9200/_cluster/health | grep -E '"status":"(green|yellow)"'
+      start_period: 10s
+      interval: 5s
+      timeout: 10s
+      retries: 10
     logging: *logging
