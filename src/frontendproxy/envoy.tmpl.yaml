@@ -1,7 +1,6 @@
 # Copyright The OpenTelemetry Authors
 # SPDX-License-Identifier: Apache-2.0
 
-
 static_resources:
   listeners:
     - address:
@@ -40,7 +39,11 @@ static_resources:
                         - match: { prefix: "/loadgen" }
                           route: { cluster: loadgen, prefix_rewrite: "/" }
                         - match: { prefix: "/otlp-http/" }
-                          route: { cluster: opentelemetry_collector_http, prefix_rewrite: "/" }
+                          route:
+                            {
+                              cluster: opentelemetry_collector_http,
+                              prefix_rewrite: "/",
+                            }
                         - match: { prefix: "/jaeger" }
                           route: { cluster: jaeger }
                         - match: { prefix: "/grafana" }
@@ -48,17 +51,22 @@ static_resources:
                         - match: { prefix: "/images/" }
                           route: { cluster: imageprovider, prefix_rewrite: "/" }
                         - match: { prefix: "/flagservice/" }
-                          route: { cluster: flagservice, prefix_rewrite: "/", timeout: 0s }
+                          route:
+                            {
+                              cluster: flagservice,
+                              prefix_rewrite: "/",
+                              timeout: 0s,
+                            }
                         - match: { prefix: "/" }
                           route: { cluster: api-gateway }
                 access_log:
                   - name: envoy.access_loggers.open_telemetry
                     typed_config:
                       "@type": "type.googleapis.com/envoy.extensions.access_loggers.open_telemetry.v3.OpenTelemetryAccessLogConfig"
-                      common_config: 
+                      common_config:
                         log_name: "otel_envoy_accesslog"
-                        grpc_service: 
-                          envoy_grpc: 
+                        grpc_service:
+                          envoy_grpc:
                             cluster_name: opentelemetry_collector_grpc
                         transport_api_version: "V3"
                       body:
@@ -66,82 +74,85 @@ static_resources:
                       resource_attributes:
                         values:
                           - key: "service.name"
-                            value: 
+                            value:
                               string_value: "access-logs"
                           - key: "hostname"
-                            value: 
+                            value:
                               string_value: "%HOSTNAME%"
                       attributes:
                         values:
-                        - key: "user_agent.original"
-                          value: 
-                            string_value: "%REQ(USER-AGENT)%"
-                        - key: "x_forwarded_for"
-                          value: 
-                            string_value: "%REQ(X-FORWARDED-FOR)%"
-                        - key: "x_request_id"
-                          value: 
-                            string_value: "%REQ(X-REQUEST-ID)%"
-                        - key: "http.request.start_time"
-                          value: 
-                            string_value: "%START_TIME%"
-                        - key: "server.address"
-                          value: 
-                            string_value: "%DOWNSTREAM_LOCAL_ADDRESS%"
-                        - key: "http.request.body_size"
-                          value: 
-                            string_value: "%BYTES_RECEIVED%"
-                        - key: "http.request.headers_size"
-                          value: 
-                            string_value: "%REQUEST_HEADERS_BYTES%"
-                        - key: "http.response.body_size"
-                          value: 
-                            string_value: "%BYTES_SENT%"
-                        - key: "http.response.headers_size"
-                          value: 
-                            string_value: "%RESPONSE_HEADERS_BYTES%"
-                        - key: "http.response.status_code"
-                          value: 
-                            string_value: "%RESPONSE_CODE%"
-                        - key: "http.total_duration"
-                          value: 
-                            string_value: "%DURATION%"
-                        - key: "url.template"
-                          value: 
-                            string_value: "%ROUTE_NAME%"
-                        - key: "upstream.host"
-                          value: 
-                            string_value: "%UPSTREAM_HOST%"
-                        - key: "upstream.cluster"
-                          value: 
-                            string_value: "%UPSTREAM_CLUSTER%"
-                        - key: "destination.address"
-                          value: 
-                            string_value: "%UPSTREAM_REMOTE_ADDRESS_WITHOUT_PORT%"
-                        - key: "source.address"
-                          value: 
-                            string_value: "%DOWNSTREAM_REMOTE_ADDRESS_WITHOUT_PORT%"
-                        - key: "http.protocol"
-                          value: 
-                            string_value: "%PROTOCOL%"
-                        - key: "http.connection_id"
-                          value: 
-                            string_value: "%CONNECTION_ID%"
-                        - key: "http.request.id"
-                          value: 
-                            string_value: "%STREAM_ID%"
-                        - key: "http.request.method"  
-                          value: 
-                            string_value: "%REQ(:METHOD)%"
-                        - key: "url.path"
-                          value: 
-                            string_value: "%REQ(:URL_PATH)%"
-                        - key: "url.query"
-                          value: 
-                            string_value: "%REQ(:QUERY)%"
-                        - key: "url.full"
-                          value: 
-                            string_value: "%REQ(:SCHEME)%://%REQ(:AUTHORITY)%%REQ(:PATH)%"
+                          - key: "user_agent.original"
+                            value:
+                              string_value: "%REQ(USER-AGENT)%"
+                          - key: "x_forwarded_for"
+                            value:
+                              string_value: "%REQ(X-FORWARDED-FOR)%"
+                          - key: "x_request_id"
+                            value:
+                              string_value: "%REQ(X-REQUEST-ID)%"
+                          - key: "http.request.start_time"
+                            value:
+                              string_value: "%START_TIME%"
+                          - key: "server.address"
+                            value:
+                              string_value: "%DOWNSTREAM_LOCAL_ADDRESS%"
+                          - key: "http.request.body_size"
+                            value:
+                              string_value: "%BYTES_RECEIVED%"
+                          - key: "http.request.headers_size"
+                            value:
+                              string_value: "%REQUEST_HEADERS_BYTES%"
+                          - key: "http.response.body_size"
+                            value:
+                              string_value: "%BYTES_SENT%"
+                          - key: "http.response.headers_size"
+                            value:
+                              string_value: "%RESPONSE_HEADERS_BYTES%"
+                          - key: "http.response.status_code"
+                            value:
+                              string_value: "%RESPONSE_CODE%"
+                          - key: "http.total_duration"
+                            value:
+                              string_value: "%DURATION%"
+                          - key: "url.template"
+                            value:
+                              string_value: "%ROUTE_NAME%"
+                          - key: "upstream.host"
+                            value:
+                              string_value: "%UPSTREAM_HOST%"
+                          - key: "upstream.cluster"
+                            value:
+                              string_value: "%UPSTREAM_CLUSTER%"
+                          - key: "destination.address"
+                            value:
+                              string_value: "%UPSTREAM_REMOTE_ADDRESS_WITHOUT_PORT%"
+                          - key: "source.address"
+                            value:
+                              string_value: "%DOWNSTREAM_REMOTE_ADDRESS_WITHOUT_PORT%"
+                          - key: "http.protocol"
+                            value:
+                              string_value: "%PROTOCOL%"
+                          - key: "http.connection_id"
+                            value:
+                              string_value: "%CONNECTION_ID%"
+                          - key: "http.request.id"
+                            value:
+                              string_value: "%STREAM_ID%"
+                          - key: "http.request.method"
+                            value:
+                              string_value: "%REQ(:METHOD)%"
+                          - key: "url.path"
+                            value:
+                              string_value: "%REQ(:URL_PATH)%"
+                          - key: "url.query"
+                            value:
+                              string_value: "%REQ(:QUERY)%"
+                          - key: "url.full"
+                            value:
+                              string_value: "%REQ(:SCHEME)%://%REQ(:AUTHORITY)%%REQ(:PATH)%"
+                          - key: "demo.telemetry.source"
+                            value:
+                              string_value: "envoy can emit access logs as OTLP, configured in src/frontendproxy/envoy.tmpl.yaml"
 
                 http_filters:
                   - name: envoy.filters.http.fault
@@ -155,7 +166,7 @@ static_resources:
                   - name: envoy.filters.http.router
                     typed_config:
                       "@type": type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
-                      
+
   clusters:
     - name: opentelemetry_collector_grpc
       type: STRICT_DNS
