@@ -44,6 +44,20 @@ opentelemetry-collector:
             - from: pod
               key_regex: (.*)
               tag_name: $$1
+      transform/access_log_severity:
+        error_mode: ignore
+        log_statements:
+          - context: log
+            conditions:
+              - resource.attributes["service.name"] == "access-logs"
+            statements:
+              - set(severity_text, "ERROR") where Substring(attributes["http.response.status_code"], 0, 1) == "5"
+              - set(severity_number, 17) where Substring(attributes["http.response.status_code"], 0, 1) == "5"
+              - set(severity_text, "WARN") where Substring(attributes["http.response.status_code"], 0, 1) == "4"
+              - set(severity_number, 13) where Substring(attributes["http.response.status_code"], 0, 1) == "4"
+              - set(severity_text, "INFO") where Int(attributes["http.response.status_code"]) < 400
+              - set(severity_number, 9) where Int(attributes["http.response.status_code"]) < 400
+              - set(attributes["demo.telemetry.transform.access_log_severity"], "v4")
       transform/service_names:
         error_mode: ignore
         log_statements:

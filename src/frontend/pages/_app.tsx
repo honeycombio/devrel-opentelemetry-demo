@@ -13,8 +13,8 @@ import FrontendTracer from '../utils/telemetry/FrontendTracer';
 import SessionGateway from '../gateways/Session.gateway';
 import { OpenFeatureProvider, OpenFeature } from '@openfeature/react-sdk';
 import { FlagdWebProvider } from '@openfeature/flagd-web-provider';
-import {HoneycombWebSDK} from "@honeycombio/opentelemetry-web";
-import {getWebAutoInstrumentations} from "@opentelemetry/auto-instrumentations-web";
+import { HoneycombWebSDK } from '@honeycombio/opentelemetry-web';
+import { getWebAutoInstrumentations } from '@opentelemetry/auto-instrumentations-web';
 
 declare global {
   interface Window {
@@ -28,56 +28,66 @@ declare global {
 }
 
 if (typeof window !== 'undefined') {
-    const configDefaults = {
-        ignoreNetworkEvents: true,
-        propagateTraceHeaderCorsUrls: [
-          /.+/g, // Regex to match your backend URLs. Update to the domains you wish to include.
-        ]
-    };
+  const configDefaults = {
+    ignoreNetworkEvents: true,
+    propagateTraceHeaderCorsUrls: [
+      /.+/g, // Regex to match your backend URLs. Update to the domains you wish to include.
+    ],
+  };
 
-    // API key set in collector we proxy to
-    const sdk = new HoneycombWebSDK({
-        endpoint: "/otlp-http/v1/traces",
-        debug: true, // Set to false for production environment.
-        // ignores checking for things like api keys
-        skipOptionsValidation: true,
-       serviceName: 'frontend-web', // Replace with your application name. Honeycomb uses this string to find your dataset when we receive your data. When no matching dataset exists, we create a new one with this name if your API Key has the appropriate permissions.
-        instrumentations: [getWebAutoInstrumentations({
-            // Loads custom configuration for xml-http-request instrumentation.
-            '@opentelemetry/instrumentation-xml-http-request': configDefaults,
-            '@opentelemetry/instrumentation-fetch': configDefaults,
-            '@opentelemetry/instrumentation-document-load': configDefaults,
-        })],
-    });
+  // API key set in collector we proxy to
+  const sdk = new HoneycombWebSDK({
+    endpoint: '/otlp-http/v1/traces',
+    debug: true, // Set to false for production environment.
+    // ignores checking for things like api keys
+    skipOptionsValidation: true,
+    serviceName: 'frontend-web', // Replace with your application name. Honeycomb uses this string to find your dataset when we receive your data. When no matching dataset exists, we create a new one with this name if your API Key has the appropriate permissions.
+    instrumentations: [
+      getWebAutoInstrumentations({
+        // Loads custom configuration for xml-http-request instrumentation.
+        '@opentelemetry/instrumentation-xml-http-request': configDefaults,
+        '@opentelemetry/instrumentation-fetch': configDefaults,
+        '@opentelemetry/instrumentation-document-load': configDefaults,
+        '@opentelemetry/instrumentation-user-interaction': {
+          enabled: true,
+          eventNames: ['click'], // the default, can add many more
+        },
+      }),
+    ],
+  });
+  try {
     sdk.start();
-  // if (window.location) {
-  //   const session = SessionGateway.getSession();
-  //
-  //   // Set context prior to provider init to avoid multiple http calls
-  //   OpenFeature.setContext({ targetingKey: session.userId, ...session }).then(() => {
-  //     /**
-  //      * We connect to flagd through the envoy proxy, straight from the browser,
-  //      * for this we need to know the current hostname and port.
-  //      */
-  //
-  //     const useTLS = window.location.protocol === 'https:';
-  //     let port = useTLS ? 443 : 80;
-  //     if (window.location.port) {
-  //         port = parseInt(window.location.port, 10);
-  //     }
-  //
-  //     OpenFeature.setProvider(
-  //       new FlagdWebProvider({
-  //         host: window.location.hostname,
-  //         pathPrefix: 'flagservice',
-  //         port: port,
-  //         tls: useTLS,
-  //         maxRetries: 3,
-  //         maxDelay: 10000,
-  //       })
-  //     );
-  //   });
-  // }
+  } catch (e) {
+    // TODO - do we use a logging API on the client?
+    console.error('Failed to start Honeycomb SDK', e);
+  }
+  if (window.location) {
+    const session = SessionGateway.getSession();
+    // Set context prior to provider init to avoid multiple http calls
+    OpenFeature.setContext({ targetingKey: session.userId, ...session }).then(() => {
+      /**
+       * We connect to flagd through the envoy proxy, straight from the browser,
+       * for this we need to know the current hostname and port.
+       */
+
+      const useTLS = window.location.protocol === 'https:';
+      let port = useTLS ? 443 : 80;
+      if (window.location.port) {
+        port = parseInt(window.location.port, 10);
+      }
+
+      OpenFeature.setProvider(
+        new FlagdWebProvider({
+          host: window.location.hostname,
+          pathPrefix: 'flagservice',
+          port: port,
+          tls: useTLS,
+          maxRetries: 3,
+          maxDelay: 10000,
+        })
+      );
+    });
+  }
 }
 
 const queryClient = new QueryClient();
