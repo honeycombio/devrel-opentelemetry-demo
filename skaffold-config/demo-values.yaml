@@ -9,6 +9,8 @@ default:
 components:
   loadgenerator:
     replicas: 1
+  frontend:
+    replicas: 1
 
 opentelemetry-collector:
   enabled: true
