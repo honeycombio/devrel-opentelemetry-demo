@@ -17,8 +17,16 @@ const {envDetector, hostDetector, osDetector, processDetector} = require('@opent
 //   opentelemetry.DiagLogLevel.INFO
 // );
 
+console.log("Instrumenting node with otel");
 const sdk = new otelsdk.NodeSDK({
-  traceExporter: new OTLPTraceExporter(),
+  // n.b. - the service for the next.js backend is being
+  // sent to Honeycomb as 'api-gateway' - this is done
+  // in our collector. Don't bother to set the serviceName
+  // here!
+
+  traceExporter: new OTLPTraceExporter({
+    url: '/otlp-http/v1/traces'
+  }),
   logRecordProcessor: new otelsdk.logs.BatchLogRecordProcessor(new OTLPLogExporter()),
   instrumentations: [
     getNodeAutoInstrumentations({

@@ -22,6 +22,8 @@ export default class MyDocument extends Document<{ envString: string }> {
       const baggage = propagation.getBaggage(context.active());
       const isSyntheticRequest = baggage?.getEntry('synthetic_request')?.value === 'true';
 
+      console.log(``)
+
       const otlpTracesEndpoint = isSyntheticRequest
           ? `http://${OTEL_COLLECTOR_HOST}:4318/v1/traces`
           : PUBLIC_OTEL_EXPORTER_OTLP_TRACES_ENDPOINT;
