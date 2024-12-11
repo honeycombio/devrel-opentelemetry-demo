@@ -10,7 +10,6 @@ const {awsEc2Detector, awsEksDetector} = require('@opentelemetry/resource-detect
 const {containerDetector} = require('@opentelemetry/resource-detector-container');
 const {gcpDetector} = require('@opentelemetry/resource-detector-gcp');
 const {envDetector, hostDetector, osDetector, processDetector} = require('@opentelemetry/resources');
-const logsapi = require("@opentelemetry/api-logs");
 
 // console.log("Otel, tell me wtf you are doing")
 // opentelemetry.diag.setLogger(
@@ -51,6 +50,5 @@ const sdk = new otelsdk.NodeSDK({
     gcpDetector,
   ],
 });
-
 
 sdk.start();
