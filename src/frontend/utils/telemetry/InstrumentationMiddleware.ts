@@ -5,7 +5,6 @@ import { NextApiHandler } from 'next';
 import { context, Exception, Span, SpanStatusCode, trace } from '@opentelemetry/api';
 import { SEMATTRS_HTTP_STATUS_CODE } from '@opentelemetry/semantic-conventions';
 import { metrics } from '@opentelemetry/api';
-import { logger } from '../logger';
 import bunyan from 'bunyan';
 
 const meter = metrics.getMeter('frontend');
@@ -49,12 +48,6 @@ const InstrumentationMiddleware = (handler: NextApiHandler, opts: Options = { be
         'log.severity': 'info',
         duration_ms: Date.now() - startTime,
       });
-      logger.info('Request handled', {
-        'http.method': method,
-        'http.target': target,
-        'http.status_code': httpStatus,
-        duration_ms: Date.now() - startTime,
-      });
       httpStatus = response.statusCode;
     } catch (error) {
       bunyanLogger.error({
@@ -65,12 +58,6 @@ const InstrumentationMiddleware = (handler: NextApiHandler, opts: Options = { be
         'http.status_code': httpStatus,
         'error.message': (error as Error).message,
         'log.severity': 'error',
-        duration_ms: Date.now() - startTime,
-      });
-      logger.error('Request handled', {
-        'http.method': method,
-        'http.target': target,
-        'http.status_code': httpStatus,
         duration_ms: Date.now() - startTime,
       });
       span.recordException(error as Exception);

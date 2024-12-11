@@ -41,7 +41,7 @@ const sdk = new otelsdk.NodeSDK({
       },
     }),
     new BunyanInstrumentation(),
-  ],
+  ],  
   resourceDetectors: [
     containerDetector,
     envDetector,

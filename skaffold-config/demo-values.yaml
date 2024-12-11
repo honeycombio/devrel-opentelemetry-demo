@@ -5,6 +5,14 @@
 ########################
 default:
   replicas: 1
+  # List of environment variables applied to all components
+  envOverrides:
+    - name: OTEL_EXPORTER_OTLP_LOGS_PROTOCOL
+      value: grpc
+    - name: OTEL_EXPORTER_OTLP_INSECURE
+      value: "true"
+    - name: OTEL_LOG_LEVEL
+      value: "info"
 
 components:
   loadgenerator:
@@ -20,7 +28,7 @@ opentelemetry-collector:
   presets:
     logsCollection:
       enabled: true
-      includeCollectorLogs: false
+      includeCollectorLogs: true
   config:
     receivers:
       otlp:
@@ -36,6 +44,19 @@ opentelemetry-collector:
         include:
           - /var/log/pods/${env:NAMESPACE}_*/*/*.log
     processors:
+      transform/attribution:
+        log_statements:
+          - context: resource
+            statements:
+              - set(attributes["collector.name"], "daemonset-collector")
+        metric_statements:
+          - context: resource
+            statements:
+              - set(attributes["collector.name"], "daemonset-collector")
+        trace_statements:
+          - context: resource
+            statements:
+              - set(attributes["collector.name"], "daemonset-collector")
       k8sattributes:
         extract:
           annotations:
@@ -122,19 +143,25 @@ opentelemetry-collector:
             - otlp/metrics
           processors:
             - transform/service_names
+            - transform/attribution
         logs:
+          receivers:
+            - otlp
+            - filelog
           exporters:
             - otlp/logging
           processors:
             - transform/parse_json_body
             - transform/service_names
             - transform/access_log_severity
+            - transform/attribution
         traces:
           exporters:
             - otlp/traces
             - spanmetrics
           processors:
             - transform/service_names
+            - transform/attribution
   ports:
     otlp:
       hostPort: 0
