@@ -1,15 +1,22 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-/** @type {import('next').NextConfig} */
 
+// eslint-disable-next-line @typescript-eslint/no-var-requires
 const dotEnv = require('dotenv');
+
+// eslint-disable-next-line @typescript-eslint/no-var-requires
 const dotenvExpand = require('dotenv-expand');
+
+// eslint-disable-next-line @typescript-eslint/no-var-requires
 const { resolve } = require('path');
 
+// TODO - convert to Next.js 15 - and convert this implied typing and file to Typescript!
+/** @type {import('next').NextConfig} */
 const myEnv = dotEnv.config({
   path: resolve(__dirname, '../../.env'),
 });
+
 dotenvExpand.expand(myEnv);
 
 const {
@@ -23,13 +30,12 @@ const {
   ENV_PLATFORM = '',
   OTEL_EXPORTER_OTLP_TRACES_ENDPOINT = '',
   OTEL_SERVICE_NAME = 'frontend',
-  PUBLIC_OTEL_EXPORTER_OTLP_TRACES_ENDPOINT = '',
 } = process.env;
 
+/** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
   output: 'standalone',
-  swcMinify: true,
   compiler: {
     styledComponents: true,
   },
@@ -41,7 +47,6 @@ const nextConfig = {
       config.resolve.fallback.dns = false;
       config.resolve.fallback.fs = false;
     }
-
     return config;
   },
   env: {
@@ -55,7 +60,6 @@ const nextConfig = {
     OTEL_EXPORTER_OTLP_TRACES_ENDPOINT,
     NEXT_PUBLIC_PLATFORM: ENV_PLATFORM,
     NEXT_PUBLIC_OTEL_SERVICE_NAME: OTEL_SERVICE_NAME,
-    NEXT_PUBLIC_OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: PUBLIC_OTEL_EXPORTER_OTLP_TRACES_ENDPOINT,
   },
   images: {
     loader: "custom",

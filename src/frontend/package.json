@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@grpc/grpc-js": "1.10.11",
+    "@honeycombio/opentelemetry-web": "^0.8.1",
     "@openfeature/flagd-provider": "0.13.1",
     "@openfeature/flagd-web-provider": "0.7.2",
     "@openfeature/react-sdk": "0.4.1",
@@ -26,6 +27,7 @@
     "@opentelemetry/exporter-trace-otlp-grpc": "0.52.1",
     "@opentelemetry/exporter-trace-otlp-http": "0.52.1",
     "@opentelemetry/instrumentation": "0.52.1",
+    "@opentelemetry/instrumentation-long-task": "^0.43.0",
     "@opentelemetry/instrumentation-pino": "^0.42.0",
     "@opentelemetry/resource-detector-alibaba-cloud": "0.28.10",
     "@opentelemetry/resource-detector-aws": "1.5.2",

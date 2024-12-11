@@ -1,69 +1,56 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-import { CompositePropagator, W3CBaggagePropagator, W3CTraceContextPropagator } from '@opentelemetry/core';
-import { WebTracerProvider } from '@opentelemetry/sdk-trace-web';
-import { BatchSpanProcessor } from '@opentelemetry/sdk-trace-base';
-import { registerInstrumentations } from '@opentelemetry/instrumentation';
-import { getWebAutoInstrumentations } from '@opentelemetry/auto-instrumentations-web';
-import { Resource, browserDetector } from '@opentelemetry/resources';
-import { SemanticResourceAttributes } from '@opentelemetry/semantic-conventions';
-import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-http';
-import { SessionIdProcessor } from './SessionIdProcessor';
-import { detectResourcesSync } from '@opentelemetry/resources/build/src/detect-resources';
-import { ZoneContextManager } from '@opentelemetry/context-zone';
+'use client';
 
-const {
-  NEXT_PUBLIC_OTEL_SERVICE_NAME = '',
-  NEXT_PUBLIC_OTEL_EXPORTER_OTLP_TRACES_ENDPOINT = '',
-  IS_SYNTHETIC_REQUEST = '',
-} = typeof window !== 'undefined' ? window.ENV : {};
+import {HoneycombWebSDK} from "@honeycombio/opentelemetry-web";
+import {getWebAutoInstrumentations} from "@opentelemetry/auto-instrumentations-web";
+import {useRef} from "react";
+import {ZoneContextManager} from "@opentelemetry/context-zone";
 
-const FrontendTracer = (collectorString: string) => {
-  let resource = new Resource({
-    [SemanticResourceAttributes.SERVICE_NAME]: NEXT_PUBLIC_OTEL_SERVICE_NAME,
-  });
+// we need to only run this on the client, actions like SSR will fail with an error
+const componentType = typeof window === 'undefined' ? 'server' : 'client';
 
-  const detectedResources = detectResourcesSync({ detectors: [browserDetector] });
-  resource = resource.merge(detectedResources);
-  const provider = new WebTracerProvider({ resource });
+const configDefaults = {
+  ignoreNetworkEvents: true
+}
 
-  provider.addSpanProcessor(new SessionIdProcessor());
+export default function FrontendTracer() {
+  console.log(`I am rendering in ${typeof window === 'undefined' ? 'server' : 'window'}`)
 
-  provider.addSpanProcessor(
-    new BatchSpanProcessor(
-      new OTLPTraceExporter({
-        url: NEXT_PUBLIC_OTEL_EXPORTER_OTLP_TRACES_ENDPOINT || collectorString || 'http://localhost:4318/v1/traces',
-      }),
-      {
-        scheduledDelayMillis: 500,
-      }
-    )
-  );
+  const apiRef = useRef<HoneycombWebSDK| null>(null);
 
-  const contextManager = new ZoneContextManager();
+  // if not on client check 2
+  if (componentType === 'server') {
+    console.log('Ken checks - did we try to ssr this client component? Abort early.');
+    return null;
+  }
 
-  provider.register({
-    contextManager,
-    propagator: new CompositePropagator({
-      propagators: [new W3CBaggagePropagator(), new W3CTraceContextPropagator()],
-    }),
-  });
-
-  registerInstrumentations({
-    tracerProvider: provider,
-    instrumentations: [
-      getWebAutoInstrumentations({
-        '@opentelemetry/instrumentation-fetch': {
-          propagateTraceHeaderCorsUrls: /.*/,
-          clearTimingResources: true,
-          applyCustomAttributesOnSpan(span) {
-            span.setAttribute('app.synthetic_request', IS_SYNTHETIC_REQUEST);
-          },
-        },
-      }),
-    ],
-  });
-};
-
-export default FrontendTracer;
+  if (!apiRef.current) {
+    try {
+      // doesn't specify SDK endpoint, defaults to us v1/traces endpoint
+      apiRef.current = new HoneycombWebSDK({
+        contextManager: new ZoneContextManager(),
+        endpoint: '/otlp-http/v1/traces',
+        serviceName: 'frontend-web',
+        instrumentations: [
+          getWebAutoInstrumentations({
+            // Loads custom configuration for xml-http-request instrumentation.
+            '@opentelemetry/instrumentation-xml-http-request': configDefaults,
+            '@opentelemetry/instrumentation-fetch': configDefaults,
+            '@opentelemetry/instrumentation-document-load': configDefaults,
+            '@opentelemetry/instrumentation-user-interaction': {enabled: true}
+          }),
+        ],
+      });
+      apiRef.current.start();
+    } catch (e) {
+      console.log(`rendering... ${new Date().toISOString()}`);
+      console.error(e);
+      // fail silently to the UI but keep on truckin'
+      return null;
+    }
+    // render nothing
+    return null;
+  }
+}
