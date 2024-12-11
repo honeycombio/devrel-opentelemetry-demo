@@ -22,3 +22,9 @@ set -x
 
 # maybe someday the container registry name will change, but this is what it is now
 skaffold run -d mainacra1e0ec0b.azurecr.io -b $SERVICES --port-forward=user -l skaffold.dev/run-id=static
+
+# note: if the output ends with
+#   Error: UPGRADE FAILED: another operation (install/upgrade/rollback) is in progress
+# then do something like this:
+#   helm rollback -n  jessicakerr-local jessicakerr
+# maybe later I can get this to print usefully
