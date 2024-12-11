@@ -6,7 +6,7 @@ SERVICES=$*
 if [[ -z "$SERVICES" ]]; then
   SERVICES="regalions" # developer regalions
   echo "************************************"
-  echo "     Not building any services"
+  echo "     Using all default services"
   echo "************************************"
 fi
 
