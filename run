@@ -1,12 +1,11 @@
 #/bin/bash
 
-set -x
+set -e 
 
 SERVICES=$*
-if [[ -n "$SERVICES" ]]; then
-  echo "building services: $SERVICES"
-  SERVICES="-b $SERVICES" # developer regalions
-  echo "building services: $SERVICES"
+if [[ -z "$SERVICES" ]]; then
+  SERVICES="regalions" # developer regalions
+  echo "Not building any services"
 fi
 
 if [[ -z "$HONEYCOMB_API_KEY" ]]; then
@@ -14,12 +13,10 @@ if [[ -z "$HONEYCOMB_API_KEY" ]]; then
   exit 1
 fi
 
-# make sure we're logged in to the damn image repository
-# TODO: the list succeeds just fine if we're not logged in. f u chatgpt
-# the list check takes 1s; logging in takes like 6
+echo "Logging in to ACR, because it's so annoying when we forget."
 scripts/login-acr.sh
 
-# set -x
+set -x
 
 # maybe someday the container registry name will change, but this is what it is now
-skaffold run -d mainacra1e0ec0b.azurecr.io $SERVICES --port-forward=user -l skaffold.dev/run-id=static
+skaffold run -d mainacra1e0ec0b.azurecr.io -b $SERVICES --port-forward=user -l skaffold.dev/run-id=static
