@@ -5,7 +5,9 @@ set -e
 SERVICES=$*
 if [[ -z "$SERVICES" ]]; then
   SERVICES="regalions" # developer regalions
-  echo "Not building any services"
+  echo "************************************"
+  echo "     Not building any services"
+  echo "************************************"
 fi
 
 if [[ -z "$HONEYCOMB_API_KEY" ]]; then
