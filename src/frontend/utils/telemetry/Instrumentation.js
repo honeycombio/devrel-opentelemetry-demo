@@ -7,10 +7,9 @@
 // settings. I have not tested that.
 
 const otelsdk = require('@opentelemetry/sdk-node');
-const opentelemetry = require('@opentelemetry/api');
 const { getNodeAutoInstrumentations } = require('@opentelemetry/auto-instrumentations-node');
 const { OTLPTraceExporter } = require('@opentelemetry/exporter-trace-otlp-grpc');
-const { OTLPLogExporter } = require('@opentelemetry/exporter-logs-otlp-http');
+//const { OTLPLogExporter } = require('@opentelemetry/exporter-logs-otlp-http');
 const { awsEc2Detector, awsEksDetector } = require('@opentelemetry/resource-detector-aws');
 const { containerDetector } = require('@opentelemetry/resource-detector-container');
 const { gcpDetector } = require('@opentelemetry/resource-detector-gcp');
