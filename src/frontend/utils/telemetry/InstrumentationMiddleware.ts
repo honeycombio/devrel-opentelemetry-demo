@@ -43,14 +43,17 @@ const InstrumentationMiddleware = (handler: NextApiHandler, opts: Options = { be
       pinoLogger.info({
         message: 'Request handled',
         'log.source': 'pino',
+        'log.location': 'InstrumentationMiddleware.ts',
         'http.method': method,
         'http.target': target,
         'http.status_code': httpStatus,
+        'log.severity': 'info',
         duration_ms: Date.now() - startTime,
       });
       bunyanLogger.info({
         message: 'Request handled',
         'log.source': 'bunyan',
+        'log.location': 'InstrumentationMiddleware.ts',
         'http.method': method,
         'http.target': target,
         'http.status_code': httpStatus,
@@ -65,6 +68,8 @@ const InstrumentationMiddleware = (handler: NextApiHandler, opts: Options = { be
         'http.method': method,
         'http.target': target,
         'http.status_code': httpStatus,
+        'log.location': 'InstrumentationMiddleware.ts',
+        'log.severity': 'error',
         duration_ms: Date.now() - startTime,
       });
       bunyanLogger.error({
@@ -74,6 +79,7 @@ const InstrumentationMiddleware = (handler: NextApiHandler, opts: Options = { be
         'http.target': target,
         'http.status_code': httpStatus,
         'error.message': (error as Error).message,
+        'log.location': 'InstrumentationMiddleware.ts',
         'log.severity': 'error',
         duration_ms: Date.now() - startTime,
       });
