@@ -95,6 +95,15 @@ opentelemetry-collector:
               - set(severity_text, "INFO") where attributes["log.severity"] == "info"
               - set(severity_number, 9) where attributes["log.severity"] == "info"
               - set(attributes["collector.transform.filelog_severity"], "v1")
+      transform/pino_trace_fields:
+        error_mode: ignore
+        log_statements:
+          - context: log
+            conditions:
+              - attributes["trace_id"] != nil and attributes["trace.trace_id"] == nil
+            statements:
+              - set(attributes["trace.trace_id"], attributes["trace_id"])
+              - set(attributes["trace.parent_id"], attributes["span_id"])
       transform/service_names:
         error_mode: ignore
         log_statements:
@@ -169,6 +178,7 @@ opentelemetry-collector:
             - transform/service_names
             - transform/access_log_severity
             - transform/filelog_severity
+            - transform/pino_trace_fields
             - transform/attribution
         traces:
           exporters:
