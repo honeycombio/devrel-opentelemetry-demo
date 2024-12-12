@@ -44,16 +44,6 @@ opentelemetry-collector:
         include:
           - /var/log/pods/${env:NAMESPACE}_*/*/*.log
     processors:
-      transform/otlp-receiver-attribution:
-        log_statements:
-          - context: resource
-            statements:
-              - set(attributes["collector.receiver"], "otlp")
-      transform/filelog-receiver-attribution:
-        log_statements:
-          - context: resource
-            statements:
-              - set(attributes["collector.receiver"], "filelog")
       transform/attribution:
         log_statements:
           - context: resource
@@ -171,16 +161,6 @@ opentelemetry-collector:
         logs:
           receivers:
             - otlp
-          exporters:
-            - otlp/logging
-          processors:
-            - transform/parse_json_body
-            - transform/service_names
-            - transform/access_log_severity
-            - transform/attribution
-            - transform/otlp-receiver-attribution
-        logs/file:
-          receivers:
             - filelog
           exporters:
             - otlp/logging
@@ -190,7 +170,6 @@ opentelemetry-collector:
             - transform/access_log_severity
             - transform/filelog_severity
             - transform/attribution
-            - transform/filelog-receiver-attribution
         traces:
           exporters:
             - otlp/traces
