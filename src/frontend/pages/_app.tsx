@@ -13,7 +13,7 @@ import { OpenFeature, OpenFeatureProvider } from '@openfeature/react-sdk';
 import SessionGateway from '../gateways/Session.gateway';
 import { FlagdWebProvider } from '@openfeature/flagd-web-provider';
 
-console.log(`Initializing _app 1`);
+console.log('Initializing _app');
 
 declare global {
   interface Window {
