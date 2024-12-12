@@ -104,6 +104,7 @@ opentelemetry-collector:
             statements:
               - set(attributes["trace.trace_id"], attributes["trace_id"])
               - set(attributes["trace.parent_id"], attributes["span_id"])
+              - set(attributes["meta.annotation_type"], "span_event")
       transform/service_names:
         error_mode: ignore
         log_statements:
