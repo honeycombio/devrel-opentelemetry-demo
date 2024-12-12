@@ -14,7 +14,13 @@ const handler = async ({ method, query }: NextApiRequest, res: NextApiResponse<T
   switch (method) {
     case 'GET': {
       const { productIds = [], sessionId = '', currencyCode = '' } = query;
-      logger.info({ inputProductIds: JSON.stringify(productIds), session_id: sessionId, "app.currency": currencyCode });
+      logger.info({ message: "recommendations", 
+        inputProductIds: JSON.stringify(productIds), 
+        session_id: sessionId, 
+        "log.source": "pino",
+        "log.location": "recommendations.ts",
+        "log.severity": "info",
+        "app.currency": currencyCode });
       const { productIds: productList } = await RecommendationsGateway.listRecommendations(
         sessionId as string,
         productIds as string[]

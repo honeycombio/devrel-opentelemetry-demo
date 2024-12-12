@@ -50,7 +50,7 @@ config:
           endpoint: 0.0.0.0:4318
     filelog:
       include:
-      - /var/log/pods/${env:NAMESPACE}_*/*/*.log
+        - /var/log/pods/${env:NAMESPACE}_*/*/*.log
   processors:
     transform/service_names:
       error_mode: ignore
@@ -70,6 +70,19 @@ config:
           statements:
             - set(attributes["service.name"], "api-gateway") where attributes["service.name"] == "frontend"
             - set(attributes["service.name"], "ingress-gateway") where attributes["service.name"] == "frontendproxy"
+    transform/attribution:
+      log_statements:
+        - context: resource
+          statements:
+            - set(attributes["collector.name"], "daemonset-collector")
+      metric_statements:
+        - context: resource
+          statements:
+            - set(attributes["collector.name"], "daemonset-collector")
+      trace_statements:
+        - context: resource
+          statements:
+            - set(attributes["collector.name"], "daemonset-collector")
     transform/access_log_severity:
       error_mode: ignore
       log_statements:
@@ -84,6 +97,30 @@ config:
             - set(severity_text, "INFO") where Int(attributes["http.response.status_code"]) < 400
             - set(severity_number, 9) where Int(attributes["http.response.status_code"]) < 400
             - set(attributes["demo.telemetry.transform.access_log_severity"], "v4")
+    transform/filelog_severity:
+      error_mode: ignore
+      log_statements:
+        - context: log
+          conditions:
+            - attributes["log.severity"] != nil
+          statements:
+            - set(severity_text, "ERROR") where attributes["log.severity"] == "error"
+            - set(severity_number, 17) where attributes["log.severity"] == "error"
+            - set(severity_text, "WARN") where attributes["log.severity"] == "warn"
+            - set(severity_number, 13) where attributes["log.severity"] == "warn"
+            - set(severity_text, "INFO") where attributes["log.severity"] == "info"
+            - set(severity_number, 9) where attributes["log.severity"] == "info"
+            - set(attributes["collector.transform.filelog_severity"], "v1")
+    transform/pino_trace_fields:
+      error_mode: ignore
+      log_statements:
+        - context: log
+          conditions:
+            - attributes["trace_id"] != nil and attributes["trace.trace_id"] == nil
+          statements:
+            - set(attributes["trace.trace_id"], attributes["trace_id"])
+            - set(attributes["trace.parent_id"], attributes["span_id"])
+            - set(attributes["meta.annotation_type"], "span_event")
     transform/parse_json_body:
       error_mode: ignore
       log_statements:
@@ -139,30 +176,33 @@ config:
   service:
     pipelines:
       metrics:
-        exporters: 
+        exporters:
           - otlp/metrics
           - otlp/metrics-dogfood
         processors:
           - transform/service_names
       logs:
-        exporters: 
+        exporters:
           - otlp/logging
           - otlp/logging-dogfood
         processors:
           - transform/parse_json_body
           - transform/service_names
           - transform/access_log_severity
+          - transform/filelog_severity
+          - transform/pino_trace_fields
+          - transform/attribution
       traces:
-        exporters: 
+        exporters:
           - otlp/traces
           - otlp/traces-dogfood
         processors:
           - transform/service_names
-          
+
 clusterRole:
   create: true
   rules:
-    - apiGroups: 
+    - apiGroups:
         - ""
       resources:
         - nodes/proxy
