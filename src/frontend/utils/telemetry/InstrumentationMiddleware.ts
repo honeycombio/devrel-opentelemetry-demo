@@ -50,16 +50,16 @@ const InstrumentationMiddleware = (handler: NextApiHandler, opts: Options = { be
         'log.severity': 'info',
         duration_ms: Date.now() - startTime,
       });
-      bunyanLogger.info({
-        message: 'Request handled',
-        'log.source': 'bunyan',
-        'log.location': 'InstrumentationMiddleware.ts',
-        'http.method': method,
-        'http.target': target,
-        'http.status_code': httpStatus,
-        'log.severity': 'info',
-        duration_ms: Date.now() - startTime,
-      });
+      // bunyanLogger.info({
+      //   message: 'Request handled',
+      //   'log.source': 'bunyan',
+      //   'log.location': 'InstrumentationMiddleware.ts',
+      //   'http.method': method,
+      //   'http.target': target,
+      //   'http.status_code': httpStatus,
+      //   'log.severity': 'info',
+      //   duration_ms: Date.now() - startTime,
+      // });
       httpStatus = response.statusCode;
     } catch (error) {
       pinoLogger.error({
@@ -72,17 +72,17 @@ const InstrumentationMiddleware = (handler: NextApiHandler, opts: Options = { be
         'log.severity': 'error',
         duration_ms: Date.now() - startTime,
       });
-      bunyanLogger.error({
-        message: 'Request handled',
-        'log.source': 'bunyan',
-        'http.method': method,
-        'http.target': target,
-        'http.status_code': httpStatus,
-        'error.message': (error as Error).message,
-        'log.location': 'InstrumentationMiddleware.ts',
-        'log.severity': 'error',
-        duration_ms: Date.now() - startTime,
-      });
+      // bunyanLogger.error({
+      //   message: 'Request handled',
+      //   'log.source': 'bunyan',
+      //   'http.method': method,
+      //   'http.target': target,
+      //   'http.status_code': httpStatus,
+      //   'error.message': (error as Error).message,
+      //   'log.location': 'InstrumentationMiddleware.ts',
+      //   'log.severity': 'error',
+      //   duration_ms: Date.now() - startTime,
+      // });
       span.recordException(error as Exception);
       span.setStatus({ code: SpanStatusCode.ERROR });
       httpStatus = 500;
