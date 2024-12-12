@@ -6,6 +6,7 @@ import { context, Exception, Span, SpanStatusCode, trace } from '@opentelemetry/
 import { SEMATTRS_HTTP_STATUS_CODE } from '@opentelemetry/semantic-conventions';
 import { metrics } from '@opentelemetry/api';
 import bunyan from 'bunyan';
+import { logger as pinoLogger } from '../logger';
 
 const meter = metrics.getMeter('frontend');
 const requestCounter = meter.createCounter('app.frontend.requests');
@@ -39,6 +40,14 @@ const InstrumentationMiddleware = (handler: NextApiHandler, opts: Options = { be
     let httpStatus = 200;
     try {
       await runWithSpan(span, async () => handler(request, response));
+      pinoLogger.info({
+        message: 'Request handled',
+        'log.source': 'pino',
+        'http.method': method,
+        'http.target': target,
+        'http.status_code': httpStatus,
+        duration_ms: Date.now() - startTime,
+      });
       bunyanLogger.info({
         message: 'Request handled',
         'log.source': 'bunyan',
@@ -50,6 +59,14 @@ const InstrumentationMiddleware = (handler: NextApiHandler, opts: Options = { be
       });
       httpStatus = response.statusCode;
     } catch (error) {
+      pinoLogger.error({
+        message: 'Request handled',
+        'log.source': 'pino',
+        'http.method': method,
+        'http.target': target,
+        'http.status_code': httpStatus,
+        duration_ms: Date.now() - startTime,
+      });
       bunyanLogger.error({
         message: 'Request handled',
         'log.source': 'bunyan',

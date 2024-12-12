@@ -27,7 +27,6 @@ const sdk = new otelsdk.NodeSDK({
   // here!
 
   traceExporter: new OTLPTraceExporter({
-    url: '/otlp-http/v1/traces',
   }),
   logRecordProcessor: new otelsdk.logs.BatchLogRecordProcessor(new OTLPLogExporter()),
   instrumentations: [
