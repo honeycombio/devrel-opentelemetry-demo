@@ -79,7 +79,7 @@ var demo = new OtelDemo("otel-demo", {
     domainName: "demo.onlyspans.com",
     namespace: demoNamespace.metadata.name,
     collectorHostName: podTelemetryCollector.collectorName,
-    demoVersion: "0.32.8",
+    demoVersion: "0.33.6",
     ingressClassName: ingressClassName
 }, { provider: provider });
 
