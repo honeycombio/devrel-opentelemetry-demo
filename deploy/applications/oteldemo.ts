@@ -1,6 +1,7 @@
 import * as pulumi from "@pulumi/pulumi";
 import { Release } from "@pulumi/kubernetes/helm/v3";
 import { Ingress } from "@pulumi/kubernetes/networking/v1/ingress";
+import { CustomResource } from "@pulumi/kubernetes/apiextensions";
 
 export interface OtelDemoArgs {
     domainName: pulumi.Input<string>;
@@ -44,6 +45,30 @@ export class OtelDemo extends pulumi.ComponentResource {
             valueYamlFiles: [new pulumi.asset.FileAsset("./config-files/demo/values.yaml")]
         }, { provider: opts.provider! });
 
+        var certificate = new CustomResource(`${name}-certificate`, {
+            apiVersion: "cert-manager.io/v1",
+            kind: "Certificate",
+            metadata: {
+                namespace: args.namespace,
+            },
+            spec: {
+                secretName: `www-${args.domainName}-tls`,
+                issuerRef: {
+                    name: `letsencrypt-prod-${args.domainName}`,
+                    kind: "ClusterIssuer"
+                },
+                commonName: `www.${args.domainName}`,
+                dnsNames: [`www.${args.domainName}`],
+                privateKey: {
+                    rotationPolicy: "Always"
+                },
+                usages: [
+                    "server auth",
+                    "digital signature",
+                    "key encipherment"
+                ]
+            }
+        }, { provider: opts.provider! });
 
         var ingress = new Ingress(`${name}-frontend-ingress`, {
             metadata: {
@@ -67,6 +92,10 @@ export class OtelDemo extends pulumi.ComponentResource {
                             }
                         }]
                     }
+                }],
+                tls: [{
+                    hosts: [`www.${args.domainName}`],
+                    secretName: `www-${args.domainName}-tls`
                 }]
             }
         }, {

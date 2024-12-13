@@ -76,7 +76,7 @@ var clusterTelemetryCollector = new Collector("cluster-telemetry-collector", {
 
 
 var demo = new OtelDemo("otel-demo", {
-    domainName: "demo.onlyspans.com",
+    domainName: "zurelia.honeydemo.io",
     namespace: demoNamespace.metadata.name,
     collectorHostName: podTelemetryCollector.collectorName,
     demoVersion: "0.33.6",
