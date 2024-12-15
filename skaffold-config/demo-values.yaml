@@ -4,6 +4,8 @@
 #
 ########################
 default:
+  image:
+    pullPolicy: Always
   replicas: 1
   # List of environment variables applied to all components
   envOverrides:
