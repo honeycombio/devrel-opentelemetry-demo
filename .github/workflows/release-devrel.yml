@@ -19,3 +19,26 @@ jobs:
       push: true
       version: ${{ github.ref_name }}
     secrets: inherit
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build_and_push_images
+
+    permissions:
+      contents: read
+
+    steps:
+      - uses: pulumi/auth-actions@v1
+        with:
+          organization: ${{ secrets.PULUMI_ORG }}
+          requested-token-type: urn:pulumi:token-type:access_token:organization
+
+      # run a pulumi stack select and config refresh
+      - run: |
+          pulumi config refresh --stack ${{ secrets.PULUMI_ORG }}/prod
+
+      - uses: pulumi/actions@v5
+        with:
+          command: up
+          stack-name: ${{ secrets.PULUMI_ORG }}/prod
+          work-dir: deploy
