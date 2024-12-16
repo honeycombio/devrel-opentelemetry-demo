@@ -36,7 +36,7 @@ jobs:
         with:
           organization: ${{ secrets.PULUMI_ORG }}
           requested-token-type: urn:pulumi:token-type:access_token:personal
-          scope: team:${{ github.actor }}
+          scope: user:${{ github.actor }}
 
       # run a pulumi stack select and config refresh
       - run: |
