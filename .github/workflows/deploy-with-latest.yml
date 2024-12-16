@@ -35,8 +35,8 @@ jobs:
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
       - run: |
+          ls
           pulumi config refresh --stack ${{ secrets.PULUMI_ORG }}/prod
-        working-directory: ./deploy
 
       - uses: pulumi/actions@v6
         with:
