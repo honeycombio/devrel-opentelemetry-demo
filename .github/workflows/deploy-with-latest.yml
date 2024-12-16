@@ -39,6 +39,10 @@ jobs:
           pulumi config refresh --stack ${{ secrets.PULUMI_ORG }}/prod
         working-directory: deploy
 
+      - run: |
+          npm ci
+        working-directory: deploy
+
       - uses: pulumi/actions@v6
         with:
           command: up
