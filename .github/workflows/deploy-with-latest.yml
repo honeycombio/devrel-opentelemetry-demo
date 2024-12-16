@@ -25,11 +25,12 @@ jobs:
         with:
           organization: ${{ secrets.PULUMI_ORG }}
           requested-token-type: urn:pulumi:token-type:access_token:personal
-          scope: user:martinjt
+          scope: user:${{ github.actor }}
 
       # run a pulumi stack select and config refresh
       - run: |
           pulumi config refresh --stack ${{ secrets.PULUMI_ORG }}/prod
+        working-directory: deploy
 
       - uses: pulumi/actions@v5
         with:
