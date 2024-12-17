@@ -9,6 +9,7 @@ export interface OtelDemoArgs {
     collectorHostName: pulumi.Output<string>;
     demoVersion: pulumi.Input<string>;
     ingressClassName: pulumi.Input<string>;
+    containerTag: pulumi.Input<string>;
 }
 
 export class OtelDemo extends pulumi.ComponentResource {
@@ -28,7 +29,10 @@ export class OtelDemo extends pulumi.ComponentResource {
                         "name": "OTEL_COLLECTOR_NAME",
                         "value": args.collectorHostName
                     }
-                ]
+                ],
+                "image": {
+                    "tag": args.containerTag
+                }
             }
         };
 

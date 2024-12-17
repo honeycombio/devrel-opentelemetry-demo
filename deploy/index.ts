@@ -10,6 +10,7 @@ const apiKey = config.require("honeycombApiKey");
 const dogfoodApiKey = config.require("honeycombApiKeyDogfood");
 const ingressClassName = config.require("ingressClassName");
 const infrastack = new pulumi.StackReference("honeycomb-devrel/infra-azure/prod");
+const containerTag = config.get("container-tag") || "latest";
 
 const demoClusterResourceGroup = infrastack.getOutput("clusterResourceGroup");
 const demoClusterName = infrastack.getOutput("clusterName");
@@ -80,6 +81,7 @@ var demo = new OtelDemo("otel-demo", {
     namespace: demoNamespace.metadata.name,
     collectorHostName: podTelemetryCollector.collectorName,
     demoVersion: "0.33.6",
+    containerTag: containerTag,
     ingressClassName: ingressClassName
 }, { provider: provider });
 
