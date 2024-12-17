@@ -37,6 +37,7 @@ jobs:
 
       - run: |
           pulumi config refresh --stack ${{ secrets.PULUMI_ORG }}/prod
+          cat Pulumi.prod.yaml
         working-directory: deploy
 
       - run: |
