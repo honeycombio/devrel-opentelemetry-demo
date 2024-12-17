@@ -28,6 +28,7 @@ jobs:
           organization: ${{ secrets.PULUMI_ORG }}
           requested-token-type: urn:pulumi:token-type:access_token:personal
           scope: user:${{ github.actor }}
+          token-expiration: 600
       - name: Azure Login
         uses: azure/login@v1
         with:
@@ -38,22 +39,16 @@ jobs:
       - run: |
           pulumi stack select --stack ${{ secrets.PULUMI_ORG }}/prod --non-interactive
           pulumi config refresh --non-interactive
-          cat Pulumi.prod.yaml
         working-directory: deploy
 
       - run: |
           npm ci
         working-directory: deploy
 
-      - uses: pulumi/auth-actions@v1
-        with:
-          organization: ${{ secrets.PULUMI_ORG }}
-          requested-token-type: urn:pulumi:token-type:access_token:personal
-          scope: user:${{ github.actor }}
       - uses: pulumi/actions@v5
         with:
           command: up
-          stack-name: honeycomb-devrel/prod
+          stack-name: ${{ secrets.PULUMI_ORG }}/prod
           work-dir: deploy
           config-map: |
             devrel-opentelemetry-demo:container-tag: latest
