@@ -36,7 +36,8 @@ jobs:
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
       - run: |
-          pulumi config refresh --stack ${{ secrets.PULUMI_ORG }}/prod
+          pulumi stack select --stack ${{ secrets.PULUMI_ORG }}/prod --non-interactive
+          pulumi config refresh --non-interactive
           cat Pulumi.prod.yaml
         working-directory: deploy
 
