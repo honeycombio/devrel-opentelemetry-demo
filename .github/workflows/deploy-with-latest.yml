@@ -45,7 +45,7 @@ jobs:
           npm ci
         working-directory: deploy
 
-      - uses: pulumi/actions@v6
+      - uses: pulumi/actions@v5
         with:
           command: up
           stack-name: honeycomb-devrel/prod
