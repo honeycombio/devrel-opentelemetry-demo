@@ -48,7 +48,7 @@ jobs:
       - uses: pulumi/actions@v6
         with:
           command: up
-          stack-name: ${{ secrets.PULUMI_ORG }}/prod
+          stack-name: honeycomb-devrel/prod
           work-dir: deploy
           config-map: |
             devrel-opentelemetry-demo:container-tag: latest
