@@ -93,6 +93,7 @@ deploy:
         namespace: "{{.USER}}-local"
         repo: https://open-telemetry.github.io/opentelemetry-helm-charts
         remoteChart: opentelemetry-demo
+        version: 0.33.7
         recreatePods: false
         skipBuildDependencies: false
         valuesFiles:
