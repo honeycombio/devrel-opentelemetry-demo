@@ -10173,7 +10173,7 @@ spec:
               value: http://$(OTEL_COLLECTOR_NAME):4317
             - name: WEB_OTEL_SERVICE_NAME
               value: frontend-web
-            - name: PUBLIC_OTEL_EXPORTER_OTLP_TRACES_ENDPOINT
+            - name: NEXT_PUBLIC_OTEL_EXPORTER_OTLP_TRACES_ENDPOINT
               value: http://localhost:8080/otlp-http/v1/traces
             - name: OTEL_RESOURCE_ATTRIBUTES
               value: service.name=$(OTEL_SERVICE_NAME),service.namespace=opentelemetry-demo,service.version=1.12.0

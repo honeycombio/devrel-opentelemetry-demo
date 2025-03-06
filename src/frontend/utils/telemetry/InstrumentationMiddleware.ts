@@ -23,7 +23,9 @@ const InstrumentationMiddleware = (handler: NextApiHandler, opts: Options = { be
     const { method, url = '' } = request;
     const [target] = url.split('?');
 
-    const span = trace.getSpan(context.active()) as Span;
+    const span = trace.getActiveSpan() as Span;
+
+    if (!span) throw new Error('NO SPAN');
 
     const memoryUsage = recordMemoryUsage();
     span?.setAttributes({
@@ -61,7 +63,10 @@ const InstrumentationMiddleware = (handler: NextApiHandler, opts: Options = { be
       //   duration_ms: Date.now() - startTime,
       // });
       httpStatus = response.statusCode;
+      span?.setAttribute(SEMATTRS_HTTP_STATUS_CODE, httpStatus);
     } catch (error) {
+      // TODO remove maybe this helps find the problem
+      console.error(error);
       pinoLogger.error({
         message: 'Request handled',
         'log.source': 'pino',
@@ -83,13 +88,13 @@ const InstrumentationMiddleware = (handler: NextApiHandler, opts: Options = { be
       //   'log.severity': 'error',
       //   duration_ms: Date.now() - startTime,
       // });
-      span.recordException(error as Exception);
-      span.setStatus({ code: SpanStatusCode.ERROR });
       httpStatus = 500;
+      span?.setAttribute(SEMATTRS_HTTP_STATUS_CODE, httpStatus);
+      span?.setStatus({ code: SpanStatusCode.ERROR });
+      span?.recordException(error as Exception);
       throw error;
     } finally {
       requestCounter.add(1, { method, target, status: httpStatus });
-      span.setAttribute(SEMATTRS_HTTP_STATUS_CODE, httpStatus);
     }
   };
 };

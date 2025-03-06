@@ -11,7 +11,8 @@ import {ZoneContextManager} from "@opentelemetry/context-zone";
 const componentType = typeof window === 'undefined' ? 'server' : 'client';
 
 const configDefaults = {
-  ignoreNetworkEvents: true
+  ignoreNetworkEvents: true,
+  propagateTraceHeaderCorsUrls: [ /^(.+)$/ ]
 }
 
 export default function FrontendTracer() {
@@ -24,11 +25,19 @@ export default function FrontendTracer() {
   // we do nothing here.
     try {
       // doesn't specify SDK endpoint, defaults to us v1/traces endpoint
-      const apiRef = new HoneycombWebSDK({
+      const sdk = new HoneycombWebSDK({
         contextManager: new ZoneContextManager(),
-        endpoint: '/otlp-http/v1/traces',
+        // TODO - grab from env - should be NEXT_PUBLIC_OTEL_EXPORTER_OTLP_TRACES_ENDPOINT but
+        // fixing that in the /kubernetes/opentelemetry-demo.yaml file and redeploying doesn't
+        // seem to expose it to the runtime. I think this is a "bake it into the next.js build" issue
+        // via https://nextjs.org/docs/pages/building-your-application/configuring/environment-variables#bundling-environment-variables-for-the-browser
+        // - and if so, that'll require more thinky pain.
+
+        // for now, since it's relative to the browser root in the reverse proxy's exposed URIs
+        // use that
+        endpoint: `${window.location.protocol}//${window.location.host}/otlp-http/v1/traces`,
         serviceName: 'frontend-web',
-        skipOptionsValidation: true,
+        // skipOptionsValidation: true,
         instrumentations: [
           getWebAutoInstrumentations({
             // Loads custom configuration for xml-http-request instrumentation.
@@ -39,11 +48,11 @@ export default function FrontendTracer() {
           }),
         ],
       });
-      apiRef.start();
+      sdk.start();
+      console.log("Frontend tracer is configured and running.");
     } catch (e) {
-      console.log(`rendering... ${new Date().toISOString()}`);
+      console.log(`error... ${new Date().toISOString()}`);
       console.error(e);
-      // fail silently in log but let the UI keep on moving
     }
     // render nothing, just use this to instrument
     return null;

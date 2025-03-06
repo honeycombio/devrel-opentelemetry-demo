@@ -36,8 +36,9 @@ const {
 const nextConfig = {
   reactStrictMode: true,
   output: 'standalone',
+
   compiler: {
-    styledComponents: true,
+    styledComponents: true
   },
   webpack: (config, { isServer }) => {
     if (!isServer) {
