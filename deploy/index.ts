@@ -3,6 +3,7 @@ import * as kubernetes from "@pulumi/kubernetes";
 import { Secret } from "@pulumi/kubernetes/core/v1/secret";
 import { Collector } from "./applications/collector";
 import { OtelDemo } from "./applications/oteldemo";
+import { TelemetryPipeline } from "./applications/telemetry-pipeline";
 import { listManagedClusterUserCredentialsOutput } from "@pulumi/azure-native/containerservice";
 
 const config = new pulumi.Config();
@@ -11,6 +12,9 @@ const dogfoodApiKey = config.require("honeycombApiKeyDogfood");
 const ingressClassName = config.require("ingressClassName");
 const infrastack = new pulumi.StackReference("honeycomb-devrel/infra-azure/prod");
 const containerTag = config.get("container-tag") || "latest";
+const pipelineManagementApiKey = config.require("pipelineManagementApiKey");
+const pipelineManagementApiKeyId = config.require("pipelineManagementApiKeyId");
+const pipelineApiKey = config.require("pipelineApiKey");
 
 const demoClusterResourceGroup = infrastack.getOutput("clusterResourceGroup");
 const demoClusterName = infrastack.getOutput("clusterName");
@@ -55,6 +59,15 @@ const secretDogfoodApiKey = new Secret("honey-dogfood", {
         ["honeycomb-api-key"]: dogfoodApiKey
     }
 }, { provider: provider })
+
+
+var telemetryPipeline = new TelemetryPipeline("telemetry-pipeline", {
+    namespace: demoNamespace.metadata.name,
+    pipelineHoneycombApiKey: pipelineApiKey,
+    pipelineHoneycombManagementApiKey: pipelineManagementApiKey,
+    pipelineHoneycombManagementApiKeyId: pipelineManagementApiKeyId,
+    useDogfood: true
+}, { provider: provider });
 
 var podTelemetryCollector = new Collector("pod-telemetry-collector", {
     collectorHelmVersion: "0.107.0",
