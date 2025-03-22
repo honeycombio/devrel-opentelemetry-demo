@@ -61,7 +61,7 @@ function MyApp({ Component, pageProps }: AppProps) {
     // it look different than client-side. The quick fix for this page is to just defer
     // full-blown app creation until we hit the client, where session exists.
     // It works, but I'm not happy about it. Compared many things but could not find
-    // the cause.
+    // the causes.
     const [started, setStarted] = useState(false);
     useEffect(() => {
         setStarted(true);
