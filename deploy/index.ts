@@ -5,6 +5,7 @@ import { Collector } from "./applications/collector";
 import { OtelDemo } from "./applications/oteldemo";
 import { TelemetryPipeline } from "./applications/telemetry-pipeline";
 import { listManagedClusterUserCredentialsOutput } from "@pulumi/azure-native/containerservice";
+import { Refinery } from "./applications/refinery";
 
 const config = new pulumi.Config();
 const apiKey = config.require("honeycombApiKey");
@@ -15,6 +16,7 @@ const containerTag = config.get("container-tag") || "latest";
 const pipelineManagementApiKey = config.require("pipelineManagementApiKey");
 const pipelineManagementApiKeyId = config.require("pipelineManagementApiKeyId");
 const pipelineApiKey = config.require("pipelineApiKey");
+const refineryTelemetryApiKey = config.require("refineryTelemetryApiKey");
 
 const demoClusterResourceGroup = infrastack.getOutput("clusterResourceGroup");
 const demoClusterName = infrastack.getOutput("clusterName");
@@ -69,6 +71,11 @@ var telemetryPipeline = new TelemetryPipeline("telemetry-pipeline", {
     useDogfood: true
 }, { provider: provider });
 
+var refinery = new Refinery("refinery", {
+    namespace: demoNamespace.metadata.name,
+    telemetryApiKey: refineryTelemetryApiKey
+}, { provider: provider });
+
 var podTelemetryCollector = new Collector("pod-telemetry-collector", {
     collectorHelmVersion: "0.107.0",
     namespace: demoNamespace.metadata.name,
@@ -76,8 +83,6 @@ var podTelemetryCollector = new Collector("pod-telemetry-collector", {
     honeycombDogfoodSecret: secretDogfoodApiKey,
     valuesFile: "./config-files/collector/values-daemonset.yaml"
 }, { provider: provider });
-
-
 
 var clusterTelemetryCollector = new Collector("cluster-telemetry-collector", {
     collectorHelmVersion: "0.107.0",
