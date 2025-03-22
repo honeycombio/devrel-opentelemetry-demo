@@ -6,6 +6,7 @@
 import {HoneycombWebSDK} from "@honeycombio/opentelemetry-web";
 import {getWebAutoInstrumentations} from "@opentelemetry/auto-instrumentations-web";
 import {ZoneContextManager} from "@opentelemetry/context-zone";
+import { SessionIdProcessor } from './SessionIdProcessor';
 
 // Determine where this is being mounted
 const componentType = typeof window === 'undefined' ? 'server' : 'client';
@@ -15,14 +16,21 @@ const configDefaults = {
   propagateTraceHeaderCorsUrls: [ /^(.+)$/ ]
 }
 
+// singleton - only instrument 1x - see below
+let loaded = false;
+
 export default function FrontendTracer() {
-  // we need to only run this on the client, actions like SSR will fail with an error
+
+ // we need to only run this on the client, actions like SSR will fail with an error
   if (componentType === 'server') {
     return null;
   }
 
-  // only instrument 1x. If we've already mounted the component and set up the ref, 
-  // we do nothing here.
+  // for singleton pattern - for some reason the browser is reloading the frontend component,
+  // so this prevents it from doing so
+  if (!loaded) {
+    // until we can expose client-side session.id from HoneycombWebSDK, we'll use the pre-built SessionGateway API
+    loaded = true;
     try {
       // doesn't specify SDK endpoint, defaults to us v1/traces endpoint
       const sdk = new HoneycombWebSDK({
@@ -37,7 +45,7 @@ export default function FrontendTracer() {
         // use that
         endpoint: `${window.location.protocol}//${window.location.host}/otlp-http/v1/traces`,
         serviceName: 'frontend-web',
-        // skipOptionsValidation: true,
+        skipOptionsValidation: true,
         instrumentations: [
           getWebAutoInstrumentations({
             // Loads custom configuration for xml-http-request instrumentation.
@@ -45,8 +53,10 @@ export default function FrontendTracer() {
             '@opentelemetry/instrumentation-fetch': configDefaults,
             '@opentelemetry/instrumentation-document-load': configDefaults,
             '@opentelemetry/instrumentation-user-interaction': {enabled: true}
-          }),
+          })
         ],
+
+        spanProcessors: [new SessionIdProcessor()],
       });
       sdk.start();
       console.log("Frontend tracer is configured and running.");
@@ -54,6 +64,7 @@ export default function FrontendTracer() {
       console.log(`error... ${new Date().toISOString()}`);
       console.error(e);
     }
-    // render nothing, just use this to instrument
-    return null;
+  }
+  // render nothing, just use this to instrument
+  return null;
 }
