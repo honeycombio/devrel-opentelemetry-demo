@@ -81,7 +81,8 @@ var podTelemetryCollector = new Collector("pod-telemetry-collector", {
     namespace: demoNamespace.metadata.name,
     honeycombSecret: secretApiKey,
     honeycombDogfoodSecret: secretDogfoodApiKey,
-    valuesFile: "./config-files/collector/values-daemonset.yaml"
+    valuesFile: "./config-files/collector/values-daemonset.yaml",
+    refineryHostname: refinery.refineryHostname
 }, { provider: provider });
 
 var clusterTelemetryCollector = new Collector("cluster-telemetry-collector", {

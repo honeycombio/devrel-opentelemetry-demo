@@ -69,7 +69,7 @@ export class Refinery extends pulumi.ComponentResource {
             values: values,
         }, { provider: opts.provider!});
 
-        this.refineryHostname = pulumi.interpolate `${args.namespace}.${refinery.name}`;
+        this.refineryHostname = pulumi.interpolate `${refinery.name}.${args.namespace}`;
     }
 
 }
