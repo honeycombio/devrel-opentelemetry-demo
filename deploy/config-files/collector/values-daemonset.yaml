@@ -170,6 +170,13 @@ config:
         x-honeycomb-team: ${HONEYCOMB_API_KEY_DOGFOOD}
         x-honeycomb-dataset: service-logs
 
+
+    otlp/refinery:
+      endpoint: ${REFINERY_HOSTNAME}:4317
+      headers:
+        x-honeycomb-team: ${HONEYCOMB_API_KEY}
+      tls:
+        insecure: true
     debug:
       verbosity: detailed
 
@@ -183,8 +190,8 @@ config:
           - transform/service_names
       logs:
         exporters:
-          - otlp/logging
           - otlp/logging-dogfood
+          - otlp/refinery
         processors:
           - transform/parse_json_body
           - transform/service_names
@@ -192,10 +199,11 @@ config:
           - transform/filelog_severity
           - transform/pino_trace_fields
           - transform/attribution
+        
       traces:
         exporters:
-          - otlp/traces
           - otlp/traces-dogfood
+          - otlp/refinery
         processors:
           - transform/service_names
 
