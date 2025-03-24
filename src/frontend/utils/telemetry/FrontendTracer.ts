@@ -7,6 +7,7 @@ import {HoneycombWebSDK} from "@honeycombio/opentelemetry-web";
 import {getWebAutoInstrumentations} from "@opentelemetry/auto-instrumentations-web";
 import {ZoneContextManager} from "@opentelemetry/context-zone";
 import { SessionIdProcessor } from './SessionIdProcessor';
+import SessionGateway from "../../gateways/Session.gateway";
 
 // Determine where this is being mounted
 const componentType = typeof window === 'undefined' ? 'server' : 'client';
@@ -55,8 +56,16 @@ export default function FrontendTracer() {
             '@opentelemetry/instrumentation-user-interaction': {enabled: true}
           })
         ],
-
-        spanProcessors: [new SessionIdProcessor()],
+        // Feature added in 0.15.0 of the HoneycombWebSDK - allows control of the session id
+        // generation. 
+        // The store app uses this SessionGateway to create a session id for the 
+        // services. Trying out using this as the session generator.
+        // We use the same key in the footer.
+        sessionProvider: {
+          getSessionId: () => {
+            return SessionGateway.getSession().userId;
+          }
+        }
       });
       sdk.start();
       console.log("Frontend tracer is configured and running.");
