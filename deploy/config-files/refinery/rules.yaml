@@ -7,14 +7,14 @@ Samplers:
 
   # The value here is the name of the honeycomb environment, it's special and needs to match
   # with the name of the environment that your honeycomb api key is associated with.
-  devrel-demo:
+  azure-otel-demo:
     RulesBasedSampler:
       Rules:
         - Name: Keep 500 status codes
           SampleRate: 1
           Conditions:
             - Field: http.status_code
-              Operator: '>='
+              Operator: ">="
               Value: 500
               Datatype: int
         - Name: Keep Type 2 GRPC Status Codes
@@ -53,7 +53,7 @@ Samplers:
               Datatype: int
           Sampler:
             EMADynamicSampler:
-              GoalSampleRate: 5              # This is a sample rate itself
+              GoalSampleRate: 5 # This is a sample rate itself
               FieldList:
                 - service.name
                 - http.target
@@ -62,8 +62,8 @@ Samplers:
         - Name: Catchall rule
           Sampler:
             EMAThroughputSampler:
-              GoalThroughputPerSec: 25      # This is spans per second per refinery node (otel demo does about 50-60 spans per second without sampling)
+              GoalThroughputPerSec: 25 # This is spans per second per refinery node (otel demo does about 50-60 spans per second without sampling)
               FieldList:
                 - service.name
                 - http.status_code
-                - status_code`
+                - status_code
