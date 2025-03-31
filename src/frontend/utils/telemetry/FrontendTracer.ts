@@ -6,7 +6,6 @@
 import {HoneycombWebSDK} from "@honeycombio/opentelemetry-web";
 import {getWebAutoInstrumentations} from "@opentelemetry/auto-instrumentations-web";
 import {ZoneContextManager} from "@opentelemetry/context-zone";
-import { SessionIdProcessor } from './SessionIdProcessor';
 import SessionGateway from "../../gateways/Session.gateway";
 
 // Determine where this is being mounted
