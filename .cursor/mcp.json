@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "honeycomb": {
+      "command": "node",
+      "args": [
+        "/Users/jessicakerr/code/honeycombio/honeycomb-mcp/build/index.mjs"
+      ]
+    }
+  }
+}
