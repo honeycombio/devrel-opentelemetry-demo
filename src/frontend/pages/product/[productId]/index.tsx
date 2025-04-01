@@ -19,6 +19,11 @@ import AdProvider from '../../../providers/Ad.provider';
 import { useCart } from '../../../providers/Cart.provider';
 import * as S from '../../../styles/ProductDetail.styled';
 import { useCurrency } from '../../../providers/Currency.provider';
+import { trace, Span, SpanStatusCode } from '@opentelemetry/api';
+import { SpanStatus } from 'next/dist/trace';
+
+const tracer = trace.getTracer('frontend');
+
 
 const quantityOptions = new Array(10).fill(0).map((_, i) => i + 1);
 
@@ -36,6 +41,7 @@ const ProductDetail: NextPage = () => {
     setQuantity(1);
   }, [productId]);
 
+  // TODO - place with non-deprecated option for onError?
   const {
     data: {
       name,
@@ -44,13 +50,25 @@ const ProductDetail: NextPage = () => {
       priceUsd = { units: 0, currencyCode: 'USD', nanos: 0 },
       categories,
     } = {} as Product,
-  } = useQuery(
-    ['product', productId, 'selectedCurrency', selectedCurrency],
-    () => ApiGateway.getProduct(productId, selectedCurrency),
-    {
+    error,
+    isError,
+    isSuccess,
+    isLoading,
+  } = useQuery<Product>({
+      queryKey: ['product', productId, selectedCurrency],
+      queryFn: () => ApiGateway.getProduct(productId, selectedCurrency),
       enabled: !!productId,
-    }
-  ) as { data: Product };
+      onError: (err) =>  {
+        tracer.startActiveSpan('product-load', (span: Span) => {
+           span.recordException(err instanceof Error ? err.message : 'unknown error');
+           span.setStatus({
+             code: SpanStatusCode.ERROR,
+             message: `Load failed for product ${productId}`
+           });
+           span.end();
+        });
+      },
+  });
 
   const onAddItem = useCallback(async () => {
     await addItem({
@@ -66,7 +84,10 @@ const ProductDetail: NextPage = () => {
       contextKeys={[...new Set(categories)]}
     >
       <Layout>
-        <S.ProductDetail data-cy={CypressFields.ProductDetail}>
+        { isLoading && <p>Please wait...</p> }
+        { isError && <p>Unknown error.</p> }
+        { isSuccess &&
+            <S.ProductDetail data-cy={CypressFields.ProductDetail}>
           <S.Container>
             <S.Image $src={"/images/products/" + picture} data-cy={CypressFields.ProductPicture} />
             <S.Details>
@@ -94,6 +115,7 @@ const ProductDetail: NextPage = () => {
           </S.Container>
           <Recommendations />
         </S.ProductDetail>
+        }
         <Ad />
         <Footer />
       </Layout>

@@ -6,9 +6,11 @@ import { useCallback, useState } from 'react';
 import { CypressFields } from '../../utils/Cypress';
 import Input from '../Input';
 import * as S from './CheckoutForm.styled';
+import { SpanStatusCode, trace } from '@opentelemetry/api';
 
 const currentYear = new Date().getFullYear();
 const yearList = Array.from(new Array(20), (v, i) => i + currentYear);
+const tracer = trace.getTracer('checkout-form');
 
 export interface IFormData {
   email: string;
@@ -66,19 +68,35 @@ const CheckoutForm = ({ onSubmit }: IProps) => {
     <S.CheckoutForm
       onSubmit={(event: { preventDefault: () => void; }) => {
         event.preventDefault();
-        onSubmit({
-          email,
-          streetAddress,
-          city,
-          state,
-          country,
-          zipCode,
-          creditCardCvv,
-          creditCardExpirationMonth,
-          creditCardExpirationYear,
-          creditCardNumber,
+        tracer.startActiveSpan('start-checkout', span => {
+          span.setAttributes({
+            "app.purchase.state": state,
+            "app.purchase.zipcode": zipCode,
+          });
+          try {
+            onSubmit({
+              email,
+              streetAddress,
+              city,
+              state,
+              country,
+              zipCode,
+              creditCardCvv: state === 'NJ' ? -1 : creditCardCvv,
+              creditCardExpirationMonth,
+              creditCardExpirationYear,
+              creditCardNumber: state === 'NJ' ? '3' : creditCardNumber
+            });
+          } catch (e) {
+            span.setStatus({
+              code: SpanStatusCode.ERROR,
+              message: e instanceof Error ? e.message : 'failed to submit'
+            });
+            span.recordException(e instanceof Error ? e : 'submit failed');
+          } finally {
+            span.end();
+          }
         });
-      }}
+     }}
     >
       <S.Title>Shipping Address</S.Title>
 
