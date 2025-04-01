@@ -21,7 +21,7 @@ scripts/login-acr.sh
 set -x
 
 # maybe someday the container registry name will change, but this is what it is now
-skaffold run -d mainacra1e0ec0b.azurecr.io $SERVICES --port-forward=user -l skaffold.dev/run-id=static
+skaffold run -d mainacra1e0ec0b.azurecr.io -b $SERVICES --port-forward=user -l skaffold.dev/run-id=static
 
 # note: if the output ends with
 #   Error: UPGRADE FAILED: another operation (install/upgrade/rollback) is in progress
