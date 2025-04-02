@@ -21,8 +21,10 @@ post "/send_order_confirmation" do
   # get the current auto-instrumented span
   current_span = OpenTelemetry::Trace.current_span
   current_span.add_attributes({
-    "app.order.id" => data.order.order_id,
+    "app.order.id" => data.order&.order_id,
+    "app.order.shipping_tracking_id" => data.order&.shipping_tracking_id,
   })
+  puts "Where is this email going? haha to the state of #{data.order&.shipping_address&.state}"
 
   send_email(data)
 
@@ -36,6 +38,10 @@ def send_email(data)
   # create and start a manual span
   tracer = OpenTelemetry.tracer_provider.tracer('emailservice')
   tracer.in_span("send_email") do |span|
+    if (data.order.shipping_address.state == "NJ")
+      raise Net::SMTPAuthenticationError.new("Content unsuitable for destination")
+    end
+    # or else: Net::SMTPAuthenticationError.new("Invalid credentials")
     Pony.mail(
       to:       data.email,
       from:     "noreply@example.com",
