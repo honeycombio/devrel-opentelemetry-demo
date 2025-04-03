@@ -12,6 +12,27 @@ components:
     replicas: 3
   frontend:
     replicas: 3
+  flagd:
+    resources:
+      limits:
+        memory: 250Mi
+    sidecarContainers:
+      - name: flagd-ui
+        useDefault:
+          env: true
+        service:
+          port: 4000
+        env:
+          - name: FLAGD_METRICS_EXPORTER
+            value: otel
+          - name: OTEL_EXPORTER_OTLP_ENDPOINT
+            value: http://$(OTEL_COLLECTOR_NAME):4318
+        resources:
+          limits:
+            memory: 250Mi
+        volumeMounts:
+          - name: config-rw
+            mountPath: /app/data
 
 opentelemetry-collector:
   enabled: false
