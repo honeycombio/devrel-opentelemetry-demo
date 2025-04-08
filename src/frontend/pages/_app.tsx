@@ -69,7 +69,7 @@ function MyApp({ Component, pageProps }: AppProps) {
     return (
         <>
             <FrontendTracer />
-            { !!started &&
+            { started &&
                 <ThemeProvider theme={Theme}>
                     <OpenFeatureProvider>
                         <QueryClientProvider client={queryClient}>
