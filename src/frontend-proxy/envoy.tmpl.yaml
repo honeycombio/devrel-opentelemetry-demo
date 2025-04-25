@@ -1,7 +1,6 @@
 # Copyright The OpenTelemetry Authors
 # SPDX-License-Identifier: Apache-2.0
 
-
 static_resources:
   listeners:
     - address:
@@ -40,7 +39,11 @@ static_resources:
                         - match: { prefix: "/loadgen" }
                           route: { cluster: loadgen, prefix_rewrite: "/" }
                         - match: { prefix: "/otlp-http/" }
-                          route: { cluster: opentelemetry_collector_http, prefix_rewrite: "/" }
+                          route:
+                            {
+                              cluster: opentelemetry_collector_http,
+                              prefix_rewrite: "/",
+                            }
                         - match: { prefix: "/jaeger" }
                           route: { cluster: jaeger }
                         - match: { prefix: "/grafana" }
@@ -52,7 +55,7 @@ static_resources:
                         - match: { prefix: "/feature" }
                           route: { cluster: flagd-ui }
                         - match: { prefix: "/" }
-                          route: { cluster: frontend }
+                          route: { cluster: api-gateway }
                 http_filters:
                   - name: envoy.filters.http.fault
                     typed_config:
@@ -82,7 +85,10 @@ static_resources:
                         values:
                           - key: "service.name"
                             value:
-                              string_value: ${OTEL_SERVICE_NAME}
+                              string_value: "access-logs"
+                          - key: "hostname"
+                            value:
+                              string_value: "%HOSTNAME%"
                       attributes:
                         values:
                           - key: "destination.address"
@@ -148,11 +154,11 @@ static_resources:
                     socket_address:
                       address: ${OTEL_COLLECTOR_HOST}
                       port_value: ${OTEL_COLLECTOR_PORT_HTTP}
-    - name: frontend
+    - name: api-gateway
       type: STRICT_DNS
       lb_policy: ROUND_ROBIN
       load_assignment:
-        cluster_name: frontend
+        cluster_name: api-gateway
         endpoints:
           - lb_endpoints:
               - endpoint:
