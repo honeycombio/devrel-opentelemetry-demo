@@ -8,6 +8,7 @@ export interface CollectorArgs {
     honeycombSecret: Secret;
     honeycombDogfoodSecret: Secret;
     valuesFile: string;
+    refineryHostname?: pulumi.Input<string>;
 }
 
 export class Collector extends pulumi.ComponentResource {
@@ -47,6 +48,10 @@ export class Collector extends pulumi.ComponentResource {
                             "fieldPath": "metadata.namespace"
                         }
                     }
+                },
+                {
+                    "name": "REFINERY_HOSTNAME",
+                    "value": args.refineryHostname
                 }
             ]
         }
