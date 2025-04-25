@@ -76,12 +76,12 @@ build:
     useDockerCLI: true
 portForward:
 - resourceType: service
-  resourceName: "{{.USER}}-frontend-proxy"
+  resourceName: "frontend-proxy"
   namespace: "{{.USER}}-local"
   port: 8080
   localPort: 9191
 - resourceType: service
-  resourceName: "{{.USER}}-load-generator"
+  resourceName: "load-generator"
   namespace: "{{.USER}}-local"
   port: 8089
   localPort: 9192
@@ -102,7 +102,7 @@ deploy:
         setValues:
           default:
             image:
-              pullPolicy: IfNotPresent
+              pullPolicy: Always
           opentelemetry-collector:
             extraEnvs:
               - name: HONEYCOMB_API_KEY
