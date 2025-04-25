@@ -135,18 +135,20 @@ class WebsiteUser(HttpUser):
 
     @task(2)
     def add_to_cart(self, user=""):
-        if user == "":
-            user = str(uuid.uuid1())
-        product = random.choice(products)
-        self.client.get("/api/products/" + product)
-        cart_item = {
-            "item": {
-                "productId": product,
-                "quantity": random.choice([1, 2, 3, 4, 5, 10]),
-            },
-            "userId": user,
-        }
-        self.client.post("/api/cart", json=cart_item)
+        iterations = random.choice([1, 2, 3, 4, 5])
+        for _ in range(iterations):
+            if user == "":
+                user = str(uuid.uuid1())
+            product = random.choice(products)
+            self.client.get("/api/products/" + product)
+            cart_item = {
+                "item": {
+                    "productId": product,
+                    "quantity": random.choice([1, 2, 3, 4, 5, 10]),
+                },
+                "userId": user,
+            }
+            self.client.post("/api/cart", json=cart_item)
 
     @task(1)
     def checkout(self):
