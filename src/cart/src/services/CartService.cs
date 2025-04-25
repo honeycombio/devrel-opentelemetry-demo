@@ -7,6 +7,7 @@ using Grpc.Core;
 using cart.cartstore;
 using OpenFeature;
 using Oteldemo;
+using OpenFeature.Model;
 
 namespace cart.services;
 
@@ -17,6 +18,7 @@ public class CartService : Oteldemo.CartService.CartServiceBase
     private readonly ICartStore _badCartStore;
     private readonly ICartStore _cartStore;
     private readonly IFeatureClient _featureFlagHelper;
+    public static readonly ActivitySource ActivitySource = new("Database");
 
     public CartService(ICartStore cartStore, ICartStore badCartStore, IFeatureClient featureFlagService)
     {
@@ -56,8 +58,34 @@ public class CartService : Oteldemo.CartService.CartServiceBase
         {
             var cart = await _cartStore.GetCartAsync(request.UserId);
             var totalCart = 0;
+            activity?.SetTag("app.cart.unique_items.count", cart.Items.Count);
+
+            _featureFlagHelper.SetContext(
+                EvaluationContext.Builder()
+                    .Set("cart.unique_items.count", cart.Items.Count)
+                    .Set("user.id", request.UserId)
+                    .Build());
+
+            var shouldDoDatabaseCall = await _featureFlagHelper.GetBooleanValueAsync("cartservice.add-db-call", false);
+            if (!shouldDoDatabaseCall)
+            {
+                using var dbActivity = ActivitySource.StartActivity("SELECT * FROM products WHERE id = @id", ActivityKind.Client);
+                    dbActivity?.SetTag("db.statement", "SELECT * FROM products WHERE id IN @ids");
+                    dbActivity?.SetTag("db.type", "sql");
+            }
             foreach (var item in cart.Items)
             {
+                if (shouldDoDatabaseCall)
+                {
+                    using var dbActivity = ActivitySource.StartActivity("SELECT * FROM products WHERE id = @id", ActivityKind.Client);
+                    dbActivity?.SetTag("app.product.id", item.ProductId);
+                    dbActivity?.SetTag("db.statement", "SELECT * FROM products WHERE id = @id");
+                    dbActivity?.SetTag("db.type", "sql");
+                    if (cart.Items.Count > 6)
+                    {
+                        await Task.Delay(random.Next(100, 300));
+                    }
+                }
                 totalCart += item.Quantity;
             }
             activity?.SetTag("app.cart.items.count", totalCart);

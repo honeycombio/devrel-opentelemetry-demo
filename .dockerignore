@@ -22,3 +22,8 @@ src/*/*/Dockerfile
 ./src/shipping/target
 ###################################
 
+###################################
+# cartservice
+src/cartservice/src/bin
+src/cartservice/src/obj
+###################################
