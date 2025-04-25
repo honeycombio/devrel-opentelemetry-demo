@@ -1,0 +1,10 @@
+name: devrel-opentelemetry-demo
+runtime:
+  name: nodejs
+  options:
+    packagemanager: npm
+description: A TypeScript program to deploy a Helm chart onto a Kubernetes cluster
+config:
+  pulumi:tags:
+    value:
+      pulumi:template: helm-kubernetes-typescript

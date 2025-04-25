@@ -1,0 +1,210 @@
+mode: daemonset
+
+presets:
+  kubeletMetrics:
+    enabled: true
+  kubernetesAttributes:
+    enabled: true
+    extractAllPodLabels: true
+    extractAllPodAnnotations: true
+  logsCollection:
+    enabled: true
+    includeCollectorLogs: false
+image:
+  repository: "ghcr.io/open-telemetry/opentelemetry-collector-releases/opentelemetry-collector-contrib"
+
+service:
+  enabled: true
+
+config:
+  receivers:
+    jaeger: null
+    zipkin: null
+    kubeletstats:
+      insecure_skip_verify: true
+      collection_interval: 30s
+      metric_groups:
+        - node
+        - pod
+      metrics:
+        k8s.node.uptime:
+          enabled: true
+        k8s.pod.uptime:
+          enabled: true
+        k8s.pod.cpu_limit_utilization:
+          enabled: true
+        k8s.pod.cpu_request_utilization:
+          enabled: true
+        k8s.pod.memory_limit_utilization:
+          enabled: true
+        k8s.pod.memory_request_utilization:
+          enabled: true
+    otlp:
+      protocols:
+        grpc:
+        http:
+          cors:
+            allowed_origins:
+              - http://*
+              - https://*
+          endpoint: 0.0.0.0:4318
+    filelog:
+      include:
+        - /var/log/pods/${env:NAMESPACE}_*/*/*.log
+  processors:
+    transform/service_names:
+      error_mode: ignore
+      log_statements:
+        - context: resource
+          statements:
+            - set(attributes["service.name"], attributes["app.kubernetes.io/component"]) where attributes["service.name"] == nil and attributes["app.kubernetes.io/component"] != nil
+            - set(attributes["service.name"], "api-gateway") where attributes["service.name"] == "frontend"
+            - set(attributes["service.name"], "ingress-gateway") where attributes["service.name"] == "frontendproxy"
+      metric_statements:
+        - context: resource
+          statements:
+            - set(attributes["service.name"], "api-gateway") where attributes["service.name"] == "frontend"
+            - set(attributes["service.name"], "ingress-gateway") where attributes["service.name"] == "frontendproxy"
+      trace_statements:
+        - context: resource
+          statements:
+            - set(attributes["service.name"], "api-gateway") where attributes["service.name"] == "frontend"
+            - set(attributes["service.name"], "ingress-gateway") where attributes["service.name"] == "frontendproxy"
+    transform/attribution:
+      log_statements:
+        - context: resource
+          statements:
+            - set(attributes["collector.name"], "daemonset-collector")
+      metric_statements:
+        - context: resource
+          statements:
+            - set(attributes["collector.name"], "daemonset-collector")
+      trace_statements:
+        - context: resource
+          statements:
+            - set(attributes["collector.name"], "daemonset-collector")
+    transform/access_log_severity:
+      error_mode: ignore
+      log_statements:
+        - context: log
+          conditions:
+            - resource.attributes["service.name"] == "access-logs"
+          statements:
+            - set(severity_text, "ERROR") where Substring(attributes["http.response.status_code"], 0, 1) == "5"
+            - set(severity_number, 17) where Substring(attributes["http.response.status_code"], 0, 1) == "5"
+            - set(severity_text, "WARN") where Substring(attributes["http.response.status_code"], 0, 1) == "4"
+            - set(severity_number, 13) where Substring(attributes["http.response.status_code"], 0, 1) == "4"
+            - set(severity_text, "INFO") where Int(attributes["http.response.status_code"]) < 400
+            - set(severity_number, 9) where Int(attributes["http.response.status_code"]) < 400
+            - set(attributes["demo.telemetry.transform.access_log_severity"], "v4")
+    transform/filelog_severity:
+      error_mode: ignore
+      log_statements:
+        - context: log
+          conditions:
+            - attributes["log.severity"] != nil
+          statements:
+            - set(severity_text, "ERROR") where attributes["log.severity"] == "error"
+            - set(severity_number, 17) where attributes["log.severity"] == "error"
+            - set(severity_text, "WARN") where attributes["log.severity"] == "warn"
+            - set(severity_number, 13) where attributes["log.severity"] == "warn"
+            - set(severity_text, "INFO") where attributes["log.severity"] == "info"
+            - set(severity_number, 9) where attributes["log.severity"] == "info"
+            - set(attributes["collector.transform.filelog_severity"], "v1")
+    transform/pino_trace_fields:
+      error_mode: ignore
+      log_statements:
+        - context: log
+          conditions:
+            - attributes["trace_id"] != nil and attributes["trace.trace_id"] == nil
+          statements:
+            - set(attributes["trace.trace_id"], attributes["trace_id"])
+            - set(attributes["trace.parent_id"], attributes["span_id"])
+            - set(attributes["meta.annotation_type"], "span_event")
+    transform/parse_json_body:
+      error_mode: ignore
+      log_statements:
+        - context: log
+          conditions:
+            - body != nil and Substring(body, 0, 2) == "{\""
+          statements:
+            - set(cache, ParseJSON(body))
+            - flatten(cache, "")
+            - merge_maps(attributes, cache, "upsert")
+        - context: log
+          statements:
+            - set(resource.attributes["service.name"], "api-gateway") where resource.attributes["k8s.container.name"] == "frontend"
+
+  exporters:
+    otlp/traces:
+      endpoint: api.honeycomb.io:443
+      headers:
+        x-honeycomb-team: ${HONEYCOMB_API_KEY}
+
+    otlp/metrics:
+      endpoint: api.honeycomb.io:443
+      headers:
+        x-honeycomb-team: ${HONEYCOMB_API_KEY}
+        x-honeycomb-dataset: service-metrics
+
+    otlp/logging:
+      endpoint: api.honeycomb.io:443
+      headers:
+        x-honeycomb-team: ${HONEYCOMB_API_KEY}
+        x-honeycomb-dataset: service-logs
+
+    otlp/traces-dogfood:
+      endpoint: api-dogfood.honeycomb.io:443
+      headers:
+        x-honeycomb-team: ${HONEYCOMB_API_KEY_DOGFOOD}
+
+    otlp/metrics-dogfood:
+      endpoint: api-dogfood.honeycomb.io:443
+      headers:
+        x-honeycomb-team: ${HONEYCOMB_API_KEY_DOGFOOD}
+        x-honeycomb-dataset: service-metrics
+
+    otlp/logging-dogfood:
+      endpoint: api-dogfood.honeycomb.io:443
+      headers:
+        x-honeycomb-team: ${HONEYCOMB_API_KEY_DOGFOOD}
+        x-honeycomb-dataset: service-logs
+
+    debug:
+      verbosity: detailed
+
+  service:
+    pipelines:
+      metrics:
+        exporters:
+          - otlp/metrics
+          - otlp/metrics-dogfood
+        processors:
+          - transform/service_names
+      logs:
+        exporters:
+          - otlp/logging
+          - otlp/logging-dogfood
+        processors:
+          - transform/parse_json_body
+          - transform/service_names
+          - transform/access_log_severity
+          - transform/filelog_severity
+          - transform/pino_trace_fields
+          - transform/attribution
+      traces:
+        exporters:
+          - otlp/traces
+          - otlp/traces-dogfood
+        processors:
+          - transform/service_names
+
+clusterRole:
+  create: true
+  rules:
+    - apiGroups:
+        - ""
+      resources:
+        - nodes/proxy
+      verbs:
+        - get

@@ -1,0 +1,29 @@
+default:
+  image:
+    repository: "ghcr.io/honeycombio/devrel-opentelemetry-demo"
+    tag: "latest"
+  replicas: 2
+components:
+  accounting:
+    resources:
+      limits:
+        memory: 150Mi
+  load-generator:
+    replicas: 3
+  frontend:
+    replicas: 3
+
+opentelemetry-collector:
+  enabled: false
+
+jaeger:
+  enabled: false
+
+prometheus:
+  enabled: false
+
+grafana:
+  enabled: false
+
+opensearch:
+  enabled: false
