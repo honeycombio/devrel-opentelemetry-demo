@@ -102,7 +102,7 @@ var demo = new OtelDemo("otel-demo", {
     domainName: "zurelia.honeydemo.io",
     namespace: demoNamespace.metadata.name,
     collectorHostName: podTelemetryCollector.collectorName,
-    demoVersion: "0.33.6",
+    demoVersion: demoHelmVersion,
     containerTag: containerTag,
     ingressClassName: ingressClassName
 }, { provider: provider });

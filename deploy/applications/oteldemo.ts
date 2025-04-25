@@ -88,7 +88,7 @@ export class OtelDemo extends pulumi.ComponentResource {
                             pathType: "Prefix",
                             backend: {
                                 service: {
-                                    name: "otel-demo-frontendproxy",
+                                    name: "frontend-proxy",
                                     port: {
                                         number: 8080
                                     }
