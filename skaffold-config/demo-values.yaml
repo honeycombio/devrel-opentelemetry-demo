@@ -1,0 +1,205 @@
+########################
+#
+# This is the configuration for the Otel demo deployed to {you}-local, not the main demo.
+#
+########################
+default:
+  image:
+    pullPolicy: Always
+  replicas: 1
+  # List of environment variables applied to all components
+  envOverrides:
+    - name: OTEL_EXPORTER_OTLP_LOGS_PROTOCOL
+      value: grpc
+    - name: OTEL_EXPORTER_OTLP_INSECURE
+      value: "true"
+    - name: OTEL_LOG_LEVEL
+      value: "info"
+
+components:
+  load-generator:
+    replicas: 1
+  frontend:
+    replicas: 1
+
+opentelemetry-collector:
+  enabled: true
+  mode: daemonset
+  service:
+    enabled: true
+  presets:
+    logsCollection:
+      enabled: true
+      includeCollectorLogs: true
+  config:
+    receivers:
+      otlp:
+        protocols:
+          grpc:
+            endpoint: 0.0.0.0:4317
+          http:
+            cors:
+              allowed_origins:
+                - '*'
+            endpoint: 0.0.0.0:4318
+      filelog:
+        include:
+          - /var/log/pods/${env:NAMESPACE}_*/*/*.log
+    processors:
+      transform/attribution:
+        log_statements:
+          - context: resource
+            statements:
+              - set(attributes["collector.name"], "daemonset-collector")
+        metric_statements:
+          - context: resource
+            statements:
+              - set(attributes["collector.name"], "daemonset-collector")
+        trace_statements:
+          - context: resource
+            statements:
+              - set(attributes["collector.name"], "daemonset-collector")
+      k8sattributes:
+        extract:
+          annotations:
+            - from: pod
+              key_regex: (.*)
+              tag_name: $$1
+          labels:
+            - from: pod
+              key_regex: (.*)
+              tag_name: $$1
+      transform/access_log_severity:
+        error_mode: ignore
+        log_statements:
+          - context: log
+            conditions:
+              - resource.attributes["service.name"] == "access-logs"
+            statements:
+              - set(severity_text, "ERROR") where Substring(attributes["http.response.status_code"], 0, 1) == "5"
+              - set(severity_number, 17) where Substring(attributes["http.response.status_code"], 0, 1) == "5"
+              - set(severity_text, "WARN") where Substring(attributes["http.response.status_code"], 0, 1) == "4"
+              - set(severity_number, 13) where Substring(attributes["http.response.status_code"], 0, 1) == "4"
+              - set(severity_text, "INFO") where Int(attributes["http.response.status_code"]) < 400
+              - set(severity_number, 9) where Int(attributes["http.response.status_code"]) < 400
+              - set(attributes["collector.transform.access_log_severity"], "v5")
+      transform/filelog_severity:
+        error_mode: ignore
+        log_statements:
+          - context: log
+            conditions:
+              - attributes["log.severity"] != nil
+            statements:
+              - set(severity_text, "ERROR") where attributes["log.severity"] == "error"
+              - set(severity_number, 17) where attributes["log.severity"] == "error"
+              - set(severity_text, "WARN") where attributes["log.severity"] == "warn"
+              - set(severity_number, 13) where attributes["log.severity"] == "warn"
+              - set(severity_text, "INFO") where attributes["log.severity"] == "info"
+              - set(severity_number, 9) where attributes["log.severity"] == "info"
+              - set(attributes["collector.transform.filelog_severity"], "v1")
+      transform/pino_trace_fields:
+        error_mode: ignore
+        log_statements:
+          - context: log
+            conditions:
+              - attributes["trace_id"] != nil and attributes["trace.trace_id"] == nil
+            statements:
+              - set(attributes["trace.trace_id"], attributes["trace_id"])
+              - set(attributes["trace.parent_id"], attributes["span_id"])
+              - set(attributes["meta.annotation_type"], "span_event")
+      transform/service_names:
+        error_mode: ignore
+        log_statements:
+          - context: resource
+            statements:
+              - set(attributes["service.name"], attributes["app.kubernetes.io/component"]) where attributes["service.name"] == nil and attributes["app.kubernetes.io/component"] != nil
+              - set(attributes["service.name"], "api-gateway") where attributes["service.name"] == "frontend"
+              - set(attributes["service.name"], "ingress-gateway") where attributes["service.name"] == "frontendproxy"
+        metric_statements:
+          - context: resource
+            statements:
+              - set(attributes["service.name"], "api-gateway") where attributes["service.name"] == "frontend"
+              - set(attributes["service.name"], "ingress-gateway") where attributes["service.name"] == "frontendproxy"
+        trace_statements:
+          - context: resource
+            statements:
+              - set(attributes["service.name"], "api-gateway") where attributes["service.name"] == "frontend"
+              - set(attributes["service.name"], "ingress-gateway") where attributes["service.name"] == "frontendproxy"
+      transform/parse_json_body:
+        error_mode: ignore
+        log_statements:
+          - context: log
+            conditions:
+              - body != nil and Len(body) >= 2 and Substring(body, 0, 2) == "{\""
+            statements:
+              - set(cache, ParseJSON(body))
+              - flatten(cache, "")
+              - merge_maps(attributes, cache, "upsert")
+          - context: log
+            statements:
+              - set(resource.attributes["service.name"], "api-gateway") where resource.attributes["k8s.container.name"] == "frontend"
+    exporters:
+      otlp/traces:
+        endpoint: api.honeycomb.io:443
+        headers:
+          x-honeycomb-team: ${env:HONEYCOMB_API_KEY}
+
+      otlp/metrics:
+        endpoint: api.honeycomb.io:443
+        headers:
+          x-honeycomb-team: ${env:HONEYCOMB_API_KEY}
+          x-honeycomb-dataset: service-metrics
+
+      otlp/logging:
+        endpoint: api.honeycomb.io:443
+        headers:
+          x-honeycomb-team: ${env:HONEYCOMB_API_KEY}
+          x-honeycomb-dataset: service-logs
+
+      otlp/k8s-logging:
+        endpoint: api.honeycomb.io:443
+        headers:
+          x-honeycomb-team: ${env:HONEYCOMB_API_KEY}
+          x-honeycomb-dataset: k8s-logs
+
+    service:
+      pipelines:
+        metrics:
+          exporters:
+            - otlp/metrics
+          processors:
+            - transform/service_names
+            - transform/attribution
+        logs:
+          receivers:
+            - otlp
+            - filelog
+          exporters:
+            - otlp/logging
+          processors:
+            - transform/parse_json_body
+            - transform/service_names
+            - transform/access_log_severity
+            - transform/filelog_severity
+            - transform/pino_trace_fields
+            - transform/attribution
+        traces:
+          exporters:
+            - otlp/traces
+            - spanmetrics
+          processors:
+            - transform/service_names
+            - transform/attribution
+  ports:
+    otlp:
+      hostPort: 0
+    otlp-http:
+      hostPort: 0
+    jaeger-compact:
+      hostPort: 0
+    jaeger-thrift:
+      hostPort: 0
+    jaeger-grpc:
+      hostPort: 0
+    zipkin:
+      hostPort: 0

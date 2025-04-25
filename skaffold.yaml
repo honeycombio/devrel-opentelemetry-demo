@@ -1,0 +1,152 @@
+apiVersion: skaffold/v4beta11
+kind: Config
+build:
+  artifacts:
+  - image: accountingservice
+    context: .
+    docker:
+      dockerfile: src/accounting/Dockerfile
+  - image: adservice
+    context: .
+    docker:
+      dockerfile: src/ad/Dockerfile
+  - image: cartservice
+    context: .
+    docker:
+      dockerfile: src/cart/src/Dockerfile
+  - image: checkoutservice
+    context: .
+    docker:
+      dockerfile: src/checkout/Dockerfile
+  - image: currencyservice
+    context: .
+    docker:
+      dockerfile: src/currency/Dockerfile
+  - image: emailservice
+    context: .
+    docker:
+      dockerfile: src/email/Dockerfile
+  - image: frauddetectionservice
+    context: .
+    docker:
+      dockerfile: src/fraud-detection/Dockerfile
+  - image: frontend
+    context: .
+    docker:
+      dockerfile: src/frontend/Dockerfile
+  - image: frontendproxy
+    context: .
+    docker:
+      dockerfile: src/frontend-proxy/Dockerfile
+  - image: imageprovider
+    context: .
+    docker:
+      dockerfile: src/image-provider/Dockerfile
+  - image: kafka
+    context: .
+    docker:
+      dockerfile: src/kafka/Dockerfile
+  - image: loadgenerator
+    context: .
+    docker:
+      dockerfile: src/load-generator/Dockerfile
+  - image: paymentservice
+    context: .
+    docker:
+      dockerfile: src/payment/Dockerfile
+  - image: productcatalogservice
+    context: .
+    docker:
+      dockerfile: src/product-catalog/Dockerfile
+  - image: quoteservice
+    context: .
+    docker:
+      dockerfile: src/quote/Dockerfile
+  - image: recommendationservice
+    context: .
+    docker:
+      dockerfile: src/recommendation/Dockerfile
+  - image: shippingservice
+    context: .
+    docker:
+      dockerfile: src/shipping/Dockerfile
+  platforms:
+    - linux/amd64
+  local:
+    useDockerCLI: true
+portForward:
+- resourceType: service
+  resourceName: "{{.USER}}-frontend-proxy"
+  namespace: "{{.USER}}-local"
+  port: 8080
+  localPort: 9191
+- resourceType: service
+  resourceName: "{{.USER}}-load-generator"
+  namespace: "{{.USER}}-local"
+  port: 8089
+  localPort: 9192
+deploy:
+  helm:
+    releases:
+      - name: "{{.USER}}"
+        createNamespace: true
+        namespace: "{{.USER}}-local"
+        repo: https://open-telemetry.github.io/opentelemetry-helm-charts
+        remoteChart: opentelemetry-demo
+        version: 0.37.0
+        recreatePods: false
+        skipBuildDependencies: false
+        valuesFiles:
+          - deploy/config-files/demo/values.yaml
+          - skaffold-config/demo-values.yaml
+        setValues:
+          default:
+            image:
+              pullPolicy: IfNotPresent
+          opentelemetry-collector:
+            extraEnvs:
+              - name: HONEYCOMB_API_KEY
+              - name: NAMESPACE
+                valueFrom:
+                  fieldRef:
+                    fieldPath: metadata.namespace
+        setValueTemplates:
+          opentelemetry-collector.extraEnvs[0].value: "{{.HONEYCOMB_API_KEY}}"
+          opentelemetry-collector.config.receivers.redis.endpoint: "{{.USER}}-valkey:6379"
+          components.accounting.imageOverride.repository: "{{if .IMAGE_REPO_accountingservice }}{{.IMAGE_REPO_accountingservice}}{{end}}"
+          components.accounting.imageOverride.tag:  "{{if .IMAGE_REPO_accountingservice }}{{.IMAGE_TAG_accountingservice}}@{{.IMAGE_DIGEST_accountingservice}}{{end}}"
+          components.ad.imageOverride.repository: "{{if .IMAGE_REPO_adservice }}{{.IMAGE_REPO_adservice}}{{end}}"
+          components.ad.imageOverride.tag:  "{{if .IMAGE_REPO_adservice }}{{.IMAGE_TAG_adservice}}@{{.IMAGE_DIGEST_adservice}}{{end}}"
+          components.cart.imageOverride.repository: "{{if .IMAGE_REPO_cartservice }}{{.IMAGE_REPO_cartservice}}{{end}}"
+          components.cart.imageOverride.tag:  "{{if .IMAGE_REPO_cartservice }}{{.IMAGE_TAG_cartservice}}@{{.IMAGE_DIGEST_cartservice}}{{end}}"
+          components.checkout.imageOverride.repository: "{{if .IMAGE_REPO_checkoutservice }}{{.IMAGE_REPO_checkoutservice}}{{end}}"
+          components.checkout.imageOverride.tag:  "{{if .IMAGE_REPO_checkoutservice }}{{.IMAGE_TAG_checkoutservice}}@{{.IMAGE_DIGEST_checkoutservice}}{{end}}"
+          components.currency.imageOverride.repository: "{{if .IMAGE_REPO_currencyservice }}{{.IMAGE_REPO_currencyservice}}{{end}}"
+          components.currency.imageOverride.tag:  "{{if .IMAGE_REPO_currencyservice }}{{.IMAGE_TAG_currencyservice}}@{{.IMAGE_DIGEST_currencyservice}}{{end}}"
+          components.email.imageOverride.repository: "{{if .IMAGE_REPO_emailservice }}{{.IMAGE_REPO_emailservice}}{{end}}"
+          components.email.imageOverride.tag:  "{{if .IMAGE_REPO_emailservice }}{{.IMAGE_TAG_emailservice}}@{{.IMAGE_DIGEST_emailservice}}{{end}}"
+          components.fraud-detection.imageOverride.repository: "{{if .IMAGE_REPO_frauddetectionservice }}{{.IMAGE_REPO_frauddetectionservice}}{{end}}"
+          components.fraud-detection.imageOverride.tag:  "{{if .IMAGE_REPO_frauddetectionservice }}{{.IMAGE_TAG_frauddetectionservice}}@{{.IMAGE_DIGEST_frauddetectionservice}}{{end}}"
+          components.frontend.imageOverride.repository: "{{if .IMAGE_REPO_frontend }}{{.IMAGE_REPO_frontend}}{{end}}"
+          components.frontend.imageOverride.tag:  "{{if .IMAGE_REPO_frontend }}{{.IMAGE_TAG_frontend}}@{{.IMAGE_DIGEST_frontend}}{{end}}"
+          components.frontend-proxy.imageOverride.repository: "{{if .IMAGE_REPO_frontendproxy }}{{.IMAGE_REPO_frontendproxy}}{{end}}"
+          components.frontend-proxy.imageOverride.tag:  "{{if .IMAGE_REPO_frontendproxy }}{{.IMAGE_TAG_frontendproxy}}@{{.IMAGE_DIGEST_frontendproxy}}{{end}}"
+          components.image-provider.imageOverride.repository: "{{if .IMAGE_REPO_imageprovider }}{{.IMAGE_REPO_imageprovider}}{{end}}"
+          components.image-provider.imageOverride.tag:  "{{if .IMAGE_REPO_imageprovider }}{{.IMAGE_TAG_imageprovider}}@{{.IMAGE_DIGEST_imageprovider}}{{end}}"
+          components.kafka.imageOverride.repository: "{{if .IMAGE_REPO_kafka }}{{.IMAGE_REPO_kafka}}{{end}}"
+          components.kafka.imageOverride.tag:  "{{if .IMAGE_REPO_kafka }}{{.IMAGE_TAG_kafka}}@{{.IMAGE_DIGEST_kafka}}{{end}}"
+          components.load-generator.imageOverride.repository: "{{if .IMAGE_REPO_loadgenerator }}{{.IMAGE_REPO_loadgenerator}}{{end}}"
+          components.load-generator.imageOverride.tag:  "{{if .IMAGE_REPO_loadgenerator }}{{.IMAGE_TAG_loadgenerator}}@{{.IMAGE_DIGEST_loadgenerator}}{{end}}"
+          components.payment.imageOverride.repository: "{{if .IMAGE_REPO_paymentservice }}{{.IMAGE_REPO_paymentservice}}{{end}}"
+          components.payment.imageOverride.tag:  "{{if .IMAGE_REPO_paymentservice }}{{.IMAGE_TAG_paymentservice}}@{{.IMAGE_DIGEST_paymentservice}}{{end}}"
+          components.product-catalog.imageOverride.repository: "{{if .IMAGE_REPO_productcatalogservice }}{{.IMAGE_REPO_productcatalogservice}}{{end}}"
+          components.product-catalog.imageOverride.tag:  "{{if .IMAGE_REPO_productcatalogservice }}{{.IMAGE_TAG_productcatalogservice}}@{{.IMAGE_DIGEST_productcatalogservice}}{{end}}"
+          components.quote.imageOverride.repository: "{{if .IMAGE_REPO_quoteservice }}{{.IMAGE_REPO_quoteservice}}{{end}}"
+          components.quote.imageOverride.tag:  "{{if .IMAGE_REPO_quoteservice }}{{.IMAGE_TAG_quoteservice}}@{{.IMAGE_DIGEST_quoteservice}}{{end}}"
+          components.recommendation.imageOverride.repository: "{{if .IMAGE_REPO_recommendationservice }}{{.IMAGE_REPO_recommendationservice}}{{end}}"
+          components.recommendation.imageOverride.tag:  "{{if .IMAGE_REPO_recommendationservice }}{{.IMAGE_TAG_recommendationservice}}@{{.IMAGE_DIGEST_recommendationservice}}{{end}}"
+          components.shipping.imageOverride.repository: "{{if .IMAGE_REPO_shippingservice }}{{.IMAGE_REPO_shippingservice}}{{end}}"
+          components.shipping.imageOverride.tag:  "{{if .IMAGE_REPO_shippingservice }}{{.IMAGE_TAG_shippingservice}}@{{.IMAGE_DIGEST_shippingservice}}{{end}}"
+        upgradeOnChange: true
+        useHelmSecrets: false
+        wait: true

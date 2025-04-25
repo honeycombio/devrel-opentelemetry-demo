@@ -1,5 +1,8 @@
-<!-- markdownlint-disable-next-line -->
-# <img src="https://opentelemetry.io/img/logos/opentelemetry-logo-nav.png" alt="OTel logo" width="45"> OpenTelemetry Demo
+# <img src="https://opentelemetry.io/img/logos/opentelemetry-logo-nav.png" alt="OTel logo" width="45"> Honeycomb DevRel Team's Fork of the OpenTelemetry Demo
+
+For the info on this application overall, visit the real [OpenTelemetry Demo](https://github.com/open-telemetry/opentelemetry-demo).
+
+For our internal reference, see [devrel-README.md](devrel-README.md).
 
 [![Slack](https://img.shields.io/badge/slack-@cncf/otel/demo-brightgreen.svg?logo=slack)](https://cloud-native.slack.com/archives/C03B4CWV4DA)
 [![Version](https://img.shields.io/github/v/release/open-telemetry/opentelemetry-demo?color=blueviolet)](https://github.com/open-telemetry/opentelemetry-demo/releases)
