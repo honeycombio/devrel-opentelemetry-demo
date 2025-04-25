@@ -50,6 +50,8 @@ jobs:
           command: up
           stack-name: ${{ secrets.PULUMI_ORG }}/prod
           work-dir: deploy
+          config-map: |
+            devrel-opentelemetry-demo:container-tag: latest
         env:
           ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
           ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
