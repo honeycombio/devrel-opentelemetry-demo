@@ -22,8 +22,8 @@ For now,
 We can deploy those with ./deploy, which is a pulumi thinger for deploying this demo from GHCR to AKS.
 Some one else could modify that and deploy to their cluster, since the images are public.
 
-Currently, this is available at www.demo.onlyspans.com (we're working on a honeydemo.io domain).
-This is the public one that we will keep and up and usable. That pushes Honeycomb data to the devrel-data team.
+Currently, this is available at www.zurelia.honeydemo.io
+This is the public one that we will keep and up and usable. That pushes Honeycomb data to the devrel-demos team, azure-otel-demo environment.
 
 This version gets the cluster-level collector data, with kubernetes events. This is deployed in ./deploy
 
@@ -106,10 +106,10 @@ This outputs the azure container registry name
 cheat:
 
 ```shell
-./run
+./run cartservice
 ```
 
-... which does this stuff
+... which does the stuff below:
 
 where acrName is the name of the azure container registry, TODO make that easy
 
