@@ -4,21 +4,20 @@
 FROM node:22-alpine AS builder
 RUN apk add --no-cache libc6-compat
 
-USER node
-
 WORKDIR /app
 
 COPY ./src/frontend/package*.json ./
+RUN chown -R node:node /app
+USER node
 RUN npm clean-install --no-audit --no-progress
-COPY ./src/frontend/protos ./protos
-COPY ./src/frontend .
+COPY --chown=node:node ./src/frontend/protos ./protos
+COPY --chown=node:node ./src/frontend .
 
 RUN npm run build
 
 FROM node:22-alpine AS deps
 
 USER node
-
 WORKDIR /app
 COPY --chown=node:node --from=builder /home/node/.npm/ /home/node/.npm/
 COPY ./src/frontend/package*.json ./
