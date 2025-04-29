@@ -8,10 +8,10 @@ import CurrencyProvider from '../providers/Currency.provider';
 import CartProvider from '../providers/Cart.provider';
 import { ThemeProvider } from 'styled-components';
 import Theme from '../styles/Theme';
-import FrontendTracer from '../utils/telemetry/FrontendTracer';
 import SessionGateway from '../gateways/Session.gateway';
 import { OpenFeatureProvider, OpenFeature } from '@openfeature/react-sdk';
 import { FlagdWebProvider } from '@openfeature/flagd-web-provider';
+import HoneycombFrontendTracer from '../utils/telemetry/HoneycombFrontendTracer';
 
 declare global {
   interface Window {
@@ -25,9 +25,9 @@ declare global {
 }
 
 if (typeof window !== 'undefined') {
-  FrontendTracer();
   if (window.location) {
     const session = SessionGateway.getSession();
+    HoneycombFrontendTracer(session.userId);
 
     // Set context prior to provider init to avoid multiple http calls
     OpenFeature.setContext({ targetingKey: session.userId, ...session }).then(() => {
