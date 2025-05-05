@@ -9,7 +9,7 @@ const platform = NEXT_PUBLIC_PLATFORM;
 
 const PlatformFlag = () => {
   return (
-    <S.Block>{platform}</S.Block>
+      platform ? <S.Block>{platform}</S.Block> : ''
   );
 };
 
