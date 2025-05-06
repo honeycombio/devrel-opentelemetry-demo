@@ -9,9 +9,9 @@ components:
       limits:
         memory: 150Mi
   load-generator:
-    replicas: 3
+    replicas: 2
   frontend:
-    replicas: 3
+    replicas: 2
 
 opentelemetry-collector:
   enabled: false
