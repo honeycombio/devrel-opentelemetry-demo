@@ -12,6 +12,7 @@ import SessionGateway from '../gateways/Session.gateway';
 import { OpenFeatureProvider, OpenFeature } from '@openfeature/react-sdk';
 import { FlagdWebProvider } from '@openfeature/flagd-web-provider';
 import HoneycombFrontendTracer from '../utils/telemetry/HoneycombFrontendTracer';
+import { useEffect, useState } from 'react';
 
 declare global {
   interface Window {
@@ -59,18 +60,25 @@ if (typeof window !== 'undefined') {
 const queryClient = new QueryClient();
 
 function MyApp({ Component, pageProps }: AppProps) {
-  return (
-    <ThemeProvider theme={Theme}>
-      <OpenFeatureProvider>
-        <QueryClientProvider client={queryClient}>
-          <CurrencyProvider>
-            <CartProvider>
-              <Component {...pageProps} />
-            </CartProvider>
-          </CurrencyProvider>
-        </QueryClientProvider>
-      </OpenFeatureProvider>
-    </ThemeProvider>
+    const [started, setStarted] = useState(false);
+    useEffect(() => {
+        setStarted(true);
+    }, []);
+
+    return (
+        started && (
+            <ThemeProvider theme={Theme}>
+              <OpenFeatureProvider>
+                <QueryClientProvider client={queryClient}>
+                  <CurrencyProvider>
+                    <CartProvider>
+                      <Component {...pageProps} />
+                    </CartProvider>
+                  </CurrencyProvider>
+                </QueryClientProvider>
+              </OpenFeatureProvider>
+            </ThemeProvider>
+        ) || null
   );
 }
 
