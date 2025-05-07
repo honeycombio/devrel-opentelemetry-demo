@@ -38,7 +38,8 @@ const HoneycombFrontendTracer = (sessionId: string) => {
         }),
         instrumentations: [
             getWebAutoInstrumentations({
-                '@opentelemetry/instrumentation-document-load': configDefaults,
+              // turn on networkEvents so we can see data for resourceFetch content sizes
+              '@opentelemetry/instrumentation-document-load': { ...configDefaults, ignoreNetworkEvents: false },
                 '@opentelemetry/instrumentation-fetch': {
                     propagateTraceHeaderCorsUrls: /.*/,
                     clearTimingResources: true,
