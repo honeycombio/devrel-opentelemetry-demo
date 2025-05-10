@@ -1,0 +1,82 @@
+import { context, SpanStatusCode, trace } from "@opentelemetry/api";
+import { Attributes, Span } from "@opentelemetry/api";
+
+
+export async function tracedQuery<T>(
+  name: string,
+  fn: () => Promise<T>,
+  tracerName = 'default'
+): Promise<T> {
+  const tracer = trace.getTracer(tracerName);
+  const span = tracer.startSpan(name);
+
+  return context.with(trace.setSpan(context.active(), span), async () => {
+    try {
+      const result = await fn();
+      span.setStatus({ code: SpanStatusCode.OK });
+      return result;
+    } catch (err) {
+      recordExceptionAndMarkSpanError(err, span);
+      throw err;
+    } finally {
+      span.end();
+    }
+  });
+}
+
+export function spanAttributesForRpc(
+  service: string,
+  method: string,
+  component?: string
+): Attributes {
+  return {
+    'rpc.service': service,
+    'rpc.method': method,
+    ...(component ? { 'component': component } : {}),
+  };
+}
+
+export function tracedMutation<TArgs, TResult>(
+  name: string,
+  fn: (args: TArgs) => Promise<TResult>,
+  tracerName = 'default',
+  attributes: Attributes = {}
+): (args: TArgs) => Promise<TResult> {
+  return async (args: TArgs) => {
+    const tracer = trace.getTracer(tracerName);
+    const span = tracer.startSpan(name, { attributes });
+
+    return context.with(trace.setSpan(context.active(), span), async () => {
+      try {
+        const result = await fn(args);
+        span.setStatus({ code: SpanStatusCode.OK });
+        return result;
+      } catch (err) {
+        recordExceptionAndMarkSpanError(err, span);
+        throw err;
+      } finally {
+        span.end();
+      }
+    });
+  };
+}
+
+export function recordExceptionAndMarkSpanError(err: unknown, span: Span | undefined) {
+  if (err instanceof Error) {
+    span?.setStatus({
+      code: SpanStatusCode.ERROR,
+      message: err.message,
+    });
+    span?.recordException(err);
+  } else {
+    // fallback if it's not an Error (e.g. string or object)
+    span?.setStatus({
+      code: SpanStatusCode.ERROR,
+      message: 'Unknown error',
+    });
+    span?.recordException({
+      name: 'UnknownError',
+      message: String(err),
+    });
+  }
+}

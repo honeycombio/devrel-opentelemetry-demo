@@ -7,6 +7,10 @@ import ApiGateway from '../gateways/Api.gateway';
 import { CartItem, OrderResult, PlaceOrderRequest } from '../protos/demo';
 import { IProductCart } from '../types/Cart';
 import { useCurrency } from './Currency.provider';
+import { trace, context } from '@opentelemetry/api';
+import { recordExceptionAndMarkSpanError, spanAttributesForRpc, tracedMutation, tracedQuery } from '../utils/telemetry/SpanUtils';
+
+const tracer = trace.getTracer('cart-provider');
 
 interface IContext {
   cart: IProductCart;
@@ -42,20 +46,23 @@ const CartProvider = ({ children }: IProps) => {
 
   const { data: cart = { userId: '', items: [] } } = useQuery({
     queryKey: ['cart', selectedCurrency],
-    queryFn: () => ApiGateway.getCart(selectedCurrency),
+    queryFn: () => {
+      return tracedQuery('getCart', () => ApiGateway.getCart(selectedCurrency), 'cart-provider');
+    }
   });
+
   const addCartMutation = useMutation({
-    mutationFn: ApiGateway.addCartItem,
+    mutationFn: tracedMutation('addCartItem', ApiGateway.addCartItem, 'cart-provider', spanAttributesForRpc('CartService', 'addCartItem', 'CartProvider')),
     ...mutationOptions,
   });
 
   const emptyCartMutation = useMutation({
-    mutationFn: ApiGateway.emptyCart,
+    mutationFn: tracedMutation('emptyCart', ApiGateway.emptyCart, 'cart-provider', spanAttributesForRpc('CartService', 'emptyCart', 'CartProvider')),
     ...mutationOptions,
   });
 
   const placeOrderMutation = useMutation({
-    mutationFn: ApiGateway.placeOrder,
+    mutationFn: tracedMutation('placeOrder', ApiGateway.placeOrder, 'cart-provider', spanAttributesForRpc('CartService', 'placeOrder', 'CartProvider')),
     ...mutationOptions,
   });
 
@@ -63,7 +70,8 @@ const CartProvider = ({ children }: IProps) => {
     (item: CartItem) => addCartMutation.mutateAsync({ ...item, currencyCode: selectedCurrency }),
     [addCartMutation, selectedCurrency]
   );
-  const emptyCart = useCallback(() => emptyCartMutation.mutateAsync(), [emptyCartMutation]);
+  // note - we don't have a param to feed the empty cart, so it's undefined
+  const emptyCart = useCallback(() => emptyCartMutation.mutateAsync(undefined), [emptyCartMutation]);
   const placeOrder = useCallback(
     (order: PlaceOrderRequest) => placeOrderMutation.mutateAsync({ ...order, currencyCode: selectedCurrency }),
     [placeOrderMutation, selectedCurrency]

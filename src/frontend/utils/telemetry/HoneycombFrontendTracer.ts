@@ -54,6 +54,17 @@ const HoneycombFrontendTracer = (sessionId: string) => {
                 }
             }),
         ],
+        webVitalsInstrumentationConfig: {
+          cls: {
+            reportAllChanges: true
+          },
+          lcp: {
+            reportAllChanges: true
+          },
+          inp: {
+            reportAllChanges: true
+          }
+        },
         sessionProvider: {
             getSessionId: () => sessionId
         }
