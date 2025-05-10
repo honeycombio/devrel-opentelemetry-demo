@@ -25,6 +25,15 @@ declare global {
   }
 }
 
+const reactQueryClient = new QueryClient({
+    defaultOptions: {
+        queries: {
+            staleTime: 0,
+            refetchOnWindowFocus: true,
+            refetchOnMount: true,
+        },
+    },
+});
 function MyApp({ Component, pageProps }: AppProps) {
     const [hydrated, setHydrated] = useState(false);
 
@@ -73,7 +82,7 @@ function MyApp({ Component, pageProps }: AppProps) {
     return (
       <ThemeProvider theme={Theme}>
         <OpenFeatureProvider>
-          <QueryClientProvider client={new QueryClient()}>
+          <QueryClientProvider client={reactQueryClient}>
             <CurrencyProvider>
               <CartProvider>
                 <Component {...pageProps} />

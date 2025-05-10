@@ -36,19 +36,19 @@ export function spanAttributesForRpc(
   };
 }
 
-export function tracedMutation<TArgs, TResult>(
+export function tracedMutation<TVariables, TResult>(
   name: string,
-  fn: (args: TArgs) => Promise<TResult>,
+  fn: (variables: TVariables) => Promise<TResult>,
   tracerName = 'default',
   attributes: Attributes = {}
-): (args: TArgs) => Promise<TResult> {
-  return async (args: TArgs) => {
-    const tracer = trace.getTracer(tracerName);
+) {
+  const tracer = trace.getTracer(tracerName);
+  return async (variables: TVariables) => {
     const span = tracer.startSpan(name, { attributes });
 
     return context.with(trace.setSpan(context.active(), span), async () => {
       try {
-        const result = await fn(args);
+        const result = await fn(variables);
         span.setStatus({ code: SpanStatusCode.OK });
         return result;
       } catch (err) {

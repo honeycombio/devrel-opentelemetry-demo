@@ -7,10 +7,7 @@ import ApiGateway from '../gateways/Api.gateway';
 import { CartItem, OrderResult, PlaceOrderRequest } from '../protos/demo';
 import { IProductCart } from '../types/Cart';
 import { useCurrency } from './Currency.provider';
-import { trace, context } from '@opentelemetry/api';
-import { recordExceptionAndMarkSpanError, spanAttributesForRpc, tracedMutation, tracedQuery } from '../utils/telemetry/SpanUtils';
-
-const tracer = trace.getTracer('cart-provider');
+import { spanAttributesForRpc, tracedMutation, tracedQuery } from '../utils/telemetry/SpanUtils';
 
 interface IContext {
   cart: IProductCart;
@@ -38,17 +35,20 @@ const CartProvider = ({ children }: IProps) => {
   const mutationOptions = useMemo(
     () => ({
       onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: ['cart'] });
+        return queryClient.invalidateQueries({ queryKey: ['cart', selectedCurrency] });
       },
     }),
-    [queryClient]
+    [queryClient, selectedCurrency]
   );
 
   const { data: cart = { userId: '', items: [] } } = useQuery({
     queryKey: ['cart', selectedCurrency],
     queryFn: () => {
       return tracedQuery('getCart', () => ApiGateway.getCart(selectedCurrency), 'cart-provider');
-    }
+    },
+    staleTime: 0,
+    refetchOnMount: true,
+    refetchOnWindowFocus: true
   });
 
   const addCartMutation = useMutation({
