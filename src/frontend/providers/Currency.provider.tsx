@@ -5,6 +5,7 @@ import { createContext, useCallback, useContext, useMemo, useState, useEffect } 
 import { useQuery } from '@tanstack/react-query';
 import ApiGateway from '../gateways/Api.gateway';
 import SessionGateway from '../gateways/Session.gateway';
+import { tracedQuery } from '../utils/telemetry/SpanUtils';
 
 const { currencyCode } = SessionGateway.getSession();
 
@@ -29,8 +30,11 @@ export const useCurrency = () => useContext(Context);
 const CurrencyProvider = ({ children }: IProps) => {
   const { data: currencyCodeListUnsorted = [] } = useQuery({
     queryKey: ['currency'],
-    queryFn: ApiGateway.getSupportedCurrencyList
+    queryFn: () => {
+      return tracedQuery('getSupportedCurrencyList', () => ApiGateway.getSupportedCurrencyList(), 'currency-provider');
+    }
   });
+
   const [selectedCurrency, setSelectedCurrency] = useState<string>('');
 
   useEffect(() => {
