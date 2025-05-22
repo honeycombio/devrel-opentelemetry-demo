@@ -25,12 +25,12 @@ const Home: NextPage = () => {
       <Head>
         <title>Otel Demo - Home</title>
       </Head>
-      <S.Home data-cy={CypressFields.HomePage}>
+      <S.Home id="home" data-cy={CypressFields.HomePage}>
         <Banner />
-        <S.Container>
+        <S.Container id="outer-container">
           <S.Row>
             <S.Content>
-              <S.HotProducts>
+              <S.HotProducts id="hot-products-content">
                 <S.HotProductsTitle data-cy={CypressFields.HotProducts} id="hot-products">
                   Hot Products
                 </S.HotProductsTitle>

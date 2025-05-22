@@ -15,8 +15,9 @@ const CurrencySwitcher = () => {
   return (
     <S.CurrencySwitcher>
       <S.Container>
-        <S.SelectedConcurrency>{currencySymbol}</S.SelectedConcurrency>
+        <S.SelectedConcurrency id="selected-currency">{currencySymbol}</S.SelectedConcurrency>
         <S.Select
+          id="currency-select"
           name="currency_code"
           onChange={(event: { target: { value: string; }; }) => setSelectedCurrency(event.target.value)}
           value={selectedCurrency}
