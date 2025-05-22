@@ -48,9 +48,9 @@ const ProductCard = ({
   }, [imageSlowLoad, picture]);
 
   return (
-    <S.Link href={`/product/${id}`}>
-      <S.ProductCard data-cy={CypressFields.ProductCard}>
-        <S.Image $src={imageSrc} />
+    <S.Link id={`product-link-${id}`} href={`/product/${id}`}>
+      <S.ProductCard id={`product-card-${id}`} data-cy={CypressFields.ProductCard}>
+        <S.Image id={`product-image-${id}`} $src={imageSrc} />
         <div>
           <S.ProductName>{name}</S.ProductName>
           <S.ProductPrice>

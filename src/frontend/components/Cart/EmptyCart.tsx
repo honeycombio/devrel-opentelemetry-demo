@@ -7,7 +7,7 @@ import * as S from '../../styles/Cart.styled';
 
 const EmptyCart = () => {
   return (
-    <S.EmptyCartContainer>
+    <S.EmptyCartContainer id="cart-empty">
       <S.Title>Your shopping cart is empty!</S.Title>
       <S.Subtitle>Items you add to your shopping cart will appear here.</S.Subtitle>
 

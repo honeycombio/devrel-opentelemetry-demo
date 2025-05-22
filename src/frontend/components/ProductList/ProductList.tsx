@@ -12,7 +12,7 @@ interface IProps {
 
 const ProductList = ({ productList }: IProps) => {
   return (
-    <S.ProductList data-cy={CypressFields.ProductList}>
+    <S.ProductList id="product-list"data-cy={CypressFields.ProductList}>
       {productList.map(product => (
         <ProductCard key={product.id} product={product} />
       ))}

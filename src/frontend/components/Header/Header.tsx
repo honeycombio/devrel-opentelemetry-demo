@@ -11,7 +11,7 @@ const Header = () => {
       <S.NavBar>
         <S.Container>
           <S.NavBarBrand href="/">
-            <S.BrandImg />
+            <S.BrandImg id="brand-img"/>
           </S.NavBarBrand>
           <S.Controls>
             <CurrencySwitcher />

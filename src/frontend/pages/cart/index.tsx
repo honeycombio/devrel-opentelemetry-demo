@@ -26,7 +26,7 @@ const Cart: NextPage = () => {
         <title>Otel Demo - Cart</title>
       </Head>
       <Layout>
-        <S.Cart>
+        <S.Cart id="cart">
           {(!!items.length && <CartDetail />) || <EmptyCart />}
           <Recommendations />
         </S.Cart>

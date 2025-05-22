@@ -52,7 +52,7 @@ const CartItems = ({ productList, shouldShowPrice = true }: IProps) => {
   }, [shippingConst?.units, shippingConst?.nanos, productList, selectedCurrency]);
 
   return (
-    <S.CartItems>
+    <S.CartItems id="cart-items">
       <S.CardItemsHeader>
         <label>Product</label>
         <label>Quantity</label>
