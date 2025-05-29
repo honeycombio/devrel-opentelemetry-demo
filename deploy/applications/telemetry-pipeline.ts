@@ -29,121 +29,21 @@ export class TelemetryPipeline extends pulumi.ComponentResource {
         }, { provider: opts.provider! })
 
         const values = {
-            "beekeeper": {
-                "team": "devrel-telemetry-pipeline",
-                "pipelineInstallationID": "hccpi_01jp5baph0be20rje3pyaxeegh",
-                "publicMgmtKey": `${args.pipelineHoneycombManagementApiKeyId}`,
-                "telemetry": {
-                    "enabled": true,
-                    "config": {
-                        "tracer_provider": {
-                            "processors": [
-                                {
-                                    "batch": {
-                                        "exporter": {
-                                            "otlp": {
-                                                "protocol": "http/protobuf",
-                                                "endpoint": "${TELEMETRY_ENDPOINT}",
-                                                "headers": [
-                                                    {
-                                                        "name": "x-honeycomb-team",
-                                                        "value": "${HONEYCOMB_API_KEY}"
-                                                    }
-                                                ]
-                                            }
-                                        }
-                                    }
-                                }
-                            ]
-                        },
-                        "logger_provider": {
-                            "processors": [
-                                {
-                                    "batch": {
-                                        "exporter": {
-                                            "otlp": {
-                                                "protocol": "http/protobuf",
-                                                "endpoint": "${TELEMETRY_ENDPOINT}",
-                                                "headers": [
-                                                    {
-                                                        "name": "x-honeycomb-team",
-                                                        "value": "${HONEYCOMB_API_KEY}"
-                                                    }
-                                                ]
-                                            }
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    }
-                }
-            },
-            "collector": {
-                "image": {
-                    "repository": "mainacra1e0ec0b.azurecr.io/hny/opampsupervisor",
-                    "tag": "latest"
-                }
-            }
+            "pipelineInstallationID": "hcapi_01jw9b92a3zqjm802dywqvxm4n",
+            "publicMgmtAPIKey": `${args.pipelineHoneycombManagementApiKeyId}`,
         };
-
-        const dogfoodOverrides = {
-            "refinery": {
-                "config": {
-                    "Network": {
-                        "HoneycombAPI": "https://api-dogfood.honeycomb.io"
-                    },
-                    "HoneycombLogger": {
-                        "Dataset": "refinery-logs",
-                        "APIHost": "https://api-dogfood.honeycomb.io"
-                    },
-                    "OTelMetrics": {
-                        "Dataset": "refinery-metrics",
-                        "APIHost": "https://api-dogfood.honeycomb.io"
-                    }
-                }
-            },
-            "opampsupervisor": {
-                "telemetry": {
-                    "defaultEndpoint": "https://api-dogfood.honeycomb.io"
-                } 
-            },
-            "beekeeper": {
-                "endpoint": "https://api-dogfood.honeycomb.io",
-                "defaultEnv": {
-                    "TELEMETRY_ENDPOINT":{
-                        "content": {
-                            value: "https://api-dogfood.honeycomb.io",
-                        }
-                    }
-                },
-            }
-        };
-
-        let mergedValues = values;
     
-        if (args.useDogfood) {
-            mergedValues = {
-                ...values,
-                ...dogfoodOverrides,
-                beekeeper: {
-                    ...values.beekeeper,
-                    ...dogfoodOverrides.beekeeper
-                },
-            };
-        }
-
         const pipelineRelease = new Release(`${name}-pipeline-release`, {
             chart: "observability-pipeline",
             name: name,
-            version: "0.0.23-alpha",
+            version: "0.0.53-alpha",
+            devel: true,
             repositoryOpts: {
                 repo: "https://honeycombio.github.io/helm-charts"
             },
             dependencyUpdate: true,
             namespace: args.namespace,
-            values: mergedValues,
-            valueYamlFiles: [new pulumi.asset.FileAsset("./config-files/demo/values.yaml")]
+            values: values,
         }, { provider: opts.provider! });
     }
 }
