@@ -9,6 +9,7 @@ export interface CollectorArgs {
     honeycombDogfoodSecret: Secret;
     valuesFile: string;
     refineryHostname?: pulumi.Input<string>;
+    telemetryPipelineReleaseName?: pulumi.Input<string>;
 }
 
 export class Collector extends pulumi.ComponentResource {
@@ -52,6 +53,10 @@ export class Collector extends pulumi.ComponentResource {
                 {
                     "name": "REFINERY_HOSTNAME",
                     "value": args.refineryHostname
+                },
+                {
+                    "name": "PIPELINE_HOSTNAME",
+                    "value": pulumi.interpolate `${args.telemetryPipelineReleaseName}-primary-collector`
                 }
             ]
         }

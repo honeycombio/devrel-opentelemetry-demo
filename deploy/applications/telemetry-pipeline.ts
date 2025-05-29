@@ -12,6 +12,8 @@ export interface TelemetryPipelineArgs {
 
 export class TelemetryPipeline extends pulumi.ComponentResource {
 
+    public readonly releaseName: pulumi.Output<string>;
+
     constructor(name: string,
         args: TelemetryPipelineArgs,
         opts: pulumi.ComponentResourceOptions = {}) {
@@ -29,14 +31,14 @@ export class TelemetryPipeline extends pulumi.ComponentResource {
         }, { provider: opts.provider! })
 
         const values = {
-            "pipelineInstallationID": "hcapi_01jw9b92a3zqjm802dywqvxm4n",
+            "pipelineInstallationID": "hcapi_01jwdym5sqvsk1w7pc0z2687rs",
             "publicMgmtAPIKey": `${args.pipelineHoneycombManagementApiKeyId}`,
         };
     
         const pipelineRelease = new Release(`${name}-pipeline-release`, {
             chart: "observability-pipeline",
             name: name,
-            version: "0.0.53-alpha",
+            version: "0.0.55-alpha",
             devel: true,
             repositoryOpts: {
                 repo: "https://honeycombio.github.io/helm-charts"
@@ -45,5 +47,7 @@ export class TelemetryPipeline extends pulumi.ComponentResource {
             namespace: args.namespace,
             values: values,
         }, { provider: opts.provider! });
+
+        this.releaseName = pulumi.interpolate `${pipelineRelease.name}-${pipelineRelease.chart}`;
     }
 }

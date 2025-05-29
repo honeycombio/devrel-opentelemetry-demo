@@ -180,18 +180,25 @@ config:
     debug:
       verbosity: detailed
 
+    otlp/pipeline:
+      endpoint: ${PIPELINE_HOSTNAME}:4317
+      tls:
+        insecure: true
+
   service:
     pipelines:
       metrics:
         exporters:
           - otlp/metrics
           - otlp/metrics-dogfood
+          - otlp/pipeline
         processors:
           - transform/service_names
       logs:
         exporters:
           - otlp/logging-dogfood
           - otlp/refinery
+          - otlp/pipeline
         processors:
           - transform/parse_json_body
           - transform/service_names
@@ -204,6 +211,7 @@ config:
         exporters:
           - otlp/traces-dogfood
           - otlp/refinery
+          - otlp/pipeline
         processors:
           - transform/service_names
 

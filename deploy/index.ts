@@ -85,7 +85,8 @@ var podTelemetryCollector = new Collector("pod-telemetry-collector", {
     honeycombSecret: secretApiKey,
     honeycombDogfoodSecret: secretDogfoodApiKey,
     valuesFile: "./config-files/collector/values-daemonset.yaml",
-    refineryHostname: refinery.refineryHostname
+    refineryHostname: refinery.refineryHostname,
+    telemetryPipelineReleaseName: telemetryPipeline.releaseName
 }, { provider: provider });
 
 var clusterTelemetryCollector = new Collector("cluster-telemetry-collector", {
@@ -93,7 +94,8 @@ var clusterTelemetryCollector = new Collector("cluster-telemetry-collector", {
     namespace: demoNamespace.metadata.name,
     honeycombSecret: secretApiKey,
     honeycombDogfoodSecret: secretDogfoodApiKey,
-    valuesFile: "./config-files/collector/values-deployment.yaml"
+    valuesFile: "./config-files/collector/values-deployment.yaml",
+    telemetryPipelineReleaseName: telemetryPipeline.releaseName
 }, { provider: provider });
 
 
@@ -112,3 +114,4 @@ var demo = new OtelDemo("otel-demo", {
 export const clusterResourceGroup = demoClusterResourceGroup;
 export const clusterName = demoClusterName;
 export const demoUrl = demo.domainName;
+export const telemetryPipelineReleaseName = telemetryPipeline.releaseName;

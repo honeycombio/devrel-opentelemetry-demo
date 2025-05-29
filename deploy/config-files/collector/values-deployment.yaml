@@ -55,15 +55,19 @@ config:
       headers:
         "x-honeycomb-team": "${env:HONEYCOMB_API_KEY_DOGFOOD}"
         "x-honeycomb-dataset": "k8s-metrics"
-
+    
+    otlp/pipeline:
+      endpoint: ${PIPELINE_HOSTNAME}:4317
+      tls:
+        insecure: true
 
   service:
     pipelines:
       metrics:
-        exporters: [ otlp/k8s-metrics, otlp/k8s-metrics-dogfood ]
+        exporters: [ otlp/k8s-metrics, otlp/k8s-metrics-dogfood, otlp/pipeline ]
       logs:
         processors: [ memory_limiter, transform/events, batch ]
-        exporters: [ otlp/logging, otlp/logging-dogfood ]
+        exporters: [ otlp/logging, otlp/logging-dogfood, otlp/pipeline ]
 
 clusterRole:
   create: true
