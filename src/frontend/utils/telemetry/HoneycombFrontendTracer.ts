@@ -38,11 +38,12 @@ const HoneycombFrontendTracer = (sessionId: string) => {
         }),
         instrumentations: [
             getWebAutoInstrumentations({
-              // turn on networkEvents so we can see data for resourceFetch content sizes
-              '@opentelemetry/instrumentation-document-load': { ...configDefaults, ignoreNetworkEvents: false },
+              // alternative: turn on networkEvents so we can see data for resourceFetch content sizes
+              //'@opentelemetry/instrumentation-document-load': { ...configDefaults, ignoreNetworkEvents: false },
+              '@opentelemetry/instrumentation-document-load': configDefaults,
                 '@opentelemetry/instrumentation-fetch': {
-                    propagateTraceHeaderCorsUrls: /.*/,
-                    clearTimingResources: true,
+                  ...configDefaults,
+                    // clearTimingResources: true,
                     applyCustomAttributesOnSpan(span) {
                         span.setAttribute('app.synthetic_request', IS_SYNTHETIC_REQUEST);
                     },
@@ -54,17 +55,17 @@ const HoneycombFrontendTracer = (sessionId: string) => {
                 }
             }),
         ],
-        webVitalsInstrumentationConfig: {
-          cls: {
-            reportAllChanges: true
-          },
-          lcp: {
-            reportAllChanges: true
-          },
-          inp: {
-            reportAllChanges: true
-          }
-        },
+        // webVitalsInstrumentationConfig: {
+        //   cls: {
+        //     reportAllChanges: true
+        //   },
+        //   lcp: {
+        //     reportAllChanges: true
+        //   },
+        //   inp: {
+        //     reportAllChanges: true
+        //   }
+        // },
         sessionProvider: {
             getSessionId: () => sessionId
         }
