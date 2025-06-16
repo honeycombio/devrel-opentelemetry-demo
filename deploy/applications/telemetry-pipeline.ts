@@ -21,7 +21,7 @@ export class TelemetryPipeline extends pulumi.ComponentResource {
 
         const secretApiKey = new Secret(`${name}-pipeline-api-keys`, {
             metadata: {
-                name: "honeycomb-observability-pipeline",
+                name: "htp-builder",
                 namespace: args.namespace
             },
             stringData: {
@@ -31,15 +31,21 @@ export class TelemetryPipeline extends pulumi.ComponentResource {
         }, { provider: opts.provider! })
 
         const values = {
-            "pipelineInstallationID": "hcapi_01jwdym5sqvsk1w7pc0z2687rs",
-            "publicMgmtAPIKey": `${args.pipelineHoneycombManagementApiKeyId}`,
+            "pipeline":{
+                "id": "hcapi_01jwdym5sqvsk1w7pc0z2687rs"
+            },
+            "managementApiKey": {
+                "id": `${args.pipelineHoneycombManagementApiKeyId}`
+            },
+            "refinery": {
+                "replicaCount": 2
+            }
         };
     
         const pipelineRelease = new Release(`${name}-pipeline-release`, {
-            chart: "observability-pipeline",
+            chart: "htp-builder",
             name: name,
-            version: "0.0.55-alpha",
-            devel: true,
+            version: "0.0.70-alpha",
             repositoryOpts: {
                 repo: "https://honeycombio.github.io/helm-charts"
             },
