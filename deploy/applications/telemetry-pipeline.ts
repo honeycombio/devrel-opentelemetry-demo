@@ -8,6 +8,8 @@ export interface TelemetryPipelineArgs {
     pipelineHoneycombManagementApiKey: pulumi.Input<string>;
     pipelineHoneycombManagementApiKeyId: pulumi.Input<string>;
     useDogfood: pulumi.Input<boolean>;
+    s3AccessKey: pulumi.Input<string>;
+    s3SecretKey: pulumi.Input<string>;
 }
 
 export class TelemetryPipeline extends pulumi.ComponentResource {
@@ -30,6 +32,17 @@ export class TelemetryPipeline extends pulumi.ComponentResource {
             }
         }, { provider: opts.provider! })
 
+        const awsCredentials = new Secret(`${name}-aws-credentials`, {
+            metadata: {
+                name: "s3-aws-credentials",
+                namespace: args.namespace
+            },
+            stringData: {
+                ["aws-access-key-id"]: args.s3AccessKey,
+                ["aws-secret-access-key"]: args.s3SecretKey
+            }
+        }, { provider: opts.provider! })
+
         const values = {
             "pipeline":{
                 "id": "hcapi_01jwdym5sqvsk1w7pc0z2687rs"
@@ -39,6 +52,40 @@ export class TelemetryPipeline extends pulumi.ComponentResource {
             },
             "refinery": {
                 "replicaCount": 2
+            },
+            "primaryCollector": {
+                "extraEnvs": [
+                    {
+                        "name": "AWS_ACCESS_KEY_ID",
+                        "valueFrom": {
+                            "secretKeyRef": {
+                                "name": awsCredentials.metadata.name,
+                                "key": "aws-access-key-id"
+                            }
+                        }
+                    },
+                    {
+                        "name": "AWS_SECRET_ACCESS_KEY",
+                        "valueFrom": {
+                            "secretKeyRef": {
+                                "name": awsCredentials.metadata.name,
+                                "key": "aws-secret-access-key"
+                            }
+                        }
+                    },
+                    {
+                        "name": "AWS_REGION",
+                        "value": "us-west-1"
+                    },
+                    { 
+                        "name": "AWS_EC2_METADATA_DISABLED",
+                        "value": "true"
+                    },
+                    {
+                        "name": "AWS_IMDS_DISABLED",
+                        "value": "true"
+                    }
+                ]
             }
         };
     

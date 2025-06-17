@@ -20,6 +20,8 @@ const pipelineManagementApiKey = config.require("pipelineManagementApiKey");
 const pipelineManagementApiKeyId = config.require("pipelineManagementApiKeyId");
 const pipelineApiKey = config.require("pipelineApiKey");
 const refineryTelemetryApiKey = config.require("refineryTelemetryApiKey");
+const collectorS3AccessKey = config.require("collectorS3AccessKey");
+const collectorS3SecretKey = config.require("collectorS3SecretKey");
 
 const demoClusterResourceGroup = infrastack.getOutput("clusterResourceGroup");
 const demoClusterName = infrastack.getOutput("clusterName");
@@ -71,7 +73,9 @@ var telemetryPipeline = new TelemetryPipeline("telemetry-pipeline", {
     pipelineHoneycombApiKey: pipelineApiKey,
     pipelineHoneycombManagementApiKey: pipelineManagementApiKey,
     pipelineHoneycombManagementApiKeyId: pipelineManagementApiKeyId,
-    useDogfood: true
+    useDogfood: true,
+    s3AccessKey: collectorS3AccessKey,
+    s3SecretKey: collectorS3SecretKey
 }, { provider: provider });
 
 var refinery = new Refinery("refinery", {
