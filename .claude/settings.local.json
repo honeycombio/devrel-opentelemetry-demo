@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(find:*)",
+      "Bash(python:*)",
+      "Bash(locust:*)",
+      "Bash(go get:*)",
+      "Bash(go:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(rg:*)"
+    ],
+    "deny": []
+  }
+}
