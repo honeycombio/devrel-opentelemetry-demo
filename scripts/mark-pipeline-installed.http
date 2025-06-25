@@ -1,0 +1,50 @@
+#
+# This is a script that will set a Pipeline builder pipeline to "live" so that the setup step is skipped
+# You'll need to setup a management key in `.vscode/settings.json` or equivalent to set the
+# environment variables, and update the @pipeline-installation-hnyid to the pipeline you want to mark as live
+# 
+
+@host = api.honeycomb.io
+@team = devrel-demos
+
+@pipeline-installation-hnyid = hcapi_01jwvkgzvx604rp8fbfpccnqav
+@management-key = {{MANAGEMENT_KEY_ID}}:{{MANAGEMENT_KEY_SECRET}}
+
+
+# @name current
+GET https://{{host}}/2/teams/{{team}}/pipelines/{{pipeline-installation-hnyid}}/configurations/current
+Authorization: Bearer {{management-key}}
+
+###
+
+# @name set-config-state-deploying
+PATCH https://{{host}}/2/teams/{{team}}/pipelines/{{pipeline-installation-hnyid}}/rollouts/{{current.response.body.attributes.rolloutID}}
+Authorization: Bearer {{management-key}}
+Content-Type: application/vnd.api+json
+
+{
+  "data": {
+    "attributes": {
+      "status": "deploying"
+    },
+    "type": "pipeline_configuration_rollout",
+    "id": "{{current.response.body.attributes.rolloutID}}"
+  }
+}
+
+###
+
+# @name set-config-state-live
+PATCH https://{{host}}/2/teams/{{team}}/pipelines/{{pipeline-installation-hnyid}}/rollouts/{{current.response.body.attributes.rolloutID}}
+Authorization: Bearer {{management-key}}
+Content-Type: application/vnd.api+json
+
+{
+  "data": {
+    "attributes": {
+      "status": "live"
+    },
+    "type": "pipeline_configuration_rollout",
+    "id": "{{current.response.body.attributes.rolloutID}}"
+  }
+}
