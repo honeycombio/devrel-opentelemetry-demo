@@ -8,6 +8,7 @@ using cart.cartstore;
 using OpenFeature;
 using Oteldemo;
 using OpenFeature.Model;
+using Microsoft.Extensions.Logging;
 
 namespace cart.services;
 
@@ -18,13 +19,15 @@ public class CartService : Oteldemo.CartService.CartServiceBase
     private readonly ICartStore _badCartStore;
     private readonly ICartStore _cartStore;
     private readonly IFeatureClient _featureFlagHelper;
+    private readonly ILogger<CartService> _logger;
     public static readonly ActivitySource ActivitySource = new("Database");
 
-    public CartService(ICartStore cartStore, ICartStore badCartStore, IFeatureClient featureFlagService)
+    public CartService(ICartStore cartStore, ICartStore badCartStore, IFeatureClient featureFlagService, ILogger<CartService> logger)
     {
         _badCartStore = badCartStore;
         _cartStore = cartStore;
         _featureFlagHelper = featureFlagService;
+        _logger = logger;
     }
 
     public override async Task<Empty> AddItem(AddItemRequest request, ServerCallContext context)
@@ -38,12 +41,26 @@ public class CartService : Oteldemo.CartService.CartServiceBase
         {
             await _cartStore.AddItemAsync(request.UserId, request.Item.ProductId, request.Item.Quantity);
 
+            _logger.LogInformation("Added {Quantity} of product {ProductId} to cart for user {app.user.id}", 
+                request.Item.Quantity, request.Item.ProductId, request.UserId);
+
             return Empty;
         }
         catch (RpcException ex)
         {
             activity?.AddException(ex);
             activity?.SetStatus(ActivityStatusCode.Error, ex.Message);
+            
+            _logger.LogError("Failed to add product {ProductId} to cart for user {app.user.id}: {ErrorMessage}", 
+                request.Item.ProductId, request.UserId, ex.Message);
+            
+            _logger.LogInformation("Cart operation failure context - User: {app.user.id}, Product: {ProductId}, Quantity: {Quantity}, RequestedAt: {Timestamp}", 
+                request.UserId, request.Item.ProductId, request.Item.Quantity, DateTimeOffset.UtcNow);
+            _logger.LogInformation("Cart failure environment - Session: {SessionId}, TraceId: {TraceId}", 
+                activity?.GetBaggageItem("session.id"), activity?.TraceId);
+            _logger.LogInformation("Cart store type: {StoreType}, User-Agent: {UserAgent}", 
+                _cartStore.GetType().Name, context.GetHttpContext()?.Request.Headers["User-Agent"].ToString());
+            
             throw;
         }
     }
@@ -63,7 +80,7 @@ public class CartService : Oteldemo.CartService.CartServiceBase
             _featureFlagHelper.SetContext(
                 EvaluationContext.Builder()
                     .Set("cart.unique_items.count", cart.Items.Count)
-                    .Set("user.id", request.UserId)
+                    .Set("app.user.id", request.UserId)
                     .Build());
 
             var shouldDoDatabaseCall = await _featureFlagHelper.GetBooleanValueAsync("cartservice.add-db-call", false);
@@ -90,12 +107,26 @@ public class CartService : Oteldemo.CartService.CartServiceBase
             }
             activity?.SetTag("app.cart.items.count", totalCart);
 
+            _logger.LogInformation("Cart retrieved for user {app.user.id} with {ItemCount} unique items, {TotalQuantity} total items", 
+                request.UserId, cart.Items.Count, totalCart);
+
             return cart;
         }
         catch (RpcException ex)
         {
             activity?.AddException(ex);
             activity?.SetStatus(ActivityStatusCode.Error, ex.Message);
+            
+            _logger.LogError("Failed to retrieve cart for user {app.user.id}: {ErrorMessage}", 
+                request.UserId, ex.Message);
+            
+            _logger.LogInformation("Cart retrieval failure context - User: {app.user.id}, RequestedAt: {Timestamp}", 
+                request.UserId, DateTimeOffset.UtcNow);
+            _logger.LogInformation("Cart failure environment - Session: {SessionId}, TraceId: {TraceId}", 
+                activity?.GetBaggageItem("session.id"), activity?.TraceId);
+            _logger.LogInformation("Cart store type: {StoreType}, User-Agent: {UserAgent}", 
+                _cartStore.GetType().Name, context.GetHttpContext()?.Request.Headers["User-Agent"].ToString());
+            
             throw;
         }
     }
@@ -108,19 +139,37 @@ public class CartService : Oteldemo.CartService.CartServiceBase
 
         try
         {
-            if (await _featureFlagHelper.GetBooleanValueAsync("cartFailure", false))
+            var cartFailureEnabled = await _featureFlagHelper.GetBooleanValueAsync("cartFailure", false);
+            
+            if (cartFailureEnabled)
             {
+                _logger.LogInformation("Using bad cart store due to cartFailure feature flag for user {app.user.id}", request.UserId);
                 await _badCartStore.EmptyCartAsync(request.UserId);
             }
             else
             {
                 await _cartStore.EmptyCartAsync(request.UserId);
             }
+            
+            _logger.LogInformation("Cart emptied for user {app.user.id}, cartFailure flag: {CartFailureEnabled}", 
+                request.UserId, cartFailureEnabled);
         }
         catch (RpcException ex)
         {
             Activity.Current?.AddException(ex);
             Activity.Current?.SetStatus(ActivityStatusCode.Error, ex.Message);
+            
+            _logger.LogError("Failed to empty cart for user {app.user.id}: {ErrorMessage}", 
+                request.UserId, ex.Message);
+            
+            var cartFailureEnabled = await _featureFlagHelper.GetBooleanValueAsync("cartFailure", false);
+            _logger.LogInformation("Cart empty failure context - User: {app.user.id}, CartFailureFlag: {CartFailureEnabled}, RequestedAt: {Timestamp}", 
+                request.UserId, cartFailureEnabled, DateTimeOffset.UtcNow);
+            _logger.LogInformation("Cart failure environment - Session: {SessionId}, TraceId: {TraceId}", 
+                activity?.GetBaggageItem("session.id"), activity?.TraceId);
+            _logger.LogInformation("Store types - Primary: {PrimaryStoreType}, Bad: {BadStoreType}, User-Agent: {UserAgent}", 
+                _cartStore.GetType().Name, _badCartStore.GetType().Name, context.GetHttpContext()?.Request.Headers["User-Agent"].ToString());
+            
             throw;
         }
 

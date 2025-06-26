@@ -124,7 +124,7 @@ public class ValkeyCartStore : ICartStore
     public async Task AddItemAsync(string userId, string productId, int quantity)
     {
         var stopwatch = Stopwatch.StartNew();
-        _logger.LogInformation("AddItemAsync called with userId={userId}, productId={productId}, quantity={quantity}", userId, productId, quantity);
+        _logger.LogInformation("AddItemAsync called with {app.user.id}, productId={productId}, quantity={quantity}", userId, productId, quantity);
 
         try
         {
@@ -138,7 +138,7 @@ public class ValkeyCartStore : ICartStore
             Oteldemo.Cart cart;
             if (value.IsNull)
             {
-                _logger.LogInformation("Cart for user {userId} not found. Creating a new one.", userId);
+                _logger.LogInformation("Cart for user {app.user.id} not found. Creating a new one.", userId);
                 cart = new Oteldemo.Cart
                 {
                     UserId = userId
@@ -147,7 +147,7 @@ public class ValkeyCartStore : ICartStore
             }
             else
             {
-                _logger.LogInformation("Cart for user {userId} found. Updating the cart.", userId);
+                _logger.LogInformation("Cart for user {app.user.id} found. Updating the cart.", userId);
                 cart = Oteldemo.Cart.Parser.ParseFrom(value);
                 var existingItem = cart.Items.SingleOrDefault(i => i.ProductId == productId);
                 if (existingItem == null)
@@ -175,7 +175,7 @@ public class ValkeyCartStore : ICartStore
 
     public async Task EmptyCartAsync(string userId)
     {
-        _logger.LogInformation("EmptyCartAsync called with userId={userId}", userId);
+        _logger.LogInformation("EmptyCartAsync called with {app.user.id}", userId);
 
         try
         {
@@ -195,7 +195,7 @@ public class ValkeyCartStore : ICartStore
     public async Task<Oteldemo.Cart> GetCartAsync(string userId)
     {
         var stopwatch = Stopwatch.StartNew();
-        _logger.LogInformation("GetCartAsync called with userId={userId}", userId);
+        _logger.LogInformation("GetCartAsync called with {app.user.id}", userId);
 
         try
         {
@@ -208,11 +208,11 @@ public class ValkeyCartStore : ICartStore
 
             if (!value.IsNull)
             {
-                _logger.LogInformation("Cart for user {userId} found in the cache.", userId);
+                _logger.LogInformation("Cart for user {app.user.id} found in the cache.", userId);
                 return Oteldemo.Cart.Parser.ParseFrom(value);
             }
 
-            _logger.LogInformation("Cart for user {userId} not found in the cache.", userId);
+            _logger.LogInformation("Cart for user {app.user.id} not found in the cache.", userId);
             // We decided to return empty cart in cases when user wasn't in the cache before
             return new Oteldemo.Cart();
         }
