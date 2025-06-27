@@ -9,6 +9,7 @@ import { Refinery } from "./applications/refinery";
 
 const collectorHelmVersion = "0.107.0";
 const demoHelmVersion = "0.37.0";
+const refineryHelmVersion = "2.17.0";
 
 const config = new pulumi.Config();
 const apiKey = config.require("honeycombApiKey");
@@ -79,6 +80,7 @@ var telemetryPipeline = new TelemetryPipeline("telemetry-pipeline", {
 }, { provider: provider });
 
 var refinery = new Refinery("refinery", {
+    refineryHelmVersion: refineryHelmVersion,
     namespace: demoNamespace.metadata.name,
     telemetryApiKey: refineryTelemetryApiKey
 }, { provider: provider });

@@ -5,6 +5,7 @@ import { ConfigMap } from "@pulumi/kubernetes/core/v1/configMap";
 import * as fs from "fs";
 
 export interface RefineryArgs {
+    refineryHelmVersion: pulumi.Input<string>;
     namespace: pulumi.Input<string>;
     telemetryApiKey: pulumi.Input<string>;
 }
@@ -61,6 +62,7 @@ export class Refinery extends pulumi.ComponentResource {
         var refinery = new Release("refinery", {
             chart: "refinery",
             name: "refinery",
+            version: args.refineryHelmVersion,
             namespace: args.namespace,
             repositoryOpts: {
                 repo: "https://honeycombio.github.io/helm-charts"
