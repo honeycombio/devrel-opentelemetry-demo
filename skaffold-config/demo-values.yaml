@@ -18,7 +18,7 @@ default:
 
 components:
   load-generator:
-    replicas: 1
+    enabled: false
   frontend:
     replicas: 1
 
@@ -40,7 +40,7 @@ opentelemetry-collector:
           http:
             cors:
               allowed_origins:
-                - '*'
+                - "*"
             endpoint: 0.0.0.0:4318
       filelog:
         include:
