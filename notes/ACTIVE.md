@@ -229,3 +229,90 @@ Logging infrastructure has been added and is working.
 - ✅ Error + additional info logs on failures
 - ✅ Consistent field naming (`app.product.id`, `app.cart.*`, `app.order.*`)
 - ✅ Integrated with existing OpenTelemetry infrastructure
+
+## Kafka Message Publishing Analysis - Checkout Service
+
+### Key Files Found
+
+1. **`/src/checkout/kafka/producer.go`** - Kafka producer configuration
+2. **`/src/checkout/main.go`** - Main service with Kafka publishing logic
+
+### Kafka Producer Configuration
+
+**Location:** `/src/checkout/kafka/producer.go`
+
+**Key Configuration:**
+- **Topic:** `"orders"` (line 11)
+- **Protocol Version:** `sarama.V3_0_0_0` (line 12)
+- **Producer Type:** `sarama.AsyncProducer` (asynchronous)
+- **Return Settings:**
+  - `Return.Successes = true` (lines 19, 29)
+  - `Return.Errors = true` (line 20)
+- **Required Acks:** `sarama.NoResponse` (line 24) - **This is important for performance but may swallow failed messages**
+
+**No Explicit Timeout Configuration Found** - Using Sarama defaults
+
+### "orders publish" Span Creation
+
+**Location:** `/src/checkout/main.go`, lines 559-583
+
+The span that shows up in traces as "orders publish" is created by the `createProducerSpan()` function:
+
+```go
+func createProducerSpan(ctx context.Context, msg *sarama.ProducerMessage) trace.Span {
+    spanContext, span := tracer.Start(
+        ctx,
+        fmt.Sprintf("%s publish", msg.Topic), // Creates "orders publish"
+        trace.WithSpanKind(trace.SpanKindProducer),
+        trace.WithAttributes(
+            semconv.PeerService("kafka"),
+            semconv.NetworkTransportTCP,
+            semconv.MessagingSystemKafka,
+            semconv.MessagingDestinationName(msg.Topic),
+            semconv.MessagingOperationPublish,
+            semconv.MessagingKafkaDestinationPartition(int(msg.Partition)),
+        ),
+    )
+    // ... propagation setup
+    return span
+}
+```
+
+### Message Publishing Flow
+
+**Location:** `/src/checkout/main.go`, `sendToPostProcessor()` function (lines 492-557)
+
+**Flow:**
+1. **Message Creation:** Order result marshaled to protobuf (lines 493-497)
+2. **Span Creation:** Producer span created with topic name (line 505)
+3. **Message Send:** Async send via producer input channel (line 511)
+4. **Response Handling:** Complex select statement waits for:
+   - Success response (lines 514-520)
+   - Error response (lines 521-527)
+   - Context cancellation (lines 528-534, 536-542)
+
+**Timing:** Start time recorded before send (line 509), duration calculated on completion
+
+**Attributes Set on Success:**
+- `messaging.kafka.producer.success: true`
+- `messaging.kafka.producer.duration_ms: <duration>`
+- `messaging.kafka.message.offset: <offset>`
+
+**Attributes Set on Failure:**
+- `messaging.kafka.producer.success: false`
+- `messaging.kafka.producer.duration_ms: <duration>`
+- Span status set to ERROR with error message
+
+### Potential Timeout Issues
+
+**No explicit timeouts configured for:**
+- Kafka producer operations
+- Context deadline enforcement
+- Message delivery acknowledgment
+
+**The service relies on:**
+- Context cancellation from upstream requests
+- Sarama library's default timeout behaviors
+- `RequiredAcks = NoResponse` setting may mask timeout issues
+
+This explains why the "orders publish" span appears in traces and provides the context for any timeout-related issues we might be investigating.
