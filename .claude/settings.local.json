@@ -8,7 +8,12 @@
       "Bash(go:*)",
       "Bash(git add:*)",
       "Bash(git commit:*)",
-      "Bash(rg:*)"
+      "Bash(rg:*)",
+      "WebFetch(domain:docs.honeycomb.io)",
+      "Bash(npm install:*)",
+      "Bash(npm run build:*)",
+      "Bash(grep:*)",
+      "Bash(npm run lint)"
     ],
     "deny": []
   }

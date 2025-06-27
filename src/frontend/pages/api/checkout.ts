@@ -8,6 +8,8 @@ import { Empty, PlaceOrderRequest } from '../../protos/demo';
 import { IProductCheckoutItem, IProductCheckout } from '../../types/Cart';
 import ProductCatalogService from '../../services/ProductCatalog.service';
 
+import logger from '../../utils/telemetry/Logger';
+
 type TResponse = IProductCheckout | Empty;
 
 const handler = async ({ method, body, query }: NextApiRequest, res: NextApiResponse<TResponse>) => {
@@ -15,24 +17,53 @@ const handler = async ({ method, body, query }: NextApiRequest, res: NextApiResp
     case 'POST': {
       const { currencyCode = '' } = query;
       const orderData = body as PlaceOrderRequest;
-      const { order: { items = [], ...order } = {} } = await CheckoutGateway.placeOrder(orderData);
+      const userId = orderData.userId || '';
+      
+      try {
+        const { order: { items = [], ...order } = {} } = await CheckoutGateway.placeOrder(orderData);
 
-      const productList: IProductCheckoutItem[] = await Promise.all(
-        items.map(async ({ item: { productId = '', quantity = 0 } = {}, cost }) => {
-          const product = await ProductCatalogService.getProduct(productId, currencyCode as string);
+        const productList: IProductCheckoutItem[] = await Promise.all(
+          items.map(async ({ item: { productId = '', quantity = 0 } = {}, cost }) => {
+            const product = await ProductCatalogService.getProduct(productId, currencyCode as string);
 
-          return {
-            cost,
-            item: {
-              productId,
-              quantity,
-              product,
-            },
-          };
-        })
-      );
+            return {
+              cost,
+              item: {
+                productId,
+                quantity,
+                product,
+              },
+            };
+          })
+        );
 
-      return res.status(200).json({ ...order, items: productList });
+        const totalCost = items.reduce((sum, item) => {
+          const cost = item.cost?.nanos ? item.cost.nanos / 1000000000 : 0;
+          return sum + cost;
+        }, 0);
+
+        logger.info({
+          'app.user.id': userId,
+          'app.order.total_cost': totalCost,
+          'app.order.item_count': items.length,
+        }, 'Order placed successfully');
+
+        return res.status(200).json({ ...order, items: productList });
+      } catch (error) {
+        logger.error({
+          'app.user.id': userId,
+          'app.request.currency': currencyCode,
+          err: error,
+        }, 'Failed to place order');
+        
+        logger.info({
+          'app.user.id': userId,
+          'app.error.type': 'checkout_failed',
+          'app.request.currency': currencyCode,
+        }, 'Checkout failed - unable to process order');
+        
+        throw error;
+      }
     }
 
     default: {

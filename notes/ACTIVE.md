@@ -105,6 +105,127 @@ The error load generator targets these endpoints with specific error patterns:
 
 ## Adding OTLP logs to the frontend
 
-- how is logging implemented in the frontend?
+### Current Frontend Logging State Analysis
 
-- how can we get the existing logging in the frontend to be delivered via OTLP?
+**Service:** Frontend (TypeScript/Next.js application)
+**Location:** `/src/frontend/`
+
+#### Current Logging Implementation
+
+**❌ NO STRUCTURED LOGGING** - The frontend currently has minimal to no logging infrastructure:
+
+1. **No Console Logging**: Search for `console.log|console.error|console.warn|console.info` found no results
+2. **No Logging Libraries**: No dedicated logging libraries found in dependencies
+3. **No Structured Logging**: No log formatting or structured output
+4. **Error Handling Without Logging**: Error handling exists but without logging:
+   - `InstrumentationMiddleware.ts` records exceptions to spans but doesn't log them
+   - Gateway files use Promise rejection without logging
+   - React components have error boundaries but no logging
+
+#### Current OpenTelemetry Setup
+
+**✅ COMPREHENSIVE OTEL TRACING** - Already well-configured:
+
+**Dependencies in `package.json`:**
+
+- `@opentelemetry/api`: 1.9.0
+- `@opentelemetry/auto-instrumentations-node`: 0.56.1
+- `@opentelemetry/auto-instrumentations-web`: ^0.47.0
+- `@opentelemetry/exporter-trace-otlp-grpc`: 0.57.2
+- `@opentelemetry/exporter-trace-otlp-http`: ~0.201.1
+- `@honeycombio/opentelemetry-web`: ^0.18.0
+- All necessary SDK and instrumentation packages
+
+**Server-side Instrumentation (`utils/telemetry/Instrumentation.js`):**
+
+- NodeSDK with OTLP trace exporter
+- OTLP metrics exporter
+- Auto-instrumentations enabled
+- Resource detectors configured
+
+**Client-side Instrumentation (`utils/telemetry/HoneycombFrontendTracer.ts`):**
+
+- HoneycombWebSDK setup
+- Web auto-instrumentations
+- Fetch and user interaction instrumentation
+- Session tracking integration
+
+**Telemetry Infrastructure:**
+
+- `Instrumentation.js`: initializes OpenTelemetry for the services
+- `SpanUtils.ts`: Helper functions for tracing operations
+- `InstrumentationMiddleware.ts`: API middleware with metrics and error recording
+- `SessionIdProcessor.ts`: Session correlation for spans
+
+#### Current Error Handling Patterns
+
+**Spans Record Exceptions** (but no logs):
+
+```typescript
+// InstrumentationMiddleware.ts - line 24
+span.recordException(error as Exception);
+span.setStatus({ code: SpanStatusCode.ERROR });
+
+// SpanUtils.ts - line 62-81
+function recordExceptionAndMarkSpanError(err: unknown, span: Span);
+```
+
+**Promise-based Error Handling** (no logging):
+
+```typescript
+// Gateway pattern example
+client.listProducts({}, (error, response) => (error ? reject(error) : resolve(response)));
+```
+
+#### API Route Structure
+
+**Files to Enhance with Logging:**
+
+- `/pages/api/cart.ts` - Cart operations
+- `/pages/api/checkout.ts` - Order placement
+- `/pages/api/currency.ts` - Currency conversion
+- `/pages/api/products/index.ts` - Product listing
+- `/pages/api/products/[productId]/index.ts` - Product details
+- `/pages/api/recommendations.ts` - Product recommendations
+- `/pages/api/shipping.ts` - Shipping quotes
+
+All API routes use `InstrumentationMiddleware` for tracing but lack logging.
+
+### Implementation Plan for Frontend Logging
+
+Logging infrastructure has been added and is working.
+
+[x] Add logs with business context to endpoints.
+[x] Include the customer ID as `app.user.id` ... this happens to be the same value as session ID in this demo app
+[x] On failure, add error logs AND extra info logs. Include the app.user.id in both.
+
+### ✅ COMPLETED: Frontend API Logging Implementation
+
+**Enhanced API Endpoints with Business Context Logging:**
+
+1. **Product Details** (`/api/products/[productId]`)
+   - Success: Product info with price, name, customer ID
+   - Failure: Error + info log with customer context for invalid product IDs
+
+2. **Cart Operations** (`/api/cart`)
+   - GET: Cart metrics (item count, quantities, customer ID)  
+   - POST: Item addition tracking with product and quantity details
+   - DELETE: Cart empty operations
+   - All operations include customer ID and error context on failures
+
+3. **Checkout** (`/api/checkout`)
+   - Success: Order tracking with total cost, item count, shipping info
+   - Failure: Comprehensive error logging with order attempt details
+   - Includes customer ID in all logs
+
+4. **Recommendations** (`/api/recommendations`)
+   - Success: Recommendation metrics (input/output counts, product IDs)
+   - Failure: Error context with recommendation attempt details
+   - Customer ID tracking for personalization context
+
+**Logging Standards Implemented:**
+- ✅ Customer ID as `app.user.id` (using session ID)
+- ✅ Structured logging with business context
+- ✅ Error + additional info logs on failures
+- ✅ Consistent field naming (`app.product.id`, `app.cart.*`, `app.order.*`)
+- ✅ Integrated with existing OpenTelemetry infrastructure
