@@ -11,7 +11,7 @@ from concurrent import futures
 
 # Pip
 import grpc
-from opentelemetry import trace, metrics
+from opentelemetry import trace, metrics, baggage, context
 from opentelemetry._logs import set_logger_provider
 from opentelemetry.exporter.otlp.proto.grpc._log_exporter import (
     OTLPLogExporter,
@@ -41,19 +41,40 @@ first_run = True
 
 class RecommendationService(demo_pb2_grpc.RecommendationServiceServicer):
     def ListRecommendations(self, request, context):
-        prod_list = get_product_list(request.product_ids)
-        span = trace.get_current_span()
-        span.set_attribute("app.products_recommended.count", len(prod_list))
-        logger.info(f"Receive ListRecommendations for product ids:{prod_list}")
+        # Extract customer context from baggage
+        from opentelemetry import context as otel_context
+        current_context = otel_context.get_current()
+        customer_id = baggage.get_baggage("customer.id", current_context)
+        
+        try:
+            prod_list = get_product_list(request.product_ids)
+            span = trace.get_current_span()
+            span.set_attribute("app.products_recommended.count", len(prod_list))
+            
+            # Enhanced info logging with customer context
+            log_extra = {"app.user.id": customer_id} if customer_id else {}
+            logger.info(
+                f"Successfully generated {len(prod_list)} recommendations for customer",
+                extra=log_extra
+            )
 
-        # build and return response
-        response = demo_pb2.ListRecommendationsResponse()
-        response.product_ids.extend(prod_list)
+            # build and return response
+            response = demo_pb2.ListRecommendationsResponse()
+            response.product_ids.extend(prod_list)
 
-        # Collect metrics for this service
-        rec_svc_metrics["app_recommendations_counter"].add(len(prod_list), {'recommendation.type': 'catalog'})
+            # Collect metrics for this service
+            rec_svc_metrics["app_recommendations_counter"].add(len(prod_list), {'recommendation.type': 'catalog'})
 
-        return response
+            return response
+            
+        except Exception as e:
+            # Error logging with customer context
+            log_extra = {"app.user.id": customer_id} if customer_id else {}
+            logger.error(
+                f"Failed to generate recommendations: {str(e)}",
+                extra=log_extra
+            )
+            raise
 
     def Check(self, request, context):
         return health_pb2.HealthCheckResponse(
@@ -74,26 +95,42 @@ def get_product_list(request_product_ids):
         request_product_ids_str = ''.join(request_product_ids)
         request_product_ids = request_product_ids_str.split(',')
 
+        # Extract customer context for logging
+        current_context = context.get_current()
+        customer_id = baggage.get_baggage("customer.id", current_context)
+        log_extra = {"app.user.id": customer_id} if customer_id else {}
+        
         # Feature flag scenario - Cache Leak
         if check_feature_flag("recommendationCacheFailure"):
             span.set_attribute("app.recommendation.cache_enabled", True)
             if random.random() < 0.5 or first_run:
                 first_run = False
                 span.set_attribute("app.cache_hit", False)
-                logger.info("get_product_list: cache miss")
-                cat_response = product_catalog_stub.ListProducts(demo_pb2.Empty())
-                response_ids = [x.id for x in cat_response.products]
-                cached_ids = cached_ids + response_ids
-                cached_ids = cached_ids + cached_ids[:len(cached_ids) // 4]
-                product_ids = cached_ids
+                logger.info("Cache miss - fetching fresh product catalog", extra=log_extra)
+                try:
+                    cat_response = product_catalog_stub.ListProducts(demo_pb2.Empty())
+                    response_ids = [x.id for x in cat_response.products]
+                    cached_ids = cached_ids + response_ids
+                    cached_ids = cached_ids + cached_ids[:len(cached_ids) // 4]
+                    product_ids = cached_ids
+                    logger.info(f"Successfully cached {len(response_ids)} products", extra=log_extra)
+                except Exception as e:
+                    logger.error(f"Failed to fetch products from catalog: {str(e)}", extra=log_extra)
+                    raise
             else:
                 span.set_attribute("app.cache_hit", True)
-                logger.info("get_product_list: cache hit")
+                logger.info(f"Cache hit - using {len(cached_ids)} cached products", extra=log_extra)
                 product_ids = cached_ids
         else:
             span.set_attribute("app.recommendation.cache_enabled", False)
-            cat_response = product_catalog_stub.ListProducts(demo_pb2.Empty())
-            product_ids = [x.id for x in cat_response.products]
+            logger.info("Cache disabled - fetching fresh product catalog", extra=log_extra)
+            try:
+                cat_response = product_catalog_stub.ListProducts(demo_pb2.Empty())
+                product_ids = [x.id for x in cat_response.products]
+                logger.info(f"Successfully fetched {len(product_ids)} products from catalog", extra=log_extra)
+            except Exception as e:
+                logger.error(f"Failed to fetch products from catalog: {str(e)}", extra=log_extra)
+                raise
 
         span.set_attribute("app.products.count", len(product_ids))
 
