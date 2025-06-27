@@ -27,4 +27,22 @@ pip install -r requirements.txt
 locust -f locustfile.py
 ```
 
+## The error script
 
+For local use, there's also an `error_customer.py`
+which you can run with
+
+```bash
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+locust -f error_customer.py
+```
+
+and then visit http://localhost:8089
+and then you can start a load test of one user that only likes invalid products.
+This can generate some error messages, see.
+
+Change the URL in the `host` parameter in the code to swap between your installation / production.
+
+It logs excessively to a local collector.
