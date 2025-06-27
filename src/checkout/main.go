@@ -525,6 +525,13 @@ func (cs *checkout) sendToPostProcessor(ctx context.Context, result *pb.OrderRes
 			)
 			span.SetStatus(otelcodes.Error, errMsg.Err.Error())
 			log.Errorf("Failed to write message: %v", errMsg.Err)
+		case <-time.After(15 * time.Second):
+			span.SetAttributes(
+				attribute.Bool("messaging.kafka.producer.success", false),
+				attribute.Int("messaging.kafka.producer.duration_ms", int(time.Since(startTime).Milliseconds())),
+			)
+			span.SetStatus(otelcodes.Error, "No response from frauddetection within 15 seconds")
+			log.Errorf("No response from frauddetection within 15 seconds, returning connection error")
 		case <-ctx.Done():
 			span.SetAttributes(
 				attribute.Bool("messaging.kafka.producer.success", false),

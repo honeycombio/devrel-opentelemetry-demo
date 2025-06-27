@@ -13,8 +13,14 @@
       "Bash(npm install:*)",
       "Bash(npm run build:*)",
       "Bash(grep:*)",
-      "Bash(npm run lint)"
+      "Bash(npm run lint)",
+      "mcp__honeycomb__get_trace",
+      "mcp__honeycomb__run_unsaved_query"
     ],
     "deny": []
-  }
+  },
+  "enableAllProjectMcpServers": true,
+  "enabledMcpjsonServers": [
+    "honeycomb"
+  ]
 }

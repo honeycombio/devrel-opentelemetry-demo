@@ -3,6 +3,8 @@
 package kafka
 
 import (
+	"time"
+
 	"github.com/IBM/sarama"
 	"github.com/sirupsen/logrus"
 )
@@ -24,6 +26,11 @@ func CreateKafkaProducer(brokers []string, log *logrus.Logger) (sarama.AsyncProd
 	saramaConfig.Producer.RequiredAcks = sarama.NoResponse
 
 	saramaConfig.Version = ProtocolVersion
+
+	// Set network timeouts
+	saramaConfig.Net.DialTimeout = 15 * time.Second
+	saramaConfig.Net.ReadTimeout = 15 * time.Second
+	saramaConfig.Net.WriteTimeout = 15 * time.Second
 
 	// So we can know the partition and offset of messages.
 	saramaConfig.Producer.Return.Successes = true
