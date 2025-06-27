@@ -135,6 +135,11 @@ config:
           statements:
             - set(resource.attributes["service.name"], "api-gateway") where resource.attributes["k8s.container.name"] == "frontend"
 
+    filter/warn_or_below:
+        error_mode: ignore
+        logs:
+            log_record:
+                - severity_number < SEVERITY_NUMBER_WARN
   exporters:
     otlp/traces:
       endpoint: api.honeycomb.io:443
@@ -198,8 +203,8 @@ config:
         exporters:
           - otlp/logging-dogfood
           - otlp/refinery
-          - otlp/pipeline
         processors:
+          - filter/warn_or_below
           - transform/parse_json_body
           - transform/service_names
           - transform/access_log_severity
@@ -214,6 +219,41 @@ config:
           - otlp/pipeline
         processors:
           - transform/service_names
+          - transform/attribution
+
+      logs/htp:
+        exporters:
+          - otlp/pipeline
+        processors:
+          - k8sattributes
+          - transform/service_names
+          - transform/access_log_severity
+          - transform/filelog_severity
+          - transform/pino_trace_fields
+          - transform/attribution
+        receivers:
+          - otlp
+          - filelog
+        
+      traces/htp:
+        exporters:
+          - otlp/pipeline
+        processors:
+          - k8sattributes
+          - transform/service_names
+        receivers:
+          - otlp
+
+      metrics/htp:
+        exporters:
+          - otlp/pipeline
+        processors:
+          - k8sattributes
+          - transform/service_names
+        receivers:
+          - otlp
+          - kubeletstats
+          - prometheus
 
 clusterRole:
   create: true
