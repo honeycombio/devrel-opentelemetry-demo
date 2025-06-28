@@ -34,26 +34,28 @@ To deploy the demo application, create a git tag and push it:
 #### Tag Naming Convention
 
 Use the format `X.Y.Z-release` where:
+
 - `X.Y.Z` follows semantic versioning (major.minor.patch)
 - Always append `-release` suffix
 
 Examples of existing tags:
+
 - `2.0.26-release`
 - `2.0.27-release`
 
 #### Creating and Pushing Tags
+
+ONLY DO THIS IF EXPLICITLY ASKED TO
 
 ```bash
 # Check current latest release tag
 git tag -l "*-release" | sort -V | tail -1
 
 # Create and push a new release tag (increment appropriately)
-git tag -a 2.0.28-release -m "Release version 2.0.28"
-git push origin 2.0.28-release
-
-# Or create a lightweight tag
 git tag 2.0.28-release
 git push origin 2.0.28-release
 ```
 
 The deployment pipeline will automatically deploy tagged releases to the production environment at https://zurelia.honeydemo.io.
+
+See status: https://github.com/honeycombio/devrel-opentelemetry-demo/actions
