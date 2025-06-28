@@ -83,7 +83,7 @@ people = json.load(people_file)
 logging.warning("Time to generate some errors!", extra={"app.user.id": ERROR_CUSTOMER_ID})
 
 class ErrorCustomer(HttpUser):
-    host = "http://localhost:9191"
+    host = "https://www.zurelia.honeydemo.io/" # "http://localhost:9191"
     wait_time = between(1, 5)
     
     def __init__(self, *args, **kwargs):
