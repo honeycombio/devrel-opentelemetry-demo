@@ -15,7 +15,10 @@
       "Bash(grep:*)",
       "Bash(npm run lint)",
       "mcp__honeycomb__get_trace",
-      "mcp__honeycomb__run_unsaved_query"
+      "mcp__honeycomb__run_unsaved_query",
+      "mcp__honeycomb__list_environments",
+      "Bash(chmod:*)",
+      "Bash(HONEYCOMB_API_KEY=NPT89GiCOO7mH6TIeMufOD ./add_htp_calculated_field.sh)"
     ],
     "deny": []
   },
