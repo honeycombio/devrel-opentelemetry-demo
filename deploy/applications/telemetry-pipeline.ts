@@ -92,7 +92,7 @@ export class TelemetryPipeline extends pulumi.ComponentResource {
         const pipelineRelease = new Release(`${name}-pipeline-release`, {
             chart: "htp-builder",
             name: name,
-            version: "0.0.70-alpha",
+            version: "0.0.75-alpha",
             repositoryOpts: {
                 repo: "https://honeycombio.github.io/helm-charts"
             },
