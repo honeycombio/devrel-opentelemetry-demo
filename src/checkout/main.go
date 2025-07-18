@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -244,8 +245,14 @@ func (cs *checkout) PlaceOrder(ctx context.Context, req *pb.PlaceOrderRequest) (
 	span.SetAttributes(
 		attribute.String("app.user.id", req.UserId),
 		attribute.String("app.user.currency", req.UserCurrency),
+		attribute.String("app.user.city", req.Address.City),
 	)
 	log.Infof("[PlaceOrder] user_id=%q user_currency=%q", req.UserId, req.UserCurrency)
+	
+    // Intentional slowness for Slowville orders
+    if strings.Contains(strings.ToLower(req.Address.City), "slowville") {
+        time.Sleep(3 * time.Second)
+    }
 
 	var err error
 	defer func() {
