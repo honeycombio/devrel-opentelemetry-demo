@@ -12683,7 +12683,7 @@ spec:
             - containerPort: 6379
               name: valkey-cart
           env:
-           - name: OTEL_SERVICE_NAME
+            - name: OTEL_SERVICE_NAME
               valueFrom:
                 fieldRef:
                   apiVersion: v1
