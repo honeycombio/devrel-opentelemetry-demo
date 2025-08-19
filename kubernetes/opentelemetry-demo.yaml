@@ -11948,6 +11948,8 @@ spec:
             - containerPort: 8080
               name: service
           env:
+            - name: ENV_PLATFORM
+              value: production
             - name: OTEL_SERVICE_NAME
               valueFrom:
                 fieldRef:
@@ -12681,8 +12683,6 @@ spec:
             - containerPort: 6379
               name: valkey-cart
           env:
-            - name: ENV_PLATFORM
-              value: production
             - name: OTEL_SERVICE_NAME
               valueFrom:
                 fieldRef:
