@@ -9,6 +9,8 @@ default:
   replicas: 1
   # List of environment variables applied to all components
   envOverrides:
+    - name: ENV_PLATFORM
+      value: local
     - name: OTEL_EXPORTER_OTLP_LOGS_PROTOCOL
       value: grpc
     - name: OTEL_EXPORTER_OTLP_INSECURE
