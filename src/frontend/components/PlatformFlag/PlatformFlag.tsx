@@ -3,9 +3,7 @@
 
 import * as S from './PlatformFlag.styled';
 
-const { NEXT_PUBLIC_PLATFORM = 'local' } = typeof window !== 'undefined' ? window.ENV : {};
-
-const platform = NEXT_PUBLIC_PLATFORM;
+const platform = process.env.NEXT_PUBLIC_PLATFORM || 'local';
 
 const PlatformFlag = () => {
   return (
