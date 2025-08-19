@@ -12,7 +12,6 @@ import SessionGateway from '../gateways/Session.gateway';
 import { OpenFeatureProvider, OpenFeature } from '@openfeature/react-sdk';
 import { FlagdWebProvider } from '@openfeature/flagd-web-provider';
 import HoneycombFrontendTracer from '../utils/telemetry/HoneycombFrontendTracer';
-import { useEffect, useState } from 'react';
 
 declare global {
   interface Window {
@@ -34,51 +33,39 @@ const reactQueryClient = new QueryClient({
         },
     },
 });
-function MyApp({ Component, pageProps }: AppProps) {
-    const [hydrated, setHydrated] = useState(false);
 
-    // this avoids a React hydration error.
-    useEffect(() => {
-      setHydrated(true);
+// on client only, bootstrap HFO
+if (typeof window !== 'undefined' && window.location) {
+    const session = SessionGateway.getSession();
+    HoneycombFrontendTracer(session.userId);
 
-      if (typeof window !== 'undefined') {
-        if (window.location) {
-          const session = SessionGateway.getSession();
-          HoneycombFrontendTracer(session.userId);
+    // Set context prior to provider init to avoid multiple http calls
+    OpenFeature.setContext({ targetingKey: session.userId, ...session }).then(() => {
+      /**
+       * We connect to flagd through the envoy proxy, straight from the browser,
+       * for this we need to know the current hostname and port.
+       */
 
-          // Set context prior to provider init to avoid multiple http calls
-          OpenFeature.setContext({ targetingKey: session.userId, ...session }).then(() => {
-            /**
-             * We connect to flagd through the envoy proxy, straight from the browser,
-             * for this we need to know the current hostname and port.
-             */
-
-            const useTLS = window.location.protocol === 'https:';
-            let port = useTLS ? 443 : 80;
-            if (window.location.port) {
-                port = parseInt(window.location.port, 10);
-            }
-
-            OpenFeature.setProvider(
-              new FlagdWebProvider({
-                host: window.location.hostname,
-                pathPrefix: 'flagservice',
-                port: port,
-                tls: useTLS,
-                maxRetries: 3,
-                maxDelay: 10000,
-              })
-            );
-          });
-        }
+      const useTLS = window.location.protocol === 'https:';
+      let port = useTLS ? 443 : 80;
+      if (window.location.port) {
+          port = parseInt(window.location.port, 10);
       }
-    }, []);
 
-    if(!hydrated) {
-      // this returns null on first render, so the client and server match
-      return null;
-    }
+      OpenFeature.setProvider(
+        new FlagdWebProvider({
+          host: window.location.hostname,
+          pathPrefix: 'flagservice',
+          port: port,
+          tls: useTLS,
+          maxRetries: 3,
+          maxDelay: 10000,
+        })
+      );
+    });
+}
 
+function MyApp({ Component, pageProps }: AppProps) {
     return (
       <ThemeProvider theme={Theme}>
         <OpenFeatureProvider>
