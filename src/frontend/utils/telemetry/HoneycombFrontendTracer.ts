@@ -8,7 +8,7 @@
 import { CompositePropagator, W3CBaggagePropagator, W3CTraceContextPropagator } from '@opentelemetry/core';
 import { getWebAutoInstrumentations } from '@opentelemetry/auto-instrumentations-web';
 import { ZoneContextManager} from '@opentelemetry/context-zone';
-import { HoneycombWebSDK } from '@honeycombio/opentelemetry-web';
+import { HoneycombWebSDK, WebVitalsInstrumentation } from '@honeycombio/opentelemetry-web';
 
 const {
     NEXT_PUBLIC_OTEL_SERVICE_NAME = '',
@@ -54,6 +54,10 @@ const HoneycombFrontendTracer = (sessionId: string) => {
                     eventNames: ['click', 'submit']
                 }
             }),
+            new WebVitalsInstrumentation({
+                enabled: true,
+                vitalsToTrack: ['FCP', 'INP', 'CLS', 'LCP', 'TTFB']
+            })
         ],
         // webVitalsInstrumentationConfig: {
         //   cls: {
