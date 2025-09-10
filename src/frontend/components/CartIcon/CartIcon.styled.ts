@@ -1,12 +1,13 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-import Image from 'next/image';
+// Ken Rimple - Next.js Image tag breaks proxy URLs with Kubernetes
+// so I've disabled that here
+// import Image from 'next/image';
 import styled from 'styled-components';
 
 export const CartIcon = styled.a`
   position: relative;
-  display: block;
   margin-left: 25px;
   display: flex;
   flex-flow: column;
@@ -15,7 +16,7 @@ export const CartIcon = styled.a`
   cursor: pointer;
 `;
 
-export const Icon = styled(Image).attrs({
+export const Icon = styled.img.attrs({
   width: '24',
   height: '24',
 })`
