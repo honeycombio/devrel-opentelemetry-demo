@@ -41,13 +41,11 @@ Samplers:
               Datatype: int
         - Name: Dynamically Sample 200s through 400s
           Conditions:
-            - Field: trace.parent_id
-              Operator: not-exists
-            - Field: http.status_code
+            - Field: root.http.status_code
               Operator: ">="
               Value: 200
               Datatype: int
-            - Field: http.status_code
+            - Field: root.http.status_code
               Operator: "<"
               Value: 400
               Datatype: int
