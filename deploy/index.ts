@@ -7,7 +7,7 @@ import { TelemetryPipeline } from "./applications/telemetry-pipeline";
 import { listManagedClusterUserCredentialsOutput } from "@pulumi/azure-native/containerservice";
 import { Refinery } from "./applications/refinery";
 
-const collectorHelmVersion = "0.107.0";
+const collectorHelmVersion = "0.134.0";
 const demoHelmVersion = "0.37.0";
 const refineryHelmVersion = "2.17.0";
 
