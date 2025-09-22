@@ -1,15 +1,14 @@
 FROM alpine:3.19 AS certs
 RUN apk --update add ca-certificates
 
-FROM golang:1.24-alpine AS build-stage
-RUN apk update && apk add git
+FROM golang:1.24 AS build-stage
 
 WORKDIR /build
 
 COPY ./ocb-config.yaml ocb-config.yaml
 
 RUN --mount=type=cache,target=/root/.cache/go-build GO111MODULE=on go install go.opentelemetry.io/collector/cmd/builder@v0.135.0
-RUN --mount=type=cache,target=/root/.cache/go-build builder --config ocb-config.yaml
+RUN --mount=type=cache,target=/root/.cache/go-build CGO_ENABLED=0 builder --config ocb-config.yaml
 
 FROM gcr.io/distroless/base:latest
 
