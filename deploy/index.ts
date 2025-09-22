@@ -23,6 +23,8 @@ const pipelineApiKey = config.require("pipelineApiKey");
 const refineryTelemetryApiKey = config.require("refineryTelemetryApiKey");
 const collectorS3AccessKey = config.require("collectorS3AccessKey");
 const collectorS3SecretKey = config.require("collectorS3SecretKey");
+const collectorContainerTag = config.get("collectorContainerTag") || containerTag;
+const collectorContainerRepository = config.get("collectorContainerRepository") || "ghcr.io/open-telemetry/opentelemetry-collector-releases/opentelemetry-collector-contrib";
 
 const demoClusterResourceGroup = infrastack.getOutput("clusterResourceGroup");
 const demoClusterName = infrastack.getOutput("clusterName");
@@ -92,7 +94,9 @@ var podTelemetryCollector = new Collector("pod-telemetry-collector", {
     honeycombDogfoodSecret: secretDogfoodApiKey,
     valuesFile: "./config-files/collector/values-daemonset.yaml",
     refineryHostname: refinery.refineryHostname,
-    telemetryPipelineReleaseName: telemetryPipeline.releaseName
+    telemetryPipelineReleaseName: telemetryPipeline.releaseName,
+    collectorContainerTag: collectorContainerTag,
+    collectorContainerRepository: collectorContainerRepository
 }, { provider: provider });
 
 var clusterTelemetryCollector = new Collector("cluster-telemetry-collector", {

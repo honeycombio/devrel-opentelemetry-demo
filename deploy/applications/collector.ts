@@ -10,6 +10,8 @@ export interface CollectorArgs {
     valuesFile: string;
     refineryHostname?: pulumi.Input<string>;
     telemetryPipelineReleaseName?: pulumi.Input<string>;
+    collectorContainerTag?: pulumi.Input<string>;
+    collectorContainerRepository?: pulumi.Input<string>;
 }
 
 export class Collector extends pulumi.ComponentResource {
@@ -23,6 +25,10 @@ export class Collector extends pulumi.ComponentResource {
 
 
         const values = {
+            "image": {
+                "repository": args.collectorContainerRepository,
+                "tag": args.collectorContainerTag 
+            },
             "extraEnvs": [
                 {
                     "name": "HONEYCOMB_API_KEY",
