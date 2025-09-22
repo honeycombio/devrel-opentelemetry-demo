@@ -72,6 +72,12 @@ jobs:
             devrel-opentelemetry-demo:container-tag: 
               value: ${{ github.ref_name }}
               secret: false
+            devrel-opentelemetry-demo:collector-container-tag: 
+              value: latest
+              secret: false
+            devrel-opentelemetry-demo:collector-container-repository: 
+              value: ghcr.io/${{ github.repository_owner }}/${{ github.repository }}
+              secret: false
         env:
           ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
           ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
