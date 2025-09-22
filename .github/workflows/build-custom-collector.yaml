@@ -12,6 +12,20 @@ on:
         required: false
         type: string
 
+  workflow_dispatch:
+    inputs:
+      push:
+        description: Should the images be pushed
+        default: false
+        required: false
+        type: boolean
+      version:
+        description: The version used when tagging the image
+        default: 'dev'
+        required: false
+        type: string
+
+
 jobs:
   build_custom_collector:
     runs-on: ubuntu-latest
