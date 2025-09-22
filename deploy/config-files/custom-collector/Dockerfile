@@ -7,8 +7,8 @@ WORKDIR /build
 
 COPY ./ocb-config.yaml ocb-config.yaml
 
-RUN --mount=type=cache,target=/root/.cache/go-build GO111MODULE=on go install go.opentelemetry.io/collector/cmd/builder@v0.135.0
-RUN --mount=type=cache,target=/root/.cache/go-build CGO_ENABLED=0 builder --config ocb-config.yaml
+RUN go install go.opentelemetry.io/collector/cmd/builder@v0.129.0
+RUN builder --config ocb-config.yaml
 
 FROM gcr.io/distroless/base:latest
 
