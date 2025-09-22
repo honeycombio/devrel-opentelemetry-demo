@@ -29,6 +29,10 @@ on:
 jobs:
   build_custom_collector:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    
     steps:
       - uses: actions/checkout@v4
         with:
@@ -41,7 +45,7 @@ jobs:
           images: |
             name=ghcr.io/${{ github.repository }}
           tags: | 
-            type=raw,value=${{ inputs.version }}
+            type=raw,value=${{ inputs.version }}-collector
             type=raw,value=latest
 
       - name: Log in to the Github Container registry
