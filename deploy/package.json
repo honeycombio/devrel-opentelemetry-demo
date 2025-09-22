@@ -6,6 +6,8 @@
     },
     "dependencies": {
         "@pulumi/azure-native": "^2.53.0",
+        "@pulumi/docker": "^4.8.2",
+        "@pulumi/docker-build": "^0.0.13",
         "@pulumi/kubernetes": "^4.0.0",
         "@pulumi/pulumi": "^3.113.0",
         "fs": "^0.0.1-security"
