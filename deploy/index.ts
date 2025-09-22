@@ -23,8 +23,8 @@ const pipelineApiKey = config.require("pipelineApiKey");
 const refineryTelemetryApiKey = config.require("refineryTelemetryApiKey");
 const collectorS3AccessKey = config.require("collectorS3AccessKey");
 const collectorS3SecretKey = config.require("collectorS3SecretKey");
-const collectorContainerTag = config.get("collectorContainerTag") || containerTag;
-const collectorContainerRepository = config.get("collectorContainerRepository") || "ghcr.io/open-telemetry/opentelemetry-collector-releases/opentelemetry-collector-contrib";
+const collectorContainerTag = config.get("collector-container-tag") || containerTag;
+const collectorContainerRepository = config.get("collector-container-repository") || "ghcr.io/open-telemetry/opentelemetry-collector-releases/opentelemetry-collector-contrib";
 
 const demoClusterResourceGroup = infrastack.getOutput("clusterResourceGroup");
 const demoClusterName = infrastack.getOutput("clusterName");
