@@ -73,7 +73,7 @@ jobs:
               value: ${{ github.ref_name }}
               secret: false
             devrel-opentelemetry-demo:collector-container-tag: 
-              value: latest
+              value: ${{ github.ref_name }}
               secret: false
             devrel-opentelemetry-demo:collector-container-repository: 
               value: ghcr.io/${{ github.repository_owner }}/${{ github.repository }}
