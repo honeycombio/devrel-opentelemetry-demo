@@ -77,7 +77,7 @@ jobs:
               value: ${{ github.ref_name }}-collector
               secret: false
             devrel-opentelemetry-demo:collector-container-repository: 
-              value: ghcr.io/${{ github.repository_owner }}/${{ github.repository }}
+              value: ghcr.io/${{ github.repository }}
               secret: false
         env:
           ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
@@ -89,7 +89,7 @@ jobs:
       - name: Extract and upload js sourcemaps
         run: ./scripts/extract-and-upload-js-sourcemaps.sh
         env:
-          REPO: ghcr.io/${{ github.repository_owner }}/${{ github.repository }}
+          REPO: ghcr.io/${{ github.repository }}
           CONTAINER_PATH: /app/.next/static/js
           BLOB_CONTAINER_NAME: ${{ steps.pulumi-deploy.outputs.blobContainerName }}
           STORAGE_ACCOUNT_NAME: ${{ steps.pulumi-deploy.outputs.storageAccountName }}
