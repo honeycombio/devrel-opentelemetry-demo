@@ -56,7 +56,7 @@ jobs:
               value: latest
               secret: false
             devrel-opentelemetry-demo:collector-container-tag: 
-              value: latest
+              value: latest-co1lector
               secret: false
             devrel-opentelemetry-demo:collector-container-repository: 
               value: ghcr.io/${{ github.repository_owner }}/${{ github.repository }}
