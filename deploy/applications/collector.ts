@@ -12,6 +12,8 @@ export interface CollectorArgs {
     telemetryPipelineReleaseName?: pulumi.Input<string>;
     collectorContainerTag?: pulumi.Input<string>;
     collectorContainerRepository?: pulumi.Input<string>;
+    sourceMapsStorageConnectionString?: pulumi.Input<string>;
+    sourceMapsContainerName?: pulumi.Input<string>;
 }
 
 export class Collector extends pulumi.ComponentResource {
@@ -30,6 +32,14 @@ export class Collector extends pulumi.ComponentResource {
                 "tag": args.collectorContainerTag 
             },
             "extraEnvs": [
+                {
+                    "name": "SOURCEMAPS_STORAGE_CONNECTION_STRING",
+                    "value": args.sourceMapsStorageConnectionString
+                },
+                {
+                    "name": "SOURCEMAPS_CONTAINER_NAME",
+                    "value": args.sourceMapsContainerName
+                },
                 {
                     "name": "HONEYCOMB_API_KEY",
                     "valueFrom": {

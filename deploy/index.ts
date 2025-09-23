@@ -6,6 +6,7 @@ import { OtelDemo } from "./applications/oteldemo";
 import { TelemetryPipeline } from "./applications/telemetry-pipeline";
 import { listManagedClusterUserCredentialsOutput } from "@pulumi/azure-native/containerservice";
 import { Refinery } from "./applications/refinery";
+import * as storage from "@pulumi/azure-native/storage";
 
 const collectorHelmVersion = "0.134.0";
 const demoHelmVersion = "0.37.0";
@@ -23,7 +24,7 @@ const pipelineApiKey = config.require("pipelineApiKey");
 const refineryTelemetryApiKey = config.require("refineryTelemetryApiKey");
 const collectorS3AccessKey = config.require("collectorS3AccessKey");
 const collectorS3SecretKey = config.require("collectorS3SecretKey");
-const collectorContainerTag = config.get("collector-container-tag") || containerTag;
+const collectorContainerTag = config.get("collector-container-tag") || `${containerTag}-collector`;
 const collectorContainerRepository = config.get("collector-container-repository") || "ghcr.io/open-telemetry/opentelemetry-collector-releases/opentelemetry-collector-contrib";
 
 const demoClusterResourceGroup = infrastack.getOutput("clusterResourceGroup");
@@ -70,6 +71,26 @@ const secretDogfoodApiKey = new Secret("honey-dogfood", {
     }
 }, { provider: provider })
 
+var storageAccount = new storage.StorageAccount("devrelmaps", {
+    resourceGroupName: demoClusterResourceGroup,
+    sku: {
+        name: storage.SkuName.Standard_LRS,
+    },
+    kind: storage.Kind.StorageV2,
+});
+
+var blobContainer = new storage.BlobContainer("source-maps-container", {
+    resourceGroupName: demoClusterResourceGroup,
+    accountName: storageAccount.name,
+    publicAccess: storage.PublicAccess.None,
+});
+
+var storageConnectionString = storage.listStorageAccountKeysOutput({
+    resourceGroupName: demoClusterResourceGroup,
+    accountName: storageAccount.name
+}).apply(keys => {
+    return `DefaultEndpointsProtocol=https;AccountName=${storageAccount.name};AccountKey=${keys.keys[0].value};EndpointSuffix=core.windows.net`;
+});
 
 var telemetryPipeline = new TelemetryPipeline("telemetry-pipeline", {
     namespace: demoNamespace.metadata.name,
@@ -96,7 +117,9 @@ var podTelemetryCollector = new Collector("pod-telemetry-collector", {
     refineryHostname: refinery.refineryHostname,
     telemetryPipelineReleaseName: telemetryPipeline.releaseName,
     collectorContainerTag: collectorContainerTag,
-    collectorContainerRepository: collectorContainerRepository
+    collectorContainerRepository: collectorContainerRepository,
+    sourceMapsStorageConnectionString: storageConnectionString,
+    sourceMapsContainerName: blobContainer.name
 }, { provider: provider });
 
 var clusterTelemetryCollector = new Collector("cluster-telemetry-collector", {
