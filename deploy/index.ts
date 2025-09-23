@@ -27,6 +27,7 @@ const collectorS3AccessKey = config.require("collectorS3AccessKey");
 const collectorS3SecretKey = config.require("collectorS3SecretKey");
 const collectorContainerTag = config.get("collector-container-tag") || `${containerTag}-collector`;
 const collectorContainerRepository = config.get("collector-container-repository") || "ghcr.io/open-telemetry/opentelemetry-collector-releases/opentelemetry-collector-contrib";
+const isInPipeline = process.env.IS_IN_PIPELINE || "false";
 
 const demoClusterResourceGroup = infrastack.getOutput("clusterResourceGroup");
 const demoClusterName = infrastack.getOutput("clusterName");
@@ -73,7 +74,8 @@ const secretDogfoodApiKey = new Secret("honey-dogfood", {
 }, { provider: provider })
 
 var sourceMapsContainer = new SourceMapsContainer("source-maps-container", {
-    resourceGroup: demoClusterResourceGroup
+    resourceGroup: demoClusterResourceGroup,
+    isInPipeline: isInPipeline
 }, { provider: provider });
 
 var telemetryPipeline = new TelemetryPipeline("telemetry-pipeline", {

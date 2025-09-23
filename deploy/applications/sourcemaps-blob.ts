@@ -4,7 +4,7 @@ import * as authorization from "@pulumi/azure-native/authorization";
 
 export interface SourceMapsContainerArgs {
     resourceGroup: pulumi.Input<string>;
-
+    isInPipeline: pulumi.Input<string>;
 }
 
 export class SourceMapsContainer extends pulumi.ComponentResource {
@@ -38,6 +38,7 @@ export class SourceMapsContainer extends pulumi.ComponentResource {
         // add role assigment for current azure principal
         var roleAssignment = new authorization.RoleAssignment("source-maps-role-assignment", {
             principalId: clientConfig.objectId,
+            principalType: args.isInPipeline === "true" ? authorization.PrincipalType.ServicePrincipal : authorization.PrincipalType.User,
             roleDefinitionId: SourceMapsContainer.StorageBlobDataContributorRoleId,
             scope: storageAccount.id
         });
