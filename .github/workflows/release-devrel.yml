@@ -90,7 +90,7 @@ jobs:
         run: ./scripts/extract-and-upload-js-sourcemaps.sh
         env:
           REPO: ghcr.io/${{ github.repository }}
-          CONTAINER_PATH: /app/.next/static/js
+          CONTAINER_PATH: /app/.next/static/
           BLOB_CONTAINER_NAME: ${{ steps.pulumi-deploy.outputs.blobContainerName }}
           STORAGE_ACCOUNT_NAME: ${{ steps.pulumi-deploy.outputs.storageAccountName }}
           VERSION: ${{ github.ref_name }}
