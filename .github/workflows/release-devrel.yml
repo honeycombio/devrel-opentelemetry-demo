@@ -64,6 +64,7 @@ jobs:
         working-directory: deploy
 
       - uses: pulumi/actions@v5
+        id: pulumi-deploy
         with:
           command: up
           stack-name: ${{ secrets.PULUMI_ORG }}/prod
@@ -83,3 +84,12 @@ jobs:
           ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
           ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
           ARM_USE_OIDC: true
+
+      - name: Extract and upload js sourcemaps
+        run: ./scripts/extract-and-upload-js-sourcemaps.sh
+        env:
+          REPO: ghcr.io/${{ github.repository_owner }}/${{ github.repository }}
+          CONTAINER_PATH: /app/.next/static/js
+          BLOB_CONTAINER_NAME: ${{ steps.pulumi-deploy.outputs.blobContainerName }}
+          STORAGE_ACCOUNT_NAME: ${{ steps.pulumi-deploy.outputs.storageAccountName }}
+          VERSION: ${{ github.ref_name }}

@@ -4,6 +4,7 @@ import { Secret } from "@pulumi/kubernetes/core/v1/secret";
 import { Collector } from "./applications/collector";
 import { OtelDemo } from "./applications/oteldemo";
 import { TelemetryPipeline } from "./applications/telemetry-pipeline";
+import { SourceMapsContainer } from "./applications/sourcemaps-blob";
 import { listManagedClusterUserCredentialsOutput } from "@pulumi/azure-native/containerservice";
 import { Refinery } from "./applications/refinery";
 import * as storage from "@pulumi/azure-native/storage";
@@ -71,26 +72,9 @@ const secretDogfoodApiKey = new Secret("honey-dogfood", {
     }
 }, { provider: provider })
 
-var storageAccount = new storage.StorageAccount("devrelmaps", {
-    resourceGroupName: demoClusterResourceGroup,
-    sku: {
-        name: storage.SkuName.Standard_LRS,
-    },
-    kind: storage.Kind.StorageV2,
-});
-
-var blobContainer = new storage.BlobContainer("source-maps-container", {
-    resourceGroupName: demoClusterResourceGroup,
-    accountName: storageAccount.name,
-    publicAccess: storage.PublicAccess.None,
-});
-
-var storageConnectionString = storage.listStorageAccountKeysOutput({
-    resourceGroupName: demoClusterResourceGroup,
-    accountName: storageAccount.name
-}).apply(keys => {
-    return `DefaultEndpointsProtocol=https;AccountName=${storageAccount.name};AccountKey=${keys.keys[0].value};EndpointSuffix=core.windows.net`;
-});
+var sourceMapsContainer = new SourceMapsContainer("source-maps-container", {
+    resourceGroup: demoClusterResourceGroup
+}, { provider: provider });
 
 var telemetryPipeline = new TelemetryPipeline("telemetry-pipeline", {
     namespace: demoNamespace.metadata.name,
@@ -118,8 +102,8 @@ var podTelemetryCollector = new Collector("pod-telemetry-collector", {
     telemetryPipelineReleaseName: telemetryPipeline.releaseName,
     collectorContainerTag: collectorContainerTag,
     collectorContainerRepository: collectorContainerRepository,
-    sourceMapsStorageConnectionString: storageConnectionString,
-    sourceMapsContainerName: blobContainer.name
+    sourceMapsStorageConnectionString: sourceMapsContainer.storageConnectionString,
+    sourceMapsContainerName: sourceMapsContainer.containerName
 }, { provider: provider });
 
 var clusterTelemetryCollector = new Collector("cluster-telemetry-collector", {
@@ -148,3 +132,5 @@ export const clusterResourceGroup = demoClusterResourceGroup;
 export const clusterName = demoClusterName;
 export const demoUrl = demo.domainName;
 export const telemetryPipelineReleaseName = telemetryPipeline.releaseName;
+export const blobContainerName = sourceMapsContainer.containerName;
+export const storageAccountName = sourceMapsContainer.accountName;
