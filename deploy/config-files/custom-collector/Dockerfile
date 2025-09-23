@@ -12,7 +12,9 @@ RUN builder --config ocb-config.yaml
 
 FROM gcr.io/distroless/cc
 
-USER nonroot
+ARG USER_UID=10001
+ARG USER_GID=10001
+USER ${USER_UID}:${USER_GID}
 
 COPY --from=certs /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
 COPY --chmod=755 --from=build-stage /build/otelcol-dev /otelcol
