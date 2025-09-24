@@ -1,9 +1,20 @@
 # Copyright The OpenTelemetry Authors
 # SPDX-License-Identifier: Apache-2.0
-name: "[DevRel] Deploy Latest"
+name: "[DevRel] Deploy Specific Version"
 
 on:
   workflow_dispatch:
+    inputs:
+      version:
+        description: The version to deploy
+        default: 'latest'
+        required: false
+        type: string
+      collector_version:
+        description: The version of the collector to deploy
+        default: 'latest-collector'
+        required: false
+        type: string
 
 permissions:
   packages: write
@@ -53,10 +64,10 @@ jobs:
           work-dir: deploy
           config-map: |
             devrel-opentelemetry-demo:container-tag: 
-              value: latest
+              value: ${{ github.event.inputs.version }}
               secret: false
             devrel-opentelemetry-demo:collector-container-tag: 
-              value: latest-collector@sha256:5c478d241c6445e55ecf592836d618f03a8b402a63f803e9016f8f1509c03d5e
+              value: ${{ github.event.inputs.collector_version }}
               secret: false
             devrel-opentelemetry-demo:collector-container-repository: 
               value: ghcr.io/${{ github.repository }}
