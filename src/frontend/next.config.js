@@ -33,21 +33,13 @@ const nextConfig = {
   compiler: {
     styledComponents: true,
   },
-  webpack: (config, { isServer, dev: isDev, webpack }) => {
+  webpack: (config, { isServer, dev: isDev }) => {
     if (!isServer && !isDev) {
       config.resolve.fallback.http2 = false;
       config.resolve.fallback.tls = false;
       config.resolve.fallback.net = false;
       config.resolve.fallback.dns = false;
       config.resolve.fallback.fs = false;
-      config.devtool = false; // disable defaults
-      config.plugins.push(
-        new webpack.SourceMapDevToolPlugin({
-          filename: '[file].map',
-          test: /\.(m?js)($|\?)/i,
-          append: '\n//# sourceMappingURL=/_next/static/chunks/[url]'
-        })
-      );
     }
     return config;
   },
