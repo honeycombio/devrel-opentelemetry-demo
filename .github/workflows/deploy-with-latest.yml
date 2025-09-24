@@ -45,7 +45,8 @@ jobs:
           npm ci
         working-directory: deploy
 
-      - uses: pulumi/actions@v5
+      - id: pulumi-deploy
+        uses: pulumi/actions@v5
         with:
           command: up
           stack-name: ${{ secrets.PULUMI_ORG }}/prod
@@ -54,8 +55,24 @@ jobs:
             devrel-opentelemetry-demo:container-tag: 
               value: latest
               secret: false
+            devrel-opentelemetry-demo:collector-container-tag: 
+              value: latest-collector@sha256:5c478d241c6445e55ecf592836d618f03a8b402a63f803e9016f8f1509c03d5e
+              secret: false
+            devrel-opentelemetry-demo:collector-container-repository: 
+              value: ghcr.io/${{ github.repository }}
+              secret: false
         env:
           ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
           ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
           ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
           ARM_USE_OIDC: true
+          IS_IN_PIPELINE: true
+
+      - name: Extract and upload js sourcemaps
+        run: ./scripts/extract-and-upload-js-sourcemaps.sh
+        env:
+          REPO: ghcr.io/${{ github.repository }}
+          CONTAINER_PATH: /app/.next/static/
+          BLOB_CONTAINER_NAME: ${{ steps.pulumi-deploy.outputs.blobContainerName }}
+          STORAGE_ACCOUNT_NAME: ${{ steps.pulumi-deploy.outputs.storageAccountName }}
+          VERSION: latest

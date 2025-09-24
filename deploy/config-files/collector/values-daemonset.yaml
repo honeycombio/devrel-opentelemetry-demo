@@ -52,6 +52,12 @@ config:
       include:
         - /var/log/pods/${env:NAMESPACE}_*/*/*.log
   processors:
+    source_map_symbolicator:
+      source_map_store: azure_store
+      azure_source_maps:
+        container: ${env:SOURCEMAPS_CONTAINER_NAME}
+        prefix: source-maps
+        connection_string: ${env:SOURCEMAPS_STORAGE_CONNECTION_STRING}
     transform/service_names:
       error_mode: ignore
       log_statements:
@@ -221,6 +227,7 @@ config:
         processors:
           - transform/service_names
           - transform/attribution
+          - source_map_symbolicator
 
       logs/htp:
         exporters:
@@ -242,6 +249,7 @@ config:
         processors:
           - k8sattributes
           - transform/service_names
+          - source_map_symbolicator
         receivers:
           - otlp
 

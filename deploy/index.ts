@@ -4,10 +4,12 @@ import { Secret } from "@pulumi/kubernetes/core/v1/secret";
 import { Collector } from "./applications/collector";
 import { OtelDemo } from "./applications/oteldemo";
 import { TelemetryPipeline } from "./applications/telemetry-pipeline";
+import { SourceMapsContainer } from "./applications/sourcemaps-blob";
 import { listManagedClusterUserCredentialsOutput } from "@pulumi/azure-native/containerservice";
 import { Refinery } from "./applications/refinery";
+import * as storage from "@pulumi/azure-native/storage";
 
-const collectorHelmVersion = "0.107.0";
+const collectorHelmVersion = "0.134.0";
 const demoHelmVersion = "0.37.0";
 const refineryHelmVersion = "2.17.0";
 
@@ -23,6 +25,9 @@ const pipelineApiKey = config.require("pipelineApiKey");
 const refineryTelemetryApiKey = config.require("refineryTelemetryApiKey");
 const collectorS3AccessKey = config.require("collectorS3AccessKey");
 const collectorS3SecretKey = config.require("collectorS3SecretKey");
+const collectorContainerTag = config.get("collector-container-tag") || `${containerTag}-collector`;
+const collectorContainerRepository = config.get("collector-container-repository") || "ghcr.io/open-telemetry/opentelemetry-collector-releases/opentelemetry-collector-contrib";
+const isInPipeline = process.env.IS_IN_PIPELINE || "false";
 
 const demoClusterResourceGroup = infrastack.getOutput("clusterResourceGroup");
 const demoClusterName = infrastack.getOutput("clusterName");
@@ -68,6 +73,10 @@ const secretDogfoodApiKey = new Secret("honey-dogfood", {
     }
 }, { provider: provider })
 
+var sourceMapsContainer = new SourceMapsContainer("source-maps-container", {
+    resourceGroup: demoClusterResourceGroup,
+    isInPipeline: isInPipeline
+}, { provider: provider });
 
 var telemetryPipeline = new TelemetryPipeline("telemetry-pipeline", {
     namespace: demoNamespace.metadata.name,
@@ -92,7 +101,11 @@ var podTelemetryCollector = new Collector("pod-telemetry-collector", {
     honeycombDogfoodSecret: secretDogfoodApiKey,
     valuesFile: "./config-files/collector/values-daemonset.yaml",
     refineryHostname: refinery.refineryHostname,
-    telemetryPipelineReleaseName: telemetryPipeline.releaseName
+    telemetryPipelineReleaseName: telemetryPipeline.releaseName,
+    collectorContainerTag: collectorContainerTag,
+    collectorContainerRepository: collectorContainerRepository,
+    sourceMapsStorageConnectionString: sourceMapsContainer.storageConnectionString,
+    sourceMapsContainerName: sourceMapsContainer.containerName
 }, { provider: provider });
 
 var clusterTelemetryCollector = new Collector("cluster-telemetry-collector", {
@@ -121,3 +134,5 @@ export const clusterResourceGroup = demoClusterResourceGroup;
 export const clusterName = demoClusterName;
 export const demoUrl = demo.domainName;
 export const telemetryPipelineReleaseName = telemetryPipeline.releaseName;
+export const blobContainerName = sourceMapsContainer.containerName;
+export const storageAccountName = sourceMapsContainer.accountName;
