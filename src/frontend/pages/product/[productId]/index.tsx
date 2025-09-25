@@ -20,6 +20,7 @@ import AdProvider from '../../../providers/Ad.provider';
 import { useCart } from '../../../providers/Cart.provider';
 import * as S from '../../../styles/ProductDetail.styled';
 import { useCurrency } from '../../../providers/Currency.provider';
+import { tracedQuery } from '../../../utils/telemetry/SpanUtils';
 
 const quantityOptions = new Array(10).fill(0).map((_, i) => i + 1);
 
@@ -47,7 +48,11 @@ const ProductDetail: NextPage = () => {
     } = {} as Product,
   } = useQuery({
       queryKey: ['product', productId, 'selectedCurrency', selectedCurrency],
-      queryFn: () => ApiGateway.getProduct(productId, selectedCurrency),
+      queryFn: () => {
+        return tracedQuery('getProduct', () => ApiGateway.getProduct(productId, selectedCurrency), 'product-detail');
+      },
+      // KJR - by default ReactQuery retries forever, so lots of spans.
+      retry: false,
       enabled: !!productId,
     }
   ) as { data: Product };

@@ -2,14 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { createContext, useContext, useMemo } from 'react';
-import { trace, context, SpanStatusCode, metrics } from '@opentelemetry/api';
 import { useQuery } from '@tanstack/react-query';
 import ApiGateway from '../gateways/Api.gateway';
-import { Ad, Money, Product } from '../protos/demo';
+import { Ad, Product } from '../protos/demo';
 import { useCurrency } from './Currency.provider';
-import { recordExceptionAndMarkSpanError, tracedQuery } from '../utils/telemetry/SpanUtils';
-
-const tracer = trace.getTracer('ads-provider');
+import { tracedQuery } from '../utils/telemetry/SpanUtils';
 
 interface IContext {
   recommendedProductList: Product[];
@@ -31,21 +28,27 @@ export const useAd = () => useContext(Context);
 
 const AdProvider = ({ children, productIds, contextKeys }: IProps) => {
   const { selectedCurrency } = useCurrency();
-  const { data: adList = [], isError, error } = useQuery({
+  const { data: adList = [] } = useQuery({
     queryKey: ['ads', contextKeys],
     queryFn: () => {
       if (contextKeys.length === 0) {
         return Promise.resolve([]);
       }
-      return tracedQuery('getCart', () => ApiGateway.listAds(contextKeys), 'ad-provider');
+      return tracedQuery('getAds', () =>
+          ApiGateway.listAds(contextKeys), 'ad-provider');
     },
+    retry: false,
     refetchOnWindowFocus: false,
   });
 
   const { data: recommendedProductList = [] } = useQuery({
     queryKey: ['recommendations', productIds, 'selectedCurrency', selectedCurrency],
-    queryFn: () => ApiGateway.listRecommendations(productIds, selectedCurrency),
-    refetchOnWindowFocus: false,
+    queryFn: () => {
+        return tracedQuery('selectedCurrency', () =>
+            ApiGateway.listRecommendations(productIds, selectedCurrency), 'ad-provider');
+    },
+    retry: false,
+    refetchOnWindowFocus: false
   });
 
   const value = useMemo(

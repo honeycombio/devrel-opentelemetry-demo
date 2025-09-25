@@ -1,5 +1,6 @@
-import { context, SpanStatusCode, trace } from "@opentelemetry/api";
-import { Attributes, Span } from "@opentelemetry/api";
+import { context, trace } from "@opentelemetry/api";
+import { Attributes} from "@opentelemetry/api";
+import { recordExceptionOrErrorMessage } from './recordException';
 
 export async function tracedQuery<T>(
   name: string,
@@ -14,8 +15,8 @@ export async function tracedQuery<T>(
       const result = await fn();
       return result;
     } catch (err) {
-      recordExceptionAndMarkSpanError(err, span);
-      throw err;
+      recordExceptionOrErrorMessage(err, span);
+      return Promise.reject("query failed")
     } finally {
       span.end();
     }
@@ -48,34 +49,12 @@ export function tracedMutation<TVariables, TResult>(
       try {
         const result = await fn(variables);
         return result;
-      } catch (err) {
-        recordExceptionAndMarkSpanError(err, span);
+      } catch (err: Error | unknown) {
+          recordExceptionOrErrorMessage(err, span);
         throw err;
       } finally {
         span.end();
       }
     });
   };
-}
-
-export function recordExceptionAndMarkSpanError(err: unknown, span: Span | undefined) {
-  if (err instanceof Error) {
-     span?.recordException(err);
-     span?.addEvent('error', { message: err.message });
-     span?.setStatus({
-       code: SpanStatusCode.ERROR,
-       message: err.message,
-     });
-    } else {
-    // fallback if it's not an Error (e.g. string or object)
-    span?.recordException({
-      name: 'UnknownError',
-      message: String(err),
-    });
-    span?.addEvent('error', { message: String(err) });
-    span?.setStatus({
-      code: SpanStatusCode.ERROR,
-      message: 'Unknown error',
-    });
-  }
 }
