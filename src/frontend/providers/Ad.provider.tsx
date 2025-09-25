@@ -37,6 +37,7 @@ const AdProvider = ({ children, productIds, contextKeys }: IProps) => {
       return tracedQuery('getAds', () =>
           ApiGateway.listAds(contextKeys), 'ad-provider');
     },
+    retry: false,
     refetchOnWindowFocus: false,
   });
 
@@ -46,6 +47,7 @@ const AdProvider = ({ children, productIds, contextKeys }: IProps) => {
         return tracedQuery('selectedCurrency', () =>
             ApiGateway.listRecommendations(productIds, selectedCurrency), 'ad-provider');
     },
+    retry: false,
     refetchOnWindowFocus: false
   });
 
