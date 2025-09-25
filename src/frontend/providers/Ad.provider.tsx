@@ -28,7 +28,7 @@ export const useAd = () => useContext(Context);
 
 const AdProvider = ({ children, productIds, contextKeys }: IProps) => {
   const { selectedCurrency } = useCurrency();
-  const { data: adList = [], isError, error } = useQuery({
+  const { data: adList = [] } = useQuery({
     queryKey: ['ads', contextKeys],
     queryFn: () => {
       if (contextKeys.length === 0) {
@@ -43,7 +43,7 @@ const AdProvider = ({ children, productIds, contextKeys }: IProps) => {
   const { data: recommendedProductList = [] } = useQuery({
     queryKey: ['recommendations', productIds, 'selectedCurrency', selectedCurrency],
     queryFn: () => {
-        return tracedQuery('selectedQuery', () =>
+        return tracedQuery('selectedCurrency', () =>
             ApiGateway.listRecommendations(productIds, selectedCurrency), 'ad-provider');
     },
     refetchOnWindowFocus: false

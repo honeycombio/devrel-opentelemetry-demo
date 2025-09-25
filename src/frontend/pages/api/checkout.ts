@@ -48,13 +48,12 @@ const handler = async ({ method, body, query }: NextApiRequest, res: NextApiResp
         return res.status(200).json({ ...order, items: productList });
       } catch (error: unknown) {
         if (error instanceof Error) {
-          console.error("CALL FAILED IN Provider")
+          logger.error({
+            'app.user.id': userId,
+            'app.request.currency': currencyCode,
+            err: error,
+          }, 'Failed to place order');
         }
-        // logger.error({
-        //   'app.user.id': userId,
-        //   'app.request.currency': currencyCode,
-        //   err: error,
-        // }, 'Failed to place order');
         
         throw error;
       }
