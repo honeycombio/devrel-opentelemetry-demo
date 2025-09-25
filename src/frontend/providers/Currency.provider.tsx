@@ -31,8 +31,15 @@ const CurrencyProvider = ({ children }: IProps) => {
   const { data: currencyCodeListUnsorted = [] } = useQuery({
     queryKey: ['currency'],
     queryFn: () => {
-      return tracedQuery('getSupportedCurrencyList', () => ApiGateway.getSupportedCurrencyList(), 'currency-provider');
-    }
+      try {
+        return tracedQuery('getSupportedCurrencyList', () => ApiGateway.getSupportedCurrencyList(), 'currency-provider');
+      } catch (e: unknown) {
+        // TODO - report with UI toast? - this is reported by the tracedQuery API
+        // for now, just show in console.
+        console.error(e);
+      }
+    },
+    retry: false
   });
 
   const [selectedCurrency, setSelectedCurrency] = useState<string>('');

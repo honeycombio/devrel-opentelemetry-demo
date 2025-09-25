@@ -37,6 +37,10 @@ const CartProvider = ({ children }: IProps) => {
       onSuccess: () => {
         return queryClient.invalidateQueries({ queryKey: ['cart', selectedCurrency] });
       },
+      onFailure: () => {
+        // TODO - what do we report here? is this worthy of an OTel exception?
+        console.error('Failed to memoize. What now?')
+      }
     }),
     [queryClient, selectedCurrency]
   );
@@ -47,6 +51,8 @@ const CartProvider = ({ children }: IProps) => {
       return tracedQuery('getCart', () => ApiGateway.getCart(selectedCurrency), 'cart-provider');
     },
     staleTime: 0,
+    // KJR otherwise the app will retry continually on error
+    retry: false,
     refetchOnMount: true,
     refetchOnWindowFocus: true
   });
@@ -54,16 +60,19 @@ const CartProvider = ({ children }: IProps) => {
   const addCartMutation = useMutation({
     mutationFn: tracedMutation('addCartItem', ApiGateway.addCartItem, 'cart-provider', spanAttributesForRpc('CartService', 'addCartItem', 'CartProvider')),
     ...mutationOptions,
+    retry: false,
   });
 
   const emptyCartMutation = useMutation({
     mutationFn: tracedMutation('emptyCart', ApiGateway.emptyCart, 'cart-provider', spanAttributesForRpc('CartService', 'emptyCart', 'CartProvider')),
     ...mutationOptions,
+    retry: false
   });
 
   const placeOrderMutation = useMutation({
     mutationFn: tracedMutation('placeOrder', ApiGateway.placeOrder, 'cart-provider', spanAttributesForRpc('CartService', 'placeOrder', 'CartProvider')),
     ...mutationOptions,
+    retry: false
   });
 
   const addItem = useCallback(

@@ -35,29 +35,36 @@ const CartDetail = () => {
       creditCardExpirationYear,
       creditCardNumber,
     }: IFormData) => {
-      const order = await placeOrder({
-        userId,
-        email,
-        address: {
-          streetAddress,
-          state,
-          country,
-          city,
-          zipCode,
-        },
-        userCurrency: selectedCurrency,
-        creditCard: {
-          creditCardCvv,
-          creditCardExpirationMonth,
-          creditCardExpirationYear,
-          creditCardNumber,
-        },
-      });
+        try {
+            const order = await placeOrder({
+                userId,
+                email,
+                address: {
+                    streetAddress,
+                    state,
+                    country,
+                    city,
+                    zipCode,
+                },
+                userCurrency: selectedCurrency,
+                creditCard: {
+                    creditCardCvv,
+                    creditCardExpirationMonth,
+                    creditCardExpirationYear,
+                    creditCardNumber,
+                },
+            });
 
-      push({
-        pathname: `/cart/checkout/${order.orderId}`,
-        query: { order: JSON.stringify(order) },
-      });
+            push({
+                pathname: `/cart/checkout/${order.orderId}`,
+                query: {order: JSON.stringify(order)},
+            });
+        } catch (e: unknown) {
+            // TODO - visual here that it failed
+            // log it for now to the console to know we hit this and swallowed the catch-all exception
+            console.error(e);
+            // swallow this one - the `placeOrder` reports it in OpenTelmeetry
+        }
     },
     [placeOrder, push, selectedCurrency]
   );
