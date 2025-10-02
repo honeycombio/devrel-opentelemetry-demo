@@ -227,7 +227,6 @@ config:
         processors:
           - transform/service_names
           - transform/attribution
-          - source_map_symbolicator
 
       logs/htp:
         exporters:
@@ -242,27 +241,6 @@ config:
         receivers:
           - otlp
           - filelog
-        
-      traces/htp:
-        exporters:
-          - otlp/pipeline
-        processors:
-          - k8sattributes
-          - transform/service_names
-          - source_map_symbolicator
-        receivers:
-          - otlp
-
-      metrics/htp:
-        exporters:
-          - otlp/pipeline
-        processors:
-          - k8sattributes
-          - transform/service_names
-        receivers:
-          - otlp
-          - kubeletstats
-          - prometheus
 
 clusterRole:
   create: true
