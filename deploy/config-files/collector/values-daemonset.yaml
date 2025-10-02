@@ -211,7 +211,6 @@ config:
           - otlp/logging-dogfood
           - otlp/refinery
         processors:
-          - filter/warn_or_below
           - transform/parse_json_body
           - transform/service_names
           - transform/access_log_severity
