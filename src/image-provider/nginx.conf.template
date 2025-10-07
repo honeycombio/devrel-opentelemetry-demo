@@ -26,7 +26,6 @@ http {
         server_name _;
         server_tokens off;
 
-        // KJR Honeycomb: this stops the stream was reset: CANCEL errors on Android
         proxy_redirect off;
         proxy_buffering off;
 
