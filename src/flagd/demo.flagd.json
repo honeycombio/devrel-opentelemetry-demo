@@ -65,7 +65,7 @@
       "defaultVariant": "off"
     },
     "cartservice.add-db-call": {
-      "description": "Add a database call to the cart service",
+      "description": "Add database call to the cart service",
       "state": "ENABLED",
       "variants": {
         "on": true,
@@ -112,15 +112,6 @@
         "10sec": 10000,
         "5sec": 5000,
         "off": 0
-      },
-      "defaultVariant": "off"
-    },
-    "cartservice.add-db-call": {
-      "description": "Add a DB call to the cart service",
-      "state": "ENABLED",
-      "variants": {
-        "on": true,
-        "off": false
       },
       "defaultVariant": "off"
     }
