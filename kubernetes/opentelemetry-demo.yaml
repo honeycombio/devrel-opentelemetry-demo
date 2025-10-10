@@ -830,6 +830,15 @@ data:
           },
           "defaultVariant": "off"
         },
+        "cartservice.add-db-call": {
+          "description": "Add database call to the cart service",
+          "state": "ENABLED",
+          "variants": {
+            "on": true,
+            "off": false
+          },
+          "defaultVariant": "off"
+        },
         "paymentFailure": {
           "description": "Fail payment service charge requests n%",
           "state": "ENABLED",
