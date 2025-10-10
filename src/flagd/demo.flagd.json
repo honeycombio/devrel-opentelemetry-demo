@@ -114,6 +114,15 @@
         "off": 0
       },
       "defaultVariant": "off"
+    },
+    "cartservice.add-db-call": {
+      "description": "Add a DB call to the cart service",
+      "state": "ENABLED",
+      "variants": {
+        "on": true,
+        "off": false
+      },
+      "defaultVariant": "off"
     }
   }
 }
