@@ -8,7 +8,7 @@
 
 ## Required Telemetry guidelines
 - All code must be instrumented with OpenTelemetry.
-- Follow the telemetry conventions defined in `src/conventions/manifest.yaml`.
+- Follow the telemetry conventions defined in `src/conventions/`.
 - Prefer using existing attributes and metric names over creating new ones.
 - All new attributes and metrics must be added to the `src/conventions/registry.yaml` file.
 
