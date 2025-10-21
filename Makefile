@@ -250,3 +250,35 @@ endif
 .PHONY: build-react-native-android
 build-react-native-android:
 	docker build -f src/react-native-app/android.Dockerfile --platform=linux/amd64 --output=. src/react-native-app
+
+# Documentation targets
+.PHONY: docs-build
+docs-build:
+	@echo "Building OpenTelemetry conventions documentation..."
+	docker build -f Dockerfile.docs -t otel-conventions-docs:latest .
+	@echo "Documentation image built successfully!"
+
+.PHONY: docs-run
+docs-run: docs-build
+	@echo "Starting documentation server on http://localhost:8000"
+	docker run --rm -p 8000:8000 \
+		-v $(PWD)/src/conventions/registry.yaml:/workspace/registry.yaml:ro \
+		--name otel-conventions-docs \
+		otel-conventions-docs:latest
+
+.PHONY: docs-compose
+docs-compose:
+	@echo "Starting documentation server with docker-compose..."
+	$(DOCKER_COMPOSE_CMD) -f docker-compose.docs.yml up
+
+.PHONY: docs-compose-down
+docs-compose-down:
+	@echo "Stopping documentation server..."
+	$(DOCKER_COMPOSE_CMD) -f docker-compose.docs.yml down
+
+.PHONY: docs-clean
+docs-clean:
+	@echo "Cleaning documentation artifacts..."
+	docker rmi otel-conventions-docs:latest 2>/dev/null || true
+	rm -rf docs/generated 2>/dev/null || true
+	@echo "Documentation cleanup complete"

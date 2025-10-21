@@ -1,0 +1,27 @@
+# Copyright The OpenTelemetry Authors
+# SPDX-License-Identifier: Apache-2.0
+
+version: '3.8'
+
+services:
+  docs:
+    build:
+      context: .
+      dockerfile: Dockerfile.docs
+    container_name: otel-conventions-docs
+    ports:
+      - "8000:8000"
+    volumes:
+      # Mount the registry for live updates during development
+      - ./src/conventions/registry.yaml:/workspace/registry.yaml:ro
+      - ./docs:/app/docs:rw
+    environment:
+      - PYTHONUNBUFFERED=1
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+

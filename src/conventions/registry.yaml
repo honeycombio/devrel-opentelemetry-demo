@@ -1,0 +1,390 @@
+# OpenTelemetry Weaver Registry
+# Custom attributes and metrics for the OpenTelemetry Demo Application
+# Generated from analysis of all services in src/
+
+groups:
+  - id: app.ads
+    display_name: Ad Service Attributes
+    description: Custom attributes used in the Ad Service (Java)
+    attributes:
+      - id: app.ads.count
+        type: int
+        description: Number of ads being served
+        examples: [2]
+        notes: "Used in AdService.java - set when returning ads"
+      
+      - id: app.ads.contextKeys
+        type: string
+        description: List of context keys provided in ad request
+        examples: ["[electronics, sports]"]
+        notes: "Used in AdService.java - toString() of context keys list"
+      
+      - id: app.ads.contextKeys.count
+        type: int
+        description: Count of context keys in the request
+        examples: [2]
+        notes: "Used in AdService.java - number of context keys provided"
+      
+      - id: app.ads.ad_request_type
+        type: string
+        description: Type of ad request (TARGETED or UNKNOWN)
+        examples: ["TARGETED", "UNKNOWN"]
+        notes: "Used in AdService.java - indicates if request was targeted"
+      
+      - id: app.ads.ad_response_type
+        type: string
+        description: Type of ad response (TARGETED or RANDOM)
+        examples: ["TARGETED", "RANDOM"]
+        notes: "Used in AdService.java - indicates if response was targeted or random"
+      
+      - id: app.ads.category
+        type: string
+        description: Category of ads being retrieved
+        examples: ["electronics", "sports"]
+        notes: "Used in AdService.java - @SpanAttribute annotation on getAdsByCategory method"
+
+  - id: app.payment
+    display_name: Payment Service Attributes
+    description: Custom attributes used in the Payment Service (Node.js)
+    attributes:
+      - id: app.payment.card_type
+        type: string
+        description: Type of credit card used
+        examples: ["visa", "mastercard"]
+        notes: "Used in payment/charge.js - card type from validator"
+      
+      - id: app.payment.card_valid
+        type: boolean
+        description: Whether the credit card is valid
+        examples: [true, false]
+        notes: "Used in payment/charge.js - validation result"
+      
+      - id: app.loyalty.level
+        type: string
+        description: Customer loyalty level
+        examples: ["platinum", "gold", "silver", "bronze"]
+        notes: "Used in payment/charge.js - randomly assigned loyalty level"
+      
+      - id: app.payment.charged
+        type: boolean
+        description: Whether the payment was actually charged
+        examples: [true, false]
+        notes: "Used in payment/charge.js - false for synthetic requests, true otherwise"
+
+  - id: app.payment.transactions
+    display_name: Payment Transactions Counter
+    description: Metric counting payment transactions
+    type: counter
+    unit: "1"
+    notes: "Used in payment/charge.js - incremented for each transaction with currency attribute"
+
+  - id: app.currency
+    display_name: Currency Service Attributes
+    description: Custom attributes used in the Currency Service (C++)
+    attributes:
+      - id: app.currency.conversion.from
+        type: string
+        description: Source currency code
+        examples: ["USD", "EUR", "GBP"]
+        notes: "Used in currency/src/server.cpp - source currency in conversion"
+      
+      - id: app.currency.conversion.to
+        type: string
+        description: Target currency code
+        examples: ["USD", "EUR", "GBP"]
+        notes: "Used in currency/src/server.cpp - target currency in conversion"
+
+  - id: app.shipping
+    display_name: Shipping Service Attributes
+    description: Custom attributes used in the Shipping Service (Rust)
+    attributes:
+      - id: app.shipping.zip_code
+        type: string
+        description: Zip code from shipping address
+        examples: ["90210", "10001"]
+        notes: "Used in shipping/src/shipping_service.rs - extracted from address"
+      
+      - id: app.shipping.tracking.id
+        type: string
+        description: Tracking ID for the shipment
+        examples: ["TRK-123456789"]
+        notes: "Used in shipping/src/shipping_service.rs - generated tracking ID"
+      
+      - id: app.shipping.items.count
+        type: int
+        description: Number of items being shipped
+        examples: [5]
+        notes: "Used in shipping/src/shipping_service/quote.rs - item count"
+      
+      - id: app.shipping.cost.total
+        type: string
+        description: Total shipping cost
+        examples: ["25.50"]
+        notes: "Used in shipping/src/shipping_service/quote.rs - formatted cost"
+
+  - id: app.checkout
+    display_name: Checkout Service Attributes
+    description: Custom attributes used in the Checkout Service (Go)
+    attributes:
+      - id: app.user.id
+        type: string
+        description: User ID
+        examples: ["user-123"]
+        notes: "Used in checkout/main.go - from PlaceOrder request"
+      
+      - id: app.user.currency
+        type: string
+        description: User's preferred currency
+        examples: ["USD", "EUR"]
+        notes: "Used in checkout/main.go - from PlaceOrder request"
+      
+      - id: app.user.city
+        type: string
+        description: User's city from address
+        examples: ["San Francisco", "New York"]
+        notes: "Used in checkout/main.go - from PlaceOrder request address"
+      
+      - id: app.order.id
+        type: string
+        description: Order ID
+        examples: ["order-456"]
+        notes: "Used in checkout/main.go - generated order ID"
+      
+      - id: app.order.amount
+        type: double
+        description: Total order amount
+        examples: [99.99]
+        notes: "Used in checkout/main.go - total price in float"
+      
+      - id: app.order.items.count
+        type: int
+        description: Number of items in order
+        examples: [3]
+        notes: "Used in checkout/main.go - count of order items"
+      
+      - id: app.cart.items.count
+        type: int
+        description: Number of items in cart
+        examples: [5]
+        notes: "Used in checkout/main.go - total cart items"
+      
+      - id: app.shipping.amount
+        type: double
+        description: Shipping cost amount
+        examples: [15.99]
+        notes: "Used in checkout/main.go - shipping price in float"
+
+  - id: messaging.kafka.producer
+    display_name: Kafka Producer Attributes
+    description: Custom attributes for Kafka message production
+    attributes:
+      - id: messaging.kafka.producer.success
+        type: boolean
+        description: Whether Kafka message was successfully produced
+        examples: [true, false]
+        notes: "Used in checkout/main.go - success/failure of Kafka send"
+      
+      - id: messaging.kafka.producer.duration_ms
+        type: int
+        description: Duration of Kafka producer operation in milliseconds
+        examples: [150]
+        notes: "Used in checkout/main.go - time taken for Kafka operation"
+
+  - id: app.product
+    display_name: Product Catalog Service Attributes
+    description: Custom attributes used in the Product Catalog Service (Go)
+    attributes:
+      - id: app.product.id
+        type: string
+        description: Product ID
+        examples: ["OLJCESPC7Z"]
+        notes: "Used in product-catalog/main.go - product identifier"
+      
+      - id: app.product.name
+        type: string
+        description: Product name
+        examples: ["Vintage Typewriter"]
+        notes: "Used in product-catalog/main.go - product name"
+      
+      - id: app.products.count
+        type: int
+        description: Total number of products in catalog
+        examples: [10]
+        notes: "Used in product-catalog/main.go - ListProducts response"
+      
+      - id: app.products_search.count
+        type: int
+        description: Number of products matching search query
+        examples: [3]
+        notes: "Used in product-catalog/main.go - SearchProducts response"
+
+  - id: app.quote
+    display_name: Quote Service Attributes
+    description: Custom attributes used in the Quote Service (PHP)
+    attributes:
+      - id: app.quote.items.count
+        type: int
+        description: Number of items in quote
+        examples: [5]
+        notes: "Used in quote/app/routes.php - item count for quote calculation"
+      
+      - id: app.quote.cost.total
+        type: double
+        description: Total quote cost
+        examples: [49.99]
+        notes: "Used in quote/app/routes.php - calculated total cost"
+
+  - id: quotes
+    display_name: Quotes Counter
+    description: Metric counting quotes calculated
+    type: counter
+    unit: "quotes"
+    notes: "Used in quote/app/routes.php - incremented for each quote with number_of_items attribute"
+
+  - id: app.recommendation
+    display_name: Recommendation Service Attributes
+    description: Custom attributes used in the Recommendation Service (Python)
+    attributes:
+      - id: app.products_recommended.count
+        type: int
+        description: Number of products recommended
+        examples: [5]
+        notes: "Used in recommendation/recommendation_server.py - count of recommendations"
+      
+      - id: app.recommendation.cache_enabled
+        type: boolean
+        description: Whether recommendation cache is enabled
+        examples: [true, false]
+        notes: "Used in recommendation/recommendation_server.py - feature flag state"
+      
+      - id: app.cache_hit
+        type: boolean
+        description: Whether cache hit occurred
+        examples: [true, false]
+        notes: "Used in recommendation/recommendation_server.py - cache hit/miss indicator"
+      
+      - id: app.products.count
+        type: int
+        description: Total number of products available
+        examples: [10]
+        notes: "Used in recommendation/recommendation_server.py - product pool size"
+      
+      - id: app.filtered_products.count
+        type: int
+        description: Number of products after filtering
+        examples: [8]
+        notes: "Used in recommendation/recommendation_server.py - filtered product count"
+      
+      - id: app.filtered_products.list
+        type: string
+        description: List of filtered product IDs
+        examples: ["[OLJCESPC7Z, 66VCHSJNUP]"]
+        notes: "Used in recommendation/recommendation_server.py - product ID list"
+
+  - id: app_recommendations_counter
+    display_name: Recommendations Counter
+    description: Metric counting total recommendations given
+    type: counter
+    unit: "recommendations"
+    notes: "Used in recommendation/metrics.py and recommendation_server.py with recommendation.type attribute"
+
+  - id: app.email
+    display_name: Email Service Attributes
+    description: Custom attributes used in the Email Service (Ruby)
+    attributes:
+      - id: app.email.recipient
+        type: string
+        description: Email recipient address
+        examples: ["customer@example.com"]
+        notes: "Used in email/email_server.rb - recipient email address"
+      
+      - id: app.order.id
+        type: string
+        description: Order ID for email confirmation
+        examples: ["order-789"]
+        notes: "Used in email/email_server.rb - order being confirmed"
+
+  - id: app.frontend
+    display_name: Frontend Service Attributes
+    description: Custom attributes used in the Frontend Service (TypeScript/Next.js)
+    attributes:
+      - id: session.id
+        type: string
+        description: Session ID for user
+        examples: ["sess-abc123"]
+        notes: "Used in frontend/utils/telemetry/SessionIdProcessor.ts - user session identifier"
+      
+      - id: app.synthetic_request
+        type: boolean
+        description: Whether request is synthetic/test traffic
+        examples: [true, false]
+        notes: "Used in frontend/utils/telemetry/HoneycombFrontendTracer.ts - synthetic request flag"
+      
+      - id: app.request.method
+        type: string
+        description: HTTP request method
+        examples: ["GET", "POST"]
+        notes: "Used in frontend/utils/telemetry/InstrumentationMiddleware.ts - HTTP method"
+      
+      - id: app.request.target
+        type: string
+        description: HTTP request target/path
+        examples: ["/api/products"]
+        notes: "Used in frontend/utils/telemetry/InstrumentationMiddleware.ts - request path"
+      
+      - id: app.request.user_agent
+        type: string
+        description: User agent string
+        examples: ["Mozilla/5.0..."]
+        notes: "Used in frontend/utils/telemetry/InstrumentationMiddleware.ts - browser info"
+      
+      - id: app.response.status_code
+        type: int
+        description: HTTP response status code
+        examples: [200, 404, 500]
+        notes: "Used in frontend/utils/telemetry/InstrumentationMiddleware.ts - HTTP status"
+      
+      - id: app.response.duration_ms
+        type: int
+        description: Response duration in milliseconds
+        examples: [150]
+        notes: "Used in frontend/utils/telemetry/InstrumentationMiddleware.ts - request duration"
+
+  - id: app.frontend.requests
+    display_name: Frontend Requests Counter
+    description: Metric counting frontend API requests
+    type: counter
+    unit: "1"
+    notes: "Used in frontend/utils/telemetry/InstrumentationMiddleware.ts with method, target, status attributes"
+
+# Duplicate attribute names found across services
+duplicates:
+  - name: "session.id"
+    locations:
+      - "Ad Service (Java) - AdService.java"
+      - "Frontend (TypeScript) - SessionIdProcessor.ts"
+      - "React Native App (TypeScript) - SessionIdProcessor.ts"
+    note: "This is intentional - session ID is a cross-cutting concern used in multiple services"
+  
+  - name: "app.order.id"
+    locations:
+      - "Checkout Service (Go) - main.go"
+      - "Email Service (Ruby) - email_server.rb"
+    note: "This is intentional - order ID flows through checkout to email confirmation"
+  
+  - name: "app.shipping.amount"
+    locations:
+      - "Checkout Service (Go) - main.go (PlaceOrder and PrepareOrderRequest)"
+    note: "Used in multiple contexts within the same service"
+  
+  - name: "app.ads.count"
+    locations:
+      - "Ad Service (Java) - AdService.java (multiple methods)"
+    note: "Used in multiple contexts within the same service"
+  
+  - name: "app.products.count"
+    locations:
+      - "Product Catalog Service (Go) - main.go (ListProducts)"
+      - "Recommendation Service (Python) - recommendation_server.py"
+    note: "Similar concept but different services - product catalog count vs available products for recommendations"
+
