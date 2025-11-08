@@ -252,3 +252,8 @@ layered_runtime:
             listener:
               example_listener_name:
                 connection_limit: 10000
+        # GLOBAL UPSTREAM SETTINGS
+        upstream:
+          # These override defaults for ALL clusters
+          connect_timeout: 30s
+          per_upstream_preconnect_ratio: 1.5  # Preemptively create connections
