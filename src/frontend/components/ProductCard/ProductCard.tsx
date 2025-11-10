@@ -51,7 +51,7 @@ const ProductCard = ({
     <S.Link id={`product-link-${id}`} href={`/product/${id}`}>
       <S.ProductCard id={`product-card-${id}`} data-cy={CypressFields.ProductCard}>
         <S.Image id={`product-image-${id}`} $src={imageSrc} />
-        <div>
+        <div id="product-details">
           <S.ProductName>{name}</S.ProductName>
           <S.ProductPrice>
             <ProductPrice price={priceUsd} />

@@ -74,11 +74,11 @@ const ProductDetail: NextPage = () => {
       </Head>
       <Layout>
         <S.ProductDetail data-cy={CypressFields.ProductDetail}>
-          <S.Container>
-            <S.Image $src={"/images/products/" + picture} data-cy={CypressFields.ProductPicture} />
-            <S.Details>
-              <S.Name data-cy={CypressFields.ProductName}>{name}</S.Name>
-              <S.Description data-cy={CypressFields.ProductDescription}>{description}</S.Description>
+          <S.Container id="product-dt-container">
+            { picture && <S.Image $src={"/images/products/" + picture} id="product-picture" data-cy={CypressFields.ProductPicture} /> }
+            <S.Details id="s-product-details">
+              <S.Name id="product-name" data-cy={CypressFields.ProductName}>{name}</S.Name>
+              <S.Description id="product-description" data-cy={CypressFields.ProductDescription}>{description}</S.Description>
               <S.ProductPrice>
                 <ProductPrice price={priceUsd} />
               </S.ProductPrice>
@@ -95,7 +95,7 @@ const ProductDetail: NextPage = () => {
                 ))}
               </Select>
               <S.AddToCart data-cy={CypressFields.ProductAddToCart} onClick={onAddItem}>
-                <img src="/icons/CartIcon.svg" height="15" width="15" alt="cart" /> Add To Cart
+                <img id="add-to-cart-image" src="/icons/CartIcon.svg" height="15" width="15" alt="cart" /> Add To Cart
               </S.AddToCart>
             </S.Details>
           </S.Container>
