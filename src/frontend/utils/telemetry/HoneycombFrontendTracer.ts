@@ -5,6 +5,12 @@
 // react-side client
 'use client';
 
+declare global {
+    interface Window {
+        __flushTelemetry?: () => Promise<void>;
+    }
+}
+
 import { CompositePropagator, W3CBaggagePropagator, W3CTraceContextPropagator } from '@opentelemetry/core';
 import { getWebAutoInstrumentations } from '@opentelemetry/auto-instrumentations-web';
 import { ZoneContextManager} from '@opentelemetry/context-zone';
@@ -36,6 +42,7 @@ const HoneycombFrontendTracer = (sessionId: string) => {
                 new W3CBaggagePropagator(),
                 new W3CTraceContextPropagator()],
         }),
+
         instrumentations: [
             getWebAutoInstrumentations({
               // alternative: turn on networkEvents so we can see data for resourceFetch content sizes
@@ -59,17 +66,6 @@ const HoneycombFrontendTracer = (sessionId: string) => {
                 vitalsToTrack: ['FCP', 'INP', 'CLS', 'LCP', 'TTFB']
             })
         ],
-        // webVitalsInstrumentationConfig: {
-        //   cls: {
-        //     reportAllChanges: true
-        //   },
-        //   lcp: {
-        //     reportAllChanges: true
-        //   },
-        //   inp: {
-        //     reportAllChanges: true
-        //   }
-        // },
         sessionProvider: {
             getSessionId: () => sessionId
         }
@@ -77,6 +73,11 @@ const HoneycombFrontendTracer = (sessionId: string) => {
 
     sdk.start();
 
+    // TODO - add a build flag to enable this for load testing platforms only
+    // Expose for programmatic access (from Playwright for example) to flush telemetry spans
+    if (typeof window !== 'undefined') {
+        window.__flushTelemetry = () => { return sdk.forceFlush(); }
+    }
 }
 
 export default HoneycombFrontendTracer;
