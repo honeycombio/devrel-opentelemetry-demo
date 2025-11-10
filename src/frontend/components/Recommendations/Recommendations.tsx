@@ -10,7 +10,7 @@ const Recommendations = () => {
   const { recommendedProductList } = useAd();
 
   return (
-    <S.Recommendations data-cy={CypressFields.RecommendationList}>
+    <S.Recommendations id="product-recommendations" data-cy={CypressFields.RecommendationList}>
       <S.TitleContainer>
         <S.Title>You May Also Like</S.Title>
       </S.TitleContainer>
