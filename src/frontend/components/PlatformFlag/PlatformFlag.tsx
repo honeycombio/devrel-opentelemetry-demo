@@ -7,7 +7,7 @@ const platform = process.env.NEXT_PUBLIC_PLATFORM || 'local';
 
 const PlatformFlag = () => {
   return (
-      platform ? <S.Block>{platform}</S.Block> : ''
+      platform ? <S.Block id="platform">{platform}</S.Block> : ''
   );
 };
 
