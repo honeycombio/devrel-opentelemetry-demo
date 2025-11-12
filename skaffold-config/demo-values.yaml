@@ -15,8 +15,6 @@ default:
       value: grpc
     - name: OTEL_EXPORTER_OTLP_INSECURE
       value: "true"
-    - name: OTEL_LOG_LEVEL
-      value: "info"
     - name: OTEL_LOGS_EXPORTER
       value: "otlp"
 
