@@ -248,11 +248,11 @@ func (cs *checkout) PlaceOrder(ctx context.Context, req *pb.PlaceOrderRequest) (
 		attribute.String("app.user.city", req.Address.City),
 	)
 	log.Infof("[PlaceOrder] user_id=%q user_currency=%q", req.UserId, req.UserCurrency)
-	
-    // Intentional slowness for Slowville orders
-    if strings.Contains(strings.ToLower(req.Address.City), "slowville") {
-        time.Sleep(3 * time.Second)
-    }
+
+	// Intentional slowness for Slowville orders
+	if strings.Contains(strings.ToLower(req.Address.City), "slowville") {
+		time.Sleep(20 * time.Second)
+	}
 
 	var err error
 	defer func() {
