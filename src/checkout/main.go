@@ -251,7 +251,7 @@ func (cs *checkout) PlaceOrder(ctx context.Context, req *pb.PlaceOrderRequest) (
 
 	// Intentional slowness for Slowville orders
 	if strings.Contains(strings.ToLower(req.Address.City), "slowville") {
-		time.Sleep(20 * time.Second)
+		time.Sleep(10 * time.Second)
 	}
 
 	var err error
