@@ -7,6 +7,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"math/rand"
 	"net"
 	"net/http"
 	"os"
@@ -251,7 +252,9 @@ func (cs *checkout) PlaceOrder(ctx context.Context, req *pb.PlaceOrderRequest) (
 
 	// Intentional slowness for Slowville orders
 	if strings.Contains(strings.ToLower(req.Address.City), "slowville") {
-		time.Sleep(10 * time.Second)
+		// Random delay between 5-8 seconds
+		randomDelay := 5 + rand.Intn(4) // rand.Intn(4) gives 0-3, adding 5 gives 5-8
+		time.Sleep(time.Duration(randomDelay) * time.Second)
 	}
 
 	var err error
