@@ -45,11 +45,7 @@ static_resources:
                           route:
                             cluster: opentelemetry_collector_http
                             prefix_rewrite: "/"
-                            timeout: 0s
-                            retry_policy:
-                              retry_on: "5xx,connect-failure,refused-stream"
-                              num_retries: 2
-                              per_try_timeout: 5s
+                            timeout: 30s
                         - match: { prefix: "/jaeger" }
                           route: { cluster: jaeger }
                         - match: { prefix: "/grafana" }
