@@ -78,7 +78,7 @@ const CartProvider = ({ children }: IProps) => {
           {
             ...spanAttributesForRpc('CartService', 'placeOrder', 'CartProvider'),
             'app.order.city': orderDetails?.address?.city || 'No city',
-            'app.order.state': orderDetails?.address?.city || 'No state'
+            'app.order.state': orderDetails?.address?.state || 'No state'
           }
       )(orderDetails);
     },
