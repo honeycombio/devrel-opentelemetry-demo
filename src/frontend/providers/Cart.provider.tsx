@@ -13,7 +13,7 @@ interface IContext {
   cart: IProductCart;
   addItem(item: CartItem): void;
   emptyCart(): void;
-  placeOrder(order: PlaceOrderRequest): Promise<OrderResult>;
+  placeOrder(order: PlaceOrderRequest & { userCurrency: string}): Promise<OrderResult>;
 }
 
 export const Context = createContext<IContext>({
@@ -70,7 +70,18 @@ const CartProvider = ({ children }: IProps) => {
   });
 
   const placeOrderMutation = useMutation({
-    mutationFn: tracedMutation('placeOrder', ApiGateway.placeOrder, 'cart-provider', spanAttributesForRpc('CartService', 'placeOrder', 'CartProvider')),
+    mutationFn: (orderDetails: PlaceOrderRequest & { currencyCode: string }) => {
+      return tracedMutation(
+          'placeOrder',
+          (details: PlaceOrderRequest & { currencyCode: string}) => ApiGateway.placeOrder(details),
+          'cart-provider',
+          {
+            ...spanAttributesForRpc('CartService', 'placeOrder', 'CartProvider'),
+            'app.order.city': orderDetails?.address?.city || 'No city',
+            'app.order.state': orderDetails?.address?.city || 'No state'
+          }
+      )(orderDetails);
+    },
     ...mutationOptions,
     retry: false
   });
@@ -82,7 +93,7 @@ const CartProvider = ({ children }: IProps) => {
   // note - we don't have a param to feed the empty cart, so it's undefined
   const emptyCart = useCallback(() => emptyCartMutation.mutateAsync(undefined), [emptyCartMutation]);
   const placeOrder = useCallback(
-    (order: PlaceOrderRequest) => placeOrderMutation.mutateAsync({ ...order, currencyCode: selectedCurrency }),
+    (order: PlaceOrderRequest & { userCurrency: string}) => placeOrderMutation.mutateAsync({ ...order, currencyCode: selectedCurrency }),
     [placeOrderMutation, selectedCurrency]
   );
 
