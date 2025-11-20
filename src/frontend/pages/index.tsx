@@ -3,14 +3,13 @@
 
 import { NextPage } from 'next';
 import Head from 'next/head';
-import Footer from '../components/Footer';
 import Layout from '../components/Layout';
 import ProductList from '../components/ProductList';
 import * as S from '../styles/Home.styled';
 import { useQuery } from '@tanstack/react-query';
 import ApiGateway from '../gateways/Api.gateway';
 import Banner from '../components/Banner';
-import { CypressFields } from '../utils/Cypress';
+import { CypressFields } from '../utils/enums/CypressFields';
 import { useCurrency } from '../providers/Currency.provider';
 
 const Home: NextPage = () => {
@@ -39,7 +38,6 @@ const Home: NextPage = () => {
             </S.Content>
           </S.Row>
         </S.Container>
-        <Footer />
       </S.Home>
     </Layout>
   );

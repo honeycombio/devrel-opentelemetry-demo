@@ -1,13 +1,17 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-import { CypressFields } from '../../utils/Cypress';
+import { CypressFields } from '../../utils/enums/CypressFields';
 import { useAd } from '../../providers/Ad.provider';
 import ProductCard from '../ProductCard';
 import * as S from './Recommendations.styled';
 
 const Recommendations = () => {
   const { recommendedProductList } = useAd();
+
+  if (!recommendedProductList || recommendedProductList.length === 0) {
+    return null;
+  }
 
   return (
     <S.Recommendations id="product-recommendations" data-cy={CypressFields.RecommendationList}>

@@ -16,8 +16,8 @@ using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
 using OpenFeature;
+using OpenFeature.Hooks;
 using OpenFeature.Contrib.Providers.Flagd;
-using cartservice;
 
 var builder = WebApplication.CreateBuilder(args);
 string valkeyAddress = builder.Configuration["VALKEY_ADDR"];
@@ -31,21 +31,19 @@ builder.Logging
     .AddOpenTelemetry(options => options.AddOtlpExporter())
     .AddConsole();
 
-builder.Services.AddSingleton<ICartStore>(x=>
+builder.Services.AddSingleton<ICartStore>(x =>
 {
     var store = new ValkeyCartStore(x.GetRequiredService<ILogger<ValkeyCartStore>>(), valkeyAddress);
     store.Initialize();
     return store;
 });
 
-builder.Services.AddSingleton<IFeatureClient>(x => {
-    var logger = x.GetRequiredService<ILogger<Program>>();
-    logger.LogInformation("Using Flagd feature flag provider");
-    var flagdProvider = new FlagdProvider();
-    Api.Instance.AddHooks(new DemoTracingHook());
-    Api.Instance.SetProviderAsync(flagdProvider).GetAwaiter().GetResult();
-    var client = Api.Instance.GetClient();
-    return client;
+builder.Services.AddOpenFeature(openFeatureBuilder =>
+{
+    openFeatureBuilder
+        .AddProvider(_ => new FlagdProvider())
+        .AddHook<MetricsHook>()
+        .AddHook<TraceEnricherHook>();
 });
 
 builder.Services.AddSingleton(x =>
@@ -59,6 +57,7 @@ builder.Services.AddSingleton(x =>
 
 Action<ResourceBuilder> appResourceBuilder =
     resource => resource
+        .AddService(builder.Environment.ApplicationName)
         .AddContainerDetector()
         .AddHostDetector();
 
@@ -74,6 +73,7 @@ builder.Services.AddOpenTelemetry()
         .AddOtlpExporter())
     .WithMetrics(meterBuilder => meterBuilder
         .AddMeter("OpenTelemetry.Demo.Cart")
+        .AddMeter("OpenFeature")
         .AddProcessInstrumentation()
         .AddRuntimeInstrumentation()
         .AddAspNetCoreInstrumentation()
@@ -85,7 +85,7 @@ builder.Services.AddGrpcHealthChecks()
 
 var app = builder.Build();
 
-var ValkeyCartStore = (ValkeyCartStore) app.Services.GetRequiredService<ICartStore>();
+var ValkeyCartStore = (ValkeyCartStore)app.Services.GetRequiredService<ICartStore>();
 app.Services.GetRequiredService<StackExchangeRedisInstrumentation>().AddConnection(ValkeyCartStore.GetConnection());
 
 app.MapGrpcService<CartService>();

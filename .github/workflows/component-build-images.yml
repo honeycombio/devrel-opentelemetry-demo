@@ -30,12 +30,15 @@ on:
         required: false
         type: string
 
+permissions:
+  contents: read
+
 jobs:
   protobufcheck:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
       - name: Generate
         run: make clean docker-generate-protobuf
       - name: Check Clean Work Tree
@@ -80,6 +83,10 @@ jobs:
             tag_suffix: email
             context: ./
             setup-qemu: true
+          - file: ./src/flagd-ui/Dockerfile
+            tag_suffix: flagd-ui
+            context: ./
+            setup-qemu: true
           - file: ./src/fraud-detection/Dockerfile
             tag_suffix: fraud-detection
             context: ./
@@ -104,16 +111,32 @@ jobs:
             tag_suffix: kafka
             context: ./
             setup-qemu: true
+          - file: ./src/llm/Dockerfile
+            tag_suffix: llm
+            context: ./
+            setup-qemu: true
           - file: ./src/load-generator/Dockerfile
             tag_suffix: load-generator
+            context: ./
+            setup-qemu: true
+          - file: ./src/opensearch/Dockerfile
+            tag_suffix: opensearch
             context: ./
             setup-qemu: true
           - file: ./src/payment/Dockerfile
             tag_suffix: payment
             context: ./
             setup-qemu: true
+          - file: ./src/postgres/Dockerfile
+            tag_suffix: postgresql
+            context: ./
+            setup-qemu: true
           - file: ./src/product-catalog/Dockerfile
             tag_suffix: product-catalog
+            context: ./
+            setup-qemu: true
+          - file: ./src/product-reviews/Dockerfile
+            tag_suffix: product-reviews
             context: ./
             setup-qemu: true
           - file: ./src/quote/Dockerfile
@@ -128,17 +151,13 @@ jobs:
             tag_suffix: shipping
             context: ./
             setup-qemu: true
-          - file: ./src/flagd-ui/Dockerfile
-            tag_suffix: flagd-ui
-            context: ./
-            setup-qemu: true
           - file: ./test/tracetesting/Dockerfile
             tag_suffix: traceBasedTests
             context: ./
             setup-qemu: true
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 0
       - name: Load environment variables from .env file
@@ -204,7 +223,7 @@ jobs:
             max-parallelism = 2
       - name: Matrix Build and push demo images
         if: steps.check_changes.outputs.skip == 'false'
-        uses: docker/build-push-action@v6.15.0
+        uses: docker/build-push-action@v6.18.0
         with:
           context: ${{ matrix.file_tag.context }}
           file: ${{ matrix.file_tag.file }}

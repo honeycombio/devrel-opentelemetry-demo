@@ -1,50 +1,60 @@
 # Copyright The OpenTelemetry Authors
 # SPDX-License-Identifier: Apache-2.0
 
-FROM node:22-alpine AS builder
-RUN apk add --no-cache libc6-compat
+FROM docker.io/library/node:22-slim AS builder
 
 WORKDIR /app
 
-COPY ./src/frontend/package*.json ./
-RUN chown -R node:node /app
-USER node
-RUN npm clean-install --no-audit --no-progress
-COPY --chown=node:node ./src/frontend/protos ./protos
-COPY --chown=node:node ./src/frontend .
+COPY ./src/frontend/package.json package.json
+COPY ./src/frontend/package-lock.json package-lock.json
+
+RUN npm ci
+
+COPY ./src/frontend/components/ components/
+COPY ./src/frontend/gateways/ gateways/
+COPY ./src/frontend/pages/ pages/
+COPY ./src/frontend/protos/ protos/
+COPY ./src/frontend/providers/ providers/
+COPY ./src/frontend/services/ services/
+COPY ./src/frontend/styles/ styles/
+COPY ./src/frontend/types/ types/
+
+COPY ./src/frontend/utils/enums/ utils/enums/
+COPY ./src/frontend/utils/telemetry/ utils/telemetry/
+COPY ./src/frontend/utils/imageLoader.js utils/imageLoader.js
+COPY ./src/frontend/utils/Request.ts utils/Request.ts
+
+COPY ./src/frontend/next.config.js next.config.js
+COPY ./src/frontend/tsconfig.json tsconfig.json
 
 RUN npm run build
 
-FROM node:22-alpine AS deps
+# -----------------------------------------------------------------------------
 
-USER node
-WORKDIR /app
-COPY --chown=node:node --from=builder /home/node/.npm/ /home/node/.npm/
-COPY ./src/frontend/package*.json ./
-RUN NODE_ENV=production npm clean-install --prefer-offline --no-audit --no-progress
+FROM docker.io/library/node:22-slim AS deps
 
-
-FROM node:22-alpine AS runner
 WORKDIR /app
 
-ENV NODE_ENV=production
+COPY ./src/frontend/package.json package.json
+COPY ./src/frontend/package-lock.json package-lock.json
 
-RUN addgroup -g 1001 -S nodejs
-RUN adduser -S nextjs -u 1001
+RUN npm ci --omit=dev
 
-COPY --from=builder /app/next.config.js ./
-COPY --from=builder /app/utils/telemetry/Instrumentation.js ./
-COPY --from=builder /app/public ./public
-COPY --from=builder /app/package.json ./package.json
-COPY --from=deps /app/node_modules ./node_modules
+# -----------------------------------------------------------------------------
 
-COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
-COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+FROM gcr.io/distroless/nodejs22-debian12:nonroot
 
-USER nextjs
+WORKDIR /app
 
-ENV PORT=8080
-EXPOSE ${PORT}
+COPY --from=builder /app/.next/standalone/ ./
+COPY --from=builder /app/.next/static/ .next/static/
 
-ENTRYPOINT ["npm", "start"]
+COPY --from=deps /app/node_modules/ node_modules/
 
+COPY ./src/frontend/public/ public/
+
+COPY ./src/frontend/utils/telemetry/Instrumentation.js Instrumentation.js
+
+EXPOSE ${FRONTEND_PORT}
+
+CMD ["--require=./Instrumentation.js", "server.js"]
