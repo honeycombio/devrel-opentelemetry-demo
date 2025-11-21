@@ -1,0 +1,66 @@
+namespace: default
+
+services:
+  productReviews:
+    enabled: true
+    name: product-reviews
+    image:
+      repository: productreviewsservice
+      tag: latest
+      pullPolicy: IfNotPresent
+    port: 3551
+    replicas: 1
+    env:
+      - name: PRODUCT_REVIEWS_PORT
+        value: "3551"
+      - name: OTEL_EXPORTER_OTLP_ENDPOINT
+        value: "http://otel-collector:4317"
+      - name: OTEL_PYTHON_LOG_CORRELATION
+        value: "true"
+      - name: OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT
+        value: "true"
+      - name: PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION
+        value: "python"
+      - name: DB_CONNECTION_STRING
+        value: "host=postgresql user=otelu password=otelp dbname=otel"
+      - name: LLM_BASE_URL
+        value: "http://llm:8000/v1"
+      - name: OPENAI_API_KEY
+        value: "dummy"
+      - name: LLM_MODEL
+        value: "astronomy-llm"
+      - name: PRODUCT_CATALOG_ADDR
+        value: "product-catalog:3550"
+      - name: FLAGD_HOST
+        value: "flagd"
+      - name: FLAGD_PORT
+        value: "8013"
+      - name: LLM_HOST
+        value: "llm"
+      - name: LLM_PORT
+        value: "8000"
+
+  llm:
+    enabled: true
+    name: llm
+    image:
+      repository: llmservice
+      tag: latest
+      pullPolicy: IfNotPresent
+    port: 8000
+    replicas: 1
+    env:
+      - name: OTEL_EXPORTER_OTLP_ENDPOINT
+        value: "http://otel-collector:4317"
+      - name: FLAGD_HOST
+        value: "flagd"
+      - name: FLAGD_PORT
+        value: "8013"
+
+serviceAccount:
+  name: opentelemetry-demo
+
+otel:
+  collectorName: otel-collector
+  metricsTemporality: delta
+

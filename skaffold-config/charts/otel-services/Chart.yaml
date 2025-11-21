@@ -1,0 +1,7 @@
+apiVersion: v2
+name: otel-services
+description: A Helm chart for deploying product-reviews and llm services
+type: application
+version: 0.1.0
+appVersion: "2.1.3"
+

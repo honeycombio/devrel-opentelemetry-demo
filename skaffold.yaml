@@ -54,6 +54,10 @@ build:
       dockerfile: src/kafka/Dockerfile
       buildArgs:
         OTEL_JAVA_AGENT_VERSION: 2.21.0
+  - image: llmservice
+    context: .
+    docker:
+      dockerfile: src/llm/Dockerfile
   - image: loadgenerator
     context: .
     docker:
@@ -70,6 +74,10 @@ build:
     context: .
     docker:
       dockerfile: src/product-catalog/Dockerfile
+  - image: productreviewsservice
+    context: .
+    docker:
+      dockerfile: src/product-reviews/Dockerfile
   - image: quoteservice
     context: .
     docker:
@@ -119,7 +127,6 @@ deploy:
                     fieldPath: metadata.namespace
         setValueTemplates:
           opentelemetry-collector.extraEnvs[0].value: "{{.HONEYCOMB_API_KEY}}"
-          opentelemetry-collector.config.receivers.redis.endpoint: "{{.USER}}-valkey:6379"
           opentelemetry-collector.clusterRole.name: "{{.USER}}-otel-collector"
           opentelemetry-collector.clusterRole.clusterRoleBinding.name: "{{.USER}}-otel-collector"
           components.accounting.imageOverride.repository: "{{if .IMAGE_REPO_accountingservice }}{{.IMAGE_REPO_accountingservice}}{{end}}"
@@ -158,6 +165,20 @@ deploy:
           components.recommendation.imageOverride.tag:  "{{if .IMAGE_REPO_recommendationservice }}{{.IMAGE_TAG_recommendationservice}}@{{.IMAGE_DIGEST_recommendationservice}}{{end}}"
           components.shipping.imageOverride.repository: "{{if .IMAGE_REPO_shippingservice }}{{.IMAGE_REPO_shippingservice}}{{end}}"
           components.shipping.imageOverride.tag:  "{{if .IMAGE_REPO_shippingservice }}{{.IMAGE_TAG_shippingservice}}@{{.IMAGE_DIGEST_shippingservice}}{{end}}"
+        upgradeOnChange: true
+        useHelmSecrets: false
+        wait: true
+      - name: "{{.USER}}-otel-services"
+        createNamespace: false
+        namespace: "{{.USER}}-local"
+        chartPath: skaffold-config/charts/otel-services
+        recreatePods: false
+        skipBuildDependencies: false
+        setValueTemplates:
+          services.productReviews.image.repository: "{{if .IMAGE_REPO_productreviewsservice }}{{.IMAGE_REPO_productreviewsservice}}{{end}}"
+          services.productReviews.image.tag: "{{if .IMAGE_REPO_productreviewsservice }}{{.IMAGE_TAG_productreviewsservice}}@{{.IMAGE_DIGEST_productreviewsservice}}{{end}}"
+          services.llm.image.repository: "{{if .IMAGE_REPO_llmservice }}{{.IMAGE_REPO_llmservice}}{{end}}"
+          services.llm.image.tag: "{{if .IMAGE_REPO_llmservice }}{{.IMAGE_TAG_llmservice}}@{{.IMAGE_DIGEST_llmservice}}{{end}}"
         upgradeOnChange: true
         useHelmSecrets: false
         wait: true

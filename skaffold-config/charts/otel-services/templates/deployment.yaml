@@ -1,0 +1,96 @@
+{{- if .Values.services.productReviews.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.services.productReviews.name }}
+  labels:
+    opentelemetry.io/name: {{ .Values.services.productReviews.name }}
+    app.kubernetes.io/component: {{ .Values.services.productReviews.name }}
+    app.kubernetes.io/name: {{ .Values.services.productReviews.name }}
+    app.kubernetes.io/version: "2.1.3"
+    app.kubernetes.io/part-of: opentelemetry-demo
+spec:
+  replicas: {{ .Values.services.productReviews.replicas }}
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      opentelemetry.io/name: {{ .Values.services.productReviews.name }}
+  template:
+    metadata:
+      labels:
+        opentelemetry.io/name: {{ .Values.services.productReviews.name }}
+        app.kubernetes.io/component: {{ .Values.services.productReviews.name }}
+        app.kubernetes.io/name: {{ .Values.services.productReviews.name }}
+    spec:
+      serviceAccountName: {{ .Values.serviceAccount.name }}
+      containers:
+        - name: {{ .Values.services.productReviews.name }}
+          image: "{{ .Values.services.productReviews.image.repository }}:{{ .Values.services.productReviews.image.tag }}"
+          imagePullPolicy: {{ .Values.services.productReviews.image.pullPolicy }}
+          ports:
+            - containerPort: {{ .Values.services.productReviews.port }}
+              name: service
+          env:
+            - name: OTEL_SERVICE_NAME
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: metadata.labels['app.kubernetes.io/component']
+            - name: OTEL_COLLECTOR_NAME
+              value: {{ .Values.otel.collectorName }}
+            - name: OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE
+              value: {{ .Values.otel.metricsTemporality }}
+            {{- range .Values.services.productReviews.env }}
+            - name: {{ .name }}
+              value: {{ .value | quote }}
+            {{- end }}
+---
+{{- end }}
+{{- if .Values.services.llm.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.services.llm.name }}
+  labels:
+    opentelemetry.io/name: {{ .Values.services.llm.name }}
+    app.kubernetes.io/component: {{ .Values.services.llm.name }}
+    app.kubernetes.io/name: {{ .Values.services.llm.name }}
+    app.kubernetes.io/version: "2.1.3"
+    app.kubernetes.io/part-of: opentelemetry-demo
+spec:
+  replicas: {{ .Values.services.llm.replicas }}
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      opentelemetry.io/name: {{ .Values.services.llm.name }}
+  template:
+    metadata:
+      labels:
+        opentelemetry.io/name: {{ .Values.services.llm.name }}
+        app.kubernetes.io/component: {{ .Values.services.llm.name }}
+        app.kubernetes.io/name: {{ .Values.services.llm.name }}
+    spec:
+      serviceAccountName: {{ .Values.serviceAccount.name }}
+      containers:
+        - name: {{ .Values.services.llm.name }}
+          image: "{{ .Values.services.llm.image.repository }}:{{ .Values.services.llm.image.tag }}"
+          imagePullPolicy: {{ .Values.services.llm.image.pullPolicy }}
+          ports:
+            - containerPort: {{ .Values.services.llm.port }}
+              name: service
+          env:
+            - name: OTEL_SERVICE_NAME
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: metadata.labels['app.kubernetes.io/component']
+            - name: OTEL_COLLECTOR_NAME
+              value: {{ .Values.otel.collectorName }}
+            - name: OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE
+              value: {{ .Values.otel.metricsTemporality }}
+            {{- range .Values.services.llm.env }}
+            - name: {{ .name }}
+              value: {{ .value | quote }}
+            {{- end }}
+{{- end }}
+
