@@ -3,13 +3,10 @@
 
 static_resources:
   listeners:
-    - name: ingress_listener
-      address:
+    - address:
         socket_address:
           address: "${ENVOY_ADDR}"
           port_value: ${ENVOY_PORT}
-          # krimple added this - larger buffer, disable timeouts and add retries
-      per_connection_buffer_limit_bytes: 8388608  # 8 MiB
       filter_chains:
         - filters:
             - name: envoy.filters.network.http_connection_manager
@@ -64,7 +61,7 @@ static_resources:
                             upgrade_configs:
                               - upgrade_type: websocket
                         - match: { prefix: "/" }  # Default/catch-all route - keep last since prefix:"/" matches everything
-                          route: { cluster: frontend }
+                          route: { cluster: api-gateway }
                 http_filters:
                   - name: envoy.filters.http.fault
                     typed_config:
@@ -261,8 +258,3 @@ layered_runtime:
             listener:
               example_listener_name:
                 connection_limit: 10000
-        # GLOBAL UPSTREAM SETTINGS
-        upstream:
-          # These override defaults for ALL clusters
-          connect_timeout: 60s
-          per_upstream_preconnect_ratio: 1.5  # Preemptively create connections
