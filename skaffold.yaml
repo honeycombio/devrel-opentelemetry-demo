@@ -10,6 +10,8 @@ build:
     context: .
     docker:
       dockerfile: src/ad/Dockerfile
+      buildArgs:
+        OTEL_JAVA_AGENT_VERSION: 2.21.0
   - image: cartservice
     context: .
     docker:
@@ -22,6 +24,8 @@ build:
     context: .
     docker:
       dockerfile: src/currency/Dockerfile
+      buildArgs:
+        OPENTELEMETRY_CPP_VERSION: 1.23.0
   - image: emailservice
     context: .
     docker:
@@ -30,6 +34,8 @@ build:
     context: .
     docker:
       dockerfile: src/fraud-detection/Dockerfile
+      buildArgs:
+        OTEL_JAVA_AGENT_VERSION: 2.21.0
   - image: frontend
     context: .
     docker:
@@ -46,6 +52,8 @@ build:
     context: .
     docker:
       dockerfile: src/kafka/Dockerfile
+      buildArgs:
+        OTEL_JAVA_AGENT_VERSION: 2.21.0
   - image: loadgenerator
     context: .
     docker:
@@ -88,7 +96,7 @@ deploy:
         namespace: "{{.USER}}-local"
         repo: https://open-telemetry.github.io/opentelemetry-helm-charts
         remoteChart: opentelemetry-demo
-        version: 0.37.0
+        version: 0.38.6
         recreatePods: false
         skipBuildDependencies: false
         valuesFiles:
