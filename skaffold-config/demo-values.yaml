@@ -163,6 +163,17 @@ opentelemetry-collector:
           x-honeycomb-dataset: k8s-logs
 
     service:
+      telemetry:
+        metrics:
+          readers:
+            - periodic:
+                exporter:
+                  otlp:
+                    protocol: http/protobuf
+                    endpoint: api.honeycomb.io:443
+                    headers:
+                      x-honeycomb-team: ${env:HONEYCOMB_API_KEY}
+                      x-honeycomb-dataset: otel-collector-metrics
       pipelines:
         metrics:
           exporters:
