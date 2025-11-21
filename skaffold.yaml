@@ -62,6 +62,10 @@ build:
     context: .
     docker:
       dockerfile: src/payment/Dockerfile
+  - image: postgresql
+    context: .
+    docker:
+      dockerfile: src/postgres/Dockerfile
   - image: productcatalogservice
     context: .
     docker:
@@ -144,6 +148,8 @@ deploy:
           components.load-generator.imageOverride.tag:  "{{if .IMAGE_REPO_loadgenerator }}{{.IMAGE_TAG_loadgenerator}}@{{.IMAGE_DIGEST_loadgenerator}}{{end}}"
           components.payment.imageOverride.repository: "{{if .IMAGE_REPO_paymentservice }}{{.IMAGE_REPO_paymentservice}}{{end}}"
           components.payment.imageOverride.tag:  "{{if .IMAGE_REPO_paymentservice }}{{.IMAGE_TAG_paymentservice}}@{{.IMAGE_DIGEST_paymentservice}}{{end}}"
+          components.postgresql.imageOverride.repository: "{{if .IMAGE_REPO_postgresql }}{{.IMAGE_REPO_postgresql}}{{end}}"
+          components.postgresql.imageOverride.tag:  "{{if .IMAGE_REPO_postgresql }}{{.IMAGE_TAG_postgresql}}@{{.IMAGE_DIGEST_postgresql}}{{end}}"
           components.product-catalog.imageOverride.repository: "{{if .IMAGE_REPO_productcatalogservice }}{{.IMAGE_REPO_productcatalogservice}}{{end}}"
           components.product-catalog.imageOverride.tag:  "{{if .IMAGE_REPO_productcatalogservice }}{{.IMAGE_TAG_productcatalogservice}}@{{.IMAGE_DIGEST_productcatalogservice}}{{end}}"
           components.quote.imageOverride.repository: "{{if .IMAGE_REPO_quoteservice }}{{.IMAGE_REPO_quoteservice}}{{end}}"
