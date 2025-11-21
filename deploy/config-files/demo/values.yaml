@@ -12,6 +12,10 @@ components:
     replicas: 2
   frontend:
     replicas: 2
+  postgresql:
+    resources:
+      limits:
+        memory: 150Mi
 
 opentelemetry-collector:
   enabled: false
