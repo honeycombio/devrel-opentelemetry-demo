@@ -64,3 +64,10 @@ otel:
   collectorName: otel-collector
   metricsTemporality: delta
 
+ingress:
+  enabled: false
+  className: webapprouting.kubernetes.azure.com
+  subDomainName: "" # e.g. "martin-local"
+  domainName: ""
+  # Example: zurelia.honeydemo.io
+

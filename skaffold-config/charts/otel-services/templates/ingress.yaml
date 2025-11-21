@@ -1,0 +1,27 @@
+{{- if .Values.ingress.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ include "otel-services.fullname" . }}-ingress
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "otel-services.labels" . | nindent 4 }}
+spec:
+  ingressClassName: {{ .Values.ingress.className }}
+  rules:
+    - host: {{.Values.ingress.subDomainName }}.{{ .Values.ingress.domainName }}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: frontend-proxy
+                port:
+                  number: 8080
+  tls:
+    - hosts:
+        - {{.Values.ingress.subDomainName }}.{{ .Values.ingress.domainName }}
+      secretName: {{ include "otel-services.fullname" . }}-tls
+{{- end }}
+

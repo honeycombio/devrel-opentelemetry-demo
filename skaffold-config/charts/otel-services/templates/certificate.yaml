@@ -1,0 +1,24 @@
+{{- if .Values.ingress.enabled }}
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: {{ include "otel-services.fullname" . }}-certificate
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "otel-services.labels" . | nindent 4 }}
+spec:
+  secretName: {{ include "otel-services.fullname" . }}-tls
+  issuerRef:
+    name: letsencrypt-prod-{{ .Values.ingress.domainName }}
+    kind: ClusterIssuer
+  commonName: {{.Values.ingress.subDomainName }}.{{ .Values.ingress.domainName }}
+  dnsNames:
+    - {{.Values.ingress.subDomainName }}.{{ .Values.ingress.domainName }}
+  privateKey:
+    rotationPolicy: Always
+  usages:
+    - server auth
+    - digital signature
+    - key encipherment
+{{- end }}
+

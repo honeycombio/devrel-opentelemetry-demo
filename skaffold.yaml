@@ -179,6 +179,9 @@ deploy:
           services.productReviews.image.tag: "{{if .IMAGE_REPO_productreviewsservice }}{{.IMAGE_TAG_productreviewsservice}}@{{.IMAGE_DIGEST_productreviewsservice}}{{end}}"
           services.llm.image.repository: "{{if .IMAGE_REPO_llmservice }}{{.IMAGE_REPO_llmservice}}{{end}}"
           services.llm.image.tag: "{{if .IMAGE_REPO_llmservice }}{{.IMAGE_TAG_llmservice}}@{{.IMAGE_DIGEST_llmservice}}{{end}}"
+          ingress.domainName: "zurelia.honeydemo.io"
+          ingress.subDomainName: "{{.USER}}-local"
+          ingress.enabled: true
         upgradeOnChange: true
         useHelmSecrets: false
         wait: true
