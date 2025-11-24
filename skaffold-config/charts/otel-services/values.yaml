@@ -5,9 +5,12 @@ services:
     enabled: true
     name: product-reviews
     image:
-      repository: productreviewsservice
-      tag: latest
+      repository: ghcr.io/honeycombio/devrel-opentelemetry-demo
+      tag: latest-product-reviews
       pullPolicy: IfNotPresent
+    imageOverride: {}
+      # repository: ghcr.io/honeycombio/devrel-opentelemetry-demo
+      # tag: ""
     port: 3551
     replicas: 1
     env:
@@ -44,9 +47,12 @@ services:
     enabled: true
     name: llm
     image:
-      repository: llmservice
-      tag: latest
+      repository: ghcr.io/honeycombio/devrel-opentelemetry-demo
+      tag: latest-llm
       pullPolicy: IfNotPresent
+    imageOverride: {}
+      # repository: ghcr.io/honeycombio/devrel-opentelemetry-demo
+      # tag: ""
     port: 8000
     replicas: 1
     env:

@@ -25,7 +25,7 @@ spec:
       serviceAccountName: {{ .Values.serviceAccount.name }}
       containers:
         - name: {{ .Values.services.productReviews.name }}
-          image: "{{ .Values.services.productReviews.image.repository }}:{{ .Values.services.productReviews.image.tag }}"
+          image: "{{ if .Values.services.productReviews.imageOverride.repository }}{{ .Values.services.productReviews.imageOverride.repository }}{{ else }}{{ .Values.services.productReviews.image.repository }}{{ end }}:{{ if .Values.services.productReviews.imageOverride.tag }}{{ .Values.services.productReviews.imageOverride.tag }}{{ else }}{{ .Values.services.productReviews.image.tag }}{{ end }}"
           imagePullPolicy: {{ .Values.services.productReviews.image.pullPolicy }}
           ports:
             - containerPort: {{ .Values.services.productReviews.port }}
@@ -73,7 +73,7 @@ spec:
       serviceAccountName: {{ .Values.serviceAccount.name }}
       containers:
         - name: {{ .Values.services.llm.name }}
-          image: "{{ .Values.services.llm.image.repository }}:{{ .Values.services.llm.image.tag }}"
+          image: "{{ if .Values.services.llm.imageOverride.repository }}{{ .Values.services.llm.imageOverride.repository }}{{ else }}{{ .Values.services.llm.image.repository }}{{ end }}:{{ if .Values.services.llm.imageOverride.tag }}{{ .Values.services.llm.imageOverride.tag }}{{ else }}{{ .Values.services.llm.image.tag }}{{ end }}"
           imagePullPolicy: {{ .Values.services.llm.image.pullPolicy }}
           ports:
             - containerPort: {{ .Values.services.llm.port }}
