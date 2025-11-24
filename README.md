@@ -1,4 +1,6 @@
-# <img src="https://opentelemetry.io/img/logos/opentelemetry-logo-nav.png" alt="OTel logo" width="45"> Honeycomb DevRel Team's Fork of the OpenTelemetry Demo
+<!-- markdownlint-disable-next-line -->
+# <img src="https://opentelemetry.io/img/logos/opentelemetry-logo-nav.png" alt="OTel logo" width="45">
+Honeycomb DevRel Team's Fork of the OpenTelemetry Demo
 
 For the info on this application overall, visit the real [OpenTelemetry Demo](https://github.com/open-telemetry/opentelemetry-demo).
 
