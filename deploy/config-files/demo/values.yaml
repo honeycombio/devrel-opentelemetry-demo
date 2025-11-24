@@ -12,10 +12,17 @@ components:
     replicas: 2
   frontend:
     replicas: 2
+    envOverrides:
+      - name: PRODUCT_REVIEWS_ADDR
+        value: product-reviews:3551
   postgresql:
     resources:
       limits:
         memory: 150Mi
+  frontend-proxy:
+    envOverrides:
+      - name: ENVOY_ADDR
+        value: 0.0.0.0
 
 opentelemetry-collector:
   enabled: false
