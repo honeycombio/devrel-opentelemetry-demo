@@ -41,6 +41,8 @@ export class SourceMapsContainer extends pulumi.ComponentResource {
             principalType: args.isInPipeline === "true" ? authorization.PrincipalType.ServicePrincipal : authorization.PrincipalType.User,
             roleDefinitionId: SourceMapsContainer.StorageBlobDataContributorRoleId,
             scope: storageAccount.id
+        }, {
+            ignoreChanges: ["principalId", "principalType"]
         });
 
         this.containerName = blobContainer.name;
