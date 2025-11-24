@@ -184,15 +184,15 @@ class WebsiteUser(HttpUser):
             quantity = random.choice([1, 2, 3, 4, 5, 10])
             with self.tracer.start_as_current_span("user_add_to_cart", context=Context(), attributes={"user.id": user, "product.id": product, "quantity": quantity}):
                 logging.info(f"User {user} adding {quantity} of product {product} to cart")
-                    self.client.get("/api/products/" + product)
-                    cart_item = {
-                        "item": {
-                            "productId": product,
-                            "quantity": quantity,
-                        },
-                        "userId": user,
-                    }
-                    self.client.post("/api/cart", json=cart_item)
+                self.client.get("/api/products/" + product)
+                cart_item = {
+                    "item": {
+                        "productId": product,
+                        "quantity": quantity,
+                    },
+                    "userId": user,
+                }
+                self.client.post("/api/cart", json=cart_item)
 
     @task(1)
     def checkout(self):
