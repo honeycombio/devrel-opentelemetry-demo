@@ -10,7 +10,7 @@ import { Refinery } from "./applications/refinery";
 import * as storage from "@pulumi/azure-native/storage";
 
 const collectorHelmVersion = "0.134.0";
-const demoHelmVersion = "0.37.0";
+const demoHelmVersion = "0.38.6";
 const refineryHelmVersion = "2.17.0";
 
 const config = new pulumi.Config();
