@@ -60,7 +60,8 @@ export class OtelDemo extends pulumi.ComponentResource {
                     "app.kubernetes.io/component": "product-reviews",
                     "app.kubernetes.io/name": "product-reviews",
                     "app.kubernetes.io/part-of": "opentelemetry-demo"
-                }
+                },
+                name: "product-reviews"
             },
             spec: {
                 type: "ClusterIP",
@@ -85,7 +86,8 @@ export class OtelDemo extends pulumi.ComponentResource {
                     "app.kubernetes.io/component": "product-reviews",
                     "app.kubernetes.io/name": "product-reviews",
                     "app.kubernetes.io/part-of": "opentelemetry-demo"
-                }
+                },
+                name: "product-reviews"
             },
             spec: {
                 replicas: 1,
@@ -104,10 +106,10 @@ export class OtelDemo extends pulumi.ComponentResource {
                         }
                     },
                     spec: {
-                        serviceAccountName: "opentelemetry-demo",
+                        serviceAccountName: "otel-demo",
                         containers: [{
                             name: "product-reviews",
-                            image: `ghcr.io/honeycombio/devrel-opentelemetry-demo:${args.containerTag}-productreviews`,
+                            image: `ghcr.io/honeycombio/devrel-opentelemetry-demo:${args.containerTag}-product-reviews`,
                             imagePullPolicy: "IfNotPresent",
                             ports: [{
                                 containerPort: 3551,
@@ -154,7 +156,8 @@ export class OtelDemo extends pulumi.ComponentResource {
                     "app.kubernetes.io/component": "llm",
                     "app.kubernetes.io/name": "llm",
                     "app.kubernetes.io/part-of": "opentelemetry-demo"
-                }
+                },
+                name: "llm"
             },
             spec: {
                 type: "ClusterIP",
@@ -179,7 +182,8 @@ export class OtelDemo extends pulumi.ComponentResource {
                     "app.kubernetes.io/component": "llm",
                     "app.kubernetes.io/name": "llm",
                     "app.kubernetes.io/part-of": "opentelemetry-demo"
-                }
+                },
+                name: "llm"
             },
             spec: {
                 replicas: 1,
@@ -198,7 +202,7 @@ export class OtelDemo extends pulumi.ComponentResource {
                         }
                     },
                     spec: {
-                        serviceAccountName: "opentelemetry-demo",
+                        serviceAccountName: "otel-demo",
                         containers: [{
                             name: "llm",
                             image: `ghcr.io/honeycombio/devrel-opentelemetry-demo:${args.containerTag}-llm`,
