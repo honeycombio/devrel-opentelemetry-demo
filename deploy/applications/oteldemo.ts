@@ -139,7 +139,8 @@ export class OtelDemo extends pulumi.ComponentResource {
                                 { name: "FLAGD_HOST", value: "flagd" },
                                 { name: "FLAGD_PORT", value: "8013" },
                                 { name: "LLM_HOST", value: "llm" },
-                                { name: "LLM_PORT", value: "8000" }
+                                { name: "LLM_PORT", value: "8000" },
+                                { name: "OTEL_EXPORTER_OTLP_ENDPOINT", value: `http://$(OTEL_COLLECTOR_NAME):4317` }
                             ]
                         }]
                     }
@@ -224,7 +225,8 @@ export class OtelDemo extends pulumi.ComponentResource {
                                 { name: "OTEL_COLLECTOR_NAME", value: args.collectorHostName },
                                 { name: "OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE", value: "delta" },
                                 { name: "FLAGD_HOST", value: "flagd" },
-                                { name: "FLAGD_PORT", value: "8013" }
+                                { name: "FLAGD_PORT", value: "8013" },
+                                { name: "OTEL_EXPORTER_OTLP_ENDPOINT", value: `http://$(OTEL_COLLECTOR_NAME):4317` }
                             ]
                         }]
                     }

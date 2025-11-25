@@ -43,6 +43,8 @@ spec:
             {{- range .Values.services.productReviews.env }}
             - name: {{ .name }}
               value: {{ .value | quote }}
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: http://$(OTEL_COLLECTOR_NAME):4317
             {{- end }}
 ---
 {{- end }}
@@ -91,6 +93,8 @@ spec:
             {{- range .Values.services.llm.env }}
             - name: {{ .name }}
               value: {{ .value | quote }}
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: http://$(OTEL_COLLECTOR_NAME):4317
             {{- end }}
 {{- end }}
 
