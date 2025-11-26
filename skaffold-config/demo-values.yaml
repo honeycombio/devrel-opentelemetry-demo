@@ -7,14 +7,6 @@ default:
   image:
     pullPolicy: Always
   replicas: 1
-  # List of environment variables applied to all components
-  envOverrides:
-    - name: ENV_PLATFORM
-      value: local
-    - name: OTEL_EXPORTER_OTLP_INSECURE
-      value: "true"
-    - name: OTEL_LOGS_EXPORTER
-      value: "otlp"
 
 components:
   load-generator:
