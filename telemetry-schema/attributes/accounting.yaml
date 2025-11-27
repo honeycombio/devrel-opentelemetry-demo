@@ -1,0 +1,7 @@
+groups:
+  - id: registry.accounting
+    type: attribute_group
+    brief: Accounting service attributes
+    stability: stable
+    extends: app.request
+

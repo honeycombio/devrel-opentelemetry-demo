@@ -1,31 +1,11 @@
 groups:
-  - id: app.product_reviews
+  - id: registry.product_reviews
     type: attribute_group
     brief: Product reviews service attributes
     stability: stable
     attributes:
-      - id: app.product.id
-        type: string
-        brief: Product identifier
-        stability: stable
-        note: The unique identifier of the product being reviewed or for which reviews are being retrieved
-        examples: ["66VCHSJNUP", "OLJCESPC7Z", "9SOIN3QJO0"]
-      - id: app.product_reviews.count
-        type: int
-        brief: Number of product reviews
-        stability: stable
-        note: The count of reviews returned or processed for a specific product
-        examples: [5, 10, 25]
-      - id: app.product_reviews.average_score
-        type: double
-        brief: Average review score
-        stability: stable
-        note: The average rating score across all reviews for a product, typically on a scale of 1-5
-        examples: [4.5, 3.2, 4.8]
-      - id: app.product.question
-        type: string
-        brief: Product review question
-        stability: stable
-        note: A question or query related to product reviews, such as a customer inquiry about product features or quality
-        examples: ["Is this product durable?", "What is the warranty?"]
+      - ref: app.product.id
+      - ref: app.product.question
+      - ref: app.product_reviews.count
+      - ref: app.product_reviews.average_score
 

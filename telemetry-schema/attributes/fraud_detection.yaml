@@ -1,0 +1,7 @@
+groups:
+  - id: registry.fraud_detection
+    type: attribute_group
+    brief: Fraud detection service attributes
+    stability: stable
+    extends: app.request
+

@@ -1,0 +1,9 @@
+groups:
+  - id: registry.product_catalog
+    type: attribute_group
+    brief: Product catalog service attributes
+    stability: stable
+    attributes:
+      - ref: app.product.id
+      - ref: app.product.name
+

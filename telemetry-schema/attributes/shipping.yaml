@@ -1,0 +1,11 @@
+groups:
+  - id: registry.shipping
+    type: attribute_group
+    brief: Shipping service attributes
+    stability: stable
+    attributes:
+      - ref: app.shipping.amount
+      - ref: app.shipping.cost.total
+      - ref: app.shipping.items_count
+      - ref: app.shipping.tracking_id
+

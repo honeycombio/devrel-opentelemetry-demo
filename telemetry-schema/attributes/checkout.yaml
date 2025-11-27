@@ -1,0 +1,15 @@
+groups:
+  - id: registry.checkout
+    type: attribute_group
+    brief: Checkout service attributes
+    stability: stable
+    attributes:
+      - ref: app.user.id
+      - ref: app.user.currency
+      - ref: app.user.city
+      - ref: app.order.id
+      - ref: app.order.amount
+      - ref: app.order.items.count
+      - ref: app.cart.items.count
+      - ref: app.shipping.amount
+

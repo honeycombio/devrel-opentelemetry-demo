@@ -1,0 +1,7 @@
+groups:
+  - id: registry.currency
+    type: attribute_group
+    brief: Currency service attributes
+    stability: stable
+    extends: app.request
+
