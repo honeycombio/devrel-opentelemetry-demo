@@ -8,13 +8,6 @@ default:
     pullPolicy: Always
   replicas: 1
   # List of environment variables applied to all components
-  envOverrides:
-    - name: ENV_PLATFORM
-      value: local
-    - name: OTEL_EXPORTER_OTLP_INSECURE
-      value: "true"
-    - name: OTEL_LOGS_EXPORTER
-      value: "otlp"
 
 components:
   load-generator:
@@ -25,6 +18,8 @@ components:
       # Needed until the demo helm chart updates to include it.
       - name: PRODUCT_REVIEWS_ADDR
         value: product-reviews:3551
+      - name: ENV_PLATFORM
+        value: local
   frontend-proxy:
     envOverrides:
       # Needed until the demo helm chart updates to include it.
