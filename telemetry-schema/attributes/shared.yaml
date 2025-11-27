@@ -1,0 +1,18 @@
+groups:
+  - id: app.frontend
+    type: attribute_group
+    brief: Frontend service attributes
+    stability: stable
+    attributes:
+      - id: app.synthetic_request
+        type: boolean
+        brief: Whether the request is synthetic/test traffic
+        stability: stable
+        note: Indicates whether the request is synthetic traffic generated for testing or monitoring purposes (true) or real user traffic (false). This helps distinguish production traffic from test traffic in observability systems.
+      - id: session.id
+        type: string
+        brief: Session identifier
+        stability: stable
+        note: A unique identifier for the user session. This can be used to correlate multiple requests from the same user across different services and time periods.
+        examples: ["session-123abc", "user-456def"]
+

@@ -1,0 +1,9 @@
+groups:
+  - id: app.frontend.requests
+    type: metric
+    metric_name: app.frontend.requests
+    instrument: counter
+    unit: requests
+    brief: Total number of frontend requests
+    stability: stable
+

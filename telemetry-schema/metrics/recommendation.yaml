@@ -1,0 +1,9 @@
+groups:
+  - id: app.recommendations_counter
+    type: metric
+    metric_name: app.recommendations_counter
+    instrument: counter
+    unit: recommendations
+    brief: Total number of recommendations given
+    stability: stable
+

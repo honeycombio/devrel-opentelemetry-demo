@@ -1,0 +1,18 @@
+groups:
+  - id: app.payment
+    type: attribute_group
+    brief: Payment service attributes
+    stability: stable
+    attributes:
+      - id: app.loyalty.level
+        type: string
+        brief: Customer loyalty level
+        stability: stable
+        note: The loyalty tier or level of the customer making the payment. This can be used to track payment patterns by customer segment.
+        examples: ["gold", "silver", "bronze", "standard"]
+      - id: app.payment.charged
+        type: boolean
+        brief: Whether payment was successfully charged
+        stability: stable
+        note: Indicates whether the payment transaction was successfully charged to the customer's payment method (true) or failed (false)
+

@@ -1,0 +1,23 @@
+groups:
+  - id: app.product_review_counter
+    type: metric
+    metric_name: app.product_review_counter
+    instrument: counter
+    unit: reviews
+    brief: Total number of product reviews returned
+    stability: stable
+    attributes:
+      - ref: app.product.id
+        brief: Product identifier
+
+  - id: app.ai_assistant_counter
+    type: metric
+    metric_name: app.ai_assistant_counter
+    instrument: counter
+    unit: summaries
+    brief: Total number of AI Assistant requests
+    stability: stable
+    attributes:
+      - ref: app.product.id
+        brief: Product identifier
+

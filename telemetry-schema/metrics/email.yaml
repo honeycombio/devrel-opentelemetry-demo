@@ -1,0 +1,9 @@
+groups:
+  - id: app.confirmation.counter
+    type: metric
+    metric_name: app.confirmation.counter
+    instrument: counter
+    unit: emails
+    brief: Total number of order confirmation emails sent
+    stability: stable
+

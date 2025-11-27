@@ -1,0 +1,41 @@
+groups:
+  - id: app.recommendation
+    type: attribute_group
+    brief: Recommendation service attributes
+    stability: stable
+    attributes:
+      - id: app.products_recommended.count
+        type: int
+        brief: Number of products recommended
+        stability: stable
+        note: The count of products recommended to the user
+        examples: [5, 10, 15]
+      - id: app.recommendation.cache_enabled
+        type: boolean
+        brief: Whether recommendation caching is enabled
+        stability: stable
+        note: Indicates whether the recommendation service has caching enabled for this request
+      - id: app.cache_hit
+        type: boolean
+        brief: Whether the recommendation cache was hit
+        stability: stable
+        note: Indicates whether the recommendation was served from cache (true) or computed fresh (false)
+      - id: app.products.count
+        type: int
+        brief: Total number of products available
+        stability: stable
+        note: The total number of products available in the product catalog at the time of the recommendation request
+        examples: [100, 500, 1000]
+      - id: app.filtered_products.count
+        type: int
+        brief: Number of products after filtering
+        stability: stable
+        note: The number of products remaining after applying filters (e.g., availability, category, price range)
+        examples: [5, 20, 50]
+      - id: app.filtered_products.list
+        type: string
+        brief: Comma-separated list of filtered product IDs
+        stability: stable
+        note: A comma-separated list of product IDs that were included in the filtered product set
+        examples: ["OLJCESPC7Z,9SOIN3QJO0,6E92ZMJLZN"]
+
