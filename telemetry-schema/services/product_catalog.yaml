@@ -1,5 +1,5 @@
 groups:
-  - id: registry.product_catalog
+  - id: service.product_catalog
     type: attribute_group
     brief: Product catalog service attributes
     stability: stable

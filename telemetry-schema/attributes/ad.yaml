@@ -1,9 +1,0 @@
-groups:
-  - id: registry.ad
-    type: attribute_group
-    brief: Ad service attributes
-    stability: stable
-    attributes:
-      - ref: app.ads.category
-      - ref: app.ads.count
-

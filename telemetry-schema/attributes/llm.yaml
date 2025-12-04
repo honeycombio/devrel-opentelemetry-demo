@@ -1,7 +1,0 @@
-groups:
-  - id: registry.llm
-    type: attribute_group
-    brief: LLM service attributes
-    stability: stable
-    extends: app.request
-

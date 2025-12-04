@@ -90,6 +90,10 @@ build:
     context: .
     docker:
       dockerfile: src/shipping/Dockerfile
+  - image: telemetrydocs
+    context: .
+    docker:
+      dockerfile: src/telemetry-docs/Dockerfile
   platforms:
     - linux/amd64
   local:
@@ -179,6 +183,8 @@ deploy:
           services.productReviews.imageOverride.tag: "{{if .IMAGE_REPO_productreviewsservice }}{{.IMAGE_TAG_productreviewsservice}}@{{.IMAGE_DIGEST_productreviewsservice}}{{end}}"
           services.llm.imageOverride.repository: "{{if .IMAGE_REPO_llmservice }}{{.IMAGE_REPO_llmservice}}{{end}}"
           services.llm.imageOverride.tag: "{{if .IMAGE_REPO_llmservice }}{{.IMAGE_TAG_llmservice}}@{{.IMAGE_DIGEST_llmservice}}{{end}}"
+          services.telemetryDocs.imageOverride.repository: "{{if .IMAGE_REPO_telemetrydocs }}{{.IMAGE_REPO_telemetrydocs}}{{end}}"
+          services.telemetryDocs.imageOverride.tag: "{{if .IMAGE_REPO_telemetrydocs }}{{.IMAGE_TAG_telemetrydocs}}@{{.IMAGE_DIGEST_telemetrydocs}}{{end}}"
           ingress.domainName: "zurelia.honeydemo.io"
           ingress.subDomainName: "{{.USER}}-local"
           ingress.enabled: true

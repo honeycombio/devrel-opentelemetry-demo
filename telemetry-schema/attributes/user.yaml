@@ -1,0 +1,37 @@
+groups:
+  - id: registry.user
+    type: attribute_group
+    brief: User information and session attributes
+    stability: stable
+    attributes:
+      - id: app.user.id
+        type: string
+        brief: User identifier
+        stability: stable
+        note: The unique identifier of the user making the request
+        examples: ["user-123", "customer-456"]
+      - id: app.user.currency
+        type: string
+        brief: User's preferred currency
+        stability: stable
+        note: The currency code preferred by the user for pricing and transactions
+        examples: ["USD", "EUR", "GBP"]
+      - id: app.user.city
+        type: string
+        brief: User's city
+        stability: stable
+        note: The city where the user is located or has provided as their address
+        examples: ["New York", "London", "Tokyo"]
+      - id: session.id
+        type: string
+        brief: Session identifier
+        stability: stable
+        note: A unique identifier for the user session. This can be used to correlate multiple requests from the same user across different services and time periods.
+        examples: ["session-123abc", "user-456def"]
+      - id: app.loyalty.level
+        type: string
+        brief: Customer loyalty level
+        stability: stable
+        note: The loyalty tier or level of the customer making the payment. This can be used to track payment patterns by customer segment.
+        examples: ["gold", "silver", "bronze", "standard"]
+

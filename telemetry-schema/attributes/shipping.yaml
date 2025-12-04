@@ -1,11 +1,36 @@
 groups:
   - id: registry.shipping
     type: attribute_group
-    brief: Shipping service attributes
+    brief: Shipping and logistics attributes
     stability: stable
     attributes:
-      - ref: app.shipping.amount
-      - ref: app.shipping.cost.total
-      - ref: app.shipping.items_count
-      - ref: app.shipping.tracking_id
-
+      - id: app.shipping.amount
+        type: double
+        brief: Shipping cost amount
+        stability: stable
+        note: The monetary amount charged for shipping
+        examples: [5.99, 15.00]
+      - id: app.shipping.cost.total
+        type: string
+        brief: Total shipping cost
+        stability: stable
+        note: The total cost of shipping for an order
+        examples: ["10.50", "25.00"]
+      - id: app.shipping.items_count
+        type: int
+        brief: Number of items being shipped
+        stability: stable
+        note: The count of items included in a shipment
+        examples: [1, 5, 10]
+      - id: app.quote.items.count
+        type: int
+        brief: Number of items in quote
+        stability: stable
+        note: The count of items included in a pricing quote
+        examples: [1, 5, 10]
+      - id: app.quote.cost.total
+        type: double
+        brief: Total quote cost
+        stability: stable
+        note: The total monetary amount of a quote
+        examples: [89.99, 150.00]

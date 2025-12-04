@@ -1,5 +1,5 @@
 groups:
-  - id: app.frontend.requests
+  - id: metric.frontend.requests
     type: metric
     metric_name: app.frontend.requests
     instrument: counter

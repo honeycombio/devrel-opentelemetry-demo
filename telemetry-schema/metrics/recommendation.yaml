@@ -1,5 +1,5 @@
 groups:
-  - id: app.recommendations_counter
+  - id: metric.recommendation.recommendations_counter
     type: metric
     metric_name: app.recommendations_counter
     instrument: counter

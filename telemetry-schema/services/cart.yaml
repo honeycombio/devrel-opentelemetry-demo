@@ -1,8 +1,10 @@
 groups:
-  - id: registry.cart
+  - id: service.cart
     type: attribute_group
     brief: Cart service attributes
     stability: stable
     attributes:
       - ref: app.cart.items.count
+      - ref: app.user.id
+      - ref: app.product.id
 

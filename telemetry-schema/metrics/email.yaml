@@ -1,5 +1,5 @@
 groups:
-  - id: app.confirmation.counter
+  - id: metric.email.confirmation_counter
     type: metric
     metric_name: app.confirmation.counter
     instrument: counter

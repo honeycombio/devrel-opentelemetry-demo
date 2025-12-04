@@ -1,5 +1,5 @@
 groups:
-  - id: app.payment.transactions
+  - id: metric.payment.transactions
     type: metric
     metric_name: app.payment.transactions
     instrument: counter

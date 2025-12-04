@@ -1,18 +1,28 @@
-# Two-stage build: Generate Markdown from Weaver config, then serve with mkdocs
+# Two-stage build: Generate service-centric Markdown with Weaver, then serve with mkdocs
 
-# Stage 1: Generate Markdown files from Weaver registry
-# Note: We use a builder image to generate the docs, then copy them to the final stage
-FROM otel/weaver:latest AS weaver-builder
+# Stage 1: Generate Markdown files from telemetry schema using Weaver
+FROM otel/weaver:latest AS registry-builder
 
 WORKDIR /workspace
 
 # Copy the telemetry schema
 COPY telemetry-schema /workspace/telemetry-schema
 
-RUN /weaver/weaver registry generate markdown \
-    --registry /workspace/telemetry-schema \
-    --templates https://github.com/open-telemetry/semantic-conventions/archive/refs/tags/v1.38.0.zip[templates] \
+# Copy the Weaver templates
+COPY src/telemetry-docs/templates /workspace/templates
+
+# Generate service-centric pages and mkdocs.yml using Weaver
+RUN /weaver/weaver registry generate \
+    --registry=/workspace/telemetry-schema \
+    --templates=/workspace/templates \
+    markdown \
     /workspace/docs
+
+# Generate fully resolved schema as JSON
+RUN /weaver/weaver registry resolve \
+    --registry=/workspace/telemetry-schema \
+    --format=json \
+    --output=/workspace/docs/schema.json
 
 # Stage 2: Serve documentation with mkdocs
 FROM python:3.11-slim
@@ -22,11 +32,12 @@ WORKDIR /app
 # Install mkdocs and theme
 RUN pip install --no-cache-dir mkdocs mkdocs-material
 
-# Copy mkdocs configuration from src/telemetry-docs
-COPY src/telemetry-docs/mkdocs.yml /app/mkdocs.yml
+# Copy base mkdocs configuration (inherited by generated mkdocs.yml)
+COPY src/telemetry-docs/mkdocs.yml /app/mkdocs-base.yml
 
-# Copy generated documentation from stage 1
-COPY --from=weaver-builder /workspace/docs /app/docs
+# Copy generated documentation and put mkdocs.yml with dynamic navigation into the app root
+COPY --from=registry-builder /workspace/docs/mkdocs.yml /app/mkdocs.yml
+COPY --from=registry-builder /workspace/docs /app/docs
 
 # Expose port for mkdocs
 EXPOSE 8000

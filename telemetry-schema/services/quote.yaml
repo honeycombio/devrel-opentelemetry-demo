@@ -1,5 +1,5 @@
 groups:
-  - id: registry.quote
+  - id: service.quote
     type: attribute_group
     brief: Quote service attributes
     stability: stable

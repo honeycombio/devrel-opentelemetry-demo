@@ -25,6 +25,10 @@ components:
       # Needed until the demo helm chart updates to include it.
       - name: ENVOY_ADDR
         value: 0.0.0.0
+      - name: TELEMETRY_DOCS_HOST
+        value: telemetry-docs
+      - name: TELEMETRY_DOCS_PORT
+        value: "8000"
 
 opentelemetry-collector:
   enabled: true

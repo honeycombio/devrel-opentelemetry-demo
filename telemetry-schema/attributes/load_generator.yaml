@@ -1,7 +1,0 @@
-groups:
-  - id: registry.load_generator
-    type: attribute_group
-    brief: Load generator service attributes
-    stability: stable
-    extends: app.request
-

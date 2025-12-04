@@ -1,0 +1,43 @@
+groups:
+  - id: registry.misc
+    type: attribute_group
+    brief: Miscellaneous attributes including communication, caching, and system flags
+    stability: stable
+    attributes:
+      # Communication attributes
+      - id: app.email.recipient
+        type: string
+        brief: Email recipient address
+        stability: stable
+        note: The email address of the recipient for whom the email is being sent. This is typically used for order confirmation emails and other transactional communications.
+        examples: ["customer@example.com", "user@domain.org"]
+      # System and caching attributes
+      - id: app.recommendation.cache_enabled
+        type: boolean
+        brief: Whether recommendation caching is enabled
+        stability: stable
+        note: Indicates whether the recommendation service has caching enabled for this request
+      - id: app.cache_hit
+        type: boolean
+        brief: Whether the recommendation cache was hit
+        stability: stable
+        note: Indicates whether the recommendation was served from cache (true) or computed fresh (false)
+      - id: app.synthetic_request
+        type: boolean
+        brief: Whether the request is synthetic/test traffic
+        stability: stable
+        note: Indicates whether the request is synthetic traffic generated for testing or monitoring purposes (true) or real user traffic (false). This helps distinguish production traffic from test traffic in observability systems.
+      # Currency conversion attributes
+      - id: app.currency.conversion.from
+        type: string
+        brief: Source currency code for conversion
+        stability: stable
+        note: The currency code being converted from
+        examples: ["USD", "EUR", "GBP"]
+      - id: app.currency.conversion.to
+        type: string
+        brief: Target currency code for conversion
+        stability: stable
+        note: The currency code being converted to
+        examples: ["USD", "EUR", "GBP"]
+

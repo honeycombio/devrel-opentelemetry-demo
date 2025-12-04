@@ -61,6 +61,10 @@ static_resources:
                             prefix_rewrite: "/"
                             upgrade_configs:
                               - upgrade_type: websocket
+                        - match: { prefix: "/telemetry-docs/" }
+                          route: { cluster: telemetry-docs }
+                        - match: { path: "/telemetry-docs" }
+                          redirect: { path_redirect: "/telemetry-docs/" }
                         - match: { prefix: "/" }  # Default/catch-all route - keep last since prefix:"/" matches everything
                           route: { cluster: api-gateway }
                 http_filters:
@@ -245,6 +249,18 @@ static_resources:
                     socket_address:
                       address: ${JAEGER_HOST}
                       port_value: ${JAEGER_UI_PORT}
+    - name: telemetry-docs
+      type: STRICT_DNS
+      lb_policy: ROUND_ROBIN
+      load_assignment:
+        cluster_name: telemetry-docs
+        endpoints:
+          - lb_endpoints:
+              - endpoint:
+                  address:
+                    socket_address:
+                      address: ${TELEMETRY_DOCS_HOST}
+                      port_value: ${TELEMETRY_DOCS_PORT}
 admin:
   address:
     socket_address:

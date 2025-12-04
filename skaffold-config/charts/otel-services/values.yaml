@@ -63,6 +63,19 @@ services:
       - name: FLAGD_PORT
         value: "8013"
 
+  telemetryDocs:
+    enabled: true
+    name: telemetry-docs
+    image:
+      repository: ghcr.io/honeycombio/devrel-opentelemetry-demo
+      tag: latest-telemetry-docs
+      pullPolicy: IfNotPresent
+    imageOverride: {}
+      # repository: ghcr.io/honeycombio/devrel-opentelemetry-demo
+      # tag: ""
+    port: 8000
+    replicas: 1
+
 serviceAccount:
   name: opentelemetry-demo
 

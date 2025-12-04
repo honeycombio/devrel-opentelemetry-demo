@@ -7,6 +7,7 @@ on:
     paths:
       - 'src/**'
       - 'test/**'
+      - 'telemetry-schema/**'
 
 permissions:
   contents: read
