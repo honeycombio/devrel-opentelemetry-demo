@@ -50,7 +50,7 @@ export function tracedMutation<TVariables, TResult>(
         const result = await fn(variables);
         return result;
       } catch (err: Error | unknown) {
-          recordExceptionOrErrorMessage(err, span);
+        recordExceptionOrErrorMessage(err, span);
         throw err;
       } finally {
         span.end();

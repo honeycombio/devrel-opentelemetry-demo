@@ -54,6 +54,8 @@ const HoneycombFrontendTracer = (sessionId: string) => {
                     applyCustomAttributesOnSpan(span) {
                         span.setAttribute('app.synthetic_request', IS_SYNTHETIC_REQUEST);
                     },
+                    // Report exceptions on 500 errors - using newer OTEL Semantics
+                    semconvStabilityOptIn: 'http/dup',
                 },
                 '@opentelemetry/instrumentation-xml-http-request': configDefaults,
                 '@opentelemetry/instrumentation-user-interaction': {
