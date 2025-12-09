@@ -143,6 +143,8 @@ opentelemetry-collector:
             statements:
               - set(resource.attributes["service.name"], "api-gateway") where resource.attributes["k8s.container.name"] == "frontend"
     exporters:
+      otlp/traces-s3:
+        api_key: ${env:
       otlp/traces:
         endpoint: api.honeycomb.io:443
         headers:
