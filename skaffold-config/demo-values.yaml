@@ -143,8 +143,37 @@ opentelemetry-collector:
             statements:
               - set(resource.attributes["service.name"], "api-gateway") where resource.attributes["k8s.container.name"] == "frontend"
     exporters:
-      otlp/traces-s3:
-        api_key: ${env:
+#      enhance_indexing_s3_exporter:
+#        api_key: ${env:AWS_ACCESS_KEY_ID}
+#        api_secret: ${env:AWS_SECRET_ACCESS_KEY}
+#        api_endpoint: https://api.honeycomb.io
+#
+#          # Required: S3 configuration
+#        s3uploader:
+#          region: "us-west-2"
+#          s3_bucket: "kenrimple-devreldemo-telemetry-archive-us"
+#          s3_partition_format: "year=%Y/month=%m/day=%d/hour=%H/minute=%M"
+#          compression: "gzip"
+#
+#          # Required: Data format - note- proto, not protobuf??
+#        marshaler: "otlp_proto"
+
+      awss3:
+        s3uploader:
+          region: "us-east-1"
+          s3_bucket: "kenrimple-devreldemo-telemetry-archive-us"
+          s3_partition_format: "year=%Y/month=%m/day=%d/hour=%H/minute=%M"
+          compression: "gzip"
+        marshaler: "otlp_proto"
+        # Optional (disabled by default)
+        sending_queue:
+          enabled: true
+          num_consumers: 10
+          queue_size: 100
+
+        # Optional (5s by default)
+        timeout: 20s
+
       otlp/traces:
         endpoint: api.honeycomb.io:443
         headers:
@@ -184,6 +213,7 @@ opentelemetry-collector:
         metrics:
           exporters:
             - otlp/metrics
+            - awss3
           processors:
             - transform/service_names
             - transform/attribution
@@ -193,6 +223,7 @@ opentelemetry-collector:
             - filelog
           exporters:
             - otlp/logging
+            - awss3
           processors:
             - transform/parse_json_body
             - transform/service_names
@@ -204,6 +235,7 @@ opentelemetry-collector:
           exporters:
             - otlp/traces
             - spanmetrics
+            - awss3
           processors:
             - transform/service_names
             - transform/attribution
