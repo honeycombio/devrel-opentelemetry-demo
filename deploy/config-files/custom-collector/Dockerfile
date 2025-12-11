@@ -7,7 +7,7 @@ WORKDIR /build
 
 COPY ./ocb-config.yaml ocb-config.yaml
 
-RUN go install go.opentelemetry.io/collector/cmd/builder@v0.129.0
+RUN go install go.opentelemetry.io/collector/cmd/builder@v0.139.0
 RUN builder --config ocb-config.yaml
 
 FROM gcr.io/distroless/cc

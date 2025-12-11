@@ -50,6 +50,12 @@ opentelemetry-collector:
         include:
           - /var/log/pods/${env:NAMESPACE}_*/*/*.log
     processors:
+      source_map_symbolicator:
+        source_map_store: s3_store
+        s3_source_maps:
+          bucket: kenrimple-devrel-demo-symbolication
+          region: us-east-1
+          prefix: maps
       transform/attribution:
         log_statements:
           - context: resource
@@ -239,6 +245,7 @@ opentelemetry-collector:
           processors:
             - transform/service_names
             - transform/attribution
+            - source_map_symbolicator
   ports:
     otlp:
       hostPort: 0
