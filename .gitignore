@@ -54,3 +54,6 @@ test/tracetesting/tracetesting-vars.yaml
 
 !src/currency/build
 .mcp.json
+
+# Please no more leaked API Keys
+.claude/settings.local.json

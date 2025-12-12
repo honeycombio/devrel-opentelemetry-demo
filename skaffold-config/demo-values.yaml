@@ -50,6 +50,10 @@ opentelemetry-collector:
         include:
           - /var/log/pods/${env:NAMESPACE}_*/*/*.log
     processors:
+      batch:
+        timeout: 10s
+        send_batch_size: 1024
+        send_batch_max_size: 2048
       source_map_symbolicator:
         source_map_store: s3_store
         s3_source_maps:
@@ -149,21 +153,6 @@ opentelemetry-collector:
             statements:
               - set(resource.attributes["service.name"], "api-gateway") where resource.attributes["k8s.container.name"] == "frontend"
     exporters:
-#      enhance_indexing_s3_exporter:
-#        api_key: ${env:AWS_ACCESS_KEY_ID}
-#        api_secret: ${env:AWS_SECRET_ACCESS_KEY}
-#        api_endpoint: https://api.honeycomb.io
-#
-#          # Required: S3 configuration
-#        s3uploader:
-#          region: "us-west-2"
-#          s3_bucket: "kenrimple-devreldemo-telemetry-archive-us"
-#          s3_partition_format: "year=%Y/month=%m/day=%d/hour=%H/minute=%M"
-#          compression: "gzip"
-#
-#          # Required: Data format - note- proto, not protobuf??
-#        marshaler: "otlp_proto"
-
       awss3:
         s3uploader:
           region: "us-east-1"
@@ -221,6 +210,7 @@ opentelemetry-collector:
             - otlp/metrics
             - awss3
           processors:
+            - batch
             - transform/service_names
             - transform/attribution
         logs:

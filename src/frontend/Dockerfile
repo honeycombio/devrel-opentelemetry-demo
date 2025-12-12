@@ -29,6 +29,12 @@ COPY ./src/frontend/tsconfig.json tsconfig.json
 
 RUN npm run build
 
+# Add path to # sourceMappingURL in minified JS files
+RUN find .next/static/chunks -type f -name '*.js' \
+  -exec sh -c 'for f in "$@"; do rel="${f#.next/static/chunks/}"; \
+    sed -i "s|^//# sourceMappingURL=.*|//# sourceMappingURL=/_next/static/chunks/${rel}.map|" "$f"; \
+  done' sh {} +
+
 # -----------------------------------------------------------------------------
 
 FROM docker.io/library/node:22-slim AS deps
