@@ -29,6 +29,8 @@ components:
 opentelemetry-collector:
   enabled: true
   mode: daemonset
+  image:
+    pullPolicy: Always
   service:
     enabled: true
   presets:
@@ -89,6 +91,8 @@ opentelemetry-collector:
           - context: log
             conditions:
               - resource.attributes["service.name"] == "access-logs"
+              - attributes["http.response.status_code"] != nil
+              - IsInt(attributes["http.response.status_code"]) == false
             statements:
               - set(severity_text, "ERROR") where Substring(attributes["http.response.status_code"], 0, 1) == "5"
               - set(severity_number, 17) where Substring(attributes["http.response.status_code"], 0, 1) == "5"
