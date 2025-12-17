@@ -2,8 +2,6 @@ import {
     Span,
     SpanStatusCode
 } from '@opentelemetry/api';
-import {recordException} from '@honeycombio/opentelemetry-web';
-
 
 /**
  * Records an exception as a span in the OpenTelemetry tracer.
@@ -14,29 +12,19 @@ import {recordException} from '@honeycombio/opentelemetry-web';
  * @param {Attributes} [attributes={}] - Additional attributes to add to the span.
  * @param {Span} span - The span to record the error from
  */
-
-const isError = (e) => {
-    return e &&
-        e.stack &&
-        e.message &&
-        typeof e.stack === 'string' &&
-        typeof e.message === 'string';
-};
 export function recordExceptionOrErrorMessage(
     error: Error | string | unknown,
     span: Span
 ) {
-
+    console.log('Generating an error');
+    console.dir(error);
+    span.setStatus({code: SpanStatusCode.ERROR});
     if (error instanceof Error) {
-      // Honeycomb helper does both the error status on span AND record exception from this HC helper
-      recordException(error as Error, {})
-      // another odd error from Tanstack Query - just a message string
+        console.log('Recording an exception');
+        span.recordException(error);
     } else if (typeof error === 'string') {
         span.addEvent('error', { 'error.message': error })
-        span.setStatus({code: SpanStatusCode.ERROR});
-    // or if we can't tell the type then just punt
     } else {
         span.addEvent('error', { 'error message' : 'Unknown error'});
-    }   span.setStatus({code: SpanStatusCode.ERROR});
-
+    }
 }
