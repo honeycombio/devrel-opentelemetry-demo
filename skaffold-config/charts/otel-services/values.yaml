@@ -59,9 +59,6 @@ services:
       - name: FLAGD_PORT
         value: "8013"
 
-serviceAccount:
-  name: opentelemetry-demo
-
 otel:
   collectorName: otel-collector
   metricsTemporality: delta
