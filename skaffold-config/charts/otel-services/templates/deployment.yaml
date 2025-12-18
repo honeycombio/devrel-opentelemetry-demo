@@ -22,7 +22,7 @@ spec:
         app.kubernetes.io/component: {{ .Values.services.productReviews.name }}
         app.kubernetes.io/name: {{ .Values.services.productReviews.name }}
     spec:
-      serviceAccountName: {{ .Values.serviceAccount.name }}
+      serviceAccountName: {{ .Release.Name }}
       containers:
         - name: {{ .Values.services.productReviews.name }}
           image: "{{ if .Values.services.productReviews.imageOverride.repository }}{{ .Values.services.productReviews.imageOverride.repository }}{{ else }}{{ .Values.services.productReviews.image.repository }}{{ end }}:{{ if .Values.services.productReviews.imageOverride.tag }}{{ .Values.services.productReviews.imageOverride.tag }}{{ else }}{{ .Values.services.productReviews.image.tag }}{{ end }}"
@@ -43,9 +43,9 @@ spec:
             {{- range .Values.services.productReviews.env }}
             - name: {{ .name }}
               value: {{ .value | quote }}
+            {{- end }}
             - name: OTEL_EXPORTER_OTLP_ENDPOINT
               value: http://$(OTEL_COLLECTOR_NAME):4317
-            {{- end }}
 ---
 {{- end }}
 {{- if .Values.services.llm.enabled }}
@@ -72,7 +72,7 @@ spec:
         app.kubernetes.io/component: {{ .Values.services.llm.name }}
         app.kubernetes.io/name: {{ .Values.services.llm.name }}
     spec:
-      serviceAccountName: {{ .Values.serviceAccount.name }}
+      serviceAccountName: {{ .Release.Name }}
       containers:
         - name: {{ .Values.services.llm.name }}
           image: "{{ if .Values.services.llm.imageOverride.repository }}{{ .Values.services.llm.imageOverride.repository }}{{ else }}{{ .Values.services.llm.image.repository }}{{ end }}:{{ if .Values.services.llm.imageOverride.tag }}{{ .Values.services.llm.imageOverride.tag }}{{ else }}{{ .Values.services.llm.image.tag }}{{ end }}"
@@ -93,8 +93,8 @@ spec:
             {{- range .Values.services.llm.env }}
             - name: {{ .name }}
               value: {{ .value | quote }}
+            {{- end }}
             - name: OTEL_EXPORTER_OTLP_ENDPOINT
               value: http://$(OTEL_COLLECTOR_NAME):4317
-            {{- end }}
 {{- end }}
 

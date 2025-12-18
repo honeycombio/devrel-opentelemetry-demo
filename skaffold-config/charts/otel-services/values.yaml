@@ -16,8 +16,6 @@ services:
     env:
       - name: PRODUCT_REVIEWS_PORT
         value: "3551"
-      - name: OTEL_EXPORTER_OTLP_ENDPOINT
-        value: "http://otel-collector:4317"
       - name: OTEL_PYTHON_LOG_CORRELATION
         value: "true"
       - name: OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT
@@ -56,15 +54,10 @@ services:
     port: 8000
     replicas: 1
     env:
-      - name: OTEL_EXPORTER_OTLP_ENDPOINT
-        value: "http://otel-collector:4317"
       - name: FLAGD_HOST
         value: "flagd"
       - name: FLAGD_PORT
         value: "8013"
-
-serviceAccount:
-  name: opentelemetry-demo
 
 otel:
   collectorName: otel-collector
