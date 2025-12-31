@@ -62,8 +62,8 @@ jobs:
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
-          context: .
-          file: ./Dockerfile.docs
+          context: ./src/conventions
+          file: ./src/conventions/Dockerfile
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
@@ -73,7 +73,7 @@ jobs:
       - name: Test documentation build
         if: github.event_name == 'pull_request'
         run: |
-          docker build -f Dockerfile.docs -t otel-conventions-docs:test .
+          docker build -f src/conventions/Dockerfile -t otel-conventions-docs:test src/conventions
           docker run --rm -p 8000:8000 --name test-docs -d otel-conventions-docs:test
           sleep 3
           curl -f http://localhost:8000 || exit 1

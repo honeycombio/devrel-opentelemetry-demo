@@ -6,15 +6,11 @@ version: '3.8'
 services:
   docs:
     build:
-      context: .
-      dockerfile: Dockerfile.docs
+      context: ./src/conventions
+      dockerfile: Dockerfile
     container_name: otel-conventions-docs
     ports:
       - "8000:8000"
-    volumes:
-      # Mount the registry for live updates during development
-      - ./src/conventions/registry.yaml:/workspace/registry.yaml:ro
-      - ./docs:/app/docs:rw
     environment:
       - PYTHONUNBUFFERED=1
     restart: unless-stopped

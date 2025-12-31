@@ -255,14 +255,14 @@ build-react-native-android:
 .PHONY: docs-build
 docs-build:
 	@echo "Building OpenTelemetry conventions documentation..."
-	docker build -f Dockerfile.docs -t otel-conventions-docs:latest .
+	docker build -f src/conventions/Dockerfile -t otel-conventions-docs:latest src/conventions
 	@echo "Documentation image built successfully!"
 
 .PHONY: docs-run
 docs-run: docs-build
 	@echo "Starting documentation server on http://localhost:8000"
 	docker run --rm -p 8000:8000 \
-		-v $(PWD)/src/conventions/registry.yaml:/workspace/registry.yaml:ro \
+		-v $(PWD)/src/conventions:/app/docs:rw \
 		--name otel-conventions-docs \
 		otel-conventions-docs:latest
 

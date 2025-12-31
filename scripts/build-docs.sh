@@ -40,9 +40,9 @@ print_info "Project root: $PROJECT_ROOT"
 # Build the Docker image
 print_info "Building Docker image..."
 docker build \
-    -f "$PROJECT_ROOT/Dockerfile.docs" \
+    -f "$PROJECT_ROOT/src/conventions/Dockerfile" \
     -t otel-conventions-docs:latest \
-    "$PROJECT_ROOT"
+    "$PROJECT_ROOT/src/conventions"
 
 if [ $? -eq 0 ]; then
     print_info "Docker image built successfully"
@@ -57,7 +57,7 @@ if [ "$1" == "--run" ] || [ "$1" == "-r" ]; then
     docker run \
         --rm \
         -p 8000:8000 \
-        -v "$PROJECT_ROOT/src/conventions/registry.yaml:/workspace/registry.yaml:ro" \
+        -v "$PROJECT_ROOT/src/conventions:/app/docs:rw" \
         --name otel-conventions-docs \
         otel-conventions-docs:latest
 elif [ "$1" == "--compose" ] || [ "$1" == "-c" ]; then
