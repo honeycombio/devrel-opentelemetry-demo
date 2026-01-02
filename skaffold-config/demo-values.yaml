@@ -157,8 +157,6 @@ opentelemetry-collector:
             statements:
               - set(resource.attributes["service.name"], "api-gateway") where resource.attributes["k8s.container.name"] == "frontend"
     exporters:
-      debug:
-        verbosity: detailed
       awss3:
         s3uploader:
           region: "us-east-1"
@@ -235,7 +233,6 @@ opentelemetry-collector:
             - transform/attribution
         traces:
           exporters:
-            - debug
             - otlp/traces
             - spanmetrics
             - awss3
