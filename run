@@ -1,6 +1,30 @@
-#/bin/bash
+#!/bin/bash
 
-set -e 
+set -e
+
+# Source .skaffold.env file if it exists
+if [[ -f .skaffold.env ]]; then
+    set -a
+    eval "$(cat '.skaffold.env')"
+    set +a
+fi
+
+# Default to AWS if no cloud provider flag is provided
+CLOUD_PROVIDER="aws"
+
+# Parse cloud provider flag if provided
+if [[ "$1" == "--cloud" ]] || [[ "$1" == "-c" ]]; then
+    CLOUD_PROVIDER="$2"
+    # Validate the cloud provider argument
+    if [[ ! "$CLOUD_PROVIDER" =~ ^(aws|azure)$ ]]; then
+        echo "Error: Invalid cloud provider '$CLOUD_PROVIDER'"
+        echo "Usage: $0 [--cloud|-c aws|azure] [SERVICES...]"
+        echo "Default: aws"
+        exit 1
+    fi
+    # Remove the cloud provider flags from the arguments
+    shift 2
+fi
 
 SERVICES=$*
 if [ -z "$SERVICES" ]; then
@@ -16,14 +40,27 @@ if [ -z "$HONEYCOMB_API_KEY" ]; then
   exit 1
 fi
 
+# Get container registry from Pulumi stack output based on cloud provider
+if [[ "$CLOUD_PROVIDER" == "aws" ]]; then
+    echo "Using AWS configuration"
+    CONTAINER_REGISTRY=$(pulumi stack output -s honeycomb-devrel/infra-aws/prod ecrRepositoryUrl)
+    echo "Logging in to ECR, because it's so annoying when we forget."
+    scripts/login-ecr.sh
+elif [[ "$CLOUD_PROVIDER" == "azure" ]]; then
+    echo "Using Azure configuration"
+    CONTAINER_REGISTRY=$(pulumi stack output -s honeycomb-devrel/infra-azure/prod containerRegistry)
+    echo "Logging in to ACR, because it's so annoying when we forget."
+    scripts/login-acr.sh
+fi
 
-echo "Logging in to ACR, because it's so annoying when we forget."
-scripts/login-acr.sh
+# Set kubectl context for the appropriate cloud provider
+echo "Setting kubectl context for $CLOUD_PROVIDER..."
+scripts/set-kubecontext.sh "$CLOUD_PROVIDER"
 
 set -x
 
 # maybe someday the container registry name will change, but this is what it is now
-skaffold run -d mainacra1e0ec0b.azurecr.io -b $SERVICES --port-forward=user -l skaffold.dev/run-id=static
+skaffold run -d "$CONTAINER_REGISTRY" -b $SERVICES --port-forward=user -l skaffold.dev/run-id=static
 
 # note: if the output ends with
 #   Error: UPGRADE FAILED: another operation (install/upgrade/rollback) is in progress
