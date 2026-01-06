@@ -185,7 +185,7 @@ deploy:
           services.productReviews.imageOverride.tag: "{{if .IMAGE_REPO_productreviewsservice }}{{.IMAGE_TAG_productreviewsservice}}@{{.IMAGE_DIGEST_productreviewsservice}}{{end}}"
           services.llm.imageOverride.repository: "{{if .IMAGE_REPO_llmservice }}{{.IMAGE_REPO_llmservice}}{{end}}"
           services.llm.imageOverride.tag: "{{if .IMAGE_REPO_llmservice }}{{.IMAGE_TAG_llmservice}}@{{.IMAGE_DIGEST_llmservice}}{{end}}"
-          ingress.domainName: "zurelia.honeydemo.io"
+          ingress.domainName: "{{if .DOMAINNAME}}{{.DOMAINNAME}}{{else}}aurelia.honeydemo.io{{end}}"
           ingress.subDomainName: "{{.USER}}-local"
           ingress.enabled: true
         upgradeOnChange: true

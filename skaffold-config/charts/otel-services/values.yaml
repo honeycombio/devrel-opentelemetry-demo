@@ -65,8 +65,8 @@ otel:
 
 ingress:
   enabled: false
-  className: webapprouting.kubernetes.azure.com
+  className: alb
   subDomainName: "" # e.g. "martin-local"
-  domainName: ""
+  domainName: "aurelia.honeydemo.io"
   # Example: zurelia.honeydemo.io
 

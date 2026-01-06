@@ -51,6 +51,8 @@ elif [[ "$CLOUD_PROVIDER" == "azure" ]]; then
     CONTAINER_REGISTRY=$(pulumi stack output -s honeycomb-devrel/infra-azure/prod containerRegistry)
     echo "Logging in to ACR, because it's so annoying when we forget."
     scripts/login-acr.sh
+    MAINDOMAIN="zurelia.honeydemo.io"
+    INGRESS_CLASS="webapprouting.kubernetes.azure.com"
 fi
 
 # Set kubectl context for the appropriate cloud provider

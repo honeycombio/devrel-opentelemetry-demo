@@ -6,6 +6,14 @@ metadata:
   namespace: {{ .Release.Namespace }}
   labels:
     {{- include "otel-services.labels" . | nindent 4 }}
+  annotations:
+  {{- if eq .Values.ingress.className "alb" }}
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80, "HTTPS": 443}]'
+    alb.ingress.kubernetes.io/backend-protocol: HTTP
+    alb.ingress.kubernetes.io/group.name: locals-alb
+  {{- end }}
 spec:
   ingressClassName: {{ .Values.ingress.className }}
   rules:
@@ -21,7 +29,7 @@ spec:
                   number: 8080
   tls:
     - hosts:
-        - {{.Values.ingress.subDomainName }}.{{ .Values.ingress.domainName }}
+        - "*.{{ .Values.ingress.domainName }}"
       secretName: {{ include "otel-services.fullname" . }}-tls
 {{- end }}
 
