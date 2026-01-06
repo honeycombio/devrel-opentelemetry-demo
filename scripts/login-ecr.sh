@@ -3,7 +3,7 @@
 set -e
 
 # Get ECR registry from Pulumi stack output
-ECR_REGISTRY=$(pulumi stack output -s honeycomb-devrel/infra-aws/prod ecrRepositoryUrl)
+ECR_REGISTRY=$(pulumi stack output -s honeycomb-devrel/infra-aws/prod ecrRepositoryUrlPrefix)
 
 # Extract the account ID and region from the registry URL
 # Format: <account-id>.dkr.ecr.<region>.amazonaws.com

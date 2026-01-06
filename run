@@ -43,7 +43,7 @@ fi
 # Get container registry from Pulumi stack output based on cloud provider
 if [[ "$CLOUD_PROVIDER" == "aws" ]]; then
     echo "Using AWS configuration"
-    CONTAINER_REGISTRY=$(pulumi stack output -s honeycomb-devrel/infra-aws/prod ecrRepositoryUrl)
+    CONTAINER_REGISTRY=$(pulumi stack output -s honeycomb-devrel/infra-aws/prod ecrRepositoryUrlPrefix)
     echo "Logging in to ECR, because it's so annoying when we forget."
     scripts/login-ecr.sh
 elif [[ "$CLOUD_PROVIDER" == "azure" ]]; then
