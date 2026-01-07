@@ -4,14 +4,12 @@ import { Ingress } from "@pulumi/kubernetes/networking/v1/ingress";
 import { Deployment } from "@pulumi/kubernetes/apps/v1";
 import { Service } from "@pulumi/kubernetes/core/v1";
 import { CustomResource } from "@pulumi/kubernetes/apiextensions";
+import { DeploymentConfig } from "../config";
 
 export interface OtelDemoArgs {
-    domainName: pulumi.Input<string>;
-    namespace: pulumi.Input<string>;
+    config: DeploymentConfig;
     collectorHostName: pulumi.Output<string>;
-    demoVersion: pulumi.Input<string>;
-    ingressClassName: pulumi.Input<string>;
-    containerTag: pulumi.Input<string>;
+    namespace: pulumi.Output<string>;
 }
 
 export class OtelDemo extends pulumi.ComponentResource {
@@ -33,7 +31,7 @@ export class OtelDemo extends pulumi.ComponentResource {
                     }
                 ],
                 "image": {
-                    "tag": args.containerTag
+                    "tag": args.config.containerTag
                 }
             }
         };
@@ -41,12 +39,12 @@ export class OtelDemo extends pulumi.ComponentResource {
         const demoRelease = new Release(`${name}-demo-release`, {
             chart: "opentelemetry-demo",
             name: name,
-            version: args.demoVersion,
+            version: args.config.versions.demoHelmVersion,
             repositoryOpts: {
                 repo: "https://open-telemetry.github.io/opentelemetry-helm-charts"
             },
             dependencyUpdate: true,
-            namespace: args.namespace,
+            namespace: args.config.k8sNamespace,
             values: values,
             valueYamlFiles: [new pulumi.asset.FileAsset("./config-files/demo/values.yaml")]
         }, { provider: opts.provider! });
@@ -109,7 +107,7 @@ export class OtelDemo extends pulumi.ComponentResource {
                         serviceAccountName: "otel-demo",
                         containers: [{
                             name: "product-reviews",
-                            image: `ghcr.io/honeycombio/devrel-opentelemetry-demo:${args.containerTag}-product-reviews`,
+                            image: `ghcr.io/honeycombio/devrel-opentelemetry-demo:${args.config.containerTag}-product-reviews`,
                             imagePullPolicy: "IfNotPresent",
                             ports: [{
                                 containerPort: 3551,
@@ -206,7 +204,7 @@ export class OtelDemo extends pulumi.ComponentResource {
                         serviceAccountName: "otel-demo",
                         containers: [{
                             name: "llm",
-                            image: `ghcr.io/honeycombio/devrel-opentelemetry-demo:${args.containerTag}-llm`,
+                            image: `ghcr.io/honeycombio/devrel-opentelemetry-demo:${args.config.containerTag}-llm`,
                             imagePullPolicy: "IfNotPresent",
                             ports: [{
                                 containerPort: 8000,
@@ -234,64 +232,102 @@ export class OtelDemo extends pulumi.ComponentResource {
             }
         }, { provider: opts.provider!, dependsOn: [demoRelease] });
 
-        var certificate = new CustomResource(`${name}-certificate`, {
-            apiVersion: "cert-manager.io/v1",
-            kind: "Certificate",
-            metadata: {
-                namespace: args.namespace,
-            },
-            spec: {
-                secretName: `www-${args.domainName}-tls`,
-                issuerRef: {
-                    name: `letsencrypt-prod-${args.domainName}`,
-                    kind: "ClusterIssuer"
+        if (args.config.isAzure) {
+            var certificate = new CustomResource(`${name}-certificate`, {
+                apiVersion: "cert-manager.io/v1",
+                kind: "Certificate",
+                metadata: {
+                    namespace: args.namespace,
                 },
-                commonName: `www.${args.domainName}`,
-                dnsNames: [`www.${args.domainName}`],
-                privateKey: {
-                    rotationPolicy: "Always"
-                },
-                usages: [
-                    "server auth",
-                    "digital signature",
-                    "key encipherment"
-                ]
-            }
-        }, { provider: opts.provider! });
+                spec: {
+                    secretName: `www-${args.config.domainName}-tls`,
+                    issuerRef: {
+                        name: `letsencrypt-prod-${args.config.domainName}`,
+                        kind: "ClusterIssuer"
+                    },
+                    commonName: `www.${args.config.domainName}`,
+                    dnsNames: [`www.${args.config.domainName}`],
+                    privateKey: {
+                        rotationPolicy: "Always"
+                    },
+                    usages: [
+                        "server auth",
+                        "digital signature",
+                        "key encipherment"
+                    ]
+                }
+            }, { provider: opts.provider! });
 
-        var ingress = new Ingress(`${name}-frontend-ingress`, {
-            metadata: {
-                namespace: args.namespace,
-            },
-            spec: {
-                ingressClassName: args.ingressClassName,
-                rules: [{
-                    host: `www.${args.domainName}`,
-                    http: {
-                        paths: [{
-                            path: "/",
-                            pathType: "Prefix",
-                            backend: {
-                                service: {
-                                    name: "frontend-proxy",
-                                    port: {
-                                        number: 8080
+            var ingress = new Ingress(`${name}-frontend-ingress`, {
+                metadata: {
+                    namespace: args.namespace,
+                },
+                spec: {
+                    ingressClassName: "webapprouting.kubernetes.azure.com",
+                    rules: [{
+                        host: `www.${args.config.domainName}`,
+                        http: {
+                            paths: [{
+                                path: "/",
+                                pathType: "Prefix",
+                                backend: {
+                                    service: {
+                                        name: "frontend-proxy",
+                                        port: {
+                                            number: 8080
+                                        }
                                     }
                                 }
-                            }
-                        }]
+                            }]
+                        }
+                    }],
+                    tls: [{
+                        hosts: [`www.${args.config.domainName}`],
+                        secretName: `www-${args.config.domainName}-tls`
+                    }]
+                }
+            }, {
+                dependsOn: [demoRelease],
+                provider: opts?.provider!
+            });
+        }
+        else if (args.config.isAws) {
+            var ingress = new Ingress(`${name}-frontend-ingress`, {
+                metadata: {
+                    namespace: args.namespace,
+                    annotations: {
+                        "alb.ingress.kubernetes.io/scheme": "internet-facing",
+                        "alb.ingress.kubernetes.io/target-type": "ip",
+                        "alb.ingress.kubernetes.io/listen-ports": '[{"HTTP": 80, "HTTPS": 443}]',
+                        "alb.ingress.kubernetes.io/backend-protocol": "HTTP",
                     }
-                }],
-                tls: [{
-                    hosts: [`www.${args.domainName}`],
-                    secretName: `www-${args.domainName}-tls`
-                }]
-            }
-        }, {
-            dependsOn: [demoRelease],
-            provider: opts?.provider!
-        });
+                },
+                spec: {
+                    ingressClassName: "alb",
+                    rules: [{
+                        host: `www.${args.config.domainName}`,
+                        http: {
+                            paths: [{
+                                path: "/",
+                                pathType: "Prefix",
+                                backend: {
+                                    service: {
+                                        name: "frontend-proxy",
+                                        port: {
+                                            number: 8080
+                                        }
+                                    }
+                                }
+                            }]
+                        }
+                    }]
+                }
+            }, {
+                dependsOn: [demoRelease],
+                provider: opts?.provider!
+            });
+        }
 
-        this.domainName = pulumi.output(`www.${args.domainName}`);
+        this.domainName = pulumi.output(`www.${args.config.domainName}`);
     }
 }

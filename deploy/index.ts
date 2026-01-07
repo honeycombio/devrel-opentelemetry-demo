@@ -1,138 +1,52 @@
-import * as pulumi from "@pulumi/pulumi";
 import * as kubernetes from "@pulumi/kubernetes";
-import { Secret } from "@pulumi/kubernetes/core/v1/secret";
 import { Collector } from "./applications/collector";
 import { OtelDemo } from "./applications/oteldemo";
-import { TelemetryPipeline } from "./applications/telemetry-pipeline";
-import { SourceMapsContainer } from "./applications/sourcemaps-blob";
-import { listManagedClusterUserCredentialsOutput } from "@pulumi/azure-native/containerservice";
-import { Refinery } from "./applications/refinery";
-import * as storage from "@pulumi/azure-native/storage";
+import { DeploymentConfig } from "./config";
+import { HoneycombSecrets } from "./applications/secrets";
+import { getKubeconfig } from "./applications/kubeconfig";
 
-const collectorHelmVersion = "0.134.0";
-const demoHelmVersion = "0.38.6";
-const refineryHelmVersion = "2.17.0";
+// Load strongly-typed configuration
+const deployConfig = new DeploymentConfig();
 
-const config = new pulumi.Config();
-const apiKey = config.require("honeycombApiKey");
-const dogfoodApiKey = config.require("honeycombApiKeyDogfood");
-const ingressClassName = config.require("ingressClassName");
-const infrastack = new pulumi.StackReference("honeycomb-devrel/infra-azure/prod");
-const containerTag = config.get("container-tag") || "latest";
-const pipelineManagementApiKey = config.require("pipelineManagementApiKey");
-const pipelineManagementApiKeyId = config.require("pipelineManagementApiKeyId");
-const pipelineApiKey = config.require("pipelineApiKey");
-const refineryTelemetryApiKey = config.require("refineryTelemetryApiKey");
-const collectorS3AccessKey = config.require("collectorS3AccessKey");
-const collectorS3SecretKey = config.require("collectorS3SecretKey");
-const collectorContainerTag = config.get("collector-container-tag") || `${containerTag}-collector`;
-const collectorContainerRepository = config.get("collector-container-repository") || "ghcr.io/open-telemetry/opentelemetry-collector-releases/opentelemetry-collector-contrib";
-const isInPipeline = process.env.IS_IN_PIPELINE || "false";
-
-const demoClusterResourceGroup = infrastack.getOutput("clusterResourceGroup");
-const demoClusterName = infrastack.getOutput("clusterName");
-
-
-const kubeconfig = listManagedClusterUserCredentialsOutput({
-    resourceGroupName: demoClusterResourceGroup,
-    resourceName: demoClusterName
-})
-    .apply(x => x.kubeconfigs[0].value)
-    .apply(x => (Buffer.from(x, 'base64')).toString('utf8'))
-
-const provider = new kubernetes.Provider("aks-provider", {
-    kubeconfig: kubeconfig,
+const provider = new kubernetes.Provider("k8s-provider", {
+    kubeconfig: getKubeconfig(deployConfig),
     enableServerSideApply: true
 });
 
 // Create a namespace (user supplies the name of the namespace)
 const demoNamespace = new kubernetes.core.v1.Namespace("demo-namespace", {
     metadata: {
-        name: "devrel-demo",
+        name: deployConfig.k8sNamespace,
     }
     
 }, { provider: provider });
 
-const secretApiKey = new Secret("honey", {
-    metadata: {
-        name: "honeycomb-api",
-        namespace: demoNamespace.metadata.name
-    },
-    stringData: {
-        ["honeycomb-api-key"]: apiKey
-    }
-}, { provider: provider })
-
-const secretDogfoodApiKey = new Secret("honey-dogfood", {
-    metadata: {
-        name: "honeycomb-api-dogfood",
-        namespace: demoNamespace.metadata.name
-    },
-    stringData: {
-        ["honeycomb-api-key"]: dogfoodApiKey
-    }
-}, { provider: provider })
-
-var sourceMapsContainer = new SourceMapsContainer("source-maps-container", {
-    resourceGroup: demoClusterResourceGroup,
-    isInPipeline: isInPipeline
-}, { provider: provider });
-
-var telemetryPipeline = new TelemetryPipeline("telemetry-pipeline", {
+const honeycombSecrets = new HoneycombSecrets("honeycomb", {
     namespace: demoNamespace.metadata.name,
-    pipelineHoneycombApiKey: pipelineApiKey,
-    pipelineHoneycombManagementApiKey: pipelineManagementApiKey,
-    pipelineHoneycombManagementApiKeyId: pipelineManagementApiKeyId,
-    useDogfood: true,
-    s3AccessKey: collectorS3AccessKey,
-    s3SecretKey: collectorS3SecretKey
-}, { provider: provider });
-
-var refinery = new Refinery("refinery", {
-    refineryHelmVersion: refineryHelmVersion,
-    namespace: demoNamespace.metadata.name,
-    telemetryApiKey: refineryTelemetryApiKey
+    config: deployConfig
 }, { provider: provider });
 
 var podTelemetryCollector = new Collector("pod-telemetry-collector", {
-    collectorHelmVersion: collectorHelmVersion,
+    config: deployConfig,
     namespace: demoNamespace.metadata.name,
-    honeycombSecret: secretApiKey,
-    honeycombDogfoodSecret: secretDogfoodApiKey,
+    secrets: honeycombSecrets,
     valuesFile: "./config-files/collector/values-daemonset.yaml",
-    refineryHostname: refinery.refineryHostname,
-    telemetryPipelineReleaseName: telemetryPipeline.releaseName,
-    collectorContainerTag: collectorContainerTag,
-    collectorContainerRepository: collectorContainerRepository,
-    sourceMapsStorageConnectionString: sourceMapsContainer.storageConnectionString,
-    sourceMapsContainerName: sourceMapsContainer.containerName
+    useCustomCollector: true
 }, { provider: provider });
 
 var clusterTelemetryCollector = new Collector("cluster-telemetry-collector", {
-    collectorHelmVersion: collectorHelmVersion,
+    config: deployConfig,
     namespace: demoNamespace.metadata.name,
-    honeycombSecret: secretApiKey,
-    honeycombDogfoodSecret: secretDogfoodApiKey,
+    secrets: honeycombSecrets,
     valuesFile: "./config-files/collector/values-deployment.yaml",
-    telemetryPipelineReleaseName: telemetryPipeline.releaseName
+    useCustomCollector: false
 }, { provider: provider });
 
-
-
 var demo = new OtelDemo("otel-demo", {
-    domainName: "zurelia.honeydemo.io",
+    config: deployConfig,
     namespace: demoNamespace.metadata.name,
     collectorHostName: podTelemetryCollector.collectorName,
-    demoVersion: demoHelmVersion,
-    containerTag: containerTag,
-    ingressClassName: ingressClassName
 }, { provider: provider });
 
 // Export some values for use elsewhere
-
-export const clusterResourceGroup = demoClusterResourceGroup;
-export const clusterName = demoClusterName;
 export const demoUrl = demo.domainName;
-export const telemetryPipelineReleaseName = telemetryPipeline.releaseName;
-export const blobContainerName = sourceMapsContainer.containerName;
-export const storageAccountName = sourceMapsContainer.accountName;

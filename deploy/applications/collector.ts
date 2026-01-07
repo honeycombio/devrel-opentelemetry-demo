@@ -1,19 +1,14 @@
 import * as pulumi from "@pulumi/pulumi";
-import { Secret } from "@pulumi/kubernetes/core/v1";
 import { Release } from "@pulumi/kubernetes/helm/v3";
+import { DeploymentConfig } from "../config";
+import { HoneycombSecrets } from "./secrets";
 
 export interface CollectorArgs {
-    collectorHelmVersion: pulumi.Input<string>;
+    config: DeploymentConfig;
     namespace: pulumi.Input<string>;
-    honeycombSecret: Secret;
-    honeycombDogfoodSecret: Secret;
+    secrets: HoneycombSecrets;
     valuesFile: string;
-    refineryHostname?: pulumi.Input<string>;
-    telemetryPipelineReleaseName?: pulumi.Input<string>;
-    collectorContainerTag?: pulumi.Input<string>;
-    collectorContainerRepository?: pulumi.Input<string>;
-    sourceMapsStorageConnectionString?: pulumi.Input<string>;
-    sourceMapsContainerName?: pulumi.Input<string>;
+    useCustomCollector: boolean;
 }
 
 export class Collector extends pulumi.ComponentResource {
@@ -28,23 +23,15 @@ export class Collector extends pulumi.ComponentResource {
 
         const values = {
             "image": {
-                "repository": args.collectorContainerRepository,
-                "tag": args.collectorContainerTag 
+                "repository": args.useCustomCollector ? args.config.collectorContainerRepository : "ghcr.io/open-telemetry/opentelemetry-collector-releases/opentelemetry-collector-contrib",
+                "tag": args.useCustomCollector ? args.config.collectorContainerTag : args.config.versions.defaultCollectorVersion
             },
             "extraEnvs": [
-                {
-                    "name": "SOURCEMAPS_STORAGE_CONNECTION_STRING",
-                    "value": args.sourceMapsStorageConnectionString
-                },
-                {
-                    "name": "SOURCEMAPS_CONTAINER_NAME",
-                    "value": args.sourceMapsContainerName
-                },
                 {
                     "name": "HONEYCOMB_API_KEY",
                     "valueFrom": {
                         "secretKeyRef": {
-                            "name": args.honeycombSecret.id.apply(id => id.split("/")[1]),
+                            "name": args.secrets.prodSecret.id.apply(id => id.split("/")[1]),
                             "key": "honeycomb-api-key"
                         }
                     }
@@ -53,7 +40,7 @@ export class Collector extends pulumi.ComponentResource {
                     "name": "HONEYCOMB_API_KEY_DOGFOOD",
                     "valueFrom": {
                         "secretKeyRef": {
-                            "name": args.honeycombDogfoodSecret.id.apply(id => id.split("/")[1]),
+                            "name": args.secrets.dogfoodSecret.id.apply(id => id.split("/")[1]),
                             "key": "honeycomb-api-key"
                         }
                     }
@@ -66,21 +53,13 @@ export class Collector extends pulumi.ComponentResource {
                         }
                     }
                 },
-                {
-                    "name": "REFINERY_HOSTNAME",
-                    "value": args.refineryHostname
-                },
-                {
-                    "name": "PIPELINE_HOSTNAME",
-                    "value": pulumi.interpolate `${args.telemetryPipelineReleaseName}-primary-collector`
-                }
             ]
         }
 
         const collectorRelease = new Release(`${name}-release`, {
             chart: "opentelemetry-collector",
             name: name,
-            version: args.collectorHelmVersion,
+            version: args.config.versions.collectorHelmVersion,
             repositoryOpts: {
                 repo: "https://open-telemetry.github.io/opentelemetry-helm-charts"
             },
