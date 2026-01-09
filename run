@@ -11,6 +11,8 @@ fi
 
 # Default to AWS if no cloud provider flag is provided
 CLOUD_PROVIDER="aws"
+DOMAINNAME="aurelia.honeydemo.io"
+INGRESS_CLASS="alb"
 
 # Parse cloud provider flag if provided
 if [[ "$1" == "--cloud" ]] || [[ "$1" == "-c" ]]; then
@@ -51,10 +53,10 @@ if [[ "$CLOUD_PROVIDER" == "aws" ]]; then
     scripts/login-ecr.sh
 elif [[ "$CLOUD_PROVIDER" == "azure" ]]; then
     echo "Using Azure configuration"
-    CONTAINER_REGISTRY=$(pulumi stack output -s honeycomb-devrel/infra-azure/prod containerRegistry)
+    CONTAINER_REGISTRY=$(pulumi stack output -s honeycomb-devrel/infra-azure/prod acrName)
     echo "Logging in to ACR, because it's so annoying when we forget."
     scripts/login-acr.sh
-    MAINDOMAIN="zurelia.honeydemo.io"
+    DOMAINNAME="zurelia.honeydemo.io"
     INGRESS_CLASS="webapprouting.kubernetes.azure.com"
 fi
 
@@ -63,6 +65,10 @@ echo "Setting kubectl context for $CLOUD_PROVIDER..."
 scripts/set-kubecontext.sh "$CLOUD_PROVIDER"
 
 set -x
+
+export CLOUD_PROVIDER
+export DOMAINNAME
+export INGRESS_CLASS
 
 # maybe someday the container registry name will change, but this is what it is now
 skaffold run -d "$CONTAINER_REGISTRY" -b $SERVICES --port-forward=user -l skaffold.dev/run-id=static

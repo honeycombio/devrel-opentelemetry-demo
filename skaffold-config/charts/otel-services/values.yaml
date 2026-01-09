@@ -69,6 +69,6 @@ ingress:
   enabled: false
   className: alb
   subDomainName: "" # e.g. "martin-local"
-  domainName: "aurelia.honeydemo.io"
+  domainName: ""
   generateCertificate: false
   # Example: zurelia.honeydemo.io

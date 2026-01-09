@@ -190,6 +190,8 @@ deploy:
           ingress.domainName: "{{if .DOMAINNAME}}{{.DOMAINNAME}}{{else}}aurelia.honeydemo.io{{end}}"
           ingress.subDomainName: "{{.USER}}-local"
           ingress.enabled: true
+          ingress.className: "{{if .INGRESS_CLASS}}{{.INGRESS_CLASS}}{{else}}alb{{end}}"
+          ingress.generateCertificate: '{{if eq .CLOUD_PROVIDER "aws"}}false{{else}}true{{end}}'
         upgradeOnChange: true
         useHelmSecrets: false
         wait: true
