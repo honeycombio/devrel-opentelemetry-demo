@@ -82,15 +82,16 @@ opentelemetry-collector:
             conditions:
               - resource.attributes["service.name"] == "access-logs"
               - attributes["http.response.status_code"] != nil
-              - IsInt(attributes["http.response.status_code"]) == false
+              - IsString(attributes["http.response.status_code"]) == true
             statements:
-              - set(severity_text, "ERROR") where Substring(attributes["http.response.status_code"], 0, 1) == "5"
-              - set(severity_number, 17) where Substring(attributes["http.response.status_code"], 0, 1) == "5"
-              - set(severity_text, "WARN") where Substring(attributes["http.response.status_code"], 0, 1) == "4"
-              - set(severity_number, 13) where Substring(attributes["http.response.status_code"], 0, 1) == "4"
-              - set(severity_text, "INFO") where Int(attributes["http.response.status_code"]) < 400
-              - set(severity_number, 9) where Int(attributes["http.response.status_code"]) < 400
-              - set(attributes["collector.transform.access_log_severity"], "v5")
+              - set(cache["status_code"], Int(attributes["http.response.status_code"]))
+              - set(severity_number, 17) where cache["status_code"] >= 500
+              - set(severity_number, 13) where cache["status_code"] >= 400 and cache["status_code"] < 500
+              - set(severity_number, 9) where cache["status_code"] < 400
+              - set(severity_text, "ERROR") where cache["status_code"] >= 500
+              - set(severity_text, "WARN") where cache["status_code"] >= 400 and cache["status_code"] < 500
+              - set(severity_text, "INFO") where cache["status_code"] < 400
+              - set(attributes["demo.telemetry.transform.access_log_severity"], "v4")
       transform/filelog_severity:
         error_mode: ignore
         log_statements:
@@ -138,7 +139,7 @@ opentelemetry-collector:
         log_statements:
           - context: log
             conditions:
-              - body != nil and Len(body) >= 2 and Substring(body, 0, 2) == "{\""
+              - body != nil and IsString(body) and HasPrefix(body, "{")
             statements:
               - set(cache, ParseJSON(body))
               - flatten(cache, "")
@@ -147,28 +148,12 @@ opentelemetry-collector:
             statements:
               - set(resource.attributes["service.name"], "api-gateway") where resource.attributes["k8s.container.name"] == "frontend"
     exporters:
-      otlp/traces:
-        endpoint: api.honeycomb.io:443
-        headers:
-          x-honeycomb-team: ${env:HONEYCOMB_API_KEY}
-
-      otlp/metrics:
-        endpoint: api.honeycomb.io:443
-        headers:
-          x-honeycomb-team: ${env:HONEYCOMB_API_KEY}
-          x-honeycomb-dataset: service-metrics
-
-      otlp/logging:
-        endpoint: api.honeycomb.io:443
-        headers:
-          x-honeycomb-team: ${env:HONEYCOMB_API_KEY}
-          x-honeycomb-dataset: service-logs
-
-      otlp/k8s-logging:
-        endpoint: api.honeycomb.io:443
-        headers:
-          x-honeycomb-team: ${env:HONEYCOMB_API_KEY}
-          x-honeycomb-dataset: k8s-logs
+      debug/detailed:
+        verbosity: detailed
+      otlp/htp:
+        endpoint: ${env:HTP_ENDPOINT}
+        tls:
+          insecure: true
 
     service:
       telemetry:
@@ -185,7 +170,7 @@ opentelemetry-collector:
       pipelines:
         metrics:
           exporters:
-            - otlp/metrics
+            - otlp/htp
           processors:
             - transform/service_names
             - transform/attribution
@@ -194,7 +179,7 @@ opentelemetry-collector:
             - otlp
             - filelog
           exporters:
-            - otlp/logging
+            - otlp/htp
           processors:
             - transform/parse_json_body
             - transform/service_names
@@ -204,7 +189,7 @@ opentelemetry-collector:
             - transform/attribution
         traces:
           exporters:
-            - otlp/traces
+            - otlp/htp
             - spanmetrics
           processors:
             - transform/service_names

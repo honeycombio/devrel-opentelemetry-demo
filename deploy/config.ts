@@ -7,7 +7,7 @@ import * as pulumi from "@pulumi/pulumi";
 export class DeploymentConfig {
     private readonly config: pulumi.Config;
 
-    public readonly pipelineConfig?: PipelineConfig = new PipelineConfig();
+    public readonly htpBuilderConfig: HtpBuilderConfig = new HtpBuilderConfig();
     public readonly infraStack: pulumi.StackReference;
     public readonly versions: DeploymentVersions = new DeploymentVersions();
 
@@ -64,26 +64,29 @@ export class DeploymentConfig {
 
 }
 
-export class PipelineConfig {
+export class HtpBuilderConfig {
     private readonly config: pulumi.Config;
-    public readonly ApiKey: string = "";
-    public readonly ApiKeyId: string = "";
-    public readonly IngestApiKey: string = "";
-    
-    get isPipelineEnabled(): boolean {
-        return this.config.get("is-pipeline-enabled")?.toLowerCase() === "true" || false;
+
+    public readonly pipelineId: string = "";
+    public readonly managementApiKeyId: string = "";
+    public readonly managementApiKeySecret: string = "";
+    public readonly pipelineTelemetryKey: string = "";
+
+    get isEnabled(): boolean {
+        return this.config.get("htp-enabled")?.toLowerCase() === "true" || false;
     }
 
     constructor() {
         this.config = new pulumi.Config();
 
-        if (!this.isPipelineEnabled) {
+        if (!this.isEnabled) {
             return;
         }
 
-        this.ApiKey = this.config.require("pipelineManagementApiKey");
-        this.ApiKeyId = this.config.require("pipelineManagementApiKeyId");
-        this.IngestApiKey = this.config.require("pipelineApiKey");
+        this.pipelineId = this.config.require("htp-pipeline-id");
+        this.managementApiKeyId = this.config.require("htp-management-api-key-id");
+        this.managementApiKeySecret = this.config.requireSecret("htp-management-api-key-secret").get() || "";
+        this.pipelineTelemetryKey = this.config.requireSecret("htp-pipeline-telemetry-key").get() || "";
     }
 }
 
@@ -92,11 +95,13 @@ export class DeploymentVersions {
     public readonly demoHelmVersion: string;
     public readonly refineryHelmVersion: string;
     public readonly defaultCollectorVersion: string;
+    public readonly htpBuilderHelmVersion: string;
 
     constructor() {
         this.collectorHelmVersion = "0.134.0";
+        this.defaultCollectorVersion = "0.135.0";
         this.demoHelmVersion = "0.38.6";
         this.refineryHelmVersion = "2.17.0";
-        this.defaultCollectorVersion = "0.135.0";
+        this.htpBuilderHelmVersion = "0.0.76-alpha";
     }
 }

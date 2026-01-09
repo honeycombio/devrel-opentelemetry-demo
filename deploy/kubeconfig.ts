@@ -1,6 +1,6 @@
 import * as pulumi from "@pulumi/pulumi";
 import { listManagedClusterUserCredentialsOutput } from "@pulumi/azure-native/containerservice";
-import { DeploymentConfig } from "../config";
+import { DeploymentConfig } from "./config";
 
 /**
  * Gets the kubeconfig for the target Kubernetes cluster based on the cloud provider.
@@ -21,4 +21,3 @@ export function getKubeconfig(config: DeploymentConfig): pulumi.Output<string> {
         return config.infraStack.getOutput("kubeconfig") as pulumi.Output<string>;
     }
 }
-

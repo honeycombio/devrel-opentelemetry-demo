@@ -53,6 +53,5 @@ export class SourceMapsContainer extends pulumi.ComponentResource {
         }).apply(keys => {
             return `DefaultEndpointsProtocol=https;AccountName=${storageAccount.name};AccountKey=${keys.keys[0].value};EndpointSuffix=core.windows.net`;
         });
-
     }
 }

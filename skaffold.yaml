@@ -125,12 +125,14 @@ deploy:
           opentelemetry-collector:
             extraEnvs:
               - name: HONEYCOMB_API_KEY
+              - name: HTP_ENDPOINT
               - name: NAMESPACE
                 valueFrom:
                   fieldRef:
                     fieldPath: metadata.namespace
         setValueTemplates:
           opentelemetry-collector.extraEnvs[0].value: "{{.HONEYCOMB_API_KEY}}"
+          opentelemetry-collector.extraEnvs[1].value: "{{.USER}}-htp-htp-builder-primary-collector:4317"
           opentelemetry-collector.clusterRole.name: "{{.USER}}-otel-collector"
           opentelemetry-collector.clusterRole.clusterRoleBinding.name: "{{.USER}}-otel-collector"
           opentelemetry-collector.image.repository: "{{if .IMAGE_REPO_otelcollector }}{{.IMAGE_REPO_otelcollector}}{{else}}ghcr.io/honeycombio/devrel-opentelemetry-demo{{end}}"
@@ -188,6 +190,20 @@ deploy:
           ingress.domainName: "{{if .DOMAINNAME}}{{.DOMAINNAME}}{{else}}aurelia.honeydemo.io{{end}}"
           ingress.subDomainName: "{{.USER}}-local"
           ingress.enabled: true
+        upgradeOnChange: true
+        useHelmSecrets: false
+        wait: true
+      - name: "{{.USER}}-htp"
+        createNamespace: false
+        namespace: "{{.USER}}-local"
+        repo: https://honeycombio.github.io/helm-charts
+        remoteChart: htp-builder
+        version: 0.2.0
+        recreatePods: false
+        skipBuildDependencies: false
+        setValueTemplates:
+          pipeline.id: "{{.PIPELINE_ID}}"
+          managementApiKey.id: "{{.PIPELINE_MANAGEMENT_API_KEY_ID}}"
         upgradeOnChange: true
         useHelmSecrets: false
         wait: true

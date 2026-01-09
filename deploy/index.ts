@@ -1,9 +1,10 @@
 import * as kubernetes from "@pulumi/kubernetes";
 import { Collector } from "./applications/collector";
 import { OtelDemo } from "./applications/oteldemo";
+import { HtpBuilder } from "./applications/htp-builder";
 import { DeploymentConfig } from "./config";
 import { HoneycombSecrets } from "./applications/secrets";
-import { getKubeconfig } from "./applications/kubeconfig";
+import { getKubeconfig } from "./kubeconfig";
 
 // Load strongly-typed configuration
 const deployConfig = new DeploymentConfig();
@@ -47,6 +48,14 @@ var demo = new OtelDemo("otel-demo", {
     namespace: demoNamespace.metadata.name,
     collectorHostName: podTelemetryCollector.collectorName,
 }, { provider: provider });
+
+// Deploy HTP Builder if enabled
+if (deployConfig.htpBuilderConfig.isEnabled) {
+    var htpBuilder = new HtpBuilder("htp-builder", {
+        config: deployConfig,
+        namespace: demoNamespace.metadata.name
+    }, { provider: provider });
+}
 
 // Export some values for use elsewhere
 export const demoUrl = demo.domainName;

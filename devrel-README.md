@@ -1,10 +1,92 @@
-# Setup for DevRel
+# DevRel Instance of the OpenTelemetry Demo
 
-Be a member of our Honeycomb Devrel Azure account.
+There are 2 versions of the demo running. One is in AWS EKS, the other in Azure AKS. Along with local versions for each team member in the same clusters.
 
-There is another repo, devrel-opentelemetry-infra, that sets up the AKS cluster.
-It also creates a container registry (ACR) and links the two together, so that the cluster can pull from the image repositories.
-However, when we deploy things ourselves using skaffold, we're pushing them to ACR.
+The local version can be deployed to either cloud, and is self-contained entirely.
+
+## Anatomy of the instances
+
+All instances include:
+* Otel Demo
+* OpenTelemetry Collectors
+  * Daemonset
+    > This is for filelogs, kubeletstats and OTLP ingest from the services
+  * Deployment
+    > This is for k8s events, and cluster metrics
+* Honeycomb Telemetry Pipeline (HTP)
+  > This is the where all telemetry from the collectors is sent.
+
+For all instances, OTLP ingest comes through the use of a k8s service rather than a NodeIP. This enables multiple instances of the demo to run in the same cluster, each with their own collector instances.
+
+### AWS
+
+On AWS, we use the ALB ingress controller to provide a public URL for the frontend-proxy service. Then we use external-dns via Route53 to create a domain under aurelia.honeydemo.io. This uses the wildcard certificate for *.aurelia.honeydemo.io for the ALB.
+
+There are 2 ALBs, one of them is shared for the local instances, the other is dedicated to the main instance.
+
+### Azure
+
+On Azure, we use the webapprouting addon for AKS to provide a public URL for the frontend-proxy service. Then we use external-dns via Azure DNS to create a domain under zurelia.honeydemo.io.
+
+Additionally, we use cert-manager and letsencrypt to provide a TLS certificate for the frontend-proxy service.
+
+## Setup for Local Development
+
+Regardless of the cloud, you'll need the following installed.
+
+* [kubectl](https://kubernetes.io/docs/tasks/tools/install-kubectl/)
+* [helm](https://helm.sh/docs/intro/install/)
+* [skaffold](https://skaffold.dev/docs/installation/)
+* [pulumi](https://www.pulumi.com/docs/get-started/install/)
+
+You'll also need access to our Pulumi Cloud.
+
+## Honeycomb Setup
+
+You'll need to setup to setup Honeycomb Telemetry Pipeline in the Honeycomb UI.
+
+* Team enabled for HTP
+* Management Key created for Pipeline
+* Pipeline created and configured
+* Ingest Key created for the `Pipeline Telemetry` environment
+
+***Note:** since all telemetry funnels through HTP, there is no need to create a Honeycomb API Key.*
+
+## .skaffold.env setup
+
+You'll need to create this file with the following information:
+
+```bash
+PIPELINE_ID=
+PIPELINE_MANAGEMENT_API_SECRET=
+PIPELINE_MANAGEMENT_API_KEY_ID=
+PIPELINE_TELEMETRY_INGEST_KEY=
+```
+
+## AWS Setup
+
+You'll need to have the following installed:
+
+* [aws cli](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html)
+* A Credential profile with access to the AWS DevRel Sandbox account
+
+## Azure Setup
+
+<!-- TODO: Add instructions for Azure CLI and authentication -->
+
+## Skaffold
+
+```shell
+./run
+```
+
+## Setup for DevRel
+
+Be a member of our Honeycomb Devrel Azure account, or the AWS DevRel Sandox account
+
+There is another repo, devrel-opentelemetry-infra, that sets up the AKS and EKS clusters.
+It also creates a container registry (ACR/ECR) and links the two together, so that the clusters can pull from the image repositories.
+However, when we deploy things ourselves using skaffold, we're pushing them to ACR/ECR.
 
 The OpenTelemetry collector is deployed by this repo. For application telemetry, it uses a service instead of Martin's favorite nodeIP, because we want multiples in the cluster sending to different Honeycomb environments. This is doing something weird, because we are devrel and we do weird things.
 

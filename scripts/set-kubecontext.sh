@@ -11,12 +11,11 @@ if [[ ! "$CLOUD_PROVIDER" =~ ^(aws|azure)$ ]]; then
     exit 1
 fi
 
-if [[ -z "$AWS_PROFILE" ]]; then
-    echo "Using Profile 'devrel-sandbox' as AWS_PROFILE isn't set"
-    export AWS_PROFILE=devrel-sandbox
-fi
-
 if [[ "$CLOUD_PROVIDER" == "aws" ]]; then
+    if [[ -z "$AWS_PROFILE" ]]; then
+        echo "Using Profile 'devrel-sandbox' as AWS_PROFILE isn't set"
+        export AWS_PROFILE=devrel-sandbox
+    fi
     eval "$(pulumi stack output -s honeycomb-devrel/infra-aws/prod --shell)"
     echo "Setting kubectl context to $clusterName in $clusterRegion (AWS)"
     aws eks update-kubeconfig --name "$clusterName" --region "$clusterRegion" --alias devrel-demo-aws
