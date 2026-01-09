@@ -35,13 +35,9 @@ if [ -z "$SERVICES" ]; then
   echo "************************************"
 fi
 
-if [ -z "$HONEYCOMB_API_KEY" ]; then
-  echo "please set HONEYCOMB_API_KEY, it's required"
-  exit 1
-fi
-
 # install/update the secret if it's changed
 # Note: hack until the helm file allows it to be specified as a value
+kubectl create namespace $USER-local --dry-run=client -o yaml | kubectl apply -f -
 kubectl create --namespace $USER-local secret generic htp-builder \
    --from-literal=management-api-secret=$PIPELINE_MANAGEMENT_API_SECRET \
    --from-literal=pipeline-telemetry-key=$PIPELINE_TELEMETRY_INGEST_KEY \
