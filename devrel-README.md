@@ -7,20 +7,21 @@ The local version can be deployed to either cloud, and is self-contained entirel
 ## Anatomy of the instances
 
 All instances include:
-* Otel Demo
-* OpenTelemetry Collectors
-  * Daemonset
+
+- Otel Demo
+- OpenTelemetry Collectors
+  - Daemonset
     > This is for filelogs, kubeletstats and OTLP ingest from the services
-  * Deployment
+  - Deployment
     > This is for k8s events, and cluster metrics
-* Honeycomb Telemetry Pipeline (HTP)
+- Honeycomb Telemetry Pipeline (HTP)
   > This is the where all telemetry from the collectors is sent.
 
 For all instances, OTLP ingest comes through the use of a k8s service rather than a NodeIP. This enables multiple instances of the demo to run in the same cluster, each with their own collector instances.
 
 ### AWS
 
-On AWS, we use the ALB ingress controller to provide a public URL for the frontend-proxy service. Then we use external-dns via Route53 to create a domain under aurelia.honeydemo.io. This uses the wildcard certificate for *.aurelia.honeydemo.io for the ALB.
+On AWS, we use the ALB ingress controller to provide a public URL for the frontend-proxy service. Then we use external-dns via Route53 to create a domain under aurelia.honeydemo.io. This uses the wildcard certificate for \*.aurelia.honeydemo.io for the ALB.
 
 There are 2 ALBs, one of them is shared for the local instances, the other is dedicated to the main instance.
 
@@ -34,10 +35,10 @@ Additionally, we use cert-manager and letsencrypt to provide a TLS certificate f
 
 Regardless of the cloud, you'll need the following installed.
 
-* [kubectl](https://kubernetes.io/docs/tasks/tools/install-kubectl/)
-* [helm](https://helm.sh/docs/intro/install/)
-* [skaffold](https://skaffold.dev/docs/installation/)
-* [pulumi](https://www.pulumi.com/docs/get-started/install/)
+- [kubectl](https://kubernetes.io/docs/tasks/tools/install-kubectl/)
+- [helm](https://helm.sh/docs/intro/install/)
+- [skaffold](https://skaffold.dev/docs/installation/)
+- [pulumi](https://www.pulumi.com/docs/get-started/install/)
 
 You'll also need access to our Pulumi Cloud.
 
@@ -45,12 +46,12 @@ You'll also need access to our Pulumi Cloud.
 
 You'll need to setup to setup Honeycomb Telemetry Pipeline in the Honeycomb UI.
 
-* Team enabled for HTP
-* Management Key created for Pipeline
-* Pipeline created and configured
-* Ingest Key created for the `Pipeline Telemetry` environment
+- Team enabled for HTP https://honeycomb.quip.com/251MArM9xlaO/HTP-Pipeline-Builder-Enablement-Guide
+- Management Key created for Pipeline
+- Pipeline created and configured
+- Ingest Key created for the `Pipeline Telemetry` environment
 
-***Note:** since all telemetry funnels through HTP, there is no need to create a Honeycomb API Key.*
+**\*Note:** since all telemetry funnels through HTP, there is no need to create a Honeycomb API Key.\*
 
 ## .skaffold.env setup
 
@@ -67,8 +68,9 @@ PIPELINE_TELEMETRY_INGEST_KEY=
 
 You'll need to have the following installed:
 
-* [aws cli](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html)
-* A Credential profile with access to the AWS DevRel Sandbox account
+- [aws cli](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html)
+- A Credential profile with access to the AWS DevRel Sandbox account
+  Cut and paste: https://houndsh.slack.com/archives/C039LR4TQ0Z/p1767971921140419
 
 ## Azure Setup
 
