@@ -42,7 +42,6 @@ const HoneycombFrontendTracer = (sessionId: string) => {
                 new W3CBaggagePropagator(),
                 new W3CTraceContextPropagator()],
         }),
-
         instrumentations: [
             getWebAutoInstrumentations({
               // alternative: turn on networkEvents so we can see data for resourceFetch content sizes
@@ -60,10 +59,6 @@ const HoneycombFrontendTracer = (sessionId: string) => {
                     enabled: true,
                     eventNames: ['click', 'submit']
                 }
-            }),
-            new WebVitalsInstrumentation({
-                enabled: true,
-                vitalsToTrack: ['FCP', 'INP', 'CLS', 'LCP', 'TTFB']
             })
         ],
         sessionProvider: {
@@ -73,11 +68,17 @@ const HoneycombFrontendTracer = (sessionId: string) => {
 
     sdk.start();
 
-    // TODO - add a build flag to enable this for load testing platforms only
-    // Expose for programmatic access (from Playwright for example) to flush telemetry spans
-    if (typeof window !== 'undefined') {
-        window.__flushTelemetry = () => { return sdk.forceFlush(); }
-    }
+    // whenever the window visibility changes to hidden
+    // (while unloading, for example, 
+    // or whenever a backgrounding event occurs like switching tabs, flush
+    // telemetry if the SDK is configured)
+    // ""
+    addEventListener("visibilitychange", () => {
+        if (document.visibilityState === 'hidden') {
+            sdk?.forceFlush();
+        }
+        
+    });
 }
 
 export default HoneycombFrontendTracer;
