@@ -56,7 +56,7 @@ export class Collector extends pulumi.ComponentResource {
                 },
                 {
                     "name": "HTP_ENDPOINT",
-                    "value": pulumi.interpolate `${args.htpReleaseName}-htp-builder-primary-collector:4317` : ""
+                    "value": pulumi.interpolate `${args.htpReleaseName}-primary-collector:4317`
                 },
             ]
         }
