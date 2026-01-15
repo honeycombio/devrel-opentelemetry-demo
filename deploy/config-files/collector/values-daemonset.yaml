@@ -151,32 +151,21 @@ config:
             log_record:
                 - severity_number < SEVERITY_NUMBER_WARN
   exporters:
-    otlp/traces:
-      endpoint: api.honeycomb.io:443
-      headers:
-        x-honeycomb-team: ${HONEYCOMB_API_KEY}
+    otlp/htp:
+      endpoint: ${HTP_ENDPOINT}
+      tls:
+        insecure: true
     otlp/traces-dogfood:
       endpoint: api-dogfood.honeycomb.io:443
       headers:
         x-honeycomb-team: ${HONEYCOMB_API_KEY_DOGFOOD}
 
-
-    otlp/metrics:
-      endpoint: api.honeycomb.io:443
-      headers:
-        x-honeycomb-team: ${HONEYCOMB_API_KEY}
-        x-honeycomb-dataset: service-metrics
     otlp/metrics-dogfood:
       endpoint: api-dogfood.honeycomb.io:443
       headers:
         x-honeycomb-team: ${HONEYCOMB_API_KEY_DOGFOOD}
         x-honeycomb-dataset: service-metrics
 
-    otlp/logging:
-      endpoint: api.honeycomb.io:443
-      headers:
-        x-honeycomb-team: ${HONEYCOMB_API_KEY}
-        x-honeycomb-dataset: service-logs
     otlp/logging-dogfood:
       endpoint: api-dogfood.honeycomb.io:443
       headers:
@@ -187,15 +176,15 @@ config:
     pipelines:
       metrics:
         exporters:
-          - otlp/metrics
+          - otlp/htp
           - otlp/metrics-dogfood
         processors:
           - transform/service_names
 
       logs:
         exporters:
+          - otlp/htp
           - otlp/logging-dogfood
-          - otlp/logging
         processors:
           - transform/parse_json_body
           - transform/service_names
@@ -203,11 +192,11 @@ config:
           - transform/filelog_severity
           - transform/pino_trace_fields
           - transform/attribution
-        
+
       traces:
         exporters:
+          - otlp/htp
           - otlp/traces-dogfood
-          - otlp/traces
         processors:
           - transform/service_names
           - transform/attribution

@@ -27,35 +27,38 @@ const honeycombSecrets = new HoneycombSecrets("honeycomb", {
     config: deployConfig
 }, { provider: provider });
 
+// Deploy HTP Builder first if enabled (collectors depend on it)
+var htpBuilder: HtpBuilder | undefined;
+if (deployConfig.htpBuilderConfig.isEnabled) {
+    htpBuilder = new HtpBuilder("htp-builder", {
+        config: deployConfig,
+        namespace: demoNamespace.metadata.name
+    }, { provider: provider });
+}
+
 var podTelemetryCollector = new Collector("pod-telemetry-collector", {
     config: deployConfig,
     namespace: demoNamespace.metadata.name,
     secrets: honeycombSecrets,
     valuesFile: "./config-files/collector/values-daemonset.yaml",
-    useCustomCollector: true
-}, { provider: provider });
+    useCustomCollector: true,
+    htpReleaseName: htpBuilder?.releaseName
+}, { provider: provider, dependsOn: htpBuilder ? [htpBuilder] : [] });
 
 var clusterTelemetryCollector = new Collector("cluster-telemetry-collector", {
     config: deployConfig,
     namespace: demoNamespace.metadata.name,
     secrets: honeycombSecrets,
     valuesFile: "./config-files/collector/values-deployment.yaml",
-    useCustomCollector: false
-}, { provider: provider });
+    useCustomCollector: false,
+    htpReleaseName: htpBuilder?.releaseName
+}, { provider: provider, dependsOn: htpBuilder ? [htpBuilder] : [] });
 
 var demo = new OtelDemo("otel-demo", {
     config: deployConfig,
     namespace: demoNamespace.metadata.name,
     collectorHostName: podTelemetryCollector.collectorName,
 }, { provider: provider });
-
-// Deploy HTP Builder if enabled
-if (deployConfig.htpBuilderConfig.isEnabled) {
-    var htpBuilder = new HtpBuilder("htp-builder", {
-        config: deployConfig,
-        namespace: demoNamespace.metadata.name
-    }, { provider: provider });
-}
 
 // Export some values for use elsewhere
 export const demoUrl = demo.domainName;

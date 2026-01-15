@@ -67,26 +67,27 @@ export class DeploymentConfig {
 export class HtpBuilderConfig {
     private readonly config: pulumi.Config;
 
-    public readonly pipelineId: string = "";
-    public readonly managementApiKeyId: string = "";
-    public readonly managementApiKeySecret: string = "";
-    public readonly pipelineTelemetryKey: string = "";
+    public readonly pipelineId: string | undefined;
+    public readonly managementApiKeyId: string | undefined;
+    public readonly managementApiKeySecret: pulumi.Output<string> = pulumi.output("");
+    public readonly pipelineTelemetryKey: pulumi.Output<string> = pulumi.output("");
 
     get isEnabled(): boolean {
-        return this.config.get("htp-enabled")?.toLowerCase() === "true" || false;
+        return this.pipelineId != "" || false;
     }
 
     constructor() {
         this.config = new pulumi.Config();
 
+        this.pipelineId = this.config.get("pipeline-id");
+
         if (!this.isEnabled) {
             return;
         }
 
-        this.pipelineId = this.config.require("htp-pipeline-id");
-        this.managementApiKeyId = this.config.require("htp-management-api-key-id");
-        this.managementApiKeySecret = this.config.requireSecret("htp-management-api-key-secret").get() || "";
-        this.pipelineTelemetryKey = this.config.requireSecret("htp-pipeline-telemetry-key").get() || "";
+        this.managementApiKeyId = this.config.require("pipeline-management-key-id");
+        this.managementApiKeySecret = this.config.requireSecret("pipeline-management-key-secret") || "";
+        this.pipelineTelemetryKey = this.config.requireSecret("pipeline-telemetry-ingest-key") || "";
     }
 }
 
@@ -102,6 +103,6 @@ export class DeploymentVersions {
         this.defaultCollectorVersion = "0.135.0";
         this.demoHelmVersion = "0.38.6";
         this.refineryHelmVersion = "2.17.0";
-        this.htpBuilderHelmVersion = "0.0.76-alpha";
+        this.htpBuilderHelmVersion = "0.2.0";
     }
 }

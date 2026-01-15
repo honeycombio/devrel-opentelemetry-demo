@@ -9,6 +9,7 @@ export interface CollectorArgs {
     secrets: HoneycombSecrets;
     valuesFile: string;
     useCustomCollector: boolean;
+    htpReleaseName?: pulumi.Input<string>;
 }
 
 export class Collector extends pulumi.ComponentResource {
@@ -52,6 +53,10 @@ export class Collector extends pulumi.ComponentResource {
                             "fieldPath": "metadata.namespace"
                         }
                     }
+                },
+                {
+                    "name": "HTP_ENDPOINT",
+                    "value": pulumi.interpolate `${args.htpReleaseName}-htp-builder-primary-collector:4317` : ""
                 },
             ]
         }
