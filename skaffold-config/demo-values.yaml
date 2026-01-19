@@ -11,7 +11,7 @@ default:
 
 components:
   load-generator:
-    enabled: false
+    replicas: 0
   frontend:
     replicas: 1
     envOverrides:
@@ -171,19 +171,19 @@ opentelemetry-collector:
 
     service:
       telemetry:
-        logs:
-          level: debug
         metrics:
           readers:
             - periodic:
                 exporter:
-                  otlp_http:
-                    endpoint: api.honeycomb.io:443
+                  otlp:
+                    endpoint: https://api.honeycomb.io
                     headers:
-                    - name: x-honeycomb-team
-                      value: ${env:HONEYCOMB_API_KEY}
-                    - name: x-honeycomb-dataset
-                      value: otel-collector-metrics
+                      - name: x-honeycomb-dataset
+                        value: otel-collector-metrics
+                      - name: x-honeycomb-team
+                        value: ${env:HONEYCOMB_API_KEY}
+                    protocol: http/protobuf
+                    temporality_preference: delta
       pipelines:
         metrics:
           exporters:
