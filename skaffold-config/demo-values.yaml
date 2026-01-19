@@ -147,6 +147,20 @@ opentelemetry-collector:
           - context: log
             statements:
               - set(resource.attributes["service.name"], "api-gateway") where resource.attributes["k8s.container.name"] == "frontend"
+      source_map_symbolicator/aws:
+        allowed_languages: ["javascript", "webjs"]
+        source_map_store: s3_store
+        s3_source_maps:
+          bucket: ${env:SOURCE_MAPS_BUCKET}
+          region: ${env:AWS_REGION}
+          prefix: ${env:SOURCE_MAPS_PREFIX}
+      source_map_symbolicator/azure:
+        allowed_languages: ["javascript", "webjs"]
+        source_map_store: azure_store
+        azure_source_maps:
+          container: ${env:SOURCEMAPS_CONTAINER_NAME}
+          prefix: source-maps
+          connection_string: ${env:SOURCEMAPS_STORAGE_CONNECTION_STRING}
     exporters:
       debug/detailed:
         verbosity: detailed
@@ -157,16 +171,19 @@ opentelemetry-collector:
 
     service:
       telemetry:
+        logs:
+          level: debug
         metrics:
           readers:
             - periodic:
                 exporter:
-                  otlp:
-                    protocol: http/protobuf
+                  otlp_http:
                     endpoint: api.honeycomb.io:443
                     headers:
-                      x-honeycomb-team: ${env:HONEYCOMB_API_KEY}
-                      x-honeycomb-dataset: otel-collector-metrics
+                    - name: x-honeycomb-team
+                      value: ${env:HONEYCOMB_API_KEY}
+                    - name: x-honeycomb-dataset
+                      value: otel-collector-metrics
       pipelines:
         metrics:
           exporters:
@@ -194,6 +211,7 @@ opentelemetry-collector:
           processors:
             - transform/service_names
             - transform/attribution
+            - source_map_symbolicator/${env:CLOUD_PROVIDER}
   ports:
     otlp:
       hostPort: 0

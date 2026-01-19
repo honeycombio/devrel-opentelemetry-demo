@@ -72,12 +72,14 @@ jobs:
         working-directory: deploy
 
       - uses: pulumi/actions@v5
-        id: pulumi-deploy
+        id: pulumi-deploy-azure
         with:
           command: up
           stack-name: ${{ secrets.PULUMI_ORG }}/prod
           work-dir: deploy
           config-map: |
+            devrel-opentelemetry-demo:cloud-provider: 
+              value: azure
             devrel-opentelemetry-demo:container-tag: 
               value: ${{ github.ref_name }}
               secret: false
@@ -99,6 +101,37 @@ jobs:
         env:
           REPO: ghcr.io/${{ github.repository }}
           CONTAINER_PATH: /app/.next/static/
-          BLOB_CONTAINER_NAME: ${{ steps.pulumi-deploy.outputs.blobContainerName }}
-          STORAGE_ACCOUNT_NAME: ${{ steps.pulumi-deploy.outputs.storageAccountName }}
+          BLOB_CONTAINER_NAME: ${{ steps.pulumi-deploy-azure.outputs.blobContainerName }}
+          STORAGE_ACCOUNT_NAME: ${{ steps.pulumi-deploy-azure.outputs.storageAccountName }}
+          VERSION: ${{ github.ref_name }}
+
+      - uses: pulumi/actions@v5
+        id: pulumi-deploy-aws
+        with:
+          command: up
+          stack-name: ${{ secrets.PULUMI_ORG }}/prod-aws
+          work-dir: deploy
+          config-map: |
+            devrel-opentelemetry-demo:cloud-provider:
+              value: aws
+            devrel-opentelemetry-demo:container-tag:
+              value: ${{ github.ref_name }}
+              secret: false
+            devrel-opentelemetry-demo:collector-container-tag:
+              value: ${{ github.ref_name }}-collector
+              secret: false
+            devrel-opentelemetry-demo:collector-container-repository:
+              value: ghcr.io/${{ github.repository }}
+              secret: false
+        env:
+          IS_IN_PIPELINE: true
+          AWS_REGION: ${{ env.AWS_REGION }}
+
+      - name: Extract and upload js sourcemaps to S3
+        run: ./scripts/extract-and-upload-js-sourcemaps-s3.sh
+        env:
+          REPO: ghcr.io/${{ github.repository }}
+          CONTAINER_PATH: /app/.next/static/
+          S3_BUCKET: ${{ steps.pulumi-deploy-aws.outputs.s3BucketName }}
+          S3_PREFIX: ${{ steps.pulumi-deploy-aws.outputs.s3BucketPrefix }}
           VERSION: ${{ github.ref_name }}

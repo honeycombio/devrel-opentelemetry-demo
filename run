@@ -51,6 +51,11 @@ if [[ "$CLOUD_PROVIDER" == "aws" ]]; then
     CONTAINER_REGISTRY=$(pulumi stack output -s honeycomb-devrel/infra-aws/prod ecrRepositoryUrlPrefix)
     echo "Logging in to ECR, because it's so annoying when we forget."
     scripts/login-ecr.sh
+
+    # export the bucket information
+    SOURCE_MAPS_BUCKET=$(pulumi stack output -s honeycomb-devrel/infra-aws/prod s3BucketName)
+    SOURCE_MAPS_BUCKET_REGION=$(pulumi stack output -s honeycomb-devrel/infra-aws/prod s3Region)
+    SOURCE_MAPS_PREFIX=$USER
 elif [[ "$CLOUD_PROVIDER" == "azure" ]]; then
     echo "Using Azure configuration"
     CONTAINER_REGISTRY=$(pulumi stack output -s honeycomb-devrel/infra-azure/prod acrName)
@@ -69,9 +74,12 @@ set -x
 export CLOUD_PROVIDER
 export DOMAINNAME
 export INGRESS_CLASS
+export SOURCE_MAPS_BUCKET
+export SOURCE_MAPS_BUCKET_REGION
+export SOURCE_MAPS_PREFIX
 
 # maybe someday the container registry name will change, but this is what it is now
-skaffold run -d "$CONTAINER_REGISTRY" -b $SERVICES --port-forward=user -l skaffold.dev/run-id=static
+skaffold run -d "$CONTAINER_REGISTRY" -b $SERVICES --port-forward=user -l skaffold.dev/run-id=static --cache-artifacts=false
 
 # note: if the output ends with
 #   Error: UPGRADE FAILED: another operation (install/upgrade/rollback) is in progress
