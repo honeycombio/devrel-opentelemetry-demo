@@ -9,6 +9,9 @@ if [[ -f .skaffold.env ]]; then
     set +a
 fi
 
+# Validate Honeycomb API keys (quiet mode - only outputs on errors)
+scripts/validate-honeycomb-keys.sh --quiet
+
 # Default to AWS if no cloud provider flag is provided
 CLOUD_PROVIDER="aws"
 DOMAINNAME="aurelia.honeydemo.io"
