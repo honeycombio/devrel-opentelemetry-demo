@@ -1,0 +1,5 @@
+environment:
+  - devrel-opentelemetry-demo/prod-aws
+config:
+  pulumi:disable-default-providers:
+    - kubernetes

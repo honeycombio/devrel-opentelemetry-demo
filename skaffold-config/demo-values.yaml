@@ -11,7 +11,7 @@ default:
 
 components:
   load-generator:
-    enabled: false
+    replicas: 0
   frontend:
     replicas: 1
     envOverrides:
@@ -82,15 +82,16 @@ opentelemetry-collector:
             conditions:
               - resource.attributes["service.name"] == "access-logs"
               - attributes["http.response.status_code"] != nil
-              - IsInt(attributes["http.response.status_code"]) == false
+              - IsString(attributes["http.response.status_code"]) == true
             statements:
-              - set(severity_text, "ERROR") where Substring(attributes["http.response.status_code"], 0, 1) == "5"
-              - set(severity_number, 17) where Substring(attributes["http.response.status_code"], 0, 1) == "5"
-              - set(severity_text, "WARN") where Substring(attributes["http.response.status_code"], 0, 1) == "4"
-              - set(severity_number, 13) where Substring(attributes["http.response.status_code"], 0, 1) == "4"
-              - set(severity_text, "INFO") where Int(attributes["http.response.status_code"]) < 400
-              - set(severity_number, 9) where Int(attributes["http.response.status_code"]) < 400
-              - set(attributes["collector.transform.access_log_severity"], "v5")
+              - set(cache["status_code"], Int(attributes["http.response.status_code"]))
+              - set(severity_number, 17) where cache["status_code"] >= 500
+              - set(severity_number, 13) where cache["status_code"] >= 400 and cache["status_code"] < 500
+              - set(severity_number, 9) where cache["status_code"] < 400
+              - set(severity_text, "ERROR") where cache["status_code"] >= 500
+              - set(severity_text, "WARN") where cache["status_code"] >= 400 and cache["status_code"] < 500
+              - set(severity_text, "INFO") where cache["status_code"] < 400
+              - set(attributes["demo.telemetry.transform.access_log_severity"], "v4")
       transform/filelog_severity:
         error_mode: ignore
         log_statements:
@@ -138,7 +139,7 @@ opentelemetry-collector:
         log_statements:
           - context: log
             conditions:
-              - body != nil and Len(body) >= 2 and Substring(body, 0, 2) == "{\""
+              - body != nil and IsString(body) and HasPrefix(body, "{")
             statements:
               - set(cache, ParseJSON(body))
               - flatten(cache, "")
@@ -146,29 +147,27 @@ opentelemetry-collector:
           - context: log
             statements:
               - set(resource.attributes["service.name"], "api-gateway") where resource.attributes["k8s.container.name"] == "frontend"
+      source_map_symbolicator/aws:
+        allowed_languages: ["javascript", "webjs"]
+        source_map_store: s3_store
+        s3_source_maps:
+          bucket: ${env:SOURCE_MAPS_BUCKET}
+          region: ${env:AWS_REGION}
+          prefix: ${env:SOURCE_MAPS_PREFIX}
+      source_map_symbolicator/azure:
+        allowed_languages: ["javascript", "webjs"]
+        source_map_store: azure_store
+        azure_source_maps:
+          container: ${env:SOURCEMAPS_CONTAINER_NAME}
+          prefix: source-maps
+          connection_string: ${env:SOURCEMAPS_STORAGE_CONNECTION_STRING}
     exporters:
-      otlp/traces:
-        endpoint: api.honeycomb.io:443
-        headers:
-          x-honeycomb-team: ${env:HONEYCOMB_API_KEY}
-
-      otlp/metrics:
-        endpoint: api.honeycomb.io:443
-        headers:
-          x-honeycomb-team: ${env:HONEYCOMB_API_KEY}
-          x-honeycomb-dataset: service-metrics
-
-      otlp/logging:
-        endpoint: api.honeycomb.io:443
-        headers:
-          x-honeycomb-team: ${env:HONEYCOMB_API_KEY}
-          x-honeycomb-dataset: service-logs
-
-      otlp/k8s-logging:
-        endpoint: api.honeycomb.io:443
-        headers:
-          x-honeycomb-team: ${env:HONEYCOMB_API_KEY}
-          x-honeycomb-dataset: k8s-logs
+      debug/detailed:
+        verbosity: detailed
+      otlp/htp:
+        endpoint: ${env:HTP_ENDPOINT}
+        tls:
+          insecure: true
 
     service:
       telemetry:
@@ -177,15 +176,18 @@ opentelemetry-collector:
             - periodic:
                 exporter:
                   otlp:
-                    protocol: http/protobuf
-                    endpoint: api.honeycomb.io:443
+                    endpoint: https://api.honeycomb.io
                     headers:
-                      x-honeycomb-team: ${env:HONEYCOMB_API_KEY}
-                      x-honeycomb-dataset: otel-collector-metrics
+                      - name: x-honeycomb-dataset
+                        value: otel-collector-metrics
+                      - name: x-honeycomb-team
+                        value: ${env:HONEYCOMB_API_KEY}
+                    protocol: http/protobuf
+                    temporality_preference: delta
       pipelines:
         metrics:
           exporters:
-            - otlp/metrics
+            - otlp/htp
           processors:
             - transform/service_names
             - transform/attribution
@@ -194,7 +196,7 @@ opentelemetry-collector:
             - otlp
             - filelog
           exporters:
-            - otlp/logging
+            - otlp/htp
           processors:
             - transform/parse_json_body
             - transform/service_names
@@ -204,11 +206,12 @@ opentelemetry-collector:
             - transform/attribution
         traces:
           exporters:
-            - otlp/traces
+            - otlp/htp
             - spanmetrics
           processors:
             - transform/service_names
             - transform/attribution
+            - source_map_symbolicator/${env:CLOUD_PROVIDER}
   ports:
     otlp:
       hostPort: 0

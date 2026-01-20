@@ -32,6 +32,7 @@ next-env.d.ts
 vendor/
 composer.lock
 .venv
+.skaffold.env
 .dockerhub.env
 .ghcr.env
 
@@ -54,3 +55,5 @@ test/tracetesting/tracetesting-vars.yaml
 
 !src/currency/build
 .mcp.json
+
+notes/

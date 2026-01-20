@@ -52,12 +52,6 @@ config:
       include:
         - /var/log/pods/${env:NAMESPACE}_*/*/*.log
   processors:
-    source_map_symbolicator:
-      source_map_store: azure_store
-      azure_source_maps:
-        container: ${env:SOURCEMAPS_CONTAINER_NAME}
-        prefix: source-maps
-        connection_string: ${env:SOURCEMAPS_STORAGE_CONNECTION_STRING}
     transform/service_names:
       error_mode: ignore
       log_statements:
@@ -96,13 +90,15 @@ config:
           conditions:
             - resource.attributes["service.name"] == "access-logs"
             - attributes["http.response.status_code"] != nil
+            - IsString(attributes["http.response.status_code"]) == true
           statements:
-            - set(severity_text, "ERROR") where Substring(attributes["http.response.status_code"], 0, 1) == "5"
-            - set(severity_number, 17) where Substring(attributes["http.response.status_code"], 0, 1) == "5"
-            - set(severity_text, "WARN") where Substring(attributes["http.response.status_code"], 0, 1) == "4"
-            - set(severity_number, 13) where Substring(attributes["http.response.status_code"], 0, 1) == "4"
-            - set(severity_text, "INFO") where Int(attributes["http.response.status_code"]) < 400
-            - set(severity_number, 9) where Int(attributes["http.response.status_code"]) < 400
+            - set(cache["status_code"], Int(attributes["http.response.status_code"]))
+            - set(severity_number, 17) where cache["status_code"] >= 500
+            - set(severity_number, 13) where cache["status_code"] >= 400 and cache["status_code"] < 500
+            - set(severity_number, 9) where cache["status_code"] < 400
+            - set(severity_text, "ERROR") where cache["status_code"] >= 500
+            - set(severity_text, "WARN") where cache["status_code"] >= 400 and cache["status_code"] < 500
+            - set(severity_text, "INFO") where cache["status_code"] < 400
             - set(attributes["demo.telemetry.transform.access_log_severity"], "v4")
     transform/filelog_severity:
       error_mode: ignore
@@ -133,7 +129,7 @@ config:
       log_statements:
         - context: log
           conditions:
-            - body != nil and Substring(body, 0, 2) == "{\""
+            - body != nil and IsString(body) and HasPrefix(body, "{")
           statements:
             - set(cache, ParseJSON(body))
             - flatten(cache, "")
@@ -142,29 +138,23 @@ config:
           statements:
             - set(resource.attributes["service.name"], "api-gateway") where resource.attributes["k8s.container.name"] == "frontend"
 
+    filter/json_body_only:
+      error_mode: ignore
+      logs:
+        log_record:
+          - HasPrefix(body, "{") == false
+          - ContainsValue(body, "\u0000") == false
+
     filter/warn_or_below:
         error_mode: ignore
         logs:
             log_record:
                 - severity_number < SEVERITY_NUMBER_WARN
   exporters:
-    otlp/traces:
-      endpoint: api.honeycomb.io:443
-      headers:
-        x-honeycomb-team: ${HONEYCOMB_API_KEY}
-
-    otlp/metrics:
-      endpoint: api.honeycomb.io:443
-      headers:
-        x-honeycomb-team: ${HONEYCOMB_API_KEY}
-        x-honeycomb-dataset: service-metrics
-
-    otlp/logging:
-      endpoint: api.honeycomb.io:443
-      headers:
-        x-honeycomb-team: ${HONEYCOMB_API_KEY}
-        x-honeycomb-dataset: service-logs
-
+    otlp/htp:
+      endpoint: ${HTP_ENDPOINT}
+      tls:
+        insecure: true
     otlp/traces-dogfood:
       endpoint: api-dogfood.honeycomb.io:443
       headers:
@@ -182,34 +172,19 @@ config:
         x-honeycomb-team: ${HONEYCOMB_API_KEY_DOGFOOD}
         x-honeycomb-dataset: service-logs
 
-
-    otlp/refinery:
-      endpoint: ${REFINERY_HOSTNAME}:4317
-      headers:
-        x-honeycomb-team: ${HONEYCOMB_API_KEY}
-      tls:
-        insecure: true
-    debug:
-      verbosity: detailed
-
-    otlp/pipeline:
-      endpoint: ${PIPELINE_HOSTNAME}:4317
-      tls:
-        insecure: true
-
   service:
     pipelines:
       metrics:
         exporters:
-          - otlp/metrics
+          - otlp/htp
           - otlp/metrics-dogfood
-          - otlp/pipeline
         processors:
           - transform/service_names
+
       logs:
         exporters:
+          - otlp/htp
           - otlp/logging-dogfood
-          - otlp/refinery
         processors:
           - transform/parse_json_body
           - transform/service_names
@@ -217,29 +192,14 @@ config:
           - transform/filelog_severity
           - transform/pino_trace_fields
           - transform/attribution
-        
+
       traces:
         exporters:
+          - otlp/htp
           - otlp/traces-dogfood
-          - otlp/refinery
-          - otlp/pipeline
         processors:
           - transform/service_names
           - transform/attribution
-
-      logs/htp:
-        exporters:
-          - otlp/pipeline
-        processors:
-          - k8sattributes
-          - transform/service_names
-          - transform/access_log_severity
-          - transform/filelog_severity
-          - transform/pino_trace_fields
-          - transform/attribution
-        receivers:
-          - otlp
-          - filelog
 
 clusterRole:
   create: true

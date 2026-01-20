@@ -34,6 +34,9 @@ jobs:
     permissions:
       contents: read
       id-token: write
+    
+    env:
+      AWS_REGION: eu-west-1
 
     steps:
       - uses: actions/checkout@v4
@@ -53,7 +56,12 @@ jobs:
           client-id: ${{ secrets.AZURE_CLIENT_ID }}
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-
+      - name: configure aws credentials
+        uses: aws-actions/configure-aws-credentials@v1.7.0
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+          role-session-name: GitHub_to_AWS_via_FederatedOIDC
+          aws-region: ${{ env.AWS_REGION }}
       - run: |
           pulumi stack select --stack ${{ secrets.PULUMI_ORG }}/prod --non-interactive
           pulumi config refresh --non-interactive
@@ -64,12 +72,14 @@ jobs:
         working-directory: deploy
 
       - uses: pulumi/actions@v5
-        id: pulumi-deploy
+        id: pulumi-deploy-azure
         with:
           command: up
           stack-name: ${{ secrets.PULUMI_ORG }}/prod
           work-dir: deploy
           config-map: |
+            devrel-opentelemetry-demo:cloud-provider: 
+              value: azure
             devrel-opentelemetry-demo:container-tag: 
               value: ${{ github.ref_name }}
               secret: false
@@ -91,6 +101,37 @@ jobs:
         env:
           REPO: ghcr.io/${{ github.repository }}
           CONTAINER_PATH: /app/.next/static/
-          BLOB_CONTAINER_NAME: ${{ steps.pulumi-deploy.outputs.blobContainerName }}
-          STORAGE_ACCOUNT_NAME: ${{ steps.pulumi-deploy.outputs.storageAccountName }}
+          BLOB_CONTAINER_NAME: ${{ steps.pulumi-deploy-azure.outputs.blobContainerName }}
+          STORAGE_ACCOUNT_NAME: ${{ steps.pulumi-deploy-azure.outputs.storageAccountName }}
+          VERSION: ${{ github.ref_name }}
+
+      - uses: pulumi/actions@v5
+        id: pulumi-deploy-aws
+        with:
+          command: up
+          stack-name: ${{ secrets.PULUMI_ORG }}/prod-aws
+          work-dir: deploy
+          config-map: |
+            devrel-opentelemetry-demo:cloud-provider:
+              value: aws
+            devrel-opentelemetry-demo:container-tag:
+              value: ${{ github.ref_name }}
+              secret: false
+            devrel-opentelemetry-demo:collector-container-tag:
+              value: ${{ github.ref_name }}-collector
+              secret: false
+            devrel-opentelemetry-demo:collector-container-repository:
+              value: ghcr.io/${{ github.repository }}
+              secret: false
+        env:
+          IS_IN_PIPELINE: true
+          AWS_REGION: ${{ env.AWS_REGION }}
+
+      - name: Extract and upload js sourcemaps to S3
+        run: ./scripts/extract-and-upload-js-sourcemaps-s3.sh
+        env:
+          REPO: ghcr.io/${{ github.repository }}
+          CONTAINER_PATH: /app/.next/static/
+          S3_BUCKET: ${{ steps.pulumi-deploy-aws.outputs.s3BucketName }}
+          S3_PREFIX: source-maps
           VERSION: ${{ github.ref_name }}
