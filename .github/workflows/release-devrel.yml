@@ -133,5 +133,5 @@ jobs:
           REPO: ghcr.io/${{ github.repository }}
           CONTAINER_PATH: /app/.next/static/
           S3_BUCKET: ${{ steps.pulumi-deploy-aws.outputs.s3BucketName }}
-          S3_PREFIX: ${{ steps.pulumi-deploy-aws.outputs.s3BucketPrefix }}
+          S3_PREFIX: source-maps
           VERSION: ${{ github.ref_name }}
