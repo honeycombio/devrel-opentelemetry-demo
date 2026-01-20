@@ -152,7 +152,7 @@ deploy:
           opentelemetry-collector.extraEnvs[2].value: "{{.CLOUD_PROVIDER}}"
           opentelemetry-collector.extraEnvs[3].value: "{{.SOURCE_MAPS_BUCKET}}"
           opentelemetry-collector.extraEnvs[4].value: "{{.SOURCE_MAPS_BUCKET_REGION}}"
-          opentelemetry-collector.extraEnvs[5].value: "{{.SOURCE_MAPS_PREFIX}}"
+          opentelemetry-collector.extraEnvs[5].value: "{{.SOURCE_MAPS_PREFIX}}/static/chunks"
           opentelemetry-collector.clusterRole.name: "{{.USER}}-otel-collector"
           opentelemetry-collector.clusterRole.clusterRoleBinding.name: "{{.USER}}-otel-collector"
           opentelemetry-collector.image.repository: "{{if .IMAGE_REPO_otelcollector }}{{.IMAGE_REPO_otelcollector}}{{else}}ghcr.io/honeycombio/devrel-opentelemetry-demo{{end}}"
