@@ -6,8 +6,6 @@ echo "Extracting js sourcemaps"
 # Usage: extract-and-upload-js-sourcemaps-s3.sh [--repo REPO] [--container-path PATH] [--bucket BUCKET] [--prefix PREFIX] [--version VERSION]
 # Command line arguments override environment variables
 
-printenv
-
 while [ $# -gt 0 ]; do
   case "$1" in
     --repo)

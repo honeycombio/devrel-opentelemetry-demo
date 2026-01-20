@@ -35,17 +35,19 @@ done
 # Fetch values from pulumi if not provided
 if [ -z "$CLUSTER_NAME" ]; then
   echo "CLUSTER_NAME not set, fetching from pulumi stack output"
-  CLUSTER_NAME=$(pulumi stack output -s honeycomb-devrel/infra-aws/prod clusterName)
+  CLUSTER_NAME=$(pulumi stack output -s honeycomb-devrel/infra-aws/prod clusterName 2>/dev/null)
 fi
 
 if [ -z "$ROLE_ARN" ]; then
   echo "ROLE_ARN not set, fetching from pulumi stack output"
-  ROLE_ARN=$(pulumi stack output -s honeycomb-devrel/infra-aws/prod s3RoleArn)
+  ROLE_ARN=$(pulumi stack output -s honeycomb-devrel/infra-aws/prod s3RoleArn 2>/dev/null)
 fi
 
-# Default service account name
+# Default service account names (space-separated list)
 if [ -z "$SERVICE_ACCOUNT" ]; then
-  SERVICE_ACCOUNT="otel-collector"
+  SERVICE_ACCOUNTS="otel-collector $USER-htp-htp-builder-primary-collector"
+else
+  SERVICE_ACCOUNTS="$SERVICE_ACCOUNT"
 fi
 
 # Check required parameters
@@ -57,37 +59,46 @@ fi
 # Expand environment variables in parameters
 NAMESPACE=$(eval echo "$NAMESPACE")
 CLUSTER_NAME=$(eval echo "$CLUSTER_NAME")
-SERVICE_ACCOUNT=$(eval echo "$SERVICE_ACCOUNT")
 ROLE_ARN=$(eval echo "$ROLE_ARN")
 
-echo "Creating pod identity association:"
-echo "  Cluster: $CLUSTER_NAME"
-echo "  Namespace: $NAMESPACE"
-echo "  Service Account: $SERVICE_ACCOUNT"
-echo "  Role ARN: $ROLE_ARN"
+# Function to create or update pod identity association for a service account
+setup_association() {
+  local sa_name="$1"
+  sa_name=$(eval echo "$sa_name")
 
-# Check if association already exists
-EXISTING=$(aws eks list-pod-identity-associations \
-  --cluster-name "$CLUSTER_NAME" \
-  --namespace "$NAMESPACE" \
-  --service-account "$SERVICE_ACCOUNT" \
-  --query 'associations[0].associationId' \
-  --output text 2>/dev/null || echo "None")
+  echo "Creating pod identity association: $sa_name"
 
-if [ "$EXISTING" != "None" ] && [ -n "$EXISTING" ]; then
-  echo "Pod identity association already exists (ID: $EXISTING), updating..."
-  aws eks update-pod-identity-association \
-    --cluster-name "$CLUSTER_NAME" \
-    --association-id "$EXISTING" \
-    --role-arn "$ROLE_ARN"
-else
-  echo "Creating new pod identity association..."
-  aws eks create-pod-identity-association \
+  # Check if association already exists
+  EXISTING=$(aws eks list-pod-identity-associations \
     --cluster-name "$CLUSTER_NAME" \
     --namespace "$NAMESPACE" \
-    --service-account "$SERVICE_ACCOUNT" \
-    --role-arn "$ROLE_ARN"
-fi
+    --service-account "$sa_name" \
+    --query 'associations[0].associationId' \
+    --output text 2>/dev/null || echo "Not needed")
 
-echo "Pod identity association configured successfully"
+  if [ "$EXISTING" != "None" ] && [ -n "$EXISTING" ]; then
+    echo "Pod identity association already exists (ID: $EXISTING), updating..."
+    aws eks update-pod-identity-association \
+      --cluster-name "$CLUSTER_NAME" \
+      --association-id "$EXISTING" \
+      --role-arn "$ROLE_ARN" > /dev/null
+  else
+    echo "Creating new pod identity association..."
+    aws eks create-pod-identity-association \
+      --cluster-name "$CLUSTER_NAME" \
+      --namespace "$NAMESPACE" \
+      --service-account "$sa_name" \
+      --role-arn "$ROLE_ARN" > /dev/null
+  fi
+
+  echo "Pod identity association configured successfully for $sa_name"
+  echo ""
+}
+
+# Process each service account
+for sa in $SERVICE_ACCOUNTS; do
+  setup_association "$sa"
+done
+
+echo "All pod identity associations configured successfully"
 

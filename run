@@ -39,37 +39,35 @@ fi
 
 # install/update the secret if it's changed
 # Note: hack until the helm file allows it to be specified as a value
-kubectl create namespace $USER-local --dry-run=client -o yaml | kubectl apply -f -
+kubectl create namespace $USER-local --dry-run=client -o yaml | kubectl apply -f - > /dev/null
 kubectl create --namespace $USER-local secret generic htp-builder \
    --from-literal=management-api-secret=$PIPELINE_MANAGEMENT_API_SECRET \
    --from-literal=pipeline-telemetry-key=$PIPELINE_TELEMETRY_INGEST_KEY \
-   --dry-run=client -o yaml | kubectl apply -f -
+   --dry-run=client -o yaml | kubectl apply -f - > /dev/null
 
 # Get container registry from Pulumi stack output based on cloud provider
 if [[ "$CLOUD_PROVIDER" == "aws" ]]; then
     echo "Using AWS configuration"
-    CONTAINER_REGISTRY=$(pulumi stack output -s honeycomb-devrel/infra-aws/prod ecrRepositoryUrlPrefix)
+    CONTAINER_REGISTRY=$(pulumi stack output -s honeycomb-devrel/infra-aws/prod ecrRepositoryUrlPrefix 2>/dev/null)
     echo "Logging in to ECR, because it's so annoying when we forget."
-    scripts/login-ecr.sh
+    scripts/login-ecr.sh > /dev/null 2>&1
 
     # export the bucket information
-    SOURCE_MAPS_BUCKET=$(pulumi stack output -s honeycomb-devrel/infra-aws/prod s3BucketName)
-    SOURCE_MAPS_BUCKET_REGION=$(pulumi stack output -s honeycomb-devrel/infra-aws/prod s3Region)
+    SOURCE_MAPS_BUCKET=$(pulumi stack output -s honeycomb-devrel/infra-aws/prod sourcemapsBucketName 2>/dev/null)
+    SOURCE_MAPS_BUCKET_REGION=$(pulumi stack output -s honeycomb-devrel/infra-aws/prod s3Region 2>/dev/null)
     SOURCE_MAPS_PREFIX=$USER
 elif [[ "$CLOUD_PROVIDER" == "azure" ]]; then
     echo "Using Azure configuration"
-    CONTAINER_REGISTRY=$(pulumi stack output -s honeycomb-devrel/infra-azure/prod acrName)
+    CONTAINER_REGISTRY=$(pulumi stack output -s honeycomb-devrel/infra-azure/prod acrName 2>/dev/null)
     echo "Logging in to ACR, because it's so annoying when we forget."
-    scripts/login-acr.sh
+    scripts/login-acr.sh > /dev/null 2>&1
     DOMAINNAME="zurelia.honeydemo.io"
     INGRESS_CLASS="webapprouting.kubernetes.azure.com"
 fi
 
 # Set kubectl context for the appropriate cloud provider
 echo "Setting kubectl context for $CLOUD_PROVIDER..."
-scripts/set-kubecontext.sh "$CLOUD_PROVIDER"
-
-set -x
+scripts/set-kubecontext.sh "$CLOUD_PROVIDER" > /dev/null 2>&1
 
 export CLOUD_PROVIDER
 export DOMAINNAME
