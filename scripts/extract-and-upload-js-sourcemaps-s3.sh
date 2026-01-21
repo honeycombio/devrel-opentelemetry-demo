@@ -47,7 +47,7 @@ if [ -z "$CONTAINER_PATH" ]; then
 fi
 if [ -z "$S3_BUCKET" ]; then
   echo "S3_BUCKET not set, fetching from pulumi stack output"
-  S3_BUCKET=$(pulumi stack output -s honeycomb-devrel/infra-aws/prod s3BucketName)
+  S3_BUCKET=$(pulumi stack output -s honeycomb-devrel/infra-aws/prod sourcemapsBucketName)
 fi
 if [ -z "$S3_PREFIX" ]; then
   # Use SOURCE_MAPS_PREFIX env var if set, otherwise fetch from pulumi
