@@ -3,7 +3,7 @@
 set -e
 echo "Setting up EKS Pod Identity Association"
 
-# Usage: setup-pod-identity-association.sh [--cluster-name NAME] [--namespace NS] [--service-account SA] [--role-arn ARN]
+# Usage: setup-pod-identity-association.sh [--cluster-name NAME] [--namespace NS] [--service-account SA] [--role-arn ARN] [--region REGION]
 # Command line arguments override environment variables
 
 while [ $# -gt 0 ]; do
@@ -24,9 +24,13 @@ while [ $# -gt 0 ]; do
       ROLE_ARN="$2"
       shift 2
       ;;
+    --region)
+      REGION="$2"
+      shift 2
+      ;;
     *)
       echo "Unknown option: $1"
-      echo "Usage: $0 [--cluster-name NAME] [--namespace NS] [--service-account SA] [--role-arn ARN]"
+      echo "Usage: $0 [--cluster-name NAME] [--namespace NS] [--service-account SA] [--role-arn ARN] [--region REGION]"
       exit 1
       ;;
   esac
@@ -41,6 +45,11 @@ fi
 if [ -z "$ROLE_ARN" ]; then
   echo "ROLE_ARN not set, fetching from pulumi stack output"
   ROLE_ARN=$(pulumi stack output -s honeycomb-devrel/infra-aws/prod s3RoleArn 2>/dev/null)
+fi
+
+if [ -z "$REGION" ]; then
+  echo "REGION not set, fetching from pulumi stack output"
+  REGION=$(pulumi stack output -s honeycomb-devrel/infra-aws/prod clusterRegion 2>/dev/null)
 fi
 
 # Default service account names (space-separated list)
@@ -60,6 +69,7 @@ fi
 NAMESPACE=$(eval echo "$NAMESPACE")
 CLUSTER_NAME=$(eval echo "$CLUSTER_NAME")
 ROLE_ARN=$(eval echo "$ROLE_ARN")
+REGION=$(eval echo "$REGION")
 
 # Function to create or update pod identity association for a service account
 setup_association() {
@@ -73,6 +83,7 @@ setup_association() {
     --cluster-name "$CLUSTER_NAME" \
     --namespace "$NAMESPACE" \
     --service-account "$sa_name" \
+    --region "$REGION" \
     --query 'associations[0].associationId' \
     --output text 2>/dev/null || echo "None")
 
@@ -81,14 +92,16 @@ setup_association() {
     aws eks update-pod-identity-association \
       --cluster-name "$CLUSTER_NAME" \
       --association-id "$EXISTING" \
-      --role-arn "$ROLE_ARN" > /dev/null
+      --role-arn "$ROLE_ARN" \
+      --region "$REGION" > /dev/null
   else
     echo "Creating new pod identity association..."
     aws eks create-pod-identity-association \
       --cluster-name "$CLUSTER_NAME" \
       --namespace "$NAMESPACE" \
       --service-account "$sa_name" \
-      --role-arn "$ROLE_ARN" > /dev/null
+      --role-arn "$ROLE_ARN" \
+      --region "$REGION" > /dev/null
   fi
 
   echo "Pod identity association configured successfully for $sa_name"
