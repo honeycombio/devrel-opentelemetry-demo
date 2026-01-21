@@ -74,7 +74,7 @@ setup_association() {
     --namespace "$NAMESPACE" \
     --service-account "$sa_name" \
     --query 'associations[0].associationId' \
-    --output text 2>/dev/null || echo "Not needed")
+    --output text 2>/dev/null || echo "None")
 
   if [ "$EXISTING" != "None" ] && [ -n "$EXISTING" ]; then
     echo "Pod identity association already exists (ID: $EXISTING), updating..."
