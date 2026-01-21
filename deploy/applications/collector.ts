@@ -9,7 +9,7 @@ export interface CollectorArgs {
     secrets: HoneycombSecrets;
     valuesFile: string;
     useCustomCollector: boolean;
-    htpReleaseName?: pulumi.Input<string>;
+    htpReleaseName: pulumi.Input<string>;
 }
 
 export class Collector extends pulumi.ComponentResource {

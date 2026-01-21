@@ -67,27 +67,18 @@ export class DeploymentConfig {
 export class HtpBuilderConfig {
     private readonly config: pulumi.Config;
 
-    public readonly pipelineId: string | undefined;
-    public readonly managementApiKeyId: string | undefined;
-    public readonly managementApiKeySecret: pulumi.Output<string> = pulumi.output("");
-    public readonly pipelineTelemetryKey: pulumi.Output<string> = pulumi.output("");
-
-    get isEnabled(): boolean {
-        return this.pipelineId != "" || false;
-    }
+    public readonly pipelineId: string;
+    public readonly managementApiKeyId: string;
+    public readonly managementApiKeySecret: pulumi.Output<string>;
+    public readonly pipelineTelemetryKey: pulumi.Output<string>;
 
     constructor() {
         this.config = new pulumi.Config();
 
-        this.pipelineId = this.config.get("pipeline-id");
-
-        if (!this.isEnabled) {
-            return;
-        }
-
+        this.pipelineId = this.config.require("pipeline-id");
         this.managementApiKeyId = this.config.require("pipeline-management-key-id");
-        this.managementApiKeySecret = this.config.requireSecret("pipeline-management-key-secret") || "";
-        this.pipelineTelemetryKey = this.config.requireSecret("pipeline-telemetry-ingest-key") || "";
+        this.managementApiKeySecret = this.config.requireSecret("pipeline-management-key-secret");
+        this.pipelineTelemetryKey = this.config.requireSecret("pipeline-telemetry-ingest-key");
     }
 }
 
