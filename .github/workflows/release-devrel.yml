@@ -106,7 +106,7 @@ jobs:
       #     VERSION: ${{ github.ref_name }}
 
       - name: "set kubecontext to aws"
-        run: ./scripts/set-kubecontext.sh aws
+        run: ./scripts/set-kubecontext.sh aws --no-profile
 
       - uses: pulumi/actions@v5
         id: pulumi-deploy-aws

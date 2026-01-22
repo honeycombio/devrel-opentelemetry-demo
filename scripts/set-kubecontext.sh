@@ -2,17 +2,23 @@
 
 # Default to AWS if no flag is provided
 CLOUD_PROVIDER="${1:-aws}"
+NO_PROFILE=false
+
+# Check for --no-profile flag
+if [[ "$2" == "--no-profile" ]]; then
+    NO_PROFILE=true
+fi
 
 # Validate the cloud provider argument
 if [[ ! "$CLOUD_PROVIDER" =~ ^(aws|azure)$ ]]; then
     echo "Error: Invalid cloud provider '$CLOUD_PROVIDER'"
-    echo "Usage: $0 [aws|azure]"
+    echo "Usage: $0 [aws|azure] [--no-profile]"
     echo "Default: aws"
     exit 1
 fi
 
 if [[ "$CLOUD_PROVIDER" == "aws" ]]; then
-    if [[ -z "$AWS_PROFILE" ]]; then
+    if [[ "$NO_PROFILE" == "false" ]] && [[ -z "$AWS_PROFILE" ]]; then
         echo "Using Profile 'devrel-sandbox' as AWS_PROFILE isn't set"
         export AWS_PROFILE=devrel-sandbox
     fi

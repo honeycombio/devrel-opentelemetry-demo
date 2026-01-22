@@ -51,9 +51,7 @@ jobs:
           audience: sts.amazonaws.com
 
       - name: "set kubecontext to aws"
-        run: ./scripts/set-kubecontext.sh aws
-        env:
-          AWS_PROFILE: default
+        run: ./scripts/set-kubecontext.sh aws --no-profile
 
       - run: |
           npm ci
