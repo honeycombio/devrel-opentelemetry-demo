@@ -105,6 +105,9 @@ jobs:
       #     STORAGE_ACCOUNT_NAME: ${{ steps.pulumi-deploy-azure.outputs.storageAccountName }}
       #     VERSION: ${{ github.ref_name }}
 
+      - name: "set kubecontext to aws"
+        run: ./scripts/set-kubecontext.sh aws
+
       - uses: pulumi/actions@v5
         id: pulumi-deploy-aws
         with:
