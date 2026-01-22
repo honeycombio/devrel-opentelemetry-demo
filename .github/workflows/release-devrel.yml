@@ -50,63 +50,16 @@ jobs:
           requested-token-type: urn:pulumi:token-type:access_token:personal
           scope: user:${{ github.actor }}
           token-expiration: 600
-      # - name: Azure Login
-      #   uses: azure/login@v1
-      #   with:
-      #     client-id: ${{ secrets.AZURE_CLIENT_ID }}
-      #     tenant-id: ${{ secrets.AZURE_TENANT_ID }}
-      #     subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
       - name: configure aws credentials
         uses: aws-actions/configure-aws-credentials@v5
         with:
           role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
           aws-region: ${{ env.AWS_REGION }}
           audience: sts.amazonaws.com
-      # - run: |
-      #     pulumi stack select --stack ${{ secrets.PULUMI_ORG }}/prod --non-interactive
-      #     pulumi config refresh --non-interactive
-      #   working-directory: deploy
 
       - run: |
           npm ci
         working-directory: deploy
-
-      # - uses: pulumi/actions@v5
-      #   id: pulumi-deploy-azure
-      #   with:
-      #     command: up
-      #     stack-name: ${{ secrets.PULUMI_ORG }}/prod
-      #     work-dir: deploy
-      #     config-map: |
-      #       devrel-opentelemetry-demo:cloud-provider: 
-      #         value: azure
-      #       devrel-opentelemetry-demo:container-tag: 
-      #         value: ${{ github.ref_name }}
-      #         secret: false
-      #       devrel-opentelemetry-demo:collector-container-tag: 
-      #         value: ${{ github.ref_name }}-collector
-      #         secret: false
-      #       devrel-opentelemetry-demo:collector-container-repository: 
-      #         value: ghcr.io/${{ github.repository }}
-      #         secret: false
-      #   env:
-      #     ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
-      #     ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-      #     ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
-      #     ARM_USE_OIDC: true
-      #     IS_IN_PIPELINE: true
-
-      # - name: Extract and upload js sourcemaps
-      #   run: ./scripts/extract-and-upload-js-sourcemaps.sh
-      #   env:
-      #     REPO: ghcr.io/${{ github.repository }}
-      #     CONTAINER_PATH: /app/.next/static/
-      #     BLOB_CONTAINER_NAME: ${{ steps.pulumi-deploy-azure.outputs.blobContainerName }}
-      #     STORAGE_ACCOUNT_NAME: ${{ steps.pulumi-deploy-azure.outputs.storageAccountName }}
-      #     VERSION: ${{ github.ref_name }}
-
-      - name: "set kubecontext to aws"
-        run: ./scripts/set-kubecontext.sh aws --no-profile
 
       - uses: pulumi/actions@v5
         id: pulumi-deploy-aws

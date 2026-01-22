@@ -50,14 +50,6 @@ jobs:
           aws-region: ${{ env.AWS_REGION }}
           audience: sts.amazonaws.com
 
-      # - name: "set kubecontext to aws"
-      #   run: ./scripts/set-kubecontext.sh aws --no-profile
-
-      # - name: "test eks get-token"
-      #   run: |
-      #     eval "$(pulumi stack output -s honeycomb-devrel/infra-aws/prod --shell)"
-      #     aws --region "$clusterRegion" eks get-token --cluster-name "$clusterName" --output json
-
       - run: |
           npm ci
         working-directory: deploy
