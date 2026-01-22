@@ -7,6 +7,12 @@ on:
     tags:
       - '*.*.*-**'
   workflow_dispatch:
+    inputs:
+      skip_currency_build:
+        description: 'Skip building currency service and re-tag previous version instead'
+        type: boolean
+        default: true
+        required: false
 
 permissions:
   packages: write
@@ -18,6 +24,7 @@ jobs:
     with:
       push: true
       version: ${{ github.ref_name }}
+      skip_currency_build: ${{ inputs.skip_currency_build == null && true || inputs.skip_currency_build }}
     secrets: inherit
 
   build_custom_collector:

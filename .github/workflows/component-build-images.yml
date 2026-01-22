@@ -29,6 +29,11 @@ on:
         default: 'ghcr.io/open-telemetry/demo'
         required: false
         type: string
+      skip_currency_build:
+        description: Skip building currency service and re-tag previous version instead
+        default: true
+        required: false
+        type: boolean
 
 permissions:
   contents: read
@@ -222,7 +227,7 @@ jobs:
             [worker.oci]
             max-parallelism = 2
       - name: Matrix Build and push demo images
-        if: steps.check_changes.outputs.skip == 'false'
+        if: steps.check_changes.outputs.skip == 'false' && !(inputs.skip_currency_build && matrix.file_tag.tag_suffix == 'currency')
         uses: docker/build-push-action@v6.18.0
         with:
           context: ${{ matrix.file_tag.context }}
@@ -237,3 +242,61 @@ jobs:
           labels: ${{ steps.docker_metatdata.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha
+
+  # Currency service is optionally not built - we re-tag the previous version as the current version
+  # This is because the currency service C++ build is flaky and takes a long time
+  retag_currency_image:
+    runs-on: ubuntu-latest
+    needs: protobufcheck
+    if: ${{ inputs.push && inputs.skip_currency_build }}
+
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Get previous release tag
+        id: get_previous_tag
+        run: |
+          # Get all release tags sorted by version, excluding current
+          CURRENT_TAG="${{ inputs.version }}"
+          # Get the previous release tag (second to last when sorted)
+          PREVIOUS_TAG=$(git tag --list '*.*.*-release' | sort -V | grep -v "^${CURRENT_TAG}$" | tail -1)
+          if [ -z "$PREVIOUS_TAG" ]; then
+            echo "No previous release tag found, using latest"
+            PREVIOUS_TAG="latest"
+          fi
+          echo "previous_tag=${PREVIOUS_TAG}" >> "$GITHUB_OUTPUT"
+          echo "Previous tag: ${PREVIOUS_TAG}"
+
+      - name: Log in to the Github Container registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Pull, re-tag, and push currency image
+        run: |
+          PREVIOUS_TAG="${{ steps.get_previous_tag.outputs.previous_tag }}"
+          CURRENT_TAG="${{ inputs.version }}"
+          REPO="ghcr.io/${{ github.repository }}"
+
+          echo "Re-tagging currency image from ${PREVIOUS_TAG} to ${CURRENT_TAG}"
+
+          # Pull the previous version
+          docker pull "${REPO}:${PREVIOUS_TAG}-currency"
+
+          # Tag as current version
+          docker tag "${REPO}:${PREVIOUS_TAG}-currency" "${REPO}:${CURRENT_TAG}-currency"
+          docker tag "${REPO}:${PREVIOUS_TAG}-currency" "${REPO}:latest-currency"
+
+          # Push the new tags
+          docker push "${REPO}:${CURRENT_TAG}-currency"
+          docker push "${REPO}:latest-currency"
+
+          echo "Successfully re-tagged currency image"
