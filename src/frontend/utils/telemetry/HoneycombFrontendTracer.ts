@@ -42,7 +42,6 @@ const HoneycombFrontendTracer = (sessionId: string) => {
                 new W3CBaggagePropagator(),
                 new W3CTraceContextPropagator()],
         }),
-
         instrumentations: [
             getWebAutoInstrumentations({
               // alternative: turn on networkEvents so we can see data for resourceFetch content sizes
@@ -60,10 +59,6 @@ const HoneycombFrontendTracer = (sessionId: string) => {
                     enabled: true,
                     eventNames: ['click', 'submit']
                 }
-            }),
-            new WebVitalsInstrumentation({
-                enabled: true,
-                vitalsToTrack: ['FCP', 'INP', 'CLS', 'LCP', 'TTFB']
             })
         ],
         sessionProvider: {
@@ -73,11 +68,31 @@ const HoneycombFrontendTracer = (sessionId: string) => {
 
     sdk.start();
 
-    // TODO - add a build flag to enable this for load testing platforms only
-    // Expose for programmatic access (from Playwright for example) to flush telemetry spans
-    if (typeof window !== 'undefined') {
-        window.__flushTelemetry = () => { return sdk.forceFlush(); }
+    // Experiment:
+    // the upstream otel demo has a `clearTimingResources` setting - it can affect
+    // the CoreWebVitals insrumentation's attribution (i.e. what element caused an LCP)
+    // the alternative to turning that on is to increase the timing buffer size to avoid
+    // an overflow.
+    if (typeof performance !== 'undefined' &&
+        'setResourceTimingBufferSize' in performance) {
+        performance.setResourceTimingBufferSize(1000);
     }
+
+    // Experiment:
+    // flush telemetry whenever we're leaving a page or throwing its tab to the background
+    // to try to get the most telemetry from the browser before unload. Trying this instead of
+    // exposing a '__flushTelemetry' method on the window for playwright tests.
+    window.addEventListener("visibilitychange", () => {
+        if (document.visibilityState === 'hidden') {
+            sdk?.forceFlush();
+        }
+    });
+
+//    // TODO - add a build flag to enable this for load testing platforms only
+//    // Expose for programmatic access (from Playwright for example) to flush telemetry spans
+//    if (typeof window !== 'undefined') {
+//        window.__flushTelemetry = () => { return sdk.forceFlush(); }
+//    }
 }
 
 export default HoneycombFrontendTracer;
