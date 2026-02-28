@@ -11,7 +11,7 @@ default:
 
 components:
   load-generator:
-    replicas: 0
+    replicas: 1
   frontend:
     replicas: 1
     envOverrides:
