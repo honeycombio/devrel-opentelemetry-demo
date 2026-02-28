@@ -590,7 +590,7 @@ func (cs *checkout) shipOrder(ctx context.Context, address *pb.Address, items []
 		return "", fmt.Errorf("failed to marshal ship order request: %+v", err)
 	}
 
-	resp, err := otelhttp.Post(ctx, cs.shippingSvcAddr+"/ship-order", "application/json", bytes.NewBuffer(shipPayload))
+	resp, err := otelhttp.Post(ctx, cs.shippingSvcAddr+"/ship-ordr", "application/json", bytes.NewBuffer(shipPayload))
 	if err != nil {
 		return "", fmt.Errorf("failed POST to shipping service: %+v", err)
 	}
