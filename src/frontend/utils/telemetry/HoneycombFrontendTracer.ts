@@ -68,15 +68,16 @@ const HoneycombFrontendTracer = (sessionId: string) => {
 
     sdk.start();
 
+    // TODO - experiment with this later - not sure it is a real concern
     // Experiment:
     // the upstream otel demo has a `clearTimingResources` setting - it can affect
     // the CoreWebVitals insrumentation's attribution (i.e. what element caused an LCP)
     // the alternative to turning that on is to increase the timing buffer size to avoid
     // an overflow.
-    if (typeof performance !== 'undefined' &&
-        'setResourceTimingBufferSize' in performance) {
-        performance.setResourceTimingBufferSize(1000);
-    }
+    // if (typeof performance !== 'undefined' &&
+    //     'setResourceTimingBufferSize' in performance) {
+    //     performance.setResourceTimingBufferSize(1000);
+    // }
 
     // Experiment:
     // flush telemetry whenever we're leaving a page or throwing its tab to the background
@@ -87,12 +88,6 @@ const HoneycombFrontendTracer = (sessionId: string) => {
             sdk?.forceFlush();
         }
     });
-
-//    // TODO - add a build flag to enable this for load testing platforms only
-//    // Expose for programmatic access (from Playwright for example) to flush telemetry spans
-//    if (typeof window !== 'undefined') {
-//        window.__flushTelemetry = () => { return sdk.forceFlush(); }
-//    }
 }
 
 export default HoneycombFrontendTracer;
