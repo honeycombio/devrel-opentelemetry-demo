@@ -334,6 +334,10 @@ func (cs *checkout) PlaceOrder(ctx context.Context, req *pb.PlaceOrderRequest) (
 	for _, it := range prep.orderItems {
 		multPrice := money.MultiplySlow(it.Cost, uint32(it.GetItem().GetQuantity()))
 		total = money.Must(money.Sum(total, multPrice))
+
+		// Add tax per line item
+		tax := calculateTax(it.Cost, uint32(it.GetItem().GetQuantity()), 0.10)
+		total = money.Must(money.Sum(total, tax))
 	}
 
 	txID, err := cs.chargeCard(ctx, total, req.CreditCard)
@@ -400,6 +404,21 @@ func (cs *checkout) PlaceOrder(ctx context.Context, req *pb.PlaceOrderRequest) (
 
 	resp := &pb.PlaceOrderResponse{Order: orderResult}
 	return resp, nil
+}
+
+// calculateTax computes the tax for a line item based on its cost and quantity.
+func calculateTax(itemCost *pb.Money, quantity uint32, taxRate float64) *pb.Money {
+	baseTaxUnits := int64(float64(itemCost.GetUnits()) * taxRate)
+	baseTaxNanos := int32(float64(itemCost.GetNanos()) * taxRate)
+
+	// Compute per-unit tax
+	taxPerUnit := baseTaxUnits / int64(quantity)
+
+	return &pb.Money{
+		CurrencyCode: itemCost.GetCurrencyCode(),
+		Units:        taxPerUnit * int64(quantity),
+		Nanos:        baseTaxNanos * int32(quantity),
+	}
 }
 
 type orderPrep struct {
@@ -590,7 +609,7 @@ func (cs *checkout) shipOrder(ctx context.Context, address *pb.Address, items []
 		return "", fmt.Errorf("failed to marshal ship order request: %+v", err)
 	}
 
-	resp, err := otelhttp.Post(ctx, cs.shippingSvcAddr+"/ship-ordr", "application/json", bytes.NewBuffer(shipPayload))
+	resp, err := otelhttp.Post(ctx, cs.shippingSvcAddr+"/ship-order", "application/json", bytes.NewBuffer(shipPayload))
 	if err != nil {
 		return "", fmt.Errorf("failed POST to shipping service: %+v", err)
 	}

@@ -23,7 +23,7 @@ import ProductReviewProvider from '../../../providers/ProductReview.provider';
 import ProductAIAssistantProvider from '../../../providers/ProductAIAssistant.provider';
 import { tracedQuery } from '../../../utils/telemetry/SpanUtils';
 
-const quantityOptions = new Array(10).fill(0).map((_, i) => i + 1);
+const quantityOptions = new Array(11).fill(0).map((_, i) => i);
 
 const ProductDetail: NextPage = () => {
   const { push, query } = useRouter();
