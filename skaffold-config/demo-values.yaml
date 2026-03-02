@@ -18,6 +18,8 @@ components:
       # Needed until the demo helm chart updates to include it.
       - name: PRODUCT_REVIEWS_ADDR
         value: product-reviews:3551
+      - name: CHATBOT_ADDR
+        value: http://chatbot:8087
       - name: ENV_PLATFORM
         value: local
   frontend-proxy:
@@ -25,6 +27,8 @@ components:
       # Needed until the demo helm chart updates to include it.
       - name: ENVOY_ADDR
         value: 0.0.0.0
+      - name: CHATBOT_PORT
+        value: "8087"
 
 opentelemetry-collector:
   enabled: true

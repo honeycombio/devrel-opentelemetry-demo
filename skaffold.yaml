@@ -20,6 +20,10 @@ build:
       context: .
       docker:
         dockerfile: src/cart/src/Dockerfile
+    - image: chatbot
+      context: .
+      docker:
+        dockerfile: src/chatbot/Dockerfile
     - image: checkout
       context: .
       docker:
@@ -203,6 +207,9 @@ deploy:
         recreatePods: false
         skipBuildDependencies: false
         setValueTemplates:
+          services.chatbot.env[2].value: "{{.ANTHROPIC_API_KEY}}"
+          services.chatbot.imageOverride.repository: "{{if .IMAGE_REPO_chatbot }}{{.IMAGE_REPO_chatbot}}{{end}}"
+          services.chatbot.imageOverride.tag: "{{if .IMAGE_REPO_chatbot }}{{.IMAGE_TAG_chatbot}}@{{.IMAGE_DIGEST_chatbot}}{{end}}"
           services.productReviews.imageOverride.repository: "{{if .IMAGE_REPO_product_reviews }}{{.IMAGE_REPO_product_reviews}}{{end}}"
           services.productReviews.imageOverride.tag: "{{if .IMAGE_REPO_product_reviews }}{{.IMAGE_TAG_product_reviews}}@{{.IMAGE_DIGEST_product_reviews}}{{end}}"
           services.llm.imageOverride.repository: "{{if .IMAGE_REPO_llm }}{{.IMAGE_REPO_llm}}{{end}}"

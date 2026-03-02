@@ -1,6 +1,25 @@
 namespace: default
 
 services:
+  chatbot:
+    enabled: true
+    name: chatbot
+    image:
+      repository: ghcr.io/honeycombio/devrel-opentelemetry-demo
+      tag: latest-chatbot
+      pullPolicy: IfNotPresent
+    imageOverride:
+      {}
+    port: 8087
+    replicas: 1
+    env:
+      - name: CHATBOT_PORT
+        value: "8087"
+      - name: FRONTEND_ADDR
+        value: "http://frontend:8080"
+      - name: ANTHROPIC_API_KEY
+        value: ""
+
   productReviews:
     enabled: true
     name: product-reviews
@@ -10,8 +29,6 @@ services:
       pullPolicy: IfNotPresent
     imageOverride:
       {}
-      # repository: ghcr.io/honeycombio/devrel-opentelemetry-demo
-      # tag: ""
     port: 3551
     replicas: 1
     env:
@@ -51,8 +68,6 @@ services:
       pullPolicy: IfNotPresent
     imageOverride:
       {}
-      # repository: ghcr.io/honeycombio/devrel-opentelemetry-demo
-      # tag: ""
     port: 8000
     replicas: 1
     env:

@@ -121,7 +121,16 @@
   - Added `@opentelemetry/instrumentation-runtime-node@0.22.0` dependency (aligned with payment service)
   - Incoming trace propagation handled automatically by HTTP auto-instrumentation (no manual extract needed)
   - TypeScript compiles cleanly
-- Phase 5: Skaffold/Helm/Envoy wiring and namespace deploy.
+- Phase 5: Skaffold/Helm/Envoy wiring and namespace deploy. **DONE**
+  - Added `chatbot` build artifact in `skaffold.yaml` (context `.`, dockerfile `src/chatbot/Dockerfile`)
+  - Added `services.chatbot.imageOverride` setValueTemplates in `skaffold.yaml` otel-services release
+  - Added `services.chatbot` in `skaffold-config/charts/otel-services/values.yaml` (port 8087, GHCR default image)
+  - Added chatbot Deployment template in `deployment.yaml` (same pattern as productReviews/llm)
+  - Added chatbot Service template in `service.yaml` (ClusterIP, port 8087)
+  - Added `/chat` route in `envoy.tmpl.yaml` before catch-all `/` route, plus chatbot cluster definition
+  - Added `CHATBOT_ADDR=http://chatbot:8087` to frontend envOverrides in `demo-values.yaml`
+  - Added `CHATBOT_PORT=8087` to frontend-proxy envOverrides for envsubst in envoy template
+  - Chatbot env includes `CHATBOT_PORT`, `FRONTEND_ADDR`, `ANTHROPIC_API_KEY`, plus OTel standard vars
 - Phase 6: test pass + trace verification + doc update.
 
 ## 8. Acceptance criteria
