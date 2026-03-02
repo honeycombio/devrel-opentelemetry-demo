@@ -6,6 +6,19 @@ const anthropic_client_1 = require("./anthropic-client");
 const tracer = api_1.trace.getTracer('chatbot');
 const FRONTEND_ADDR = process.env.FRONTEND_ADDR || '';
 const MODEL = 'claude-haiku-4-5-20251001';
+// Record exception as a span event for debugging visibility
+function recordException(span, error) {
+    span.recordException(error instanceof Error ? error : new Error(String(error)));
+    span.setStatus({ code: api_1.SpanStatusCode.ERROR, message: String(error) });
+}
+// Set GenAI semantic attributes on LLM call spans
+function setGenAIAttributes(span, response) {
+    span.setAttribute('gen_ai.system', 'anthropic');
+    span.setAttribute('gen_ai.request.model', MODEL);
+    span.setAttribute('gen_ai.response.model', response.model);
+    span.setAttribute('gen_ai.usage.input_tokens', response.usage.input_tokens);
+    span.setAttribute('gen_ai.usage.output_tokens', response.usage.output_tokens);
+}
 const SCOPE_CLASSIFIER_PROMPT = `You are a scope classifier for a customer service chatbot at an online store.
 Your ONLY job is to determine if the user's question is about the product catalog, products, or shopping.
 
@@ -37,6 +50,7 @@ async function classifyScope(question) {
                 system: SCOPE_CLASSIFIER_PROMPT,
                 messages: [{ role: 'user', content: question }],
             });
+            setGenAIAttributes(span, response);
             const text = extractText(response);
             let inScope = false;
             try {
@@ -51,7 +65,7 @@ async function classifyScope(question) {
             return inScope;
         }
         catch (error) {
-            span.setStatus({ code: api_1.SpanStatusCode.ERROR, message: String(error) });
+            recordException(span, error);
             throw error;
         }
         finally {
@@ -76,19 +90,20 @@ async function fetchProductInfo(productId) {
             // Inject trace context for propagation to frontend
             const headers = {};
             api_1.propagation.inject(api_1.context.active(), headers);
+            span.setAttribute('chatbot.product_fetch.url', url);
             const response = await fetch(url, { headers });
+            span.setAttribute('chatbot.product_fetch.status', response.status);
             if (!response.ok) {
-                span.setAttribute('chatbot.product_fetch.status', response.status);
+                span.setStatus({ code: api_1.SpanStatusCode.ERROR, message: `Product fetch returned ${response.status}` });
                 return 'Unable to fetch product information.';
             }
             const data = await response.json();
             const productJson = JSON.stringify(data, null, 2);
-            span.setAttribute('chatbot.product_fetch.status', 200);
             span.setAttribute('chatbot.product_fetch.result_length', productJson.length);
             return productJson;
         }
         catch (error) {
-            span.setStatus({ code: api_1.SpanStatusCode.ERROR, message: String(error) });
+            recordException(span, error);
             return 'Unable to fetch product information.';
         }
         finally {
@@ -112,12 +127,13 @@ async function generateResponse(question, productInfo) {
                         content: `Product Information:\n${productInfo}\n\nCustomer Question: ${question}`,
                     }],
             });
+            setGenAIAttributes(span, response);
             const answer = extractText(response);
             span.setAttribute('chatbot.response_length', answer.length);
             return answer;
         }
         catch (error) {
-            span.setStatus({ code: api_1.SpanStatusCode.ERROR, message: String(error) });
+            recordException(span, error);
             throw error;
         }
         finally {
@@ -148,7 +164,7 @@ async function handleQuestion(question, productId) {
             return answer;
         }
         catch (error) {
-            span.setStatus({ code: api_1.SpanStatusCode.ERROR, message: String(error) });
+            recordException(span, error);
             span.setAttribute('chatbot.result', 'error');
             return 'The Chatbot is Unavailable';
         }

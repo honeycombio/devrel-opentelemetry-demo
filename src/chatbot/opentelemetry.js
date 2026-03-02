@@ -8,14 +8,19 @@ const { awsEc2Detector, awsEksDetector } = require('@opentelemetry/resource-dete
 const { containerDetector } = require('@opentelemetry/resource-detector-container');
 const { gcpDetector } = require('@opentelemetry/resource-detector-gcp');
 const { envDetector, hostDetector, osDetector, processDetector } = require('@opentelemetry/resources');
+const { RuntimeNodeInstrumentation } = require('@opentelemetry/instrumentation-runtime-node');
 
 const sdk = new opentelemetry.NodeSDK({
   traceExporter: new OTLPTraceExporter(),
   instrumentations: [
     getNodeAutoInstrumentations({
+      // only instrument fs if it is part of another trace
       '@opentelemetry/instrumentation-fs': {
         requireParentSpan: true,
       },
+    }),
+    new RuntimeNodeInstrumentation({
+      monitoringPrecision: 5000,
     }),
   ],
   metricReader: new PeriodicExportingMetricReader({

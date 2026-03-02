@@ -111,7 +111,16 @@
   - Model: `claude-haiku-4-5-20251001` (fast/cheap for demo sub-agents)
   - Product data fetched from frontend via `FRONTEND_ADDR` env var (already in `.env`)
   - TypeScript compiles cleanly
-- Phase 4: OTel propagation and telemetry hardening.
+- Phase 4: OTel propagation and telemetry hardening. **DONE**
+  - Added `RuntimeNodeInstrumentation` to `opentelemetry.js` (event loop, GC metrics) matching payment service pattern
+  - Added `recordException()` helper — records exception as span event + sets error status on all catch blocks
+  - Added `setGenAIAttributes()` helper — `gen_ai.system`, `gen_ai.request.model`, `gen_ai.response.model`, `gen_ai.usage.input_tokens`, `gen_ai.usage.output_tokens` on LLM spans
+  - Applied GenAI attributes to `scope_classifier` and `response_generator` spans
+  - Product fetcher now logs fetch URL attribute and sets error status on non-200 responses
+  - HTTP handler span enriched with `chatbot.demo_enabled`, `chatbot.available`, `chatbot.question`, `chatbot.product_id`, `chatbot.result`
+  - Added `@opentelemetry/instrumentation-runtime-node@0.22.0` dependency (aligned with payment service)
+  - Incoming trace propagation handled automatically by HTTP auto-instrumentation (no manual extract needed)
+  - TypeScript compiles cleanly
 - Phase 5: Skaffold/Helm/Envoy wiring and namespace deploy.
 - Phase 6: test pass + trace verification + doc update.
 
