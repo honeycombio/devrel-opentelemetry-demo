@@ -1,4 +1,5 @@
 import express, { Request, Response } from 'express';
+import { handleQuestion } from './agents';
 
 const app = express();
 app.use(express.json());
@@ -13,16 +14,25 @@ function isChatbotAvailable(): boolean {
 }
 
 // POST /chat/question
-app.post('/chat/question', (req: Request, res: Response) => {
+app.post('/chat/question', async (req: Request, res: Response) => {
   if (!isChatbotAvailable()) {
     res.json({ answer: 'The Chatbot is Unavailable' });
     return;
   }
 
-  // Phase 3 will add the agent orchestration flow here.
-  // For now, return a placeholder when enabled.
   const { question, productId } = req.body;
-  res.json({ answer: 'The Chatbot is Unavailable' });
+
+  if (!question || typeof question !== 'string') {
+    res.json({ answer: 'Please provide a question.' });
+    return;
+  }
+
+  try {
+    const answer = await handleQuestion(question, productId);
+    res.json({ answer });
+  } catch {
+    res.json({ answer: 'The Chatbot is Unavailable' });
+  }
 });
 
 // POST /chat/demo-enable

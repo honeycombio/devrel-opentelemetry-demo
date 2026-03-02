@@ -98,7 +98,19 @@
   - Removed 3 quick-prompt buttons from `ProductReviews.tsx`
   - Removed dead `QuickPromptButton` and `AskAIControls` styled components
   - TypeScript compiles cleanly
-- Phase 3: Anthropic agent flow + product fetch logic + strict guardrails.
+- Phase 3: Anthropic agent flow + product fetch logic + strict guardrails. **DONE**
+  - Created `src/chatbot/src/anthropic-client.ts` — singleton Anthropic SDK client with lazy init
+  - Created `src/chatbot/src/agents.ts` — 4-agent orchestration:
+    - **Supervisor** (`handleQuestion`) — orchestrates flow with parent span, routes to sub-agents
+    - **Scope Classifier** (`classifyScope`) — Haiku LLM call, returns `inScope` boolean; out-of-scope → exact fallback text
+    - **Product Fetcher** (`fetchProductInfo`) — HTTP GET to frontend `/api/products[/:productId]` with OTel trace propagation
+    - **Response Generator** (`generateResponse`) — Haiku LLM call given product data + question
+  - Updated `src/chatbot/src/index.ts` — wired `handleQuestion` into POST `/chat/question`, added input validation
+  - Each agent step gets its own OTel span under `supervisor` parent for trace visibility
+  - Guardrails: scope classifier gates all questions; non-catalog → `"AI Response: Sorry, I'm not able to answer that question."`
+  - Model: `claude-haiku-4-5-20251001` (fast/cheap for demo sub-agents)
+  - Product data fetched from frontend via `FRONTEND_ADDR` env var (already in `.env`)
+  - TypeScript compiles cleanly
 - Phase 4: OTel propagation and telemetry hardening.
 - Phase 5: Skaffold/Helm/Envoy wiring and namespace deploy.
 - Phase 6: test pass + trace verification + doc update.
