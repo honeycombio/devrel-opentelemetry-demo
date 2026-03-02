@@ -57,3 +57,6 @@ test/tracetesting/tracetesting-vars.yaml
 .mcp.json
 
 notes/
+
+.claude/settings.local.json
+

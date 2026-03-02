@@ -61,6 +61,8 @@ static_resources:
                             prefix_rewrite: "/"
                             upgrade_configs:
                               - upgrade_type: websocket
+                        - match: { prefix: "/chat" }
+                          route: { cluster: chatbot }
                         - match: { prefix: "/" }  # Default/catch-all route - keep last since prefix:"/" matches everything
                           route: { cluster: api-gateway }
                 http_filters:
@@ -173,6 +175,18 @@ static_resources:
                     socket_address:
                       address: ${FRONTEND_HOST}
                       port_value: ${FRONTEND_PORT}
+    - name: chatbot
+      type: STRICT_DNS
+      lb_policy: ROUND_ROBIN
+      load_assignment:
+        cluster_name: chatbot
+        endpoints:
+          - lb_endpoints:
+              - endpoint:
+                  address:
+                    socket_address:
+                      address: chatbot
+                      port_value: ${CHATBOT_PORT}
     - name: image-provider
       type: STRICT_DNS
       lb_policy: ROUND_ROBIN

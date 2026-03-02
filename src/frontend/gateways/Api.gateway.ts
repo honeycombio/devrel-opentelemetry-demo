@@ -83,12 +83,13 @@ const Apis = () => ({
       url: `${basePath}/product-reviews-avg-score/${productId}`
     });
   },
-  askProductAIAssistant(productId: string, question: string) {
-    return request<string>({
-      url: `${basePath}/product-ask-ai-assistant/${productId}`,
+  async askProductAIAssistant(productId: string, question: string) {
+    const { answer } = await request<{ answer: string }>({
+      url: `/chat/question`,
       method: 'POST',
-      body: { question },
+      body: { question, productId },
     });
+    return answer;
   },
   listRecommendations(productIds: string[], currencyCode: string) {
     return request<Product[]>({

@@ -202,32 +202,6 @@ export const AskAIInput = styled.input`
   }
 `;
 
-export const AskAIControls = styled.div`
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  align-items: center;
-`;
-
-export const QuickPromptButton = styled.button`
-  padding: 8px 12px;
-  border: 1px solid ${({ theme }) => theme.colors.borderGray};
-  border-radius: 6px;
-  background: ${({ theme }) => theme.colors.white};
-  color: ${({ theme }) => theme.colors.otelGray};
-  font-size: 14px;
-  cursor: pointer;
-
-  &:hover {
-    border-color: ${({ theme }) => theme.colors.otelBlue};
-  }
-
-  &:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-  }
-`;
-
 export const AskAIButton = styled.button`
   padding: 8px 16px;
   border: none;
