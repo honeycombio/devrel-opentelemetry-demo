@@ -10,6 +10,7 @@ services:
       pullPolicy: IfNotPresent
     imageOverride:
       {}
+    anthropicApiKey: ""
     port: 8087
     replicas: 1
     env:
@@ -17,8 +18,6 @@ services:
         value: "8087"
       - name: FRONTEND_ADDR
         value: "http://frontend:8080"
-      - name: ANTHROPIC_API_KEY
-        value: ""
 
   productReviews:
     enabled: true
