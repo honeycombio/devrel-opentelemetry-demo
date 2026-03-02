@@ -63,11 +63,6 @@ const ProductReviews = () => {
         sendAiRequest({ question: q });
     };
 
-    const handleQuickPrompt = (prompt: string) => {
-        setAiQuestion(prompt);
-        handleAskAI(prompt);
-    };
-
   return (
     <S.ProductReviews aria-live="polite" data-cy={CypressFields.ProductReviews}>
 
@@ -99,32 +94,6 @@ const ProductReviews = () => {
                     {aiLoading ? 'Asking AI…' : 'Ask'}
                 </S.AskAIButton>
             </S.AskAIInputRow>
-
-            <S.AskAIControls>
-                <S.QuickPromptButton
-                    type="button"
-                    onClick={() => handleQuickPrompt('Can you summarize the product reviews?')}
-                    data-cy="QuickPromptSummarize"
-                >
-                    Can you summarize the product reviews?
-                </S.QuickPromptButton>
-
-                <S.QuickPromptButton
-                    type="button"
-                    onClick={() => handleQuickPrompt('What age(s) is this recommended for?')}
-                    data-cy="QuickPromptAges"
-                >
-                    What age(s) is this recommended for?
-                </S.QuickPromptButton>
-
-                <S.QuickPromptButton
-                    type="button"
-                    onClick={() => handleQuickPrompt('Were there any negative reviews?')}
-                    data-cy="QuickPromptNegative"
-                >
-                    Were there any negative reviews?
-                </S.QuickPromptButton>
-            </S.AskAIControls>
 
             {aiError && (
                 <S.AIMessage role="alert" data-cy="AIError">

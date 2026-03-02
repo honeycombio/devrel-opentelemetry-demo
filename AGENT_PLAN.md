@@ -89,7 +89,15 @@
   - OTel instrumentation file matches existing project pattern (CommonJS `--require` preload)
   - Dockerfile uses multi-stage build matching project conventions (node:22-slim builder, distroless runtime)
   - All smoke tests passed
-- Phase 2: frontend API route switch + UI quick-prompt removal. **NEXT**
+- Phase 2: frontend API route switch + UI quick-prompt removal. **DONE**
+  - Updated API route to HTTP fetch to `CHATBOT_ADDR/chat/question` instead of ProductReviewService gRPC
+  - Injects OTel trace context headers (`traceparent`, `tracestate`) via `propagation.inject` for trace continuity
+  - Falls back to "The Chatbot is Unavailable" when `CHATBOT_ADDR` is unset or chatbot returns error
+  - Added `CHATBOT_PORT`, `CHATBOT_ADDR`, `CHATBOT_DOCKERFILE` to `.env`
+  - Added `CHATBOT_ADDR` to `next.config.js` env exposure
+  - Removed 3 quick-prompt buttons from `ProductReviews.tsx`
+  - Removed dead `QuickPromptButton` and `AskAIControls` styled components
+  - TypeScript compiles cleanly
 - Phase 3: Anthropic agent flow + product fetch logic + strict guardrails.
 - Phase 4: OTel propagation and telemetry hardening.
 - Phase 5: Skaffold/Helm/Envoy wiring and namespace deploy.
