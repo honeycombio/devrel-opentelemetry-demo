@@ -18,7 +18,8 @@
       "mcp__honeycomb__run_unsaved_query",
       "mcp__honeycomb__list_environments",
       "Bash(chmod:*)",
-      "Bash(HONEYCOMB_API_KEY=NPT89GiCOO7mH6TIeMufOD ./add_htp_calculated_field.sh)"
+      "Bash(HONEYCOMB_API_KEY=NPT89GiCOO7mH6TIeMufOD ./add_htp_calculated_field.sh)",
+      "Bash(npx tsc:*)"
     ],
     "deny": []
   },

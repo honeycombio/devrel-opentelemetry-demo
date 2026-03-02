@@ -81,8 +81,15 @@
   - Confirm other services may remain GHCR unless rebuilt/overridden.
 
 ## 7. Rollout order
-- Phase 1: chatbot service skeleton + toggle + unavailable messaging.
-- Phase 2: frontend API route switch + UI quick-prompt removal.
+- Phase 1: chatbot service skeleton + toggle + unavailable messaging. **DONE**
+  - Created `src/chatbot/` with: `package.json`, `tsconfig.json`, `opentelemetry.js`, `src/index.ts`, `Dockerfile`
+  - Express server on `CHATBOT_PORT` (default 8087)
+  - Three endpoints: `POST /chat/question`, `POST /chat/demo-enable`, `POST /chat/demo-disable`
+  - Toggle defaults disabled; missing API key also returns unavailable
+  - OTel instrumentation file matches existing project pattern (CommonJS `--require` preload)
+  - Dockerfile uses multi-stage build matching project conventions (node:22-slim builder, distroless runtime)
+  - All smoke tests passed
+- Phase 2: frontend API route switch + UI quick-prompt removal. **NEXT**
 - Phase 3: Anthropic agent flow + product fetch logic + strict guardrails.
 - Phase 4: OTel propagation and telemetry hardening.
 - Phase 5: Skaffold/Helm/Envoy wiring and namespace deploy.
