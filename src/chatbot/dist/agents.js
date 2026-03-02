@@ -2,6 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.handleQuestion = handleQuestion;
 const api_1 = require("@opentelemetry/api");
+const incubating_1 = require("@opentelemetry/semantic-conventions/incubating");
 const anthropic_client_1 = require("./anthropic-client");
 const tracer = api_1.trace.getTracer('chatbot');
 const FRONTEND_ADDR = process.env.FRONTEND_ADDR || '';
@@ -11,13 +12,35 @@ function recordException(span, error) {
     span.recordException(error instanceof Error ? error : new Error(String(error)));
     span.setStatus({ code: api_1.SpanStatusCode.ERROR, message: String(error) });
 }
+// Format input messages into GenAI semantic convention format
+function formatInputMessages(messages) {
+    return JSON.stringify(messages.map(m => ({
+        role: m.role,
+        parts: [{ type: 'text', content: m.content }],
+    })));
+}
+// Format output messages from Anthropic response into GenAI semantic convention format
+function formatOutputMessages(response) {
+    return JSON.stringify([
+        {
+            role: 'assistant',
+            parts: response.content
+                .filter((b) => b.type === 'text')
+                .map(b => ({ type: 'text', content: b.text })),
+            finish_reason: response.stop_reason ?? 'unknown',
+        },
+    ]);
+}
 // Set GenAI semantic attributes on LLM call spans
 function setGenAIAttributes(span, response) {
-    span.setAttribute('gen_ai.system', 'anthropic');
-    span.setAttribute('gen_ai.request.model', MODEL);
-    span.setAttribute('gen_ai.response.model', response.model);
-    span.setAttribute('gen_ai.usage.input_tokens', response.usage.input_tokens);
-    span.setAttribute('gen_ai.usage.output_tokens', response.usage.output_tokens);
+    span.setAttribute(incubating_1.ATTR_GEN_AI_PROVIDER_NAME, incubating_1.GEN_AI_PROVIDER_NAME_VALUE_ANTHROPIC);
+    span.setAttribute(incubating_1.ATTR_GEN_AI_REQUEST_MODEL, MODEL);
+    span.setAttribute(incubating_1.ATTR_GEN_AI_RESPONSE_MODEL, response.model);
+    span.setAttribute(incubating_1.ATTR_GEN_AI_RESPONSE_ID, response.id);
+    span.setAttribute(incubating_1.ATTR_GEN_AI_RESPONSE_FINISH_REASONS, [response.stop_reason ?? 'unknown']);
+    span.setAttribute(incubating_1.ATTR_GEN_AI_USAGE_INPUT_TOKENS, response.usage.input_tokens);
+    span.setAttribute(incubating_1.ATTR_GEN_AI_USAGE_OUTPUT_TOKENS, response.usage.output_tokens);
+    span.setAttribute(incubating_1.ATTR_GEN_AI_OUTPUT_MESSAGES, formatOutputMessages(response));
 }
 const SCOPE_CLASSIFIER_PROMPT = `You are a scope classifier for a customer service chatbot at an online store.
 Your ONLY job is to determine if the user's question is about the product catalog, products, or shopping.
@@ -30,7 +53,8 @@ const RESPONSE_GENERATOR_PROMPT = `You are a helpful customer service assistant 
 Answer the customer's question using ONLY the product information provided below.
 Be concise and helpful. If the product information doesn't contain enough detail to answer, say so honestly.
 Do NOT make up information that isn't in the product data.
-Do NOT answer questions unrelated to the products.`;
+Do NOT answer questions unrelated to the products.
+Format your response using HTML elements (such as <p>, <ul>, <li>, <strong>) instead of markdown.`;
 function extractText(response) {
     return response.content
         .filter((b) => b.type === 'text')
@@ -39,16 +63,19 @@ function extractText(response) {
 }
 // Sub-agent 1: Scope Classifier
 async function classifyScope(question) {
-    return tracer.startActiveSpan('scope_classifier', async (span) => {
+    return tracer.startActiveSpan(`${incubating_1.GEN_AI_OPERATION_NAME_VALUE_CHAT} ${MODEL}`, async (span) => {
         try {
-            span.setAttribute('chatbot.agent', 'scope_classifier');
+            span.setAttribute(incubating_1.ATTR_GEN_AI_OPERATION_NAME, incubating_1.GEN_AI_OPERATION_NAME_VALUE_CHAT);
+            span.setAttribute(incubating_1.ATTR_GEN_AI_AGENT_NAME, 'scope_classifier');
             span.setAttribute('chatbot.question', question);
+            const messages = [{ role: 'user', content: question }];
+            span.setAttribute(incubating_1.ATTR_GEN_AI_INPUT_MESSAGES, formatInputMessages(messages));
             const client = (0, anthropic_client_1.getAnthropicClient)();
             const response = await client.messages.create({
                 model: MODEL,
                 max_tokens: 100,
                 system: SCOPE_CLASSIFIER_PROMPT,
-                messages: [{ role: 'user', content: question }],
+                messages,
             });
             setGenAIAttributes(span, response);
             const text = extractText(response);
@@ -78,7 +105,7 @@ async function classifyScope(question) {
 async function fetchProductInfo(productId) {
     return tracer.startActiveSpan('product_fetcher', async (span) => {
         try {
-            span.setAttribute('chatbot.agent', 'product_fetcher');
+            span.setAttribute(incubating_1.ATTR_GEN_AI_AGENT_NAME, 'product_fetcher');
             if (productId) {
                 span.setAttribute('chatbot.product_id', productId);
             }
@@ -114,19 +141,22 @@ async function fetchProductInfo(productId) {
 }
 // Sub-agent 3: Response Generator
 async function generateResponse(question, productInfo) {
-    return tracer.startActiveSpan('response_generator', async (span) => {
+    return tracer.startActiveSpan(`${incubating_1.GEN_AI_OPERATION_NAME_VALUE_CHAT} ${MODEL}`, async (span) => {
         try {
-            span.setAttribute('chatbot.agent', 'response_generator');
+            span.setAttribute(incubating_1.ATTR_GEN_AI_OPERATION_NAME, incubating_1.GEN_AI_OPERATION_NAME_VALUE_CHAT);
+            span.setAttribute(incubating_1.ATTR_GEN_AI_AGENT_NAME, 'response_generator');
             span.setAttribute('chatbot.question', question);
+            const messages = [{
+                    role: 'user',
+                    content: `Product Information:\n${productInfo}\n\nCustomer Question: ${question}`,
+                }];
+            span.setAttribute(incubating_1.ATTR_GEN_AI_INPUT_MESSAGES, formatInputMessages(messages));
             const client = (0, anthropic_client_1.getAnthropicClient)();
             const response = await client.messages.create({
                 model: MODEL,
                 max_tokens: 1024,
                 system: RESPONSE_GENERATOR_PROMPT,
-                messages: [{
-                        role: 'user',
-                        content: `Product Information:\n${productInfo}\n\nCustomer Question: ${question}`,
-                    }],
+                messages,
             });
             setGenAIAttributes(span, response);
             const answer = extractText(response);
@@ -144,9 +174,10 @@ async function generateResponse(question, productInfo) {
 }
 // Supervisor agent: orchestrates the sub-agent flow
 async function handleQuestion(question, productId) {
-    return tracer.startActiveSpan('supervisor', async (span) => {
+    return tracer.startActiveSpan('invoke_agent supervisor', async (span) => {
         try {
-            span.setAttribute('chatbot.agent', 'supervisor');
+            span.setAttribute(incubating_1.ATTR_GEN_AI_AGENT_NAME, 'supervisor');
+            span.setAttribute(incubating_1.ATTR_GEN_AI_OPERATION_NAME, incubating_1.GEN_AI_OPERATION_NAME_VALUE_INVOKE_AGENT);
             span.setAttribute('chatbot.question', question);
             if (productId) {
                 span.setAttribute('chatbot.product_id', productId);

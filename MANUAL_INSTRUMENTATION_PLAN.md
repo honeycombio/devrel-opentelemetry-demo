@@ -11,6 +11,8 @@ The `ai-o11y-fedex` project uses the **OTel GenAI incubating semantic convention
 
 ## Changes
 
+### Step 0: Make the output of the AI chat response HTML elements, not markdown.
+
 ### Step 1: Add `@opentelemetry/semantic-conventions` dependency
 
 Add `"@opentelemetry/semantic-conventions": "^1.27.0"` to `package.json` dependencies. This gives access to the incubating GenAI constants.
@@ -18,6 +20,7 @@ Add `"@opentelemetry/semantic-conventions": "^1.27.0"` to `package.json` depende
 ### Step 2: Replace hardcoded strings with semconv constants in `agents.ts`
 
 Import from `@opentelemetry/semantic-conventions/incubating`:
+
 ```
 ATTR_GEN_AI_AGENT_NAME, ATTR_GEN_AI_OPERATION_NAME, ATTR_GEN_AI_PROVIDER_NAME,
 ATTR_GEN_AI_REQUEST_MODEL, ATTR_GEN_AI_RESPONSE_MODEL, ATTR_GEN_AI_RESPONSE_ID,
@@ -29,16 +32,17 @@ GEN_AI_OPERATION_NAME_VALUE_CHAT, GEN_AI_PROVIDER_NAME_VALUE_ANTHROPIC
 
 ### Step 3: Rename spans to follow `{operation} {name}` convention
 
-| Current span name | New span name |
-|---|---|
-| `supervisor` | `invoke_agent supervisor` |
-| `scope_classifier` | `chat scope_classifier` |
-| `product_fetcher` | `product_fetcher` (unchanged — not an LLM call) |
-| `response_generator` | `chat response_generator` |
+| Current span name    | New span name                                   |
+| -------------------- | ----------------------------------------------- |
+| `supervisor`         | `invoke_agent supervisor`                       |
+| `scope_classifier`   | `chat scope_classifier`                         |
+| `product_fetcher`    | `product_fetcher` (unchanged — not an LLM call) |
+| `response_generator` | `chat response_generator`                       |
 
 ### Step 4: Update `setGenAIAttributes()` to capture full response details
 
 Expand the helper to also set:
+
 - `gen_ai.provider.name` = `"anthropic"` (replaces `gen_ai.system`)
 - `gen_ai.response.id` = `response.id`
 - `gen_ai.response.finish_reasons` = `[response.stop_reason]`
@@ -49,8 +53,9 @@ Remove `gen_ai.system` (replaced by `gen_ai.provider.name`).
 ### Step 5: Add `gen_ai.input.messages` to chat spans
 
 Each LLM call span (`scope_classifier`, `response_generator`) gets a `gen_ai.input.messages` attribute containing the serialized messages array in the same structured format as ai-o11y-fedex:
+
 ```json
-[{"role": "user", "parts": [{"type": "text", "content": "..."}]}]
+[{ "role": "user", "parts": [{ "type": "text", "content": "..." }] }]
 ```
 
 ### Step 6: Add `gen_ai.operation.name` to all spans
@@ -65,8 +70,15 @@ All spans currently using `chatbot.agent` switch to `ATTR_GEN_AI_AGENT_NAME`. Th
 ### Step 8: Add output message formatting helper
 
 Add a `formatOutputMessages()` function (adapted from ai-o11y-fedex) that serializes Anthropic response content blocks into the GenAI message format:
+
 ```json
-[{"role": "assistant", "parts": [{"type": "text", "content": "..."}], "finish_reason": "end_turn"}]
+[
+  {
+    "role": "assistant",
+    "parts": [{ "type": "text", "content": "..." }],
+    "finish_reason": "end_turn"
+  }
+]
 ```
 
 And a `formatInputMessages()` helper for input messages.
