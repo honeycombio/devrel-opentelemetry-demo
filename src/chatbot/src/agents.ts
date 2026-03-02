@@ -64,7 +64,8 @@ async function classifyScope(question: string): Promise<boolean> {
       const text = extractText(response);
       let inScope = false;
       try {
-        inScope = JSON.parse(text).inScope === true;
+        const cleaned = text.replace(/^```(?:json)?\s*|\s*```$/g, '').trim();
+        inScope = JSON.parse(cleaned).inScope === true;
       } catch {
         // Parse failure → treat as out of scope
         inScope = false;
