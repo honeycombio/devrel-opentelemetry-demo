@@ -223,6 +223,7 @@ export async function handleQuestion(question: string, productId?: string): Prom
       span.setAttribute(ATTR_GEN_AI_AGENT_NAME, 'supervisor');
       span.setAttribute(ATTR_GEN_AI_OPERATION_NAME, GEN_AI_OPERATION_NAME_VALUE_INVOKE_AGENT);
       span.setAttribute('chatbot.question', question);
+      span.setAttribute(ATTR_GEN_AI_INPUT_MESSAGES, formatInputMessages([{ role: 'user', content: question }]));
       if (productId) {
         span.setAttribute('chatbot.product_id', productId);
       }
@@ -230,8 +231,10 @@ export async function handleQuestion(question: string, productId?: string): Prom
       // Step 1: Classify scope
       const inScope = await classifyScope(question);
       if (!inScope) {
+        const outOfScopeResponse = "AI Response: Sorry, I'm not able to answer that question.";
         span.setAttribute('chatbot.result', 'out_of_scope');
-        return "AI Response: Sorry, I'm not able to answer that question.";
+        span.setAttribute(ATTR_GEN_AI_OUTPUT_MESSAGES, JSON.stringify([{ role: 'assistant', parts: [{ type: 'text', content: outOfScopeResponse }] }]));
+        return outOfScopeResponse;
       }
 
       // Step 2: Fetch product information
@@ -241,11 +244,14 @@ export async function handleQuestion(question: string, productId?: string): Prom
       const answer = await generateResponse(question, productInfo);
 
       span.setAttribute('chatbot.result', 'success');
+      span.setAttribute(ATTR_GEN_AI_OUTPUT_MESSAGES, JSON.stringify([{ role: 'assistant', parts: [{ type: 'text', content: answer }] }]));
       return answer;
     } catch (error) {
       recordException(span, error);
+      const errorResponse = 'The Chatbot is Unavailable';
       span.setAttribute('chatbot.result', 'error');
-      return 'The Chatbot is Unavailable';
+      span.setAttribute(ATTR_GEN_AI_OUTPUT_MESSAGES, JSON.stringify([{ role: 'assistant', parts: [{ type: 'text', content: errorResponse }] }]));
+      return errorResponse;
     } finally {
       span.end();
     }
