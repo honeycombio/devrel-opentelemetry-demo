@@ -451,16 +451,17 @@ func panicRecoveryInterceptor() grpc.UnaryServerInterceptor {
 
 // calculateTax computes the tax for a line item based on its cost and quantity.
 func calculateTax(itemCost *pb.Money, quantity uint32, taxRate float64) *pb.Money {
-	baseTaxUnits := int64(float64(itemCost.GetUnits()) * taxRate)
-	baseTaxNanos := int32(float64(itemCost.GetNanos()) * taxRate)
+	totalUnits := int64(float64(itemCost.GetUnits()) * taxRate * float64(quantity))
+	totalNanos := int64(float64(itemCost.GetNanos()) * taxRate * float64(quantity))
 
-	// Compute per-unit tax
-	taxPerUnit := baseTaxUnits / int64(quantity)
+	// Normalize: carry overflow from nanos into units
+	totalUnits += totalNanos / 1000000000
+	totalNanos = totalNanos % 1000000000
 
 	return &pb.Money{
 		CurrencyCode: itemCost.GetCurrencyCode(),
-		Units:        taxPerUnit * int64(quantity),
-		Nanos:        baseTaxNanos * int32(quantity),
+		Units:        totalUnits,
+		Nanos:        int32(totalNanos),
 	}
 }
 
