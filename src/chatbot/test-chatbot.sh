@@ -1,12 +1,15 @@
 #!/usr/bin/env bash
 # Test script for chatbot enable/disable and question endpoints
-BASE_URL="https://kenrimple-local.aurelia.honeydemo.io"
+if [ -z "$CHATBOT_ROOT_URL" ]; then
+  echo "Error: CHATBOT_ROOT_URL environment variable is not set"
+  exit 1
+fi
+BASE_URL="$CHATBOT_ROOT_URL"
 
 echo "=== Enable chatbot ==="
 curl -s -X POST "$BASE_URL/chat/demo-enable" \
   -H "Content-Type: application/json" | jq .
 
-exit 1
 echo ""
 echo "=== Ask a question (enabled) ==="
 curl -s -X POST "$BASE_URL/chat/question" \

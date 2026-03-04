@@ -101,13 +101,14 @@ const ProductReviews = () => {
                 </S.AIMessage>
             )}
 
-            {aiResponse && !feedbackSent && (
+            {aiResponse && (
                 <>
                     <S.AIMessage aria-live="polite" data-cy="AIAnswer">
                         <strong>AI Response:</strong>{' '}
                         <span dangerouslySetInnerHTML={{ __html: aiResponse.text }} />
                     </S.AIMessage>
-                    {!aiResponse.text.includes("Sorry, I'm not able to answer") &&
+                    {!feedbackSent &&
+                     !aiResponse.text.includes("Sorry, I'm not able to answer") &&
                      !aiResponse.text.includes('The Chatbot is Unavailable') && (
                         <S.FeedbackRow>
                             <S.FeedbackButton
@@ -126,13 +127,12 @@ const ProductReviews = () => {
                             </S.FeedbackButton>
                         </S.FeedbackRow>
                     )}
+                    {feedbackSent && (
+                        <S.AIMessage aria-live="polite" data-cy="AIFeedbackThanks">
+                            Thanks for your feedback!
+                        </S.AIMessage>
+                    )}
                 </>
-            )}
-
-            {feedbackSent && (
-                <S.AIMessage aria-live="polite" data-cy="AIFeedbackThanks">
-                    Thanks for your feedback!
-                </S.AIMessage>
             )}
         </S.AskAISection>
 
