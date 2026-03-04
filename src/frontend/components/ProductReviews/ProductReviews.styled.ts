@@ -227,3 +227,23 @@ export const AIMessage = styled.p`
   line-height: 1.5;
   color: ${({ theme }) => theme.colors.otelGray};
 `;
+
+export const FeedbackRow = styled.div`
+  display: flex;
+  gap: 8px;
+  align-items: center;
+`;
+
+export const FeedbackButton = styled.button`
+  padding: 8px 16px;
+  border: none;
+  border-radius: 6px;
+  background: ${({ theme }) => theme.colors.otelBlue};
+  color: ${({ theme }) => theme.colors.white};
+  font-size: 18px;
+  cursor: pointer;
+
+  &:hover {
+    filter: brightness(1.05);
+  }
+`;

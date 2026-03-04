@@ -1,5 +1,5 @@
 import express, { Request, Response } from 'express';
-import { trace } from '@opentelemetry/api';
+import { trace, context, SpanContext, TraceFlags } from '@opentelemetry/api';
 import { handleQuestion } from './agents';
 
 const app = express();
@@ -40,12 +40,38 @@ app.post('/chat/question', async (req: Request, res: Response) => {
   }
 
   try {
-    const answer = await handleQuestion(question, productId);
-    res.json({ answer });
+    const { answer, traceId, spanId } = await handleQuestion(question, productId);
+    res.json({ answer, traceId, spanId });
   } catch {
     span?.setAttribute('chatbot.result', 'error');
     res.json({ answer: 'The Chatbot is Unavailable' });
   }
+});
+
+// POST /chat/feedback
+app.post('/chat/feedback', (req: Request, res: Response) => {
+  const { traceId, spanId, sentiment } = req.body;
+
+  if (!traceId || !spanId || !['good', 'bad'].includes(sentiment)) {
+    res.status(400).json({ error: 'Invalid feedback payload' });
+    return;
+  }
+
+  const remoteContext: SpanContext = {
+    traceId,
+    spanId,
+    traceFlags: TraceFlags.SAMPLED,
+    isRemote: true,
+  };
+  const parentContext = trace.setSpanContext(context.active(), remoteContext);
+  const tracer = trace.getTracer('chatbot');
+  tracer.startActiveSpan('user_feedback', {}, parentContext, (feedbackSpan) => {
+    feedbackSpan.setAttribute('feedback.sentiment', sentiment);
+    feedbackSpan.setAttribute('feedback.trace_id', traceId);
+    feedbackSpan.end();
+  });
+
+  res.json({ status: 'ok' });
 });
 
 // POST /chat/demo-enable

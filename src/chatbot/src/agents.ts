@@ -216,9 +216,16 @@ async function generateResponse(question: string, productInfo: string): Promise<
   });
 }
 
+export interface HandleQuestionResult {
+  answer: string;
+  traceId: string;
+  spanId: string;
+}
+
 // Supervisor agent: orchestrates the sub-agent flow
-export async function handleQuestion(question: string, productId?: string): Promise<string> {
+export async function handleQuestion(question: string, productId?: string): Promise<HandleQuestionResult> {
   return tracer.startActiveSpan('invoke_agent supervisor', async (span) => {
+    const { traceId, spanId } = span.spanContext();
     try {
       span.setAttribute(ATTR_GEN_AI_AGENT_NAME, 'supervisor');
       span.setAttribute(ATTR_GEN_AI_OPERATION_NAME, GEN_AI_OPERATION_NAME_VALUE_INVOKE_AGENT);
@@ -234,7 +241,7 @@ export async function handleQuestion(question: string, productId?: string): Prom
         const outOfScopeResponse = "AI Response: Sorry, I'm not able to answer that question.";
         span.setAttribute('chatbot.result', 'out_of_scope');
         span.setAttribute(ATTR_GEN_AI_OUTPUT_MESSAGES, JSON.stringify([{ role: 'assistant', parts: [{ type: 'text', content: outOfScopeResponse }] }]));
-        return outOfScopeResponse;
+        return { answer: outOfScopeResponse, traceId, spanId };
       }
 
       // Step 2: Fetch product information
@@ -245,13 +252,13 @@ export async function handleQuestion(question: string, productId?: string): Prom
 
       span.setAttribute('chatbot.result', 'success');
       span.setAttribute(ATTR_GEN_AI_OUTPUT_MESSAGES, JSON.stringify([{ role: 'assistant', parts: [{ type: 'text', content: answer }] }]));
-      return answer;
+      return { answer, traceId, spanId };
     } catch (error) {
       recordException(span, error);
       const errorResponse = 'The Chatbot is Unavailable';
       span.setAttribute('chatbot.result', 'error');
       span.setAttribute(ATTR_GEN_AI_OUTPUT_MESSAGES, JSON.stringify([{ role: 'assistant', parts: [{ type: 'text', content: errorResponse }] }]));
-      return errorResponse;
+      return { answer: errorResponse, traceId, spanId };
     } finally {
       span.end();
     }

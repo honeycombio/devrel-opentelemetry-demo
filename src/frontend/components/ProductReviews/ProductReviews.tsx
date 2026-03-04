@@ -54,7 +54,7 @@ const ProductReviews = () => {
 
     // AI Assistant (provider-driven)
     const [aiQuestion, setAiQuestion] = useState('');
-    const { sendAiRequest, aiResponse, aiLoading, aiError, reset } = useAiAssistant();
+    const { sendAiRequest, aiResponse, aiLoading, aiError, reset, sendFeedback, feedbackSent } = useAiAssistant();
 
     const handleAskAI = (questionOverride?: string) => {
         const q = (questionOverride ?? aiQuestion).trim();
@@ -101,10 +101,37 @@ const ProductReviews = () => {
                 </S.AIMessage>
             )}
 
-            {aiResponse && (
-                <S.AIMessage aria-live="polite" data-cy="AIAnswer">
-                    <strong>AI Response:</strong>{' '}
-                    <span dangerouslySetInnerHTML={{ __html: typeof aiResponse === 'string' ? aiResponse : aiResponse.text }} />
+            {aiResponse && !feedbackSent && (
+                <>
+                    <S.AIMessage aria-live="polite" data-cy="AIAnswer">
+                        <strong>AI Response:</strong>{' '}
+                        <span dangerouslySetInnerHTML={{ __html: aiResponse.text }} />
+                    </S.AIMessage>
+                    {!aiResponse.text.includes("Sorry, I'm not able to answer") &&
+                     !aiResponse.text.includes('The Chatbot is Unavailable') && (
+                        <S.FeedbackRow>
+                            <S.FeedbackButton
+                                type="button"
+                                onClick={() => sendFeedback(aiResponse.traceId, aiResponse.spanId, 'good')}
+                                data-cy="FeedbackGood"
+                            >
+                                👍
+                            </S.FeedbackButton>
+                            <S.FeedbackButton
+                                type="button"
+                                onClick={() => sendFeedback(aiResponse.traceId, aiResponse.spanId, 'bad')}
+                                data-cy="FeedbackBad"
+                            >
+                                👎
+                            </S.FeedbackButton>
+                        </S.FeedbackRow>
+                    )}
+                </>
+            )}
+
+            {feedbackSent && (
+                <S.AIMessage aria-live="polite" data-cy="AIFeedbackThanks">
+                    Thanks for your feedback!
                 </S.AIMessage>
             )}
         </S.AskAISection>

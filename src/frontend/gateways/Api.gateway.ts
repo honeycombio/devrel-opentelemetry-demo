@@ -84,12 +84,19 @@ const Apis = () => ({
     });
   },
   async askProductAIAssistant(productId: string, question: string) {
-    const { answer } = await request<{ answer: string }>({
+    const response = await request<{ answer: string; traceId: string; spanId: string }>({
       url: `/chat/question`,
       method: 'POST',
       body: { question, productId },
     });
-    return answer;
+    return response;
+  },
+  sendFeedback(traceId: string, spanId: string, sentiment: 'good' | 'bad') {
+    return request<{ status: string }>({
+      url: `/chat/feedback`,
+      method: 'POST',
+      body: { traceId, spanId, sentiment },
+    });
   },
   listRecommendations(productIds: string[], currencyCode: string) {
     return request<Product[]>({
