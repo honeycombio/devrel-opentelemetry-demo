@@ -36,13 +36,35 @@ app.post('/chat/question', async (req, res) => {
         return;
     }
     try {
-        const answer = await (0, agents_1.handleQuestion)(question, productId);
-        res.json({ answer });
+        const { answer, traceId, spanId } = await (0, agents_1.handleQuestion)(question, productId);
+        res.json({ answer, traceId, spanId });
     }
     catch {
         span?.setAttribute('chatbot.result', 'error');
         res.json({ answer: 'The Chatbot is Unavailable' });
     }
+});
+// POST /chat/feedback
+app.post('/chat/feedback', (req, res) => {
+    const { traceId, spanId, sentiment } = req.body;
+    if (!traceId || !spanId || !['good', 'bad'].includes(sentiment)) {
+        res.status(400).json({ error: 'Invalid feedback payload' });
+        return;
+    }
+    const remoteContext = {
+        traceId,
+        spanId,
+        traceFlags: api_1.TraceFlags.SAMPLED,
+        isRemote: true,
+    };
+    const parentContext = api_1.trace.setSpanContext(api_1.context.active(), remoteContext);
+    const tracer = api_1.trace.getTracer('chatbot');
+    tracer.startActiveSpan('user_feedback', {}, parentContext, (feedbackSpan) => {
+        feedbackSpan.setAttribute('feedback.sentiment', sentiment);
+        feedbackSpan.setAttribute('feedback.trace_id', traceId);
+        feedbackSpan.end();
+    });
+    res.json({ status: 'ok' });
 });
 // POST /chat/demo-enable
 app.post('/chat/demo-enable', (_req, res) => {
