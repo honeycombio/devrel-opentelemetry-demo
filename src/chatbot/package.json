@@ -5,7 +5,8 @@
   "main": "dist/index.js",
   "scripts": {
     "build": "tsc",
-    "start": "node --require ./opentelemetry.js dist/index.js"
+    "start": "node --require ./opentelemetry.js dist/index.js",
+    "test": "vitest run"
   },
   "license": "Apache-2.0",
   "dependencies": {
@@ -13,8 +14,8 @@
     "@opentelemetry/api": "1.9.0",
     "@opentelemetry/auto-instrumentations-node": "0.67.0",
     "@opentelemetry/core": "2.2.0",
-    "@opentelemetry/exporter-metrics-otlp-grpc": "0.208.0",
     "@opentelemetry/exporter-logs-otlp-grpc": "0.208.0",
+    "@opentelemetry/exporter-metrics-otlp-grpc": "0.208.0",
     "@opentelemetry/exporter-trace-otlp-grpc": "0.208.0",
     "@opentelemetry/instrumentation-runtime-node": "0.22.0",
     "@opentelemetry/resource-detector-alibaba-cloud": "0.31.11",
@@ -31,6 +32,7 @@
   "devDependencies": {
     "@types/express": "^5.0.0",
     "@types/node": "^22.0.0",
-    "typescript": "^5.6.0"
+    "typescript": "^5.6.0",
+    "vitest": "^4.0.18"
   }
 }
