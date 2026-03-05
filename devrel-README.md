@@ -216,6 +216,25 @@ It makes a whole yourname-local namespace with all the stuff in it.
 skaffold delete
 ```
 
+## eBPF Instrumentation (OBI)
+
+We run [OpenTelemetry eBPF Instrumentation (OBI)](https://opentelemetry.io/docs/zero-code/obi/) to get kernel-level traces for services in the cluster without code changes. Config is in `kubernetes/helm-obi.yml`.
+
+### Install / upgrade
+
+```shell
+helm repo add open-telemetry https://open-telemetry.github.io/opentelemetry-helm-charts
+helm install obi open-telemetry/opentelemetry-ebpf-instrumentation -n obi --create-namespace -f kubernetes/helm-obi.yml
+# or to upgrade:
+helm upgrade obi open-telemetry/opentelemetry-ebpf-instrumentation -n obi -f kubernetes/helm-obi.yml
+```
+
+### Excluding services
+
+eBPF instruments everything in the `devrel-demo` namespace by default. We exclude Refinery (and its Redis) because eBPF traces go through Refinery, creating a feedback loop: Refinery generates traces that Refinery then processes, which generates more traces, etc.
+
+Exclusions are in `kubernetes/helm-obi.yml` under `discovery.exclude_instrument`. If you add other telemetry-pipeline services to the namespace, you may need to exclude them too.
+
 ## Deploy to devrel-demo
 
 What is the next release number?

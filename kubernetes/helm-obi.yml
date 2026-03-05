@@ -1,0 +1,28 @@
+# OpenTelemetry eBPF Instrumentation (OBI) Helm values
+# Install with:
+#   helm repo add open-telemetry https://open-telemetry.github.io/opentelemetry-helm-charts
+#   helm install obi open-telemetry/opentelemetry-ebpf-instrumentation -n obi --create-namespace -f kubernetes/helm-obi.yml
+
+config:
+  data:
+    # Only instrument services in the devrel-demo namespace
+    discovery:
+      instrument:
+        - k8s_namespace: devrel-demo
+      exclude_instrument:
+        - k8s_deployment_name: htp-builder-refinery
+        - k8s_deployment_name: htp-builder-refinery-redis
+
+    # Send traces and metrics to the daemonset OTel Collector in devrel-demo
+    # (this is the same collector the application services use)
+    otel_traces_export:
+      endpoint: http://pod-telemetry-collector-opentelemetry-collector.devrel-demo:4317
+      protocol: grpc
+
+    otel_metrics_export:
+      endpoint: http://pod-telemetry-collector-opentelemetry-collector.devrel-demo:4317
+      protocol: grpc
+
+    # Use heuristic route grouping to reduce cardinality
+    routes:
+      unmatched: heuristic
