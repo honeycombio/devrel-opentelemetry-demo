@@ -3,11 +3,19 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.handleQuestion = handleQuestion;
 const api_1 = require("@opentelemetry/api");
 const incubating_1 = require("@opentelemetry/semantic-conventions/incubating");
+const server_sdk_1 = require("@openfeature/server-sdk");
 const anthropic_client_1 = require("./anthropic-client");
 const tracer = api_1.trace.getTracer('chatbot');
 const meter = api_1.metrics.getMeter('chatbot');
 const FRONTEND_ADDR = process.env.FRONTEND_ADDR || '';
-const MODEL = 'claude-haiku-4-5-20251001';
+const DEFAULT_MODEL = 'claude-haiku-4-5-20251001';
+const featureClient = server_sdk_1.OpenFeature.getClient();
+async function getResearchModel() {
+    return featureClient.getStringValue('chatbot.research.model', DEFAULT_MODEL);
+}
+async function getWriterModel() {
+    return featureClient.getStringValue('chatbot.writer.model', DEFAULT_MODEL);
+}
 // Gen-AI metrics
 const tokenUsageCounter = meter.createCounter(incubating_1.METRIC_GEN_AI_CLIENT_TOKEN_USAGE, {
     description: 'Measures number of input and output tokens used',
@@ -47,16 +55,16 @@ function formatOutputMessages(response) {
     ]);
 }
 // Common metric attributes for gen-ai operations
-function metricAttrs(operationName) {
+function metricAttrs(operationName, model) {
     return {
         [incubating_1.ATTR_GEN_AI_OPERATION_NAME]: operationName,
-        [incubating_1.ATTR_GEN_AI_REQUEST_MODEL]: MODEL,
+        [incubating_1.ATTR_GEN_AI_REQUEST_MODEL]: model,
         [incubating_1.ATTR_GEN_AI_PROVIDER_NAME]: incubating_1.GEN_AI_PROVIDER_NAME_VALUE_ANTHROPIC,
     };
 }
 // Record gen-ai metrics after an LLM call
-function recordMetrics(operationName, usage, durationMs) {
-    const attrs = metricAttrs(operationName);
+function recordMetrics(operationName, model, usage, durationMs) {
+    const attrs = metricAttrs(operationName, model);
     tokenUsageCounter.add(usage.input_tokens, { ...attrs, [incubating_1.ATTR_GEN_AI_TOKEN_TYPE]: incubating_1.GEN_AI_TOKEN_TYPE_VALUE_INPUT });
     tokenUsageCounter.add(usage.output_tokens, { ...attrs, [incubating_1.ATTR_GEN_AI_TOKEN_TYPE]: incubating_1.GEN_AI_TOKEN_TYPE_VALUE_OUTPUT });
     operationDurationHistogram.record(durationMs / 1000, attrs);
@@ -70,9 +78,9 @@ function emitInferenceEvent(span, systemPrompt, messages, response) {
     });
 }
 // Set GenAI semantic attributes on LLM call spans
-function setGenAIAttributes(span, systemPrompt, maxTokens, response) {
+function setGenAIAttributes(span, model, systemPrompt, maxTokens, response) {
     span.setAttribute(incubating_1.ATTR_GEN_AI_PROVIDER_NAME, incubating_1.GEN_AI_PROVIDER_NAME_VALUE_ANTHROPIC);
-    span.setAttribute(incubating_1.ATTR_GEN_AI_REQUEST_MODEL, MODEL);
+    span.setAttribute(incubating_1.ATTR_GEN_AI_REQUEST_MODEL, model);
     span.setAttribute(incubating_1.ATTR_GEN_AI_REQUEST_MAX_TOKENS, maxTokens);
     span.setAttribute(incubating_1.ATTR_GEN_AI_SYSTEM_INSTRUCTIONS, systemPrompt);
     span.setAttribute(incubating_1.ATTR_GEN_AI_RESPONSE_MODEL, response.model);
@@ -107,12 +115,13 @@ When asked, call the fetch_products tool to get product information. You may opt
 After receiving the tool result, return the product data as-is without modification.`;
 // Sub-agent 1: Scope Classifier
 async function classifyScope(question) {
+    const model = await getResearchModel();
     return tracer.startActiveSpan(`${incubating_1.GEN_AI_OPERATION_NAME_VALUE_INVOKE_AGENT} scope_classifier`, async (agentSpan) => {
         try {
             agentSpan.setAttribute(incubating_1.ATTR_GEN_AI_OPERATION_NAME, incubating_1.GEN_AI_OPERATION_NAME_VALUE_INVOKE_AGENT);
             agentSpan.setAttribute(incubating_1.ATTR_GEN_AI_AGENT_NAME, 'scope_classifier');
             agentSpan.setAttribute(incubating_1.ATTR_GEN_AI_INPUT_MESSAGES, formatInputMessages([{ role: 'user', content: question }]));
-            const result = await tracer.startActiveSpan(`${incubating_1.GEN_AI_OPERATION_NAME_VALUE_CHAT} ${MODEL}`, async (span) => {
+            const result = await tracer.startActiveSpan(`${incubating_1.GEN_AI_OPERATION_NAME_VALUE_CHAT} ${model}`, async (span) => {
                 try {
                     span.setAttribute(incubating_1.ATTR_GEN_AI_OPERATION_NAME, incubating_1.GEN_AI_OPERATION_NAME_VALUE_CHAT);
                     span.setAttribute('chatbot.question', question);
@@ -121,15 +130,15 @@ async function classifyScope(question) {
                     const client = (0, anthropic_client_1.getAnthropicClient)();
                     const startTime = performance.now();
                     const response = await client.messages.create({
-                        model: MODEL,
+                        model,
                         max_tokens: 100,
                         system: SCOPE_CLASSIFIER_PROMPT,
                         messages,
                     });
                     const durationMs = performance.now() - startTime;
-                    setGenAIAttributes(span, SCOPE_CLASSIFIER_PROMPT, 100, response);
+                    setGenAIAttributes(span, model, SCOPE_CLASSIFIER_PROMPT, 100, response);
                     emitInferenceEvent(span, SCOPE_CLASSIFIER_PROMPT, messages, response);
-                    recordMetrics(incubating_1.GEN_AI_OPERATION_NAME_VALUE_CHAT, response.usage, durationMs);
+                    recordMetrics(incubating_1.GEN_AI_OPERATION_NAME_VALUE_CHAT, model, response.usage, durationMs);
                     const text = extractText(response);
                     let inScope = false;
                     try {
@@ -199,6 +208,7 @@ const FETCH_PRODUCTS_TOOL = {
 };
 // Sub-agent 2: Product Fetcher (tool-calling agent)
 async function fetchProductInfo(productId) {
+    const model = await getResearchModel();
     return tracer.startActiveSpan(`${incubating_1.GEN_AI_OPERATION_NAME_VALUE_INVOKE_AGENT} product_fetcher`, async (agentSpan) => {
         try {
             agentSpan.setAttribute(incubating_1.ATTR_GEN_AI_OPERATION_NAME, incubating_1.GEN_AI_OPERATION_NAME_VALUE_INVOKE_AGENT);
@@ -215,22 +225,22 @@ async function fetchProductInfo(productId) {
                 { role: 'user', content: userContent },
             ];
             // First chat: ask Claude to call the tool
-            const firstResponse = await tracer.startActiveSpan(`${incubating_1.GEN_AI_OPERATION_NAME_VALUE_CHAT} ${MODEL}`, async (chatSpan) => {
+            const firstResponse = await tracer.startActiveSpan(`${incubating_1.GEN_AI_OPERATION_NAME_VALUE_CHAT} ${model}`, async (chatSpan) => {
                 try {
                     chatSpan.setAttribute(incubating_1.ATTR_GEN_AI_OPERATION_NAME, incubating_1.GEN_AI_OPERATION_NAME_VALUE_CHAT);
                     chatSpan.setAttribute(incubating_1.ATTR_GEN_AI_INPUT_MESSAGES, formatInputMessages([{ role: 'user', content: userContent }]));
                     const startTime = performance.now();
                     const response = await client.messages.create({
-                        model: MODEL,
+                        model,
                         max_tokens: 1024,
                         system: PRODUCT_FETCHER_PROMPT,
                         tools: [FETCH_PRODUCTS_TOOL],
                         messages: [{ role: 'user', content: userContent }],
                     });
                     const durationMs = performance.now() - startTime;
-                    setGenAIAttributes(chatSpan, PRODUCT_FETCHER_PROMPT, 1024, response);
+                    setGenAIAttributes(chatSpan, model, PRODUCT_FETCHER_PROMPT, 1024, response);
                     emitInferenceEvent(chatSpan, PRODUCT_FETCHER_PROMPT, [{ role: 'user', content: userContent }], response);
-                    recordMetrics(incubating_1.GEN_AI_OPERATION_NAME_VALUE_CHAT, response.usage, durationMs);
+                    recordMetrics(incubating_1.GEN_AI_OPERATION_NAME_VALUE_CHAT, model, response.usage, durationMs);
                     return response;
                 }
                 catch (error) {
@@ -271,7 +281,7 @@ async function fetchProductInfo(productId) {
                 }
             });
             // Second chat: send tool result back to Claude for final response
-            const finalText = await tracer.startActiveSpan(`${incubating_1.GEN_AI_OPERATION_NAME_VALUE_CHAT} ${MODEL}`, async (chatSpan2) => {
+            const finalText = await tracer.startActiveSpan(`${incubating_1.GEN_AI_OPERATION_NAME_VALUE_CHAT} ${model}`, async (chatSpan2) => {
                 try {
                     chatSpan2.setAttribute(incubating_1.ATTR_GEN_AI_OPERATION_NAME, incubating_1.GEN_AI_OPERATION_NAME_VALUE_CHAT);
                     const followUpMessages = [
@@ -294,16 +304,16 @@ async function fetchProductInfo(productId) {
                     }))));
                     const startTime = performance.now();
                     const response2 = await client.messages.create({
-                        model: MODEL,
+                        model,
                         max_tokens: 1024,
                         system: PRODUCT_FETCHER_PROMPT,
                         tools: [FETCH_PRODUCTS_TOOL],
                         messages: followUpMessages,
                     });
                     const durationMs = performance.now() - startTime;
-                    setGenAIAttributes(chatSpan2, PRODUCT_FETCHER_PROMPT, 1024, response2);
+                    setGenAIAttributes(chatSpan2, model, PRODUCT_FETCHER_PROMPT, 1024, response2);
                     emitInferenceEvent(chatSpan2, PRODUCT_FETCHER_PROMPT, [{ role: 'user', content: typeof followUpMessages[2].content === 'string' ? followUpMessages[2].content : JSON.stringify(followUpMessages[2].content) }], response2);
-                    recordMetrics(incubating_1.GEN_AI_OPERATION_NAME_VALUE_CHAT, response2.usage, durationMs);
+                    recordMetrics(incubating_1.GEN_AI_OPERATION_NAME_VALUE_CHAT, model, response2.usage, durationMs);
                     return extractText(response2) || toolResult;
                 }
                 catch (error) {
@@ -328,12 +338,13 @@ async function fetchProductInfo(productId) {
 }
 // Sub-agent 3: Response Generator
 async function generateResponse(question, productInfo) {
+    const model = await getWriterModel();
     return tracer.startActiveSpan(`${incubating_1.GEN_AI_OPERATION_NAME_VALUE_INVOKE_AGENT} response_generator`, async (agentSpan) => {
         try {
             agentSpan.setAttribute(incubating_1.ATTR_GEN_AI_OPERATION_NAME, incubating_1.GEN_AI_OPERATION_NAME_VALUE_INVOKE_AGENT);
             agentSpan.setAttribute(incubating_1.ATTR_GEN_AI_AGENT_NAME, 'response_generator');
             agentSpan.setAttribute(incubating_1.ATTR_GEN_AI_INPUT_MESSAGES, formatInputMessages([{ role: 'user', content: question }]));
-            const answer = await tracer.startActiveSpan(`${incubating_1.GEN_AI_OPERATION_NAME_VALUE_CHAT} ${MODEL}`, async (span) => {
+            const answer = await tracer.startActiveSpan(`${incubating_1.GEN_AI_OPERATION_NAME_VALUE_CHAT} ${model}`, async (span) => {
                 try {
                     span.setAttribute(incubating_1.ATTR_GEN_AI_OPERATION_NAME, incubating_1.GEN_AI_OPERATION_NAME_VALUE_CHAT);
                     span.setAttribute('chatbot.question', question);
@@ -345,15 +356,15 @@ async function generateResponse(question, productInfo) {
                     const client = (0, anthropic_client_1.getAnthropicClient)();
                     const startTime = performance.now();
                     const response = await client.messages.create({
-                        model: MODEL,
+                        model,
                         max_tokens: 1024,
                         system: RESPONSE_GENERATOR_PROMPT,
                         messages,
                     });
                     const durationMs = performance.now() - startTime;
-                    setGenAIAttributes(span, RESPONSE_GENERATOR_PROMPT, 1024, response);
+                    setGenAIAttributes(span, model, RESPONSE_GENERATOR_PROMPT, 1024, response);
                     emitInferenceEvent(span, RESPONSE_GENERATOR_PROMPT, messages, response);
-                    recordMetrics(incubating_1.GEN_AI_OPERATION_NAME_VALUE_CHAT, response.usage, durationMs);
+                    recordMetrics(incubating_1.GEN_AI_OPERATION_NAME_VALUE_CHAT, model, response.usage, durationMs);
                     const text = extractText(response);
                     span.setAttribute('chatbot.response_length', text.length);
                     return text;
@@ -407,6 +418,7 @@ async function handleQuestion(question, productId) {
             return { answer, traceId, spanId };
         }
         catch (error) {
+            console.error('handleQuestion error:', error);
             recordException(span, error);
             const errorResponse = 'The Chatbot is Unavailable';
             span.setAttribute('chatbot.result', 'error');

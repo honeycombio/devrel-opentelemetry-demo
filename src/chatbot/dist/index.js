@@ -5,19 +5,32 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
 const api_1 = require("@opentelemetry/api");
+const server_sdk_1 = require("@openfeature/server-sdk");
+const flagd_provider_1 = require("@openfeature/flagd-provider");
 const agents_1 = require("./agents");
 const app = (0, express_1.default)();
 app.use(express_1.default.json());
 const PORT = parseInt(process.env.CHATBOT_PORT || '8087', 10);
 const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
 let demoEnabled = false;
-function isChatbotAvailable() {
-    return demoEnabled && !!ANTHROPIC_API_KEY;
+// Initialize OpenFeature with FlagD provider
+const flagProvider = new flagd_provider_1.FlagdProvider();
+server_sdk_1.OpenFeature.setProviderAndWait(flagProvider).catch((err) => {
+    console.error('Failed to initialize FlagD provider:', err);
+});
+const featureClient = server_sdk_1.OpenFeature.getClient();
+async function isChatbotAvailable() {
+    if (!ANTHROPIC_API_KEY)
+        return false;
+    const chatbotEnabledFlag = await featureClient.getBooleanValue('chatbot.enabled', false);
+    return chatbotEnabledFlag || demoEnabled;
 }
 // POST /chat/question
 app.post('/chat/question', async (req, res) => {
     const span = api_1.trace.getActiveSpan();
-    const available = isChatbotAvailable();
+    const chatbotEnabledFlag = await featureClient.getBooleanValue('chatbot.enabled', false);
+    const available = await isChatbotAvailable();
+    span?.setAttribute('chatbot.flag_enabled', chatbotEnabledFlag);
     span?.setAttribute('chatbot.demo_enabled', demoEnabled);
     span?.setAttribute('chatbot.available', available);
     if (!available) {

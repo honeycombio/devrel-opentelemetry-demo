@@ -18,6 +18,10 @@ services:
         value: "8087"
       - name: FRONTEND_ADDR
         value: "http://frontend:8080"
+      - name: FLAGD_HOST
+        value: "flagd"
+      - name: FLAGD_PORT
+        value: "8013"
 
   productReviews:
     enabled: true
