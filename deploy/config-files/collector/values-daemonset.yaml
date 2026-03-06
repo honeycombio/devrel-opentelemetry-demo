@@ -189,6 +189,7 @@ config:
         exporters:
           - otlp/htp
           - otlp/logging-dogfood
+          - otlp/bindplane
         processors:
           - transform/parse_json_body
           - transform/service_names
