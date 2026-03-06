@@ -155,6 +155,10 @@ config:
       endpoint: ${HTP_ENDPOINT}
       tls:
         insecure: true
+    otlp/bindplane:
+      endpoint: bindplane-node-agent.bindplane-agent:4317
+      tls:
+        insecure: true
     otlp/traces-dogfood:
       endpoint: api-dogfood.honeycomb.io:443
       headers:
@@ -185,6 +189,7 @@ config:
         exporters:
           - otlp/htp
           - otlp/logging-dogfood
+          - otlp/bindplane
         processors:
           - transform/parse_json_body
           - transform/service_names
@@ -197,6 +202,7 @@ config:
         exporters:
           - otlp/htp
           - otlp/traces-dogfood
+          - otlp/bindplane
         processors:
           - transform/service_names
           - transform/attribution

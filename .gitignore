@@ -35,6 +35,7 @@ composer.lock
 .skaffold.env
 .dockerhub.env
 .ghcr.env
+.be
 
 src/frontend/cypress/videos
 src/frontend/cypress/screenshots
