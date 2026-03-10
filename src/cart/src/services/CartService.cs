@@ -1,6 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 using System.Diagnostics;
+using System.Linq;
 using System.Threading.Tasks;
 using System;
 using Grpc.Core;
@@ -119,11 +120,22 @@ public class CartService : Oteldemo.CartService.CartServiceBase
 
             var shouldDoDatabaseCall = await _featureFlagHelper.GetBooleanValueAsync("cartservice.add-db-call", false);
             activity?.SetTag("app.feature_flag.cart_db_call", shouldDoDatabaseCall);
+
+            await EnsureProductsTableAsync();
+            if (!shouldDoDatabaseCall)
+            {
+                // Batch query: one SELECT for all cart items (the efficient way)
+                var ids = cart.Items.Select(i => i.ProductId).ToArray();
+                await using var batchCmd = _pgDataSource.CreateCommand("SELECT * FROM products WHERE id = ANY($1)");
+                batchCmd.Parameters.AddWithValue(ids);
+                await using var batchReader = await batchCmd.ExecuteReaderAsync();
+                while (await batchReader.ReadAsync()) { /* drain results */ }
+            }
+
             foreach (var item in cart.Items)
             {
                 if (shouldDoDatabaseCall)
                 {
-                    await EnsureProductsTableAsync();
                     // N+1 query: one SELECT per cart item (this is the problem the demo reveals)
                     await using var cmd = _pgDataSource.CreateCommand("SELECT * FROM products WHERE id = $1");
                     cmd.Parameters.AddWithValue(item.ProductId);
