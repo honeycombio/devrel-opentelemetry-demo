@@ -15,6 +15,7 @@ using OpenTelemetry.Logs;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
+using Npgsql;
 using OpenFeature;
 using OpenFeature.Hooks;
 using OpenFeature.Contrib.Providers.Flagd;
@@ -26,6 +27,11 @@ if (string.IsNullOrEmpty(valkeyAddress))
     Console.WriteLine("VALKEY_ADDR environment variable is required.");
     Environment.Exit(1);
 }
+
+// PostgreSQL data source for the cart feature flag demo (N+1 query simulation)
+var pgConnectionString = "Host=postgresql;Port=5432;Database=otel;Username=root;Password=otel";
+var pgDataSource = NpgsqlDataSource.Create(pgConnectionString);
+builder.Services.AddSingleton(pgDataSource);
 
 builder.Logging
     .AddOpenTelemetry(options => options.AddOtlpExporter())
@@ -51,7 +57,8 @@ builder.Services.AddSingleton(x =>
         x.GetRequiredService<ICartStore>(),
         new ValkeyCartStore(x.GetRequiredService<ILogger<ValkeyCartStore>>(), "badhost:1234"),
         x.GetRequiredService<IFeatureClient>(),
-        x.GetRequiredService<ILogger<CartService>>()
+        x.GetRequiredService<ILogger<CartService>>(),
+        x.GetRequiredService<NpgsqlDataSource>()
 ));
 
 
@@ -67,6 +74,7 @@ builder.Services.AddOpenTelemetry()
         .AddSource("OpenTelemetry.Demo.Cart")
         .AddRedisInstrumentation(
             options => options.SetVerboseDatabaseStatements = true)
+        .AddNpgsqlInstrumentation()
         .AddAspNetCoreInstrumentation()
         .AddGrpcClientInstrumentation()
         .AddHttpClientInstrumentation()

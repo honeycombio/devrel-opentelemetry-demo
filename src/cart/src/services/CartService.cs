@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using System;
 using Grpc.Core;
 using cart.cartstore;
+using Npgsql;
 using OpenFeature;
 using Oteldemo;
 using OpenFeature.Model;
@@ -15,19 +16,51 @@ namespace cart.services;
 public class CartService : Oteldemo.CartService.CartServiceBase
 {
     private static readonly Empty Empty = new();
-    private readonly Random random = new Random();
     private readonly ICartStore _badCartStore;
     private readonly ICartStore _cartStore;
     private readonly IFeatureClient _featureFlagHelper;
     private readonly ILogger<CartService> _logger;
-    public static readonly ActivitySource ActivitySource = new("Database");
+    private readonly NpgsqlDataSource _pgDataSource;
+    private bool _pgInitialized;
 
-    public CartService(ICartStore cartStore, ICartStore badCartStore, IFeatureClient featureFlagService, ILogger<CartService> logger)
+    public CartService(ICartStore cartStore, ICartStore badCartStore, IFeatureClient featureFlagService, ILogger<CartService> logger, NpgsqlDataSource pgDataSource)
     {
         _badCartStore = badCartStore;
         _cartStore = cartStore;
         _featureFlagHelper = featureFlagService;
         _logger = logger;
+        _pgDataSource = pgDataSource;
+    }
+
+    private async Task EnsureProductsTableAsync()
+    {
+        if (_pgInitialized) return;
+
+        await using var conn = await _pgDataSource.OpenConnectionAsync();
+        await using var cmd = conn.CreateCommand();
+        cmd.CommandText = @"
+            CREATE TABLE IF NOT EXISTS products (
+                id TEXT PRIMARY KEY,
+                name TEXT NOT NULL,
+                description TEXT,
+                price_cents INT NOT NULL
+            );
+            INSERT INTO products (id, name, description, price_cents) VALUES
+                ('OLJCESPC7Z', 'Vintage Typewriter', 'A vintage typewriter for the modern age', 6599),
+                ('66VCHSJNUP', 'Vintage Camera Lens', 'A premium camera lens from the 1960s', 12099),
+                ('1YMWWN1N4O', 'Home Barista Kit', 'Everything you need to brew cafe-quality coffee', 12400),
+                ('L9ECAV7KIM', 'Terrarium', 'A self-sustaining ecosystem in a jar', 3655),
+                ('2ZYFJ3GM2N', 'Film Camera', 'A point-and-shoot film camera for everyday use', 2245),
+                ('0PUK6V6EV0', 'Vintage Record Player', 'A turntable for vinyl enthusiasts', 6599),
+                ('LS4PSXUNUM', 'Metal Camping Mug', 'An insulated mug for outdoor adventures', 2448),
+                ('9SIQT8TOJO', 'City Bike', 'A commuter bike for the urban dweller', 78999),
+                ('6E92ZMYYFZ', 'Air Plant', 'A low-maintenance plant that thrives on air', 1299),
+                ('HQTGWGPNH4', 'Mechanical Pencil Set', 'A set of precision mechanical pencils', 1895)
+            ON CONFLICT (id) DO NOTHING;
+        ";
+        await cmd.ExecuteNonQueryAsync();
+        _pgInitialized = true;
+        _logger.LogInformation("Products table initialized in PostgreSQL");
     }
 
     public override async Task<Empty> AddItem(AddItemRequest request, ServerCallContext context)
@@ -79,29 +112,23 @@ public class CartService : Oteldemo.CartService.CartServiceBase
 
             _featureFlagHelper.SetContext(
                 EvaluationContext.Builder()
+                    .SetTargetingKey(request.UserId)
                     .Set("cart.unique_items.count", cart.Items.Count)
                     .Set("app.user.id", request.UserId)
                     .Build());
 
             var shouldDoDatabaseCall = await _featureFlagHelper.GetBooleanValueAsync("cartservice.add-db-call", false);
-            if (!shouldDoDatabaseCall)
-            {
-                using var dbActivity = ActivitySource.StartActivity("SELECT * FROM products WHERE id = @id", ActivityKind.Client);
-                    dbActivity?.SetTag("db.statement", "SELECT * FROM products WHERE id IN @ids");
-                    dbActivity?.SetTag("db.type", "sql");
-            }
+            activity?.SetTag("app.feature_flag.cart_db_call", shouldDoDatabaseCall);
             foreach (var item in cart.Items)
             {
                 if (shouldDoDatabaseCall)
                 {
-                    using var dbActivity = ActivitySource.StartActivity("SELECT * FROM products WHERE id = @id", ActivityKind.Client);
-                    dbActivity?.SetTag("app.product.id", item.ProductId);
-                    dbActivity?.SetTag("db.statement", "SELECT * FROM products WHERE id = @id");
-                    dbActivity?.SetTag("db.type", "sql");
-                    if (cart.Items.Count > 6)
-                    {
-                        await Task.Delay(random.Next(100, 300));
-                    }
+                    await EnsureProductsTableAsync();
+                    // N+1 query: one SELECT per cart item (this is the problem the demo reveals)
+                    await using var cmd = _pgDataSource.CreateCommand("SELECT * FROM products WHERE id = $1");
+                    cmd.Parameters.AddWithValue(item.ProductId);
+                    await using var reader = await cmd.ExecuteReaderAsync();
+                    while (await reader.ReadAsync()) { /* drain results */ }
                 }
                 totalCart += item.Quantity;
             }

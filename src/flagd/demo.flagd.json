@@ -83,13 +83,19 @@
       "defaultVariant": "off"
     },
     "cartservice.add-db-call": {
-      "description": "Add database call to the cart service",
+      "description": "Add per-item database lookups to the cart service",
       "state": "ENABLED",
       "variants": {
         "on": true,
         "off": false
       },
-      "defaultVariant": "off"
+      "defaultVariant": "off",
+      "targeting": {
+        "fractional": [
+          ["on", 50],
+          ["off", 50]
+        ]
+      }
     },
     "paymentFailure": {
       "description": "Fail payment service charge requests n%",

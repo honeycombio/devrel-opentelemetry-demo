@@ -182,7 +182,7 @@ class WebsiteUser(HttpUser):
                 user = str(uuid.uuid1())
             product = random.choice(products)
             quantity = random.choice([1, 2, 3, 4, 5, 10])
-            with self.tracer.start_as_current_span("user_add_to_cart", context=Context(), attributes={"user.id": user, "product.id": product, "quantity": quantity}):
+            with self.tracer.start_as_current_span("user_add_to_cart", context=Context(), attributes={"app.user.id": user, "product.id": product, "quantity": quantity}):
                 logging.info(f"User {user} adding {quantity} of product {product} to cart")
                 self.client.get("/api/products/" + product)
                 cart_item = {
@@ -197,7 +197,7 @@ class WebsiteUser(HttpUser):
     @task(1)
     def checkout(self):
         user = str(uuid.uuid1())
-        with self.tracer.start_as_current_span("user_checkout_single", context=Context(), attributes={"user.id": user}):
+        with self.tracer.start_as_current_span("user_checkout_single", context=Context(), attributes={"app.user.id": user}):
             self.add_to_cart(user=user)
             checkout_person = random.choice(people)
             checkout_person["userId"] = user
@@ -209,7 +209,7 @@ class WebsiteUser(HttpUser):
         user = str(uuid.uuid1())
         item_count = random.choice([2, 3, 4])
         with self.tracer.start_as_current_span("user_checkout_multi", context=Context(),
-                                            attributes={"user.id": user, "item.count": item_count}):
+                                            attributes={"app.user.id": user, "item.count": item_count}):
             for i in range(item_count):
                 self.add_to_cart(user=user)
             checkout_person = random.choice(people)

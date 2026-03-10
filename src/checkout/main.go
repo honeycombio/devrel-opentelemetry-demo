@@ -298,7 +298,7 @@ func (cs *checkout) PlaceOrder(ctx context.Context, req *pb.PlaceOrderRequest) (
 	logger.LogAttrs(
 		ctx,
 		slog.LevelInfo, "[PlaceOrder]",
-		slog.String("user_id", req.UserId),
+		slog.String("app.user.id", req.UserId),
 		slog.String("user_currency", req.UserCurrency),
 	)
 
