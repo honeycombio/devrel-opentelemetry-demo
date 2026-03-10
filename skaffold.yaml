@@ -236,3 +236,6 @@ deploy:
               - "./scripts/setup-pod-identity-association.sh"
               - "--namespace"
               - "$USER-local"
+        - host:
+            command:
+              - "./scripts/patch-flagd-config.sh"
