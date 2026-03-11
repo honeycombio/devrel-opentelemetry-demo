@@ -13,5 +13,5 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 echo "Restarting flagd to pick up the 50% setting..."
 kubectl rollout restart deployment/flagd -n "$NAMESPACE"
 kubectl rollout status deployment/flagd -n "$NAMESPACE" --timeout=60s
-"$SCRIPT_DIR/send-marker.sh" --type feature-flag --message "flag cartservice.add-db-call → 50%"
+"$SCRIPT_DIR/send-marker.sh" --type feature-flag --message "flag cartservice.add-db-call → 50%" --dataset cart
 echo "Flag is ON at 50%."
