@@ -30,7 +30,12 @@ if (string.IsNullOrEmpty(valkeyAddress))
 
 // PostgreSQL data source for the cart feature flag demo (N+1 query simulation)
 var pgConnectionString = "Host=postgresql;Port=5432;Database=otel;Username=root;Password=otel";
-var pgDataSource = NpgsqlDataSource.Create(pgConnectionString);
+var pgDataSourceBuilder = new NpgsqlDataSourceBuilder(pgConnectionString);
+pgDataSourceBuilder.ConfigureTracing(o => o
+    .ConfigureCommandSpanNameProvider(cmd => cmd.CommandText)
+    .EnableFirstResponseEvent(false)
+);
+var pgDataSource = pgDataSourceBuilder.Build();
 builder.Services.AddSingleton(pgDataSource);
 
 builder.Logging

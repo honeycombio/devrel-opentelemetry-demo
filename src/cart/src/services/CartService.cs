@@ -58,6 +58,15 @@ public class CartService : Oteldemo.CartService.CartServiceBase
                 ('6E92ZMYYFZ', 'Air Plant', 'A low-maintenance plant that thrives on air', 1299),
                 ('HQTGWGPNH4', 'Mechanical Pencil Set', 'A set of precision mechanical pencils', 1895)
             ON CONFLICT (id) DO NOTHING;
+
+            CREATE OR REPLACE FUNCTION enrich(product_id TEXT)
+            RETURNS TABLE(id TEXT, name TEXT, description TEXT, price_cents INT) AS $$
+            BEGIN
+                PERFORM pg_sleep(0.01 + random() * 0.19);
+                RETURN QUERY SELECT p.id, p.name, p.description, p.price_cents
+                    FROM products p WHERE p.id = product_id;
+            END;
+            $$ LANGUAGE plpgsql;
         ";
         await cmd.ExecuteNonQueryAsync();
         _pgInitialized = true;
@@ -113,16 +122,16 @@ public class CartService : Oteldemo.CartService.CartServiceBase
 
             _featureFlagHelper.SetContext(
                 EvaluationContext.Builder()
-                    .SetTargetingKey(request.UserId)
+                    .SetTargetingKey(request.UserId)    
                     .Set("cart.unique_items.count", cart.Items.Count)
                     .Set("app.user.id", request.UserId)
                     .Build());
 
-            var shouldDoDatabaseCall = await _featureFlagHelper.GetBooleanValueAsync("cartservice.add-db-call", false);
-            activity?.SetTag("app.feature_flag.cart_db_call", shouldDoDatabaseCall);
+            var shouldEnrichDatabaseResults = await _featureFlagHelper.GetBooleanValueAsync("cartservice.add-db-call", false);
+            activity?.SetTag("app.feature_flag.cart_db_call", shouldEnrichDatabaseResults);
 
             await EnsureProductsTableAsync();
-            if (!shouldDoDatabaseCall)
+            if (!shouldEnrichDatabaseResults)
             {
                 // Batch query: one SELECT for all cart items (the efficient way)
                 var ids = cart.Items.Select(i => i.ProductId).ToArray();
@@ -134,10 +143,10 @@ public class CartService : Oteldemo.CartService.CartServiceBase
 
             foreach (var item in cart.Items)
             {
-                if (shouldDoDatabaseCall)
+                if (shouldEnrichDatabaseResults)
                 {
-                    // N+1 query: one SELECT per cart item (this is the problem the demo reveals)
-                    await using var cmd = _pgDataSource.CreateCommand("SELECT * FROM products WHERE id = $1");
+                    // N+1 query: enrich each cart item individually (this is the problem the demo reveals)
+                    await using var cmd = _pgDataSource.CreateCommand("SELECT * FROM enrich($1)");
                     cmd.Parameters.AddWithValue(item.ProductId);
                     await using var reader = await cmd.ExecuteReaderAsync();
                     while (await reader.ReadAsync()) { /* drain results */ }
