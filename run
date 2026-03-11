@@ -83,9 +83,9 @@ export SOURCE_MAPS_PREFIX
 skaffold run -d "$CONTAINER_REGISTRY" -b $SERVICES -l skaffold.dev/run-id=static --cache-artifacts=false
 
 # The upstream chart bakes in its own flagd/demo.flagd.json which is missing
-# some flags (e.g. cartservice.add-db-call). Patch the ConfigMap with our full set.
+# some flags (e.g. cartservice.add-db-call). Patch the ConfigMap and turn the flag OFF.
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-"$SCRIPT_DIR/scripts/patch-flagd-configmap.sh" "$USER-local"
+"$SCRIPT_DIR/scripts/flag-dbcall-off.sh" "$USER-local"
 
 # note: if the output ends with
 #   Error: UPGRADE FAILED: another operation (install/upgrade/rollback) is in progress
