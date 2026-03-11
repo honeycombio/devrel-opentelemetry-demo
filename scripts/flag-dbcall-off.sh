@@ -12,5 +12,11 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # Ensure the ConfigMap has all flags from source
 "$SCRIPT_DIR/patch-flagd-configmap.sh" "$NAMESPACE"
 
-# Set the db-call flag to 0%
+# Set the db-call flag to 0%, then restart flagd so it picks up the change
+# immediately (otherwise kubelet ConfigMap propagation can take 60-90s).
 "$SCRIPT_DIR/set-flag-percentage.sh" 0 "$NAMESPACE"
+
+echo "Restarting flagd to pick up the 0% setting..."
+kubectl rollout restart deployment/flagd -n "$NAMESPACE"
+kubectl rollout status deployment/flagd -n "$NAMESPACE" --timeout=60s
+echo "Flag is OFF."
