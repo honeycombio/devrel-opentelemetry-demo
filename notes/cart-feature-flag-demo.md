@@ -82,9 +82,13 @@ GetCart (50-1200ms depending on cart size)
 
 The `enrich()` function is a PostgreSQL function that does a `pg_sleep(random)` + SELECT, making the N+1 pattern immediately visible in the trace waterfall. BubbleUp on slow GetCart spans surfaces `app.feature_flag.cart_db_call = true` as the differentiator.
 
+### Honeycomb board
+
+**[Cart Product Enrichment](https://ui.honeycomb.io/modernity/environments/devrel-demo--local-/board/uG5R5NiHQ6F)** — board in the `devrel demo "local"` environment with flag status, GetCart performance (heatmap, P50/P95, error rate, SLO), business metrics (Add to Cart volume, checkout revenue), and database query patterns.
+
 ### Useful Honeycomb queries
 
-- **Flag distribution metric**: `metrics` dataset, `SUM(feature_flag.flagd.impression)` grouped by `feature_flag.key`, `feature_flag.result.variant`
+- **Flag distribution metric**: `otlp-metrics` dataset, `SUM(feature_flag.flagd.impression)` grouped by `feature_flag.result.variant`, filtered to `feature_flag.key = cartservice.add-db-call`
 - **Latency heatmap**: `cart` dataset, `HEATMAP(duration_ms)` filtered to `name = POST /oteldemo.CartService/GetCart`
 
 ## Demo flow
