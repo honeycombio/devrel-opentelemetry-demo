@@ -72,9 +72,9 @@ builder.Services.AddOpenTelemetry()
     .ConfigureResource(appResourceBuilder)
     .WithTracing(tracerBuilder => tracerBuilder
         .AddSource("OpenTelemetry.Demo.Cart")
+        .AddSource("Npgsql")
         .AddRedisInstrumentation(
             options => options.SetVerboseDatabaseStatements = true)
-        .AddNpgsqlInstrumentation()
         .AddAspNetCoreInstrumentation()
         .AddGrpcClientInstrumentation()
         .AddHttpClientInstrumentation()
