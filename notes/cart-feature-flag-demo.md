@@ -111,7 +111,7 @@ The `enrich()` function is a PostgreSQL function that does a `pg_sleep(random)` 
 - [x] Get the database spans a better name — used `NpgsqlDataSourceBuilder.ConfigureTracing` with `ConfigureCommandSpanNameProvider(cmd => cmd.CommandText)` so spans show the actual SQL
 - [x] Make flag-ON path realistically slow — created a PostgreSQL function `enrich(product_id)` that does `pg_sleep(0.01 + random() * 0.19)` (10-200ms random) before the SELECT. Span name shows `SELECT * FROM enrich($1)` which reads naturally.
 - [x] Deploy and verify in Honeycomb — heatmap shows clear bimodal split: ~3ms baseline vs 35-1200ms for flag-ON
-- [ ] Disable first-response span event from Npgsql — `EnableFirstResponseEvent(false)` is coded but not yet deployed
+- [x] Disable first-response span event from Npgsql — `EnableFirstResponseEvent(false)` deployed
+- [x] Remove tracing from flagd service — collector `filter/drop_flagd_traces` drops all spans where `service.name == "flagd"` in `values-daemonset.yaml`. Env var approaches (`OTEL_TRACES_EXPORTER=none`) didn't work because flagd uses custom telemetry config that ignores standard OTel SDK env vars.
 - [ ] Consider: remove or reduce the OpenFeature tracing hook's span events (they're expensive noise)
-- [ ] Remove tracing from flagd service
-- [ ] Can we also remove the client spans that call flagd? If not, whatever.
+- [ ] Can we also remove the client spans that call flagd? (cart service emits gRPC client spans for ResolveBoolean calls). Removed `.AddHttpClientInstrumentation()` but gRPC client spans remain.
