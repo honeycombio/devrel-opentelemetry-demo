@@ -79,12 +79,17 @@ export SOURCE_MAPS_BUCKET
 export SOURCE_MAPS_BUCKET_REGION
 export SOURCE_MAPS_PREFIX
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
 # maybe someday the container registry name will change, but this is what it is now
 skaffold run -d "$CONTAINER_REGISTRY" -b $SERVICES -l skaffold.dev/run-id=static --cache-artifacts=false
 
+# Send a deploy marker to Honeycomb
+SHORT_SHA=$(git rev-parse --short HEAD 2>/dev/null || echo "unknown")
+"$SCRIPT_DIR/scripts/send-marker.sh" --type deploy --message "deploy $SERVICES $SHORT_SHA"
+
 # The upstream chart bakes in its own flagd/demo.flagd.json which is missing
 # some flags (e.g. cartservice.add-db-call). Patch the ConfigMap and turn the flag OFF.
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 "$SCRIPT_DIR/scripts/flag-dbcall-off.sh" "$USER-local"
 
 # note: if the output ends with

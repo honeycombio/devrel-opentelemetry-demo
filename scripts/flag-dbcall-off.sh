@@ -19,4 +19,5 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 echo "Restarting flagd to pick up the 0% setting..."
 kubectl rollout restart deployment/flagd -n "$NAMESPACE"
 kubectl rollout status deployment/flagd -n "$NAMESPACE" --timeout=60s
+"$SCRIPT_DIR/send-marker.sh" --type feature-flag --message "flag cartservice.add-db-call → 0%"
 echo "Flag is OFF."
