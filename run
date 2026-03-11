@@ -80,7 +80,7 @@ export SOURCE_MAPS_BUCKET_REGION
 export SOURCE_MAPS_PREFIX
 
 # maybe someday the container registry name will change, but this is what it is now
-skaffold run -d "$CONTAINER_REGISTRY" -b $SERVICES --port-forward=user -l skaffold.dev/run-id=static --cache-artifacts=false
+skaffold run -d "$CONTAINER_REGISTRY" -b $SERVICES -l skaffold.dev/run-id=static --cache-artifacts=false
 
 # The upstream chart bakes in its own flagd/demo.flagd.json which is missing
 # some flags (e.g. cartservice.add-db-call). Patch the ConfigMap with our full set.
