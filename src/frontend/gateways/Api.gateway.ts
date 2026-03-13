@@ -98,11 +98,11 @@ const Apis = () => ({
       body: { traceId, spanId, sentiment },
     });
   },
-  sendAddedToCart(traceId: string, spanId: string) {
+  sendAddedToCart(traceId: string, spanId: string, productId: string, quantity: number, researchModel?: string) {
     return request<{ status: string }>({
       url: `/chat/added-to-cart`,
       method: 'POST',
-      body: { traceId, spanId },
+      body: { traceId, spanId, productId, quantity, researchModel },
     });
   },
   listRecommendations(productIds: string[], currencyCode: string) {

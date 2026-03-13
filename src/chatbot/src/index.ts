@@ -89,7 +89,7 @@ app.post('/chat/feedback', (req: Request, res: Response) => {
 
 // POST /chat/added-to-cart
 app.post('/chat/added-to-cart', (req: Request, res: Response) => {
-  const { traceId, spanId } = req.body;
+  const { traceId, spanId, productId, quantity, researchModel } = req.body;
 
   if (!traceId || !spanId) {
     res.status(400).json({ error: 'Invalid added-to-cart payload' });
@@ -105,7 +105,11 @@ app.post('/chat/added-to-cart', (req: Request, res: Response) => {
   const parentContext = trace.setSpanContext(context.active(), remoteContext);
   const tracer = trace.getTracer('chatbot');
   tracer.startActiveSpan('added-to-cart', {}, parentContext, (span) => {
-    span.setAttribute('cart.trace_id', traceId);
+    span.setAttribute('app.product.id', productId);
+    span.setAttribute('app.product.qty', quantity);
+    if (researchModel) {
+      span.setAttribute('gen_ai.response.model', researchModel);
+    }
     span.end();
   });
 

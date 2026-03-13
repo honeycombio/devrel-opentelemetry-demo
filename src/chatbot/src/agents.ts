@@ -29,6 +29,7 @@ import {
   METRIC_GEN_AI_CLIENT_OPERATION_DURATION,
 } from '@opentelemetry/semantic-conventions/incubating';
 import { OpenFeature } from '@openfeature/server-sdk';
+import Anthropic from '@anthropic-ai/sdk';
 import { getAnthropicClient } from './anthropic-client';
 
 const tracer = trace.getTracer('chatbot');
@@ -171,6 +172,27 @@ function extractText(response: { content: Array<{ type: string; text?: string }>
     .join('');
 }
 
+// Stream a chat completion, measuring time-to-first-token (TTFT)
+async function streamWithTTFT(
+  client: ReturnType<typeof getAnthropicClient>,
+  params: Parameters<typeof client.messages.stream>[0],
+): Promise<{ response: Anthropic.Message; ttftMs: number }> {
+  const startTime = performance.now();
+  let ttftMs = -1;
+  const stream = client.messages.stream(params);
+  stream.on('text', () => {
+    if (ttftMs < 0) {
+      ttftMs = performance.now() - startTime;
+    }
+  });
+  const response = await stream.finalMessage();
+  // If no text deltas arrived (e.g. tool_use only), fall back to total duration
+  if (ttftMs < 0) {
+    ttftMs = performance.now() - startTime;
+  }
+  return { response, ttftMs };
+}
+
 const SCOPE_CLASSIFIER_PROMPT = `You are a scope classifier for a customer service chatbot at an online store.
 Your ONLY job is to determine if the user's question is about the product catalog, products, or shopping.
 
@@ -209,7 +231,7 @@ async function classifyScope(question: string, model: string): Promise<boolean> 
 
           const client = getAnthropicClient();
           const startTime = performance.now();
-          const response = await client.messages.create({
+          const { response, ttftMs } = await streamWithTTFT(client, {
             model,
             max_tokens: 100,
             system: SCOPE_CLASSIFIER_PROMPT,
@@ -217,6 +239,7 @@ async function classifyScope(question: string, model: string): Promise<boolean> 
           });
           const durationMs = performance.now() - startTime;
 
+          span.setAttribute('app.response.ttft', ttftMs);
           setGenAIAttributes(span, model, SCOPE_CLASSIFIER_PROMPT, 100, response);
           emitInferenceEvent(span, SCOPE_CLASSIFIER_PROMPT, messages, response);
           recordMetrics(GEN_AI_OPERATION_NAME_VALUE_CHAT, model, response.usage, durationMs);
@@ -320,7 +343,7 @@ async function fetchProductInfo(model: string, productId?: string): Promise<stri
           chatSpan.setAttribute(ATTR_GEN_AI_INPUT_MESSAGES, formatInputMessages([{ role: 'user', content: userContent }]));
 
           const startTime = performance.now();
-          const response = await client.messages.create({
+          const { response, ttftMs } = await streamWithTTFT(client, {
             model,
             max_tokens: 1024,
             system: PRODUCT_FETCHER_PROMPT,
@@ -329,6 +352,7 @@ async function fetchProductInfo(model: string, productId?: string): Promise<stri
           });
           const durationMs = performance.now() - startTime;
 
+          chatSpan.setAttribute('app.response.ttft', ttftMs);
           setGenAIAttributes(chatSpan, model, PRODUCT_FETCHER_PROMPT, 1024, response);
           emitInferenceEvent(chatSpan, PRODUCT_FETCHER_PROMPT, [{ role: 'user', content: userContent }], response);
           recordMetrics(GEN_AI_OPERATION_NAME_VALUE_CHAT, model, response.usage, durationMs);
@@ -402,7 +426,7 @@ async function fetchProductInfo(model: string, productId?: string): Promise<stri
           }))));
 
           const startTime = performance.now();
-          const response2 = await client.messages.create({
+          const { response: response2, ttftMs } = await streamWithTTFT(client, {
             model,
             max_tokens: 1024,
             system: PRODUCT_FETCHER_PROMPT,
@@ -411,6 +435,7 @@ async function fetchProductInfo(model: string, productId?: string): Promise<stri
           });
           const durationMs = performance.now() - startTime;
 
+          chatSpan2.setAttribute('app.response.ttft', ttftMs);
           setGenAIAttributes(chatSpan2, model, PRODUCT_FETCHER_PROMPT, 1024, response2);
           emitInferenceEvent(chatSpan2, PRODUCT_FETCHER_PROMPT,
             [{ role: 'user', content: typeof followUpMessages[2].content === 'string' ? followUpMessages[2].content : JSON.stringify(followUpMessages[2].content) }],
@@ -459,7 +484,7 @@ async function generateResponse(question: string, productInfo: string): Promise<
 
           const client = getAnthropicClient();
           const startTime = performance.now();
-          const response = await client.messages.create({
+          const { response, ttftMs } = await streamWithTTFT(client, {
             model,
             max_tokens: 1024,
             system: RESPONSE_GENERATOR_PROMPT,
@@ -467,6 +492,7 @@ async function generateResponse(question: string, productInfo: string): Promise<
           });
           const durationMs = performance.now() - startTime;
 
+          span.setAttribute('app.response.ttft', ttftMs);
           setGenAIAttributes(span, model, RESPONSE_GENERATOR_PROMPT, 1024, response);
           emitInferenceEvent(span, RESPONSE_GENERATOR_PROMPT, messages, response);
           recordMetrics(GEN_AI_OPERATION_NAME_VALUE_CHAT, model, response.usage, durationMs);

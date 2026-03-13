@@ -35,7 +35,7 @@ const AddToCartButton = ({ productId, quantity }: { productId: string; quantity:
       if (!feedbackSent) {
         sendFeedback(aiResponse.traceId, aiResponse.spanId, 0);
       }
-      ApiGateway.sendAddedToCart(aiResponse.traceId, aiResponse.spanId);
+      ApiGateway.sendAddedToCart(aiResponse.traceId, aiResponse.spanId, productId, quantity, aiResponse.researchModel);
     }
     const extraAttributes = aiResponse?.researchModel
       ? { 'chatbot.research.model': aiResponse.researchModel }
