@@ -87,6 +87,31 @@ app.post('/chat/feedback', (req: Request, res: Response) => {
   res.json({ status: 'ok' });
 });
 
+// POST /chat/added-to-cart
+app.post('/chat/added-to-cart', (req: Request, res: Response) => {
+  const { traceId, spanId } = req.body;
+
+  if (!traceId || !spanId) {
+    res.status(400).json({ error: 'Invalid added-to-cart payload' });
+    return;
+  }
+
+  const remoteContext: SpanContext = {
+    traceId,
+    spanId,
+    traceFlags: TraceFlags.SAMPLED,
+    isRemote: true,
+  };
+  const parentContext = trace.setSpanContext(context.active(), remoteContext);
+  const tracer = trace.getTracer('chatbot');
+  tracer.startActiveSpan('added-to-cart', {}, parentContext, (span) => {
+    span.setAttribute('cart.trace_id', traceId);
+    span.end();
+  });
+
+  res.json({ status: 'ok' });
+});
+
 // POST /chat/demo-enable
 app.post('/chat/demo-enable', (_req: Request, res: Response) => {
   demoEnabled = true;
