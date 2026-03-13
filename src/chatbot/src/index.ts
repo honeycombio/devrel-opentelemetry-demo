@@ -53,8 +53,8 @@ app.post('/chat/question', async (req: Request, res: Response) => {
   }
 
   try {
-    const { answer, traceId, spanId } = await handleQuestion(question, productId);
-    res.json({ answer, traceId, spanId });
+    const { answer, traceId, spanId, researchModel } = await handleQuestion(question, productId);
+    res.json({ answer, traceId, spanId, researchModel });
   } catch {
     span?.setAttribute('chatbot.result', 'error');
     res.json({ answer: 'The Chatbot is Unavailable' });
@@ -65,7 +65,7 @@ app.post('/chat/question', async (req: Request, res: Response) => {
 app.post('/chat/feedback', (req: Request, res: Response) => {
   const { traceId, spanId, sentiment } = req.body;
 
-  if (!traceId || !spanId || !['good', 'bad'].includes(sentiment)) {
+  if (!traceId || !spanId || ![1, -1, 0].includes(sentiment)) {
     res.status(400).json({ error: 'Invalid feedback payload' });
     return;
   }

@@ -9,7 +9,7 @@ export interface AiRequestPayload {
     question: string;
 }
 
-export type AiResponse = { text: string; traceId: string; spanId: string };
+export type AiResponse = { text: string; traceId: string; spanId: string; researchModel: string };
 
 interface AiAssistantContextValue {
     aiResponse: AiResponse | null;
@@ -20,7 +20,7 @@ interface AiAssistantContextValue {
         payload: AiRequestPayload,
         options?: MutateOptions<AiResponse, Error, AiRequestPayload, unknown>
     ) => void;
-    sendFeedback: (traceId: string, spanId: string, sentiment: 'good' | 'bad') => void;
+    sendFeedback: (traceId: string, spanId: string, sentiment: 1 | -1 | 0) => void;
     reset: () => void;
 }
 
@@ -46,8 +46,8 @@ const ProductAIAssistantProvider = ({ children, productId }: ProductAIAssistantP
 
     const mutation = useMutation<AiResponse, Error, AiRequestPayload>({
         mutationFn: async ({ question }) => {
-            const { answer, traceId, spanId } = await ApiGateway.askProductAIAssistant(productId, question);
-            return { text: answer, traceId, spanId };
+            const { answer, traceId, spanId, researchModel } = await ApiGateway.askProductAIAssistant(productId, question);
+            return { text: answer, traceId, spanId, researchModel };
         },
     });
 
@@ -57,7 +57,7 @@ const ProductAIAssistantProvider = ({ children, productId }: ProductAIAssistantP
         setFeedbackSent(false);
     }, [productId]);
 
-    const sendFeedback = useCallback((traceId: string, spanId: string, sentiment: 'good' | 'bad') => {
+    const sendFeedback = useCallback((traceId: string, spanId: string, sentiment: 1 | -1 | 0) => {
         ApiGateway.sendFeedback(traceId, spanId, sentiment);
         setFeedbackSent(true);
     }, []);

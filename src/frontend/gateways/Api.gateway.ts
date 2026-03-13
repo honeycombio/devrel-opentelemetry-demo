@@ -84,14 +84,14 @@ const Apis = () => ({
     });
   },
   async askProductAIAssistant(productId: string, question: string) {
-    const response = await request<{ answer: string; traceId: string; spanId: string }>({
+    const response = await request<{ answer: string; traceId: string; spanId: string; researchModel: string }>({
       url: `/chat/question`,
       method: 'POST',
       body: { question, productId },
     });
     return response;
   },
-  sendFeedback(traceId: string, spanId: string, sentiment: 'good' | 'bad') {
+  sendFeedback(traceId: string, spanId: string, sentiment: 1 | -1 | 0) {
     return request<{ status: string }>({
       url: `/chat/feedback`,
       method: 'POST',

@@ -20,16 +20,38 @@ import { useCart } from '../../../providers/Cart.provider';
 import * as S from '../../../styles/ProductDetail.styled';
 import { useCurrency } from '../../../providers/Currency.provider';
 import ProductReviewProvider from '../../../providers/ProductReview.provider';
-import ProductAIAssistantProvider from '../../../providers/ProductAIAssistant.provider';
+import ProductAIAssistantProvider, { useAiAssistant } from '../../../providers/ProductAIAssistant.provider';
 import { tracedQuery } from '../../../utils/telemetry/SpanUtils';
 
 const quantityOptions = new Array(11).fill(0).map((_, i) => i);
 
+const AddToCartButton = ({ productId, quantity }: { productId: string; quantity: number }) => {
+  const { push } = useRouter();
+  const { addItem } = useCart();
+  const { aiResponse, feedbackSent, sendFeedback } = useAiAssistant();
+
+  const onAddItem = useCallback(async () => {
+    if (aiResponse && !feedbackSent) {
+      sendFeedback(aiResponse.traceId, aiResponse.spanId, 0);
+    }
+    const extraAttributes = aiResponse?.researchModel
+      ? { 'chatbot.research.model': aiResponse.researchModel }
+      : undefined;
+    await addItem({ productId, quantity }, extraAttributes);
+    push('/cart');
+  }, [addItem, productId, quantity, push, aiResponse, feedbackSent, sendFeedback]);
+
+  return (
+    <S.AddToCart data-cy={CypressFields.ProductAddToCart} onClick={onAddItem}>
+      <img id="add-to-cart-image" src="/icons/CartIcon.svg" height="15" width="15" alt="cart" /> Add To Cart
+    </S.AddToCart>
+  );
+};
+
 const ProductDetail: NextPage = () => {
-  const { push, query } = useRouter();
+  const { query } = useRouter();
   const [quantity, setQuantity] = useState(1);
   const {
-    addItem,
     cart: { items },
   } = useCart();
   const { selectedCurrency } = useCurrency();
@@ -58,14 +80,6 @@ const ProductDetail: NextPage = () => {
     }
   ) as { data: Product };
 
-  const onAddItem = useCallback(async () => {
-    await addItem({
-      productId,
-      quantity,
-    });
-    push('/cart');
-  }, [addItem, productId, quantity, push]);
-
   return (
     <AdProvider
       productIds={[productId, ...items.map(({ productId }) => productId)]}
@@ -75,41 +89,39 @@ const ProductDetail: NextPage = () => {
         <title>Otel Demo - Product</title>
       </Head>
       <Layout>
-        <S.ProductDetail data-cy={CypressFields.ProductDetail}>
-          <S.Container id="product-dt-container">
-            { picture && <S.Image $src={"/images/products/" + picture} id="product-picture" data-cy={CypressFields.ProductPicture} /> }
-            <S.Details id="s-product-details">
-              <S.Name id="product-name" data-cy={CypressFields.ProductName}>{name}</S.Name>
-              <S.Description id="product-description" data-cy={CypressFields.ProductDescription}>{description}</S.Description>
-              <S.ProductPrice>
-                <ProductPrice price={priceUsd} />
-              </S.ProductPrice>
-              <S.Text>Quantity</S.Text>
-              <Select
-                data-cy={CypressFields.ProductQuantity}
-                onChange={event => setQuantity(+event.target.value)}
-                value={quantity}
-              >
-                {quantityOptions.map(option => (
-                  <option key={option} value={option}>
-                    {option}
-                  </option>
-                ))}
-              </Select>
-              <S.AddToCart data-cy={CypressFields.ProductAddToCart} onClick={onAddItem}>
-                <img id="add-to-cart-image" src="/icons/CartIcon.svg" height="15" width="15" alt="cart" /> Add To Cart
-              </S.AddToCart>
-            </S.Details>
-          </S.Container>
-          {productId && (
-              <ProductAIAssistantProvider productId={productId}>
+        <ProductAIAssistantProvider productId={productId || ''}>
+          <S.ProductDetail data-cy={CypressFields.ProductDetail}>
+            <S.Container id="product-dt-container">
+              { picture && <S.Image $src={"/images/products/" + picture} id="product-picture" data-cy={CypressFields.ProductPicture} /> }
+              <S.Details id="s-product-details">
+                <S.Name id="product-name" data-cy={CypressFields.ProductName}>{name}</S.Name>
+                <S.Description id="product-description" data-cy={CypressFields.ProductDescription}>{description}</S.Description>
+                <S.ProductPrice>
+                  <ProductPrice price={priceUsd} />
+                </S.ProductPrice>
+                <S.Text>Quantity</S.Text>
+                <Select
+                  data-cy={CypressFields.ProductQuantity}
+                  onChange={event => setQuantity(+event.target.value)}
+                  value={quantity}
+                >
+                  {quantityOptions.map(option => (
+                    <option key={option} value={option}>
+                      {option}
+                    </option>
+                  ))}
+                </Select>
+                {productId && <AddToCartButton productId={productId} quantity={quantity} />}
+              </S.Details>
+            </S.Container>
+            {productId && (
                 <ProductReviewProvider productId={productId}>
                   <ProductReviews />
                 </ProductReviewProvider>
-              </ProductAIAssistantProvider>
-          )}
-          <Recommendations />
-        </S.ProductDetail>
+            )}
+            <Recommendations />
+          </S.ProductDetail>
+        </ProductAIAssistantProvider>
         <Ad />
       </Layout>
     </AdProvider>

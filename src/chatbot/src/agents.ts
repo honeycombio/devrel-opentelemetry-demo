@@ -39,8 +39,17 @@ const DEFAULT_MODEL = 'claude-haiku-4-5-20251001';
 
 const featureClient = OpenFeature.getClient();
 
+const RESEARCH_MODELS = [
+  'claude-haiku-4-5',
+  'claude-sonnet-4-6',
+  'claude-opus-4-6',
+];
+
 async function getResearchModel(): Promise<string> {
-  return featureClient.getStringValue('chatbot.research.model', DEFAULT_MODEL);
+  const roll = Math.random() * 100;
+  if (roll < 34) return RESEARCH_MODELS[0]; // haiku ~34%
+  if (roll < 67) return RESEARCH_MODELS[1]; // sonnet ~33%
+  return RESEARCH_MODELS[2];                 // opus ~33%
 }
 
 async function getWriterModel(): Promise<string> {
@@ -183,8 +192,7 @@ When asked, call the fetch_products tool to get product information. You may opt
 After receiving the tool result, return the product data as-is without modification.`;
 
 // Sub-agent 1: Scope Classifier
-async function classifyScope(question: string): Promise<boolean> {
-  const model = await getResearchModel();
+async function classifyScope(question: string, model: string): Promise<boolean> {
   return tracer.startActiveSpan(`${GEN_AI_OPERATION_NAME_VALUE_INVOKE_AGENT} scope_classifier`, async (agentSpan) => {
     try {
       agentSpan.setAttribute(ATTR_GEN_AI_OPERATION_NAME, GEN_AI_OPERATION_NAME_VALUE_INVOKE_AGENT);
@@ -286,8 +294,7 @@ const FETCH_PRODUCTS_TOOL = {
 };
 
 // Sub-agent 2: Product Fetcher (tool-calling agent)
-async function fetchProductInfo(productId?: string): Promise<string> {
-  const model = await getResearchModel();
+async function fetchProductInfo(model: string, productId?: string): Promise<string> {
   return tracer.startActiveSpan(`${GEN_AI_OPERATION_NAME_VALUE_INVOKE_AGENT} product_fetcher`, async (agentSpan) => {
     try {
       agentSpan.setAttribute(ATTR_GEN_AI_OPERATION_NAME, GEN_AI_OPERATION_NAME_VALUE_INVOKE_AGENT);
@@ -490,46 +497,49 @@ export interface HandleQuestionResult {
   answer: string;
   traceId: string;
   spanId: string;
+  researchModel: string;
 }
 
 // Supervisor agent: orchestrates the sub-agent flow
 export async function handleQuestion(question: string, productId?: string): Promise<HandleQuestionResult> {
   return tracer.startActiveSpan('invoke_agent supervisor', async (span) => {
     const { traceId, spanId } = span.spanContext();
+    const researchModel = await getResearchModel();
     try {
       span.setAttribute(ATTR_GEN_AI_AGENT_NAME, 'supervisor');
       span.setAttribute(ATTR_GEN_AI_OPERATION_NAME, GEN_AI_OPERATION_NAME_VALUE_INVOKE_AGENT);
       span.setAttribute('chatbot.question', question);
+      span.setAttribute('chatbot.research.model', researchModel);
       span.setAttribute(ATTR_GEN_AI_INPUT_MESSAGES, formatInputMessages([{ role: 'user', content: question }]));
       if (productId) {
         span.setAttribute('chatbot.product_id', productId);
       }
 
       // Step 1: Classify scope
-      const inScope = await classifyScope(question);
+      const inScope = await classifyScope(question, researchModel);
       if (!inScope) {
         const outOfScopeResponse = "AI Response: Sorry, I'm not able to answer that question.";
         span.setAttribute('chatbot.result', 'out_of_scope');
         span.setAttribute(ATTR_GEN_AI_OUTPUT_MESSAGES, JSON.stringify([{ role: 'assistant', parts: [{ type: 'text', content: outOfScopeResponse }] }]));
-        return { answer: outOfScopeResponse, traceId, spanId };
+        return { answer: outOfScopeResponse, traceId, spanId, researchModel };
       }
 
       // Step 2: Fetch product information
-      const productInfo = await fetchProductInfo(productId);
+      const productInfo = await fetchProductInfo(researchModel, productId);
 
       // Step 3: Generate response
       const answer = await generateResponse(question, productInfo);
 
       span.setAttribute('chatbot.result', 'success');
       span.setAttribute(ATTR_GEN_AI_OUTPUT_MESSAGES, JSON.stringify([{ role: 'assistant', parts: [{ type: 'text', content: answer }] }]));
-      return { answer, traceId, spanId };
+      return { answer, traceId, spanId, researchModel };
     } catch (error) {
       console.error('handleQuestion error:', error);
       recordException(span, error);
       const errorResponse = 'The Chatbot is Unavailable';
       span.setAttribute('chatbot.result', 'error');
       span.setAttribute(ATTR_GEN_AI_OUTPUT_MESSAGES, JSON.stringify([{ role: 'assistant', parts: [{ type: 'text', content: errorResponse }] }]));
-      return { answer: errorResponse, traceId, spanId };
+      return { answer: errorResponse, traceId, spanId, researchModel };
     } finally {
       span.end();
     }
