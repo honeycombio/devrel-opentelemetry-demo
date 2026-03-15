@@ -208,6 +208,7 @@ deploy:
         skipBuildDependencies: false
         setValueTemplates:
           services.chatbot.anthropicApiKey: "{{.ANTHROPIC_API_KEY}}"
+          services.chatbot.openaiApiKey: "{{.OPENAI_API_KEY}}"
           services.chatbot.imageOverride.repository: "{{if .IMAGE_REPO_chatbot }}{{.IMAGE_REPO_chatbot}}{{end}}"
           services.chatbot.imageOverride.tag: "{{if .IMAGE_REPO_chatbot }}{{.IMAGE_TAG_chatbot}}@{{.IMAGE_DIGEST_chatbot}}{{end}}"
           services.productReviews.imageOverride.repository: "{{if .IMAGE_REPO_product_reviews }}{{.IMAGE_REPO_product_reviews}}{{end}}"

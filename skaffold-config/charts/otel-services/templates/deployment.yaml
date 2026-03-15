@@ -46,6 +46,8 @@ spec:
             {{- end }}
             - name: ANTHROPIC_API_KEY
               value: {{ .Values.services.chatbot.anthropicApiKey | quote }}
+            - name: OPENAI_API_KEY
+              value: {{ .Values.services.chatbot.openaiApiKey | quote }}
             - name: OTEL_EXPORTER_OTLP_ENDPOINT
               value: http://$(OTEL_COLLECTOR_NAME):4317
 ---

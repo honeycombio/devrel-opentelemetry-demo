@@ -20,6 +20,10 @@ const sdk = new opentelemetry.NodeSDK({
       '@opentelemetry/instrumentation-fs': {
         requireParentSpan: true,
       },
+      // disable OpenAI auto-instrumentation — manual spans in agents.ts cover this
+      '@opentelemetry/instrumentation-openai': {
+        enabled: false,
+      },
     }),
     new RuntimeNodeInstrumentation({
       monitoringPrecision: 5000,

@@ -59,6 +59,26 @@ patch_flag "chatbot.writer.model" '{
   "defaultVariant": "Haiku 4.5"
 }'
 
+patch_flag "chatbot.research.openai.model" '{
+  "description": "What OpenAI model to use for the research agent in chatbot",
+  "state": "ENABLED",
+  "variants": {
+    "GPT-4o Mini": "gpt-4o-mini",
+    "GPT-4o": "gpt-4o"
+  },
+  "defaultVariant": "GPT-4o Mini"
+}'
+
+patch_flag "chatbot.writer.openai.model" '{
+  "description": "What OpenAI model to use for the response writer agent in chatbot",
+  "state": "ENABLED",
+  "variants": {
+    "GPT-4o Mini": "gpt-4o-mini",
+    "GPT-4o": "gpt-4o"
+  },
+  "defaultVariant": "GPT-4o Mini"
+}'
+
 echo "Restarting flagd to pick up new config..."
 kubectl rollout restart deployment flagd -n "$NAMESPACE"
 kubectl rollout status deployment flagd -n "$NAMESPACE" --timeout=60s

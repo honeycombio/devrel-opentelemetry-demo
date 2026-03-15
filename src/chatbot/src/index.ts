@@ -8,7 +8,7 @@ const app = express();
 app.use(express.json());
 
 const PORT = parseInt(process.env.CHATBOT_PORT || '8087', 10);
-const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
+const HAS_LLM_KEY = !!(process.env.ANTHROPIC_API_KEY || process.env.OPENAI_API_KEY);
 
 let demoEnabled = false;
 
@@ -20,7 +20,7 @@ OpenFeature.setProviderAndWait(flagProvider).catch((err) => {
 const featureClient = OpenFeature.getClient();
 
 async function isChatbotAvailable(): Promise<boolean> {
-  if (!ANTHROPIC_API_KEY) return false;
+  if (!HAS_LLM_KEY) return false;
   const chatbotEnabledFlag = await featureClient.getBooleanValue('chatbot.enabled', false);
   return chatbotEnabledFlag || demoEnabled;
 }

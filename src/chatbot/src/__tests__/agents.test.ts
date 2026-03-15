@@ -1,9 +1,14 @@
 import { describe, it, expect, vi, beforeEach, type Mock } from 'vitest';
+import type { LLMProvider, ProviderResponse } from '../provider.js';
 
-// ── Mock: Anthropic client ──────────────────────────────────────────
-const mockCreate = vi.fn();
-vi.mock('../anthropic-client', () => ({
-  getAnthropicClient: () => ({ messages: { create: mockCreate } }),
+// ── Mock: get-provider ──────────────────────────────────────────────
+const mockChat = vi.fn();
+const mockProvider: LLMProvider = {
+  providerName: 'anthropic',
+  chat: mockChat,
+};
+vi.mock('../get-provider', () => ({
+  getProvider: () => mockProvider,
 }));
 
 // ── Mock: @opentelemetry/api ────────────────────────────────────────
@@ -73,32 +78,36 @@ const mockFetch = vi.fn();
 vi.stubGlobal('fetch', mockFetch);
 
 // ── Helpers ─────────────────────────────────────────────────────────
-function makeLLMResponse(textContent: string, extra?: { tool_use?: unknown }) {
-  const content: Array<{ type: string; text?: string; [k: string]: unknown }> = [
+function makeProviderResponse(textContent: string, extra?: { tool_use?: { type: 'tool_use'; id: string; name: string; input: unknown } }): ProviderResponse {
+  const content: ProviderResponse['content'] = [
     { type: 'text', text: textContent },
   ];
   if (extra?.tool_use) {
-    content.push(extra.tool_use as { type: string; [k: string]: unknown });
+    content.push(extra.tool_use);
   }
   return {
     id: 'msg_test',
     model: 'claude-haiku-4-5-20251001',
-    stop_reason: 'end_turn',
+    stopReason: 'end_turn',
     content,
-    usage: { input_tokens: 10, output_tokens: 20 },
+    usage: { inputTokens: 10, outputTokens: 20 },
   };
 }
 
-function makeToolUseResponse(toolId: string, toolName: string, input: Record<string, unknown>) {
+function makeToolUseResponse(toolId: string, toolName: string, input: Record<string, unknown>): ProviderResponse {
   return {
     id: 'msg_test',
     model: 'claude-haiku-4-5-20251001',
-    stop_reason: 'tool_use',
+    stopReason: 'tool_use',
     content: [
       { type: 'tool_use', id: toolId, name: toolName, input },
     ],
-    usage: { input_tokens: 10, output_tokens: 20 },
+    usage: { inputTokens: 10, outputTokens: 20 },
   };
+}
+
+function mockChatResolvedOnce(response: ProviderResponse) {
+  mockChat.mockResolvedValueOnce({ response, ttftMs: 50 });
 }
 
 // ── Tests ───────────────────────────────────────────────────────────
@@ -114,39 +123,39 @@ describe('handleQuestion', () => {
 
   it('happy path: in-scope question with tool-use flow', async () => {
     // 1. scope classifier → inScope: true
-    mockCreate.mockResolvedValueOnce(makeLLMResponse('{"inScope": true}'));
+    mockChatResolvedOnce(makeProviderResponse('{"inScope": true}'));
     // 2. product fetcher → tool_use block
-    mockCreate.mockResolvedValueOnce(makeToolUseResponse('tool_1', 'fetch_products', {}));
+    mockChatResolvedOnce(makeToolUseResponse('tool_1', 'fetch_products', {}));
     // 3. fetch() for product data
     mockFetch.mockResolvedValueOnce({
       ok: true,
       json: () => Promise.resolve([{ id: '1', name: 'Hat' }]),
     });
-    // 4. second chat: Claude summarizes tool result
-    mockCreate.mockResolvedValueOnce(makeLLMResponse('Here are the products: Hat'));
+    // 4. second chat: LLM summarizes tool result
+    mockChatResolvedOnce(makeProviderResponse('Here are the products: Hat'));
     // 5. response generator
-    mockCreate.mockResolvedValueOnce(makeLLMResponse('<p>We have a Hat!</p>'));
+    mockChatResolvedOnce(makeProviderResponse('<p>We have a Hat!</p>'));
 
     const result = await handleQuestion('What products do you have?');
 
     expect(result.answer).toBe('<p>We have a Hat!</p>');
     expect(result.traceId).toBe('abc123');
     expect(result.spanId).toBe('def456');
-    expect(mockCreate).toHaveBeenCalledTimes(4);
+    expect(mockChat).toHaveBeenCalledTimes(4);
   });
 
   it('out-of-scope question returns sorry message', async () => {
-    mockCreate.mockResolvedValueOnce(makeLLMResponse('{"inScope": false}'));
+    mockChatResolvedOnce(makeProviderResponse('{"inScope": false}'));
 
     const result = await handleQuestion('What is the weather?');
 
     expect(result.answer).toContain("Sorry, I'm not able to answer that question");
     // No further LLM calls after scope classifier
-    expect(mockCreate).toHaveBeenCalledTimes(1);
+    expect(mockChat).toHaveBeenCalledTimes(1);
   });
 
   it('LLM error returns unavailable message', async () => {
-    mockCreate.mockRejectedValueOnce(new Error('API down'));
+    mockChat.mockRejectedValueOnce(new Error('API down'));
 
     const result = await handleQuestion('Tell me about products');
 
@@ -154,26 +163,26 @@ describe('handleQuestion', () => {
   });
 
   it('non-JSON scope response treated as out-of-scope', async () => {
-    mockCreate.mockResolvedValueOnce(makeLLMResponse('I am not sure what you mean'));
+    mockChatResolvedOnce(makeProviderResponse('I am not sure what you mean'));
 
     const result = await handleQuestion('asdfghjkl');
 
     expect(result.answer).toContain("Sorry, I'm not able to answer that question");
-    expect(mockCreate).toHaveBeenCalledTimes(1);
+    expect(mockChat).toHaveBeenCalledTimes(1);
   });
 
   it('product fetcher falls back to direct fetch when no tool_use block', async () => {
     // scope classifier → in scope
-    mockCreate.mockResolvedValueOnce(makeLLMResponse('{"inScope": true}'));
+    mockChatResolvedOnce(makeProviderResponse('{"inScope": true}'));
     // product fetcher returns text only (no tool_use)
-    mockCreate.mockResolvedValueOnce(makeLLMResponse('Let me get the products for you.'));
+    mockChatResolvedOnce(makeProviderResponse('Let me get the products for you.'));
     // fallback fetch
     mockFetch.mockResolvedValueOnce({
       ok: true,
       json: () => Promise.resolve([{ id: '1', name: 'Shoe' }]),
     });
     // response generator
-    mockCreate.mockResolvedValueOnce(makeLLMResponse('<p>We have Shoes!</p>'));
+    mockChatResolvedOnce(makeProviderResponse('<p>We have Shoes!</p>'));
 
     const result = await handleQuestion('Show me shoes');
 
@@ -183,15 +192,15 @@ describe('handleQuestion', () => {
 
   it('fetch failure returns unable to fetch message', async () => {
     // scope classifier → in scope
-    mockCreate.mockResolvedValueOnce(makeLLMResponse('{"inScope": true}'));
+    mockChatResolvedOnce(makeProviderResponse('{"inScope": true}'));
     // product fetcher → tool_use
-    mockCreate.mockResolvedValueOnce(makeToolUseResponse('tool_1', 'fetch_products', {}));
+    mockChatResolvedOnce(makeToolUseResponse('tool_1', 'fetch_products', {}));
     // fetch returns 500
     mockFetch.mockResolvedValueOnce({ ok: false, status: 500 });
     // second chat after tool result (gets "Unable to fetch" as tool result)
-    mockCreate.mockResolvedValueOnce(makeLLMResponse('Unable to fetch product information.'));
+    mockChatResolvedOnce(makeProviderResponse('Unable to fetch product information.'));
     // response generator still called with the "unable" text
-    mockCreate.mockResolvedValueOnce(makeLLMResponse('<p>Sorry, unable to get products.</p>'));
+    mockChatResolvedOnce(makeProviderResponse('<p>Sorry, unable to get products.</p>'));
 
     const result = await handleQuestion('What do you sell?');
 
@@ -202,14 +211,14 @@ describe('handleQuestion', () => {
   describe('telemetry verification', () => {
     beforeEach(async () => {
       // Set up a full happy-path flow for telemetry checks
-      mockCreate.mockResolvedValueOnce(makeLLMResponse('{"inScope": true}'));
-      mockCreate.mockResolvedValueOnce(makeToolUseResponse('tool_1', 'fetch_products', {}));
+      mockChatResolvedOnce(makeProviderResponse('{"inScope": true}'));
+      mockChatResolvedOnce(makeToolUseResponse('tool_1', 'fetch_products', {}));
       mockFetch.mockResolvedValueOnce({
         ok: true,
         json: () => Promise.resolve([{ id: '1', name: 'Hat' }]),
       });
-      mockCreate.mockResolvedValueOnce(makeLLMResponse('Products: Hat'));
-      mockCreate.mockResolvedValueOnce(makeLLMResponse('<p>Hat</p>'));
+      mockChatResolvedOnce(makeProviderResponse('Products: Hat'));
+      mockChatResolvedOnce(makeProviderResponse('<p>Hat</p>'));
 
       await handleQuestion('What products?');
     });
@@ -218,7 +227,6 @@ describe('handleQuestion', () => {
       const spanNames = mockStartActiveSpan.mock.calls.map((c: unknown[]) => c[0] as string);
       expect(spanNames).toContain('invoke_agent supervisor');
       expect(spanNames).toContain('invoke_agent scope_classifier');
-      expect(spanNames).toContain('chat claude-haiku-4-5-20251001');
       expect(spanNames).toContain('invoke_agent product_fetcher');
       expect(spanNames).toContain('execute_tool fetch_products');
       expect(spanNames).toContain('invoke_agent response_generator');

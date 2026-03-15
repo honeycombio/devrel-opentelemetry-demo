@@ -21,7 +21,6 @@ import {
   GEN_AI_OPERATION_NAME_VALUE_INVOKE_AGENT,
   GEN_AI_OPERATION_NAME_VALUE_CHAT,
   GEN_AI_OPERATION_NAME_VALUE_EXECUTE_TOOL,
-  GEN_AI_PROVIDER_NAME_VALUE_ANTHROPIC,
   GEN_AI_TOKEN_TYPE_VALUE_INPUT,
   GEN_AI_TOKEN_TYPE_VALUE_OUTPUT,
   EVENT_GEN_AI_CLIENT_INFERENCE_OPERATION_DETAILS,
@@ -29,32 +28,41 @@ import {
   METRIC_GEN_AI_CLIENT_OPERATION_DURATION,
 } from '@opentelemetry/semantic-conventions/incubating';
 import { OpenFeature } from '@openfeature/server-sdk';
-import Anthropic from '@anthropic-ai/sdk';
-import { getAnthropicClient } from './anthropic-client';
+import type { LLMProvider, ProviderResponse, ProviderContentBlock } from './provider.js';
+import { getProvider } from './get-provider.js';
 
 const tracer = trace.getTracer('chatbot');
 const meter = metrics.getMeter('chatbot');
 
 const FRONTEND_ADDR = process.env.FRONTEND_ADDR || '';
-const DEFAULT_MODEL = 'claude-haiku-4-5-20251001';
 
 const featureClient = OpenFeature.getClient();
 
-const RESEARCH_MODELS = [
+const ANTHROPIC_RESEARCH_MODELS = [
   'claude-haiku-4-5',
   'claude-sonnet-4-6',
   'claude-opus-4-6',
 ];
 
-async function getResearchModel(): Promise<string> {
+const OPENAI_RESEARCH_MODELS = [
+  'gpt-4o-mini',
+  'gpt-4o',
+  'gpt-4o',
+];
+
+async function getResearchModel(providerName: string): Promise<string> {
+  const models = providerName === 'openai' ? OPENAI_RESEARCH_MODELS : ANTHROPIC_RESEARCH_MODELS;
   const roll = Math.random() * 100;
-  if (roll < 34) return RESEARCH_MODELS[0]; // haiku ~34%
-  if (roll < 67) return RESEARCH_MODELS[1]; // sonnet ~33%
-  return RESEARCH_MODELS[2];                 // opus ~33%
+  if (roll < 34) return models[0];
+  if (roll < 67) return models[1];
+  return models[2];
 }
 
-async function getWriterModel(): Promise<string> {
-  return featureClient.getStringValue('chatbot.writer.model', DEFAULT_MODEL);
+async function getWriterModel(providerName: string): Promise<string> {
+  if (providerName === 'openai') {
+    return featureClient.getStringValue('chatbot.writer.openai.model', 'gpt-4o-mini');
+  }
+  return featureClient.getStringValue('chatbot.writer.model', 'claude-haiku-4-5-20251001');
 }
 
 // Gen-AI metrics
@@ -82,10 +90,8 @@ function formatInputMessages(messages: Array<{ role: string; content: string }>)
   );
 }
 
-// Format output messages from Anthropic response into GenAI semantic convention format
-function formatOutputMessages(
-  response: { content: Array<{ type: string; text?: string; name?: string; id?: string; input?: unknown }>; stop_reason: string | null }
-): string {
+// Format output messages from normalized response into GenAI semantic convention format
+function formatOutputMessages(response: { content: ProviderContentBlock[]; stopReason: string }): string {
   return JSON.stringify([
     {
       role: 'assistant',
@@ -98,17 +104,17 @@ function formatOutputMessages(
         }
         return { type: b.type };
       }),
-      finish_reason: response.stop_reason ?? 'unknown',
+      finish_reason: response.stopReason,
     },
   ]);
 }
 
 // Common metric attributes for gen-ai operations
-function metricAttrs(operationName: string, model: string) {
+function metricAttrs(operationName: string, model: string, providerName: string) {
   return {
     [ATTR_GEN_AI_OPERATION_NAME]: operationName,
     [ATTR_GEN_AI_REQUEST_MODEL]: model,
-    [ATTR_GEN_AI_PROVIDER_NAME]: GEN_AI_PROVIDER_NAME_VALUE_ANTHROPIC,
+    [ATTR_GEN_AI_PROVIDER_NAME]: providerName,
   };
 }
 
@@ -116,12 +122,13 @@ function metricAttrs(operationName: string, model: string) {
 function recordMetrics(
   operationName: string,
   model: string,
-  usage: { input_tokens: number; output_tokens: number },
+  providerName: string,
+  usage: { inputTokens: number; outputTokens: number },
   durationMs: number,
 ): void {
-  const attrs = metricAttrs(operationName, model);
-  tokenUsageCounter.add(usage.input_tokens, { ...attrs, [ATTR_GEN_AI_TOKEN_TYPE]: GEN_AI_TOKEN_TYPE_VALUE_INPUT });
-  tokenUsageCounter.add(usage.output_tokens, { ...attrs, [ATTR_GEN_AI_TOKEN_TYPE]: GEN_AI_TOKEN_TYPE_VALUE_OUTPUT });
+  const attrs = metricAttrs(operationName, model, providerName);
+  tokenUsageCounter.add(usage.inputTokens, { ...attrs, [ATTR_GEN_AI_TOKEN_TYPE]: GEN_AI_TOKEN_TYPE_VALUE_INPUT });
+  tokenUsageCounter.add(usage.outputTokens, { ...attrs, [ATTR_GEN_AI_TOKEN_TYPE]: GEN_AI_TOKEN_TYPE_VALUE_OUTPUT });
   operationDurationHistogram.record(durationMs / 1000, attrs);
 }
 
@@ -130,7 +137,7 @@ function emitInferenceEvent(
   span: Span,
   systemPrompt: string,
   messages: Array<{ role: string; content: string }>,
-  response: { content: Array<{ type: string; text?: string; name?: string; id?: string; input?: unknown }>; stop_reason: string | null },
+  response: { content: ProviderContentBlock[]; stopReason: string },
 ): void {
   span.addEvent(EVENT_GEN_AI_CLIENT_INFERENCE_OPERATION_DETAILS, {
     'gen_ai.system_instructions': systemPrompt,
@@ -143,54 +150,28 @@ function emitInferenceEvent(
 function setGenAIAttributes(
   span: Span,
   model: string,
+  providerName: string,
   systemPrompt: string,
   maxTokens: number,
-  response: {
-    id: string;
-    model: string;
-    stop_reason: string | null;
-    content: Array<{ type: string; text?: string; name?: string; id?: string; input?: unknown }>;
-    usage: { input_tokens: number; output_tokens: number };
-  },
+  response: ProviderResponse,
 ): void {
-  span.setAttribute(ATTR_GEN_AI_PROVIDER_NAME, GEN_AI_PROVIDER_NAME_VALUE_ANTHROPIC);
+  span.setAttribute(ATTR_GEN_AI_PROVIDER_NAME, providerName);
   span.setAttribute(ATTR_GEN_AI_REQUEST_MODEL, model);
   span.setAttribute(ATTR_GEN_AI_REQUEST_MAX_TOKENS, maxTokens);
   span.setAttribute(ATTR_GEN_AI_SYSTEM_INSTRUCTIONS, systemPrompt);
   span.setAttribute(ATTR_GEN_AI_RESPONSE_MODEL, response.model);
   span.setAttribute(ATTR_GEN_AI_RESPONSE_ID, response.id);
-  span.setAttribute(ATTR_GEN_AI_RESPONSE_FINISH_REASONS, [response.stop_reason ?? 'unknown']);
-  span.setAttribute(ATTR_GEN_AI_USAGE_INPUT_TOKENS, response.usage.input_tokens);
-  span.setAttribute(ATTR_GEN_AI_USAGE_OUTPUT_TOKENS, response.usage.output_tokens);
+  span.setAttribute(ATTR_GEN_AI_RESPONSE_FINISH_REASONS, [response.stopReason]);
+  span.setAttribute(ATTR_GEN_AI_USAGE_INPUT_TOKENS, response.usage.inputTokens);
+  span.setAttribute(ATTR_GEN_AI_USAGE_OUTPUT_TOKENS, response.usage.outputTokens);
   span.setAttribute(ATTR_GEN_AI_OUTPUT_MESSAGES, formatOutputMessages(response));
 }
 
-function extractText(response: { content: Array<{ type: string; text?: string }> }): string {
+function extractText(response: ProviderResponse): string {
   return response.content
-    .filter((b): b is { type: 'text'; text: string } => b.type === 'text')
+    .filter((b): b is ProviderContentBlock & { text: string } => b.type === 'text' && !!b.text)
     .map(b => b.text)
     .join('');
-}
-
-// Stream a chat completion, measuring time-to-first-token (TTFT)
-async function streamWithTTFT(
-  client: ReturnType<typeof getAnthropicClient>,
-  params: Parameters<typeof client.messages.stream>[0],
-): Promise<{ response: Anthropic.Message; ttftMs: number }> {
-  const startTime = performance.now();
-  let ttftMs = -1;
-  const stream = client.messages.stream(params);
-  stream.on('text', () => {
-    if (ttftMs < 0) {
-      ttftMs = performance.now() - startTime;
-    }
-  });
-  const response = await stream.finalMessage();
-  // If no text deltas arrived (e.g. tool_use only), fall back to total duration
-  if (ttftMs < 0) {
-    ttftMs = performance.now() - startTime;
-  }
-  return { response, ttftMs };
 }
 
 const SCOPE_CLASSIFIER_PROMPT = `You are a scope classifier for a customer service chatbot at an online store.
@@ -214,14 +195,14 @@ When asked, call the fetch_products tool to get product information. You may opt
 After receiving the tool result, return the product data as-is without modification.`;
 
 // Sub-agent 1: Scope Classifier
-async function classifyScope(question: string, model: string): Promise<boolean> {
+async function classifyScope(question: string, model: string, provider: LLMProvider): Promise<boolean> {
   return tracer.startActiveSpan(`${GEN_AI_OPERATION_NAME_VALUE_INVOKE_AGENT} scope_classifier`, async (agentSpan) => {
     try {
       agentSpan.setAttribute(ATTR_GEN_AI_OPERATION_NAME, GEN_AI_OPERATION_NAME_VALUE_INVOKE_AGENT);
       agentSpan.setAttribute(ATTR_GEN_AI_AGENT_NAME, 'scope_classifier');
       agentSpan.setAttribute(ATTR_GEN_AI_INPUT_MESSAGES, formatInputMessages([{ role: 'user', content: question }]));
 
-      const result = await tracer.startActiveSpan(`${GEN_AI_OPERATION_NAME_VALUE_CHAT} ${model}`, async (span) => {
+      const result = await tracer.startActiveSpan(`${GEN_AI_OPERATION_NAME_VALUE_CHAT} scope_classifier`, async (span) => {
         try {
           span.setAttribute(ATTR_GEN_AI_OPERATION_NAME, GEN_AI_OPERATION_NAME_VALUE_CHAT);
           span.setAttribute('chatbot.question', question);
@@ -229,20 +210,19 @@ async function classifyScope(question: string, model: string): Promise<boolean> 
           const messages = [{ role: 'user' as const, content: question }];
           span.setAttribute(ATTR_GEN_AI_INPUT_MESSAGES, formatInputMessages(messages));
 
-          const client = getAnthropicClient();
           const startTime = performance.now();
-          const { response, ttftMs } = await streamWithTTFT(client, {
+          const { response, ttftMs } = await provider.chat({
             model,
-            max_tokens: 100,
+            maxTokens: 100,
             system: SCOPE_CLASSIFIER_PROMPT,
-            messages,
+            messages: [{ role: 'user', content: question }],
           });
           const durationMs = performance.now() - startTime;
 
           span.setAttribute('app.response.ttft', ttftMs);
-          setGenAIAttributes(span, model, SCOPE_CLASSIFIER_PROMPT, 100, response);
+          setGenAIAttributes(span, model, provider.providerName, SCOPE_CLASSIFIER_PROMPT, 100, response);
           emitInferenceEvent(span, SCOPE_CLASSIFIER_PROMPT, messages, response);
-          recordMetrics(GEN_AI_OPERATION_NAME_VALUE_CHAT, model, response.usage, durationMs);
+          recordMetrics(GEN_AI_OPERATION_NAME_VALUE_CHAT, model, provider.providerName, response.usage, durationMs);
 
           const text = extractText(response);
           let inScope = false;
@@ -300,11 +280,11 @@ async function doProductFetch(productId?: string): Promise<string> {
   return JSON.stringify(data, null, 2);
 }
 
-// Anthropic tool definition for product fetching
+// Normalized tool definition for product fetching
 const FETCH_PRODUCTS_TOOL = {
   name: 'fetch_products',
   description: 'Fetch product information from the store API. Call with no arguments to get all products, or pass a product_id to get a specific product.',
-  input_schema: {
+  parameters: {
     type: 'object' as const,
     properties: {
       product_id: {
@@ -317,7 +297,7 @@ const FETCH_PRODUCTS_TOOL = {
 };
 
 // Sub-agent 2: Product Fetcher (tool-calling agent)
-async function fetchProductInfo(model: string, productId?: string): Promise<string> {
+async function fetchProductInfo(model: string, provider: LLMProvider, productId?: string): Promise<string> {
   return tracer.startActiveSpan(`${GEN_AI_OPERATION_NAME_VALUE_INVOKE_AGENT} product_fetcher`, async (agentSpan) => {
     try {
       agentSpan.setAttribute(ATTR_GEN_AI_OPERATION_NAME, GEN_AI_OPERATION_NAME_VALUE_INVOKE_AGENT);
@@ -331,21 +311,16 @@ async function fetchProductInfo(model: string, productId?: string): Promise<stri
         : 'Fetch all products from the store.';
       agentSpan.setAttribute(ATTR_GEN_AI_INPUT_MESSAGES, formatInputMessages([{ role: 'user', content: userContent }]));
 
-      const client = getAnthropicClient();
-      const messages: Array<{ role: 'user' | 'assistant'; content: string | Array<unknown> }> = [
-        { role: 'user', content: userContent },
-      ];
-
-      // First chat: ask Claude to call the tool
-      const firstResponse = await tracer.startActiveSpan(`${GEN_AI_OPERATION_NAME_VALUE_CHAT} ${model}`, async (chatSpan) => {
+      // First chat: ask LLM to call the tool
+      const firstResponse = await tracer.startActiveSpan(`${GEN_AI_OPERATION_NAME_VALUE_CHAT} product_fetcher`, async (chatSpan) => {
         try {
           chatSpan.setAttribute(ATTR_GEN_AI_OPERATION_NAME, GEN_AI_OPERATION_NAME_VALUE_CHAT);
           chatSpan.setAttribute(ATTR_GEN_AI_INPUT_MESSAGES, formatInputMessages([{ role: 'user', content: userContent }]));
 
           const startTime = performance.now();
-          const { response, ttftMs } = await streamWithTTFT(client, {
+          const { response, ttftMs } = await provider.chat({
             model,
-            max_tokens: 1024,
+            maxTokens: 1024,
             system: PRODUCT_FETCHER_PROMPT,
             tools: [FETCH_PRODUCTS_TOOL],
             messages: [{ role: 'user', content: userContent }],
@@ -353,9 +328,9 @@ async function fetchProductInfo(model: string, productId?: string): Promise<stri
           const durationMs = performance.now() - startTime;
 
           chatSpan.setAttribute('app.response.ttft', ttftMs);
-          setGenAIAttributes(chatSpan, model, PRODUCT_FETCHER_PROMPT, 1024, response);
+          setGenAIAttributes(chatSpan, model, provider.providerName, PRODUCT_FETCHER_PROMPT, 1024, response);
           emitInferenceEvent(chatSpan, PRODUCT_FETCHER_PROMPT, [{ role: 'user', content: userContent }], response);
-          recordMetrics(GEN_AI_OPERATION_NAME_VALUE_CHAT, model, response.usage, durationMs);
+          recordMetrics(GEN_AI_OPERATION_NAME_VALUE_CHAT, model, provider.providerName, response.usage, durationMs);
 
           return response;
         } catch (error) {
@@ -366,13 +341,13 @@ async function fetchProductInfo(model: string, productId?: string): Promise<stri
         }
       });
 
-      // Check if Claude wants to use the tool
+      // Check if LLM wants to use the tool
       const toolUseBlock = firstResponse.content.find(
-        (b: { type: string }) => b.type === 'tool_use'
-      ) as { type: 'tool_use'; id: string; name: string; input: { product_id?: string } } | undefined;
+        (b) => b.type === 'tool_use'
+      ) as (ProviderContentBlock & { type: 'tool_use'; id: string; name: string; input: { product_id?: string } }) | undefined;
 
       if (!toolUseBlock) {
-        // Fallback: Claude didn't call the tool, do a direct fetch
+        // Fallback: LLM didn't call the tool, do a direct fetch
         const fallbackResult = await doProductFetch(productId);
         agentSpan.setAttribute(ATTR_GEN_AI_OUTPUT_MESSAGES, JSON.stringify([{ role: 'assistant', parts: [{ type: 'text', content: fallbackResult }] }]));
         return fallbackResult;
@@ -400,14 +375,17 @@ async function fetchProductInfo(model: string, productId?: string): Promise<stri
         }
       });
 
-      // Second chat: send tool result back to Claude for final response
-      const finalText = await tracer.startActiveSpan(`${GEN_AI_OPERATION_NAME_VALUE_CHAT} ${model}`, async (chatSpan2) => {
+      // Second chat: send tool result back to LLM for final response
+      const finalText = await tracer.startActiveSpan(`${GEN_AI_OPERATION_NAME_VALUE_CHAT} product_fetcher`, async (chatSpan2) => {
         try {
           chatSpan2.setAttribute(ATTR_GEN_AI_OPERATION_NAME, GEN_AI_OPERATION_NAME_VALUE_CHAT);
 
           const followUpMessages = [
             { role: 'user' as const, content: userContent },
-            { role: 'assistant' as const, content: firstResponse.content },
+            {
+              role: 'assistant' as const,
+              content: firstResponse.content,
+            },
             {
               role: 'user' as const,
               content: [
@@ -426,21 +404,21 @@ async function fetchProductInfo(model: string, productId?: string): Promise<stri
           }))));
 
           const startTime = performance.now();
-          const { response: response2, ttftMs } = await streamWithTTFT(client, {
+          const { response: response2, ttftMs } = await provider.chat({
             model,
-            max_tokens: 1024,
+            maxTokens: 1024,
             system: PRODUCT_FETCHER_PROMPT,
             tools: [FETCH_PRODUCTS_TOOL],
-            messages: followUpMessages as Parameters<typeof client.messages.create>[0]['messages'],
+            messages: followUpMessages,
           });
           const durationMs = performance.now() - startTime;
 
           chatSpan2.setAttribute('app.response.ttft', ttftMs);
-          setGenAIAttributes(chatSpan2, model, PRODUCT_FETCHER_PROMPT, 1024, response2);
+          setGenAIAttributes(chatSpan2, model, provider.providerName, PRODUCT_FETCHER_PROMPT, 1024, response2);
           emitInferenceEvent(chatSpan2, PRODUCT_FETCHER_PROMPT,
             [{ role: 'user', content: typeof followUpMessages[2].content === 'string' ? followUpMessages[2].content : JSON.stringify(followUpMessages[2].content) }],
             response2);
-          recordMetrics(GEN_AI_OPERATION_NAME_VALUE_CHAT, model, response2.usage, durationMs);
+          recordMetrics(GEN_AI_OPERATION_NAME_VALUE_CHAT, model, provider.providerName, response2.usage, durationMs);
 
           return extractText(response2) || toolResult;
         } catch (error) {
@@ -463,15 +441,15 @@ async function fetchProductInfo(model: string, productId?: string): Promise<stri
 }
 
 // Sub-agent 3: Response Generator
-async function generateResponse(question: string, productInfo: string): Promise<string> {
-  const model = await getWriterModel();
+async function generateResponse(question: string, productInfo: string, provider: LLMProvider): Promise<string> {
+  const model = await getWriterModel(provider.providerName);
   return tracer.startActiveSpan(`${GEN_AI_OPERATION_NAME_VALUE_INVOKE_AGENT} response_generator`, async (agentSpan) => {
     try {
       agentSpan.setAttribute(ATTR_GEN_AI_OPERATION_NAME, GEN_AI_OPERATION_NAME_VALUE_INVOKE_AGENT);
       agentSpan.setAttribute(ATTR_GEN_AI_AGENT_NAME, 'response_generator');
       agentSpan.setAttribute(ATTR_GEN_AI_INPUT_MESSAGES, formatInputMessages([{ role: 'user', content: question }]));
 
-      const answer = await tracer.startActiveSpan(`${GEN_AI_OPERATION_NAME_VALUE_CHAT} ${model}`, async (span) => {
+      const answer = await tracer.startActiveSpan(`${GEN_AI_OPERATION_NAME_VALUE_CHAT} response_generator`, async (span) => {
         try {
           span.setAttribute(ATTR_GEN_AI_OPERATION_NAME, GEN_AI_OPERATION_NAME_VALUE_CHAT);
           span.setAttribute('chatbot.question', question);
@@ -482,20 +460,19 @@ async function generateResponse(question: string, productInfo: string): Promise<
           }];
           span.setAttribute(ATTR_GEN_AI_INPUT_MESSAGES, formatInputMessages(messages));
 
-          const client = getAnthropicClient();
           const startTime = performance.now();
-          const { response, ttftMs } = await streamWithTTFT(client, {
+          const { response, ttftMs } = await provider.chat({
             model,
-            max_tokens: 1024,
+            maxTokens: 1024,
             system: RESPONSE_GENERATOR_PROMPT,
-            messages,
+            messages: [{ role: 'user', content: messages[0].content }],
           });
           const durationMs = performance.now() - startTime;
 
           span.setAttribute('app.response.ttft', ttftMs);
-          setGenAIAttributes(span, model, RESPONSE_GENERATOR_PROMPT, 1024, response);
+          setGenAIAttributes(span, model, provider.providerName, RESPONSE_GENERATOR_PROMPT, 1024, response);
           emitInferenceEvent(span, RESPONSE_GENERATOR_PROMPT, messages, response);
-          recordMetrics(GEN_AI_OPERATION_NAME_VALUE_CHAT, model, response.usage, durationMs);
+          recordMetrics(GEN_AI_OPERATION_NAME_VALUE_CHAT, model, provider.providerName, response.usage, durationMs);
 
           const text = extractText(response);
           span.setAttribute('chatbot.response_length', text.length);
@@ -530,10 +507,12 @@ export interface HandleQuestionResult {
 export async function handleQuestion(question: string, productId?: string): Promise<HandleQuestionResult> {
   return tracer.startActiveSpan('invoke_agent supervisor', async (span) => {
     const { traceId, spanId } = span.spanContext();
-    const researchModel = await getResearchModel();
+    const provider = getProvider();
+    const researchModel = await getResearchModel(provider.providerName);
     try {
       span.setAttribute(ATTR_GEN_AI_AGENT_NAME, 'supervisor');
       span.setAttribute(ATTR_GEN_AI_OPERATION_NAME, GEN_AI_OPERATION_NAME_VALUE_INVOKE_AGENT);
+      span.setAttribute(ATTR_GEN_AI_PROVIDER_NAME, provider.providerName);
       span.setAttribute('chatbot.question', question);
       span.setAttribute('chatbot.research.model', researchModel);
       span.setAttribute(ATTR_GEN_AI_INPUT_MESSAGES, formatInputMessages([{ role: 'user', content: question }]));
@@ -542,7 +521,7 @@ export async function handleQuestion(question: string, productId?: string): Prom
       }
 
       // Step 1: Classify scope
-      const inScope = await classifyScope(question, researchModel);
+      const inScope = await classifyScope(question, researchModel, provider);
       if (!inScope) {
         const outOfScopeResponse = "AI Response: Sorry, I'm not able to answer that question.";
         span.setAttribute('chatbot.result', 'out_of_scope');
@@ -551,10 +530,10 @@ export async function handleQuestion(question: string, productId?: string): Prom
       }
 
       // Step 2: Fetch product information
-      const productInfo = await fetchProductInfo(researchModel, productId);
+      const productInfo = await fetchProductInfo(researchModel, provider, productId);
 
       // Step 3: Generate response
-      const answer = await generateResponse(question, productInfo);
+      const answer = await generateResponse(question, productInfo, provider);
 
       span.setAttribute('chatbot.result', 'success');
       span.setAttribute(ATTR_GEN_AI_OUTPUT_MESSAGES, JSON.stringify([{ role: 'assistant', parts: [{ type: 'text', content: answer }] }]));
