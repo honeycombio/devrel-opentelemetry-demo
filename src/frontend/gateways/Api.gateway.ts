@@ -84,25 +84,25 @@ const Apis = () => ({
     });
   },
   async askProductAIAssistant(productId: string, question: string) {
-    const response = await request<{ answer: string; traceId: string; spanId: string; researchModel: string }>({
+    const response = await request<{ answer: string; traceId: string; spanId: string; requestModel: string; responseModel: string }>({
       url: `/chat/question`,
       method: 'POST',
       body: { question, productId },
     });
     return response;
   },
-  sendFeedback(traceId: string, spanId: string, sentiment: 1 | -1 | 0) {
+  sendFeedback(traceId: string, spanId: string, sentiment: 1 | -1 | 0, requestModel?: string, responseModel?: string) {
     return request<{ status: string }>({
       url: `/chat/feedback`,
       method: 'POST',
-      body: { traceId, spanId, sentiment },
+      body: { traceId, spanId, sentiment, requestModel, responseModel },
     });
   },
-  sendAddedToCart(traceId: string, spanId: string, productId: string, quantity: number, researchModel?: string) {
+  sendAddedToCart(traceId: string, spanId: string, productId: string, quantity: number, requestModel?: string, responseModel?: string) {
     return request<{ status: string }>({
       url: `/chat/added-to-cart`,
       method: 'POST',
-      body: { traceId, spanId, productId, quantity, researchModel },
+      body: { traceId, spanId, productId, quantity, requestModel, responseModel },
     });
   },
   listRecommendations(productIds: string[], currencyCode: string) {

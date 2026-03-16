@@ -9,7 +9,7 @@ export interface AiRequestPayload {
     question: string;
 }
 
-export type AiResponse = { text: string; traceId: string; spanId: string; researchModel: string };
+export type AiResponse = { text: string; traceId: string; spanId: string; requestModel: string; responseModel: string };
 
 interface AiAssistantContextValue {
     aiResponse: AiResponse | null;
@@ -20,7 +20,7 @@ interface AiAssistantContextValue {
         payload: AiRequestPayload,
         options?: MutateOptions<AiResponse, Error, AiRequestPayload, unknown>
     ) => void;
-    sendFeedback: (traceId: string, spanId: string, sentiment: 1 | -1 | 0) => void;
+    sendFeedback: (traceId: string, spanId: string, sentiment: 1 | -1 | 0, requestModel?: string, responseModel?: string) => Promise<void>;
     reset: () => void;
 }
 
@@ -30,7 +30,7 @@ const Context = createContext<AiAssistantContextValue>({
     aiError: null,
     feedbackSent: false,
     sendAiRequest: () => {},
-    sendFeedback: () => {},
+    sendFeedback: async () => {},
     reset: () => {},
 });
 
@@ -46,8 +46,8 @@ const ProductAIAssistantProvider = ({ children, productId }: ProductAIAssistantP
 
     const mutation = useMutation<AiResponse, Error, AiRequestPayload>({
         mutationFn: async ({ question }) => {
-            const { answer, traceId, spanId, researchModel } = await ApiGateway.askProductAIAssistant(productId, question);
-            return { text: answer, traceId, spanId, researchModel };
+            const { answer, traceId, spanId, requestModel, responseModel } = await ApiGateway.askProductAIAssistant(productId, question);
+            return { text: answer, traceId, spanId, requestModel, responseModel };
         },
     });
 
@@ -57,8 +57,8 @@ const ProductAIAssistantProvider = ({ children, productId }: ProductAIAssistantP
         setFeedbackSent(false);
     }, [productId]);
 
-    const sendFeedback = useCallback((traceId: string, spanId: string, sentiment: 1 | -1 | 0) => {
-        ApiGateway.sendFeedback(traceId, spanId, sentiment);
+    const sendFeedback = useCallback(async (traceId: string, spanId: string, sentiment: 1 | -1 | 0, requestModel?: string, responseModel?: string) => {
+        await ApiGateway.sendFeedback(traceId, spanId, sentiment, requestModel, responseModel);
         setFeedbackSent(true);
     }, []);
 

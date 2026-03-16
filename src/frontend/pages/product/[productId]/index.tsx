@@ -31,16 +31,16 @@ const AddToCartButton = ({ productId, quantity }: { productId: string; quantity:
   const { aiResponse, feedbackSent, sendFeedback } = useAiAssistant();
 
   const onAddItem = useCallback(async () => {
-    if (aiResponse) {
-      if (!feedbackSent) {
-        sendFeedback(aiResponse.traceId, aiResponse.spanId, 0);
-      }
-      ApiGateway.sendAddedToCart(aiResponse.traceId, aiResponse.spanId, productId, quantity, aiResponse.researchModel);
-    }
-    const extraAttributes = aiResponse?.researchModel
-      ? { 'chatbot.research.model': aiResponse.researchModel }
+    const extraAttributes = aiResponse?.requestModel
+      ? { 'chatbot.research.model': aiResponse.requestModel }
       : undefined;
     await addItem({ productId, quantity }, extraAttributes);
+    if (aiResponse) {
+      if (!feedbackSent) {
+        await sendFeedback(aiResponse.traceId, aiResponse.spanId, 0, aiResponse.requestModel, aiResponse.responseModel);
+      }
+      await ApiGateway.sendAddedToCart(aiResponse.traceId, aiResponse.spanId, productId, quantity, aiResponse.requestModel, aiResponse.responseModel);
+    }
     push('/cart');
   }, [addItem, productId, quantity, push, aiResponse, feedbackSent, sendFeedback]);
 

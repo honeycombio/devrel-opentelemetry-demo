@@ -12,6 +12,8 @@ The chatbot uses a **supervisor pattern** with three sub-agents:
 
 The supervisor orchestrates these in sequence: classify -> fetch -> respond. Out-of-scope questions are rejected after step 1.
 
+**Note:** The Product Fetcher's tool-calling flow is a hardcoded two-turn loop (LLM requests tool -> execute tool -> send result back to LLM), not a fully automated agentic loop. This is intentional — the goal is to demonstrate how the GenAI telemetry shapes look for a tool-calling agent, not to implement a production agentic framework.
+
 ## API Endpoints
 
 | Endpoint | Method | Description |

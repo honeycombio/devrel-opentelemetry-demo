@@ -53,8 +53,8 @@ app.post('/chat/question', async (req: Request, res: Response) => {
   }
 
   try {
-    const { answer, traceId, spanId, researchModel } = await handleQuestion(question, productId);
-    res.json({ answer, traceId, spanId, researchModel });
+    const { answer, traceId, spanId, requestModel, responseModel } = await handleQuestion(question, productId);
+    res.json({ answer, traceId, spanId, requestModel, responseModel });
   } catch {
     span?.setAttribute('chatbot.result', 'error');
     res.json({ answer: 'The Chatbot is Unavailable' });
@@ -63,7 +63,7 @@ app.post('/chat/question', async (req: Request, res: Response) => {
 
 // POST /chat/feedback
 app.post('/chat/feedback', (req: Request, res: Response) => {
-  const { traceId, spanId, sentiment } = req.body;
+  const { traceId, spanId, sentiment, requestModel, responseModel } = req.body;
 
   if (!traceId || !spanId || ![1, -1, 0].includes(sentiment)) {
     res.status(400).json({ error: 'Invalid feedback payload' });
@@ -81,6 +81,12 @@ app.post('/chat/feedback', (req: Request, res: Response) => {
   tracer.startActiveSpan('user_feedback', {}, parentContext, (feedbackSpan) => {
     feedbackSpan.setAttribute('feedback.sentiment', sentiment);
     feedbackSpan.setAttribute('feedback.trace_id', traceId);
+    if (requestModel) {
+      feedbackSpan.setAttribute('gen_ai.request.model', requestModel);
+    }
+    if (responseModel) {
+      feedbackSpan.setAttribute('gen_ai.response.model', responseModel);
+    }
     feedbackSpan.end();
   });
 
@@ -89,7 +95,7 @@ app.post('/chat/feedback', (req: Request, res: Response) => {
 
 // POST /chat/added-to-cart
 app.post('/chat/added-to-cart', (req: Request, res: Response) => {
-  const { traceId, spanId, productId, quantity, researchModel } = req.body;
+  const { traceId, spanId, productId, quantity, requestModel, responseModel } = req.body;
 
   if (!traceId || !spanId) {
     res.status(400).json({ error: 'Invalid added-to-cart payload' });
@@ -107,8 +113,11 @@ app.post('/chat/added-to-cart', (req: Request, res: Response) => {
   tracer.startActiveSpan('added-to-cart', {}, parentContext, (span) => {
     span.setAttribute('app.product.id', productId);
     span.setAttribute('app.product.qty', quantity);
-    if (researchModel) {
-      span.setAttribute('gen_ai.response.model', researchModel);
+    if (requestModel) {
+      span.setAttribute('gen_ai.request.model', requestModel);
+    }
+    if (responseModel) {
+      span.setAttribute('gen_ai.response.model', responseModel);
     }
     span.end();
   });

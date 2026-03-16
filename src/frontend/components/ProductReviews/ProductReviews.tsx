@@ -113,14 +113,14 @@ const ProductReviews = () => {
                         <S.FeedbackRow>
                             <S.FeedbackButton
                                 type="button"
-                                onClick={() => sendFeedback(aiResponse.traceId, aiResponse.spanId, 1)}
+                                onClick={() => sendFeedback(aiResponse.traceId, aiResponse.spanId, 1, aiResponse.requestModel, aiResponse.responseModel)}
                                 data-cy="FeedbackGood"
                             >
                                 👍
                             </S.FeedbackButton>
                             <S.FeedbackButton
                                 type="button"
-                                onClick={() => sendFeedback(aiResponse.traceId, aiResponse.spanId, -1)}
+                                onClick={() => sendFeedback(aiResponse.traceId, aiResponse.spanId, -1, aiResponse.requestModel, aiResponse.responseModel)}
                                 data-cy="FeedbackBad"
                             >
                                 👎
