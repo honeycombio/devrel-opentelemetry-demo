@@ -36,10 +36,12 @@ const AddToCartButton = ({ productId, quantity }: { productId: string; quantity:
       : undefined;
     await addItem({ productId, quantity }, extraAttributes);
     if (aiResponse) {
-      if (!feedbackSent) {
-        await sendFeedback(aiResponse.traceId, aiResponse.spanId, 0, aiResponse.requestModel, aiResponse.responseModel);
+      const isValidAnswer = !aiResponse.text.includes("Sorry, I'm not able to answer") &&
+        !aiResponse.text.includes('The Chatbot is Unavailable');
+      if (!feedbackSent && isValidAnswer) {
+        await sendFeedback(aiResponse.traceId, aiResponse.spanId, 0, aiResponse.requestModel, aiResponse.responseModel, aiResponse.totalInputTokens, aiResponse.totalOutputTokens);
       }
-      await ApiGateway.sendAddedToCart(aiResponse.traceId, aiResponse.spanId, productId, quantity, aiResponse.requestModel, aiResponse.responseModel);
+      await ApiGateway.sendAddedToCart(aiResponse.traceId, aiResponse.spanId, productId, quantity, aiResponse.requestModel, aiResponse.responseModel, aiResponse.totalInputTokens, aiResponse.totalOutputTokens);
     }
     push('/cart');
   }, [addItem, productId, quantity, push, aiResponse, feedbackSent, sendFeedback]);

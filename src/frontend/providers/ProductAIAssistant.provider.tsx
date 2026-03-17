@@ -9,7 +9,7 @@ export interface AiRequestPayload {
     question: string;
 }
 
-export type AiResponse = { text: string; traceId: string; spanId: string; requestModel: string; responseModel: string };
+export type AiResponse = { text: string; traceId: string; spanId: string; requestModel: string; responseModel: string; totalInputTokens: number; totalOutputTokens: number };
 
 interface AiAssistantContextValue {
     aiResponse: AiResponse | null;
@@ -20,7 +20,7 @@ interface AiAssistantContextValue {
         payload: AiRequestPayload,
         options?: MutateOptions<AiResponse, Error, AiRequestPayload, unknown>
     ) => void;
-    sendFeedback: (traceId: string, spanId: string, sentiment: 1 | -1 | 0, requestModel?: string, responseModel?: string) => Promise<void>;
+    sendFeedback: (traceId: string, spanId: string, sentiment: 1 | -1 | 0, requestModel?: string, responseModel?: string, totalInputTokens?: number, totalOutputTokens?: number) => Promise<void>;
     reset: () => void;
 }
 
@@ -46,8 +46,8 @@ const ProductAIAssistantProvider = ({ children, productId }: ProductAIAssistantP
 
     const mutation = useMutation<AiResponse, Error, AiRequestPayload>({
         mutationFn: async ({ question }) => {
-            const { answer, traceId, spanId, requestModel, responseModel } = await ApiGateway.askProductAIAssistant(productId, question);
-            return { text: answer, traceId, spanId, requestModel, responseModel };
+            const { answer, traceId, spanId, requestModel, responseModel, totalInputTokens, totalOutputTokens } = await ApiGateway.askProductAIAssistant(productId, question);
+            return { text: answer, traceId, spanId, requestModel, responseModel, totalInputTokens, totalOutputTokens };
         },
     });
 
@@ -57,8 +57,8 @@ const ProductAIAssistantProvider = ({ children, productId }: ProductAIAssistantP
         setFeedbackSent(false);
     }, [productId]);
 
-    const sendFeedback = useCallback(async (traceId: string, spanId: string, sentiment: 1 | -1 | 0, requestModel?: string, responseModel?: string) => {
-        await ApiGateway.sendFeedback(traceId, spanId, sentiment, requestModel, responseModel);
+    const sendFeedback = useCallback(async (traceId: string, spanId: string, sentiment: 1 | -1 | 0, requestModel?: string, responseModel?: string, totalInputTokens?: number, totalOutputTokens?: number) => {
+        await ApiGateway.sendFeedback(traceId, spanId, sentiment, requestModel, responseModel, totalInputTokens, totalOutputTokens);
         setFeedbackSent(true);
     }, []);
 

@@ -53,8 +53,8 @@ app.post('/chat/question', async (req: Request, res: Response) => {
   }
 
   try {
-    const { answer, traceId, spanId, requestModel, responseModel } = await handleQuestion(question, productId);
-    res.json({ answer, traceId, spanId, requestModel, responseModel });
+    const { answer, traceId, spanId, requestModel, responseModel, totalInputTokens, totalOutputTokens } = await handleQuestion(question, productId);
+    res.json({ answer, traceId, spanId, requestModel, responseModel, totalInputTokens, totalOutputTokens });
   } catch {
     span?.setAttribute('chatbot.result', 'error');
     res.json({ answer: 'The Chatbot is Unavailable' });
@@ -63,7 +63,7 @@ app.post('/chat/question', async (req: Request, res: Response) => {
 
 // POST /chat/feedback
 app.post('/chat/feedback', (req: Request, res: Response) => {
-  const { traceId, spanId, sentiment, requestModel, responseModel } = req.body;
+  const { traceId, spanId, sentiment, requestModel, responseModel, totalInputTokens, totalOutputTokens } = req.body;
 
   if (!traceId || !spanId || ![1, -1, 0].includes(sentiment)) {
     res.status(400).json({ error: 'Invalid feedback payload' });
@@ -78,7 +78,7 @@ app.post('/chat/feedback', (req: Request, res: Response) => {
   };
   const parentContext = trace.setSpanContext(context.active(), remoteContext);
   const tracer = trace.getTracer('chatbot');
-  tracer.startActiveSpan('user_feedback', {}, parentContext, (feedbackSpan) => {
+  tracer.startActiveSpan('user-feedback', {}, parentContext, (feedbackSpan) => {
     feedbackSpan.setAttribute('feedback.sentiment', sentiment);
     feedbackSpan.setAttribute('feedback.trace_id', traceId);
     if (requestModel) {
@@ -86,6 +86,12 @@ app.post('/chat/feedback', (req: Request, res: Response) => {
     }
     if (responseModel) {
       feedbackSpan.setAttribute('gen_ai.response.model', responseModel);
+    }
+    if (typeof totalInputTokens === 'number') {
+      feedbackSpan.setAttribute('gen_ai.usage.input_tokens', totalInputTokens);
+    }
+    if (typeof totalOutputTokens === 'number') {
+      feedbackSpan.setAttribute('gen_ai.usage.output_tokens', totalOutputTokens);
     }
     feedbackSpan.end();
   });
@@ -95,7 +101,7 @@ app.post('/chat/feedback', (req: Request, res: Response) => {
 
 // POST /chat/added-to-cart
 app.post('/chat/added-to-cart', (req: Request, res: Response) => {
-  const { traceId, spanId, productId, quantity, requestModel, responseModel } = req.body;
+  const { traceId, spanId, productId, quantity, requestModel, responseModel, totalInputTokens, totalOutputTokens } = req.body;
 
   if (!traceId || !spanId) {
     res.status(400).json({ error: 'Invalid added-to-cart payload' });
@@ -118,6 +124,12 @@ app.post('/chat/added-to-cart', (req: Request, res: Response) => {
     }
     if (responseModel) {
       span.setAttribute('gen_ai.response.model', responseModel);
+    }
+    if (typeof totalInputTokens === 'number') {
+      span.setAttribute('gen_ai.usage.input_tokens', totalInputTokens);
+    }
+    if (typeof totalOutputTokens === 'number') {
+      span.setAttribute('gen_ai.usage.output_tokens', totalOutputTokens);
     }
     span.end();
   });

@@ -197,7 +197,7 @@ When asked, call the fetch_products tool to get product information. You may opt
 After receiving the tool result, return the product data as-is without modification.`;
 
 // Sub-agent 1: Scope Classifier
-async function classifyScope(question: string, model: string, provider: LLMProvider): Promise<boolean> {
+async function classifyScope(question: string, model: string, provider: LLMProvider, tokens: TokenAccumulator): Promise<boolean> {
   return tracer.startActiveSpan(`${GEN_AI_OPERATION_NAME_VALUE_INVOKE_AGENT} scope_classifier`, async (agentSpan) => {
     try {
       agentSpan.setAttribute(ATTR_GEN_AI_OPERATION_NAME, GEN_AI_OPERATION_NAME_VALUE_INVOKE_AGENT);
@@ -226,6 +226,8 @@ async function classifyScope(question: string, model: string, provider: LLMProvi
           span.updateName(`${GEN_AI_OPERATION_NAME_VALUE_CHAT} scope_classifier`);
           emitInferenceEvent(span, 'scope_classifier', SCOPE_CLASSIFIER_PROMPT, messages, response);
           recordMetrics(GEN_AI_OPERATION_NAME_VALUE_CHAT, model, provider.providerName, response.usage, durationMs);
+          tokens.inputTokens += response.usage.inputTokens;
+          tokens.outputTokens += response.usage.outputTokens;
 
           const text = extractText(response);
           let inScope = false;
@@ -300,7 +302,7 @@ const FETCH_PRODUCTS_TOOL = {
 };
 
 // Sub-agent 2: Product Fetcher (tool-calling agent)
-async function fetchProductInfo(model: string, provider: LLMProvider, productId?: string): Promise<string> {
+async function fetchProductInfo(model: string, provider: LLMProvider, tokens: TokenAccumulator, productId?: string): Promise<string> {
   return tracer.startActiveSpan(`${GEN_AI_OPERATION_NAME_VALUE_INVOKE_AGENT} product_fetcher`, async (agentSpan) => {
     try {
       agentSpan.setAttribute(ATTR_GEN_AI_OPERATION_NAME, GEN_AI_OPERATION_NAME_VALUE_INVOKE_AGENT);
@@ -336,6 +338,8 @@ async function fetchProductInfo(model: string, provider: LLMProvider, productId?
           chatSpan.updateName(`${GEN_AI_OPERATION_NAME_VALUE_CHAT} product_fetcher`);
           emitInferenceEvent(chatSpan, 'product_fetcher', PRODUCT_FETCHER_PROMPT, [{ role: 'user', content: userContent }], response);
           recordMetrics(GEN_AI_OPERATION_NAME_VALUE_CHAT, model, provider.providerName, response.usage, durationMs);
+          tokens.inputTokens += response.usage.inputTokens;
+          tokens.outputTokens += response.usage.outputTokens;
 
           return response;
         } catch (error) {
@@ -425,6 +429,8 @@ async function fetchProductInfo(model: string, provider: LLMProvider, productId?
             [{ role: 'user', content: typeof followUpMessages[2].content === 'string' ? followUpMessages[2].content : JSON.stringify(followUpMessages[2].content) }],
             response2);
           recordMetrics(GEN_AI_OPERATION_NAME_VALUE_CHAT, model, provider.providerName, response2.usage, durationMs);
+          tokens.inputTokens += response2.usage.inputTokens;
+          tokens.outputTokens += response2.usage.outputTokens;
 
           return extractText(response2) || toolResult;
         } catch (error) {
@@ -447,7 +453,7 @@ async function fetchProductInfo(model: string, provider: LLMProvider, productId?
 }
 
 // Sub-agent 3: Response Generator
-async function generateResponse(question: string, productInfo: string, provider: LLMProvider): Promise<{ text: string; responseModel: string }> {
+async function generateResponse(question: string, productInfo: string, provider: LLMProvider, tokens: TokenAccumulator): Promise<{ text: string; responseModel: string }> {
   const model = await getWriterModel(provider.providerName);
   return tracer.startActiveSpan(`${GEN_AI_OPERATION_NAME_VALUE_INVOKE_AGENT} response_generator`, async (agentSpan) => {
     try {
@@ -480,6 +486,8 @@ async function generateResponse(question: string, productInfo: string, provider:
           span.updateName(`${GEN_AI_OPERATION_NAME_VALUE_CHAT} response_generator`);
           emitInferenceEvent(span, 'response_generator', RESPONSE_GENERATOR_PROMPT, messages, response);
           recordMetrics(GEN_AI_OPERATION_NAME_VALUE_CHAT, model, provider.providerName, response.usage, durationMs);
+          tokens.inputTokens += response.usage.inputTokens;
+          tokens.outputTokens += response.usage.outputTokens;
 
           const text = extractText(response);
           span.setAttribute('chatbot.response_length', text.length);
@@ -503,12 +511,19 @@ async function generateResponse(question: string, productInfo: string, provider:
   });
 }
 
+interface TokenAccumulator {
+  inputTokens: number;
+  outputTokens: number;
+}
+
 export interface HandleQuestionResult {
   answer: string;
   traceId: string;
   spanId: string;
   requestModel: string;
   responseModel: string;
+  totalInputTokens: number;
+  totalOutputTokens: number;
 }
 
 // Supervisor agent: orchestrates the sub-agent flow
@@ -517,6 +532,7 @@ export async function handleQuestion(question: string, productId?: string): Prom
     const { traceId, spanId } = span.spanContext();
     const provider = getProvider();
     const researchModel = await getResearchModel(provider.providerName);
+    const tokens: TokenAccumulator = { inputTokens: 0, outputTokens: 0 };
     try {
       span.setAttribute(ATTR_GEN_AI_AGENT_NAME, 'supervisor');
       span.setAttribute(ATTR_GEN_AI_OPERATION_NAME, GEN_AI_OPERATION_NAME_VALUE_INVOKE_AGENT);
@@ -529,30 +545,30 @@ export async function handleQuestion(question: string, productId?: string): Prom
       }
 
       // Step 1: Classify scope
-      const inScope = await classifyScope(question, researchModel, provider);
+      const inScope = await classifyScope(question, researchModel, provider, tokens);
       if (!inScope) {
         const outOfScopeResponse = "AI Response: Sorry, I'm not able to answer that question.";
         span.setAttribute('chatbot.result', 'out_of_scope');
         span.setAttribute(ATTR_GEN_AI_OUTPUT_MESSAGES, JSON.stringify([{ role: 'assistant', parts: [{ type: 'text', content: outOfScopeResponse }] }]));
-        return { answer: outOfScopeResponse, traceId, spanId, requestModel: researchModel, responseModel: researchModel };
+        return { answer: outOfScopeResponse, traceId, spanId, requestModel: researchModel, responseModel: researchModel, totalInputTokens: tokens.inputTokens, totalOutputTokens: tokens.outputTokens };
       }
 
       // Step 2: Fetch product information
-      const productInfo = await fetchProductInfo(researchModel, provider, productId);
+      const productInfo = await fetchProductInfo(researchModel, provider, tokens, productId);
 
       // Step 3: Generate response
-      const { text: answer, responseModel } = await generateResponse(question, productInfo, provider);
+      const { text: answer, responseModel } = await generateResponse(question, productInfo, provider, tokens);
 
       span.setAttribute('chatbot.result', 'success');
       span.setAttribute(ATTR_GEN_AI_OUTPUT_MESSAGES, JSON.stringify([{ role: 'assistant', parts: [{ type: 'text', content: answer }] }]));
-      return { answer, traceId, spanId, requestModel: researchModel, responseModel };
+      return { answer, traceId, spanId, requestModel: researchModel, responseModel, totalInputTokens: tokens.inputTokens, totalOutputTokens: tokens.outputTokens };
     } catch (error) {
       console.error('handleQuestion error:', error);
       recordException(span, error);
       const errorResponse = 'The Chatbot is Unavailable';
       span.setAttribute('chatbot.result', 'error');
       span.setAttribute(ATTR_GEN_AI_OUTPUT_MESSAGES, JSON.stringify([{ role: 'assistant', parts: [{ type: 'text', content: errorResponse }] }]));
-      return { answer: errorResponse, traceId, spanId, requestModel: researchModel, responseModel: researchModel };
+      return { answer: errorResponse, traceId, spanId, requestModel: researchModel, responseModel: researchModel, totalInputTokens: tokens.inputTokens, totalOutputTokens: tokens.outputTokens };
     } finally {
       span.end();
     }
