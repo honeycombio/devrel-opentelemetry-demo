@@ -35,48 +35,12 @@ patch_flag "chatbot.enabled" '{
   "defaultVariant": "off"
 }'
 
-# --- Second flag (copy and modify) ---
-patch_flag "chatbot.research.model" '{
-  "description": "What LLM to use for the research agent in chatbot",
-  "state": "ENABLED",
-  "variants": {
-    "Opus 4.6": "claude-opus-4-6",
-    "Sonnet 4.6": "claude-sonnet-4-6",
-    "Haiku 4.5": "claude-haiku-4-5"
-   },
-  "defaultVariant": "Haiku 4.5"
-}'
 
-# --- Second flag (copy and modify) ---
-patch_flag "chatbot.writer.model" '{
-  "description": "What LLM to use for the response writer agent in chatbot",
+patch_flag "llm.performEvals" '{
+  "description": "Enable LLM evaluation scoring (bias, hallucination, relevance) on chatbot responses",
   "state": "ENABLED",
-  "variants": {
-    "Opus 4.6": "claude-opus-4-6",
-    "Sonnet 4.6": "claude-sonnet-4-6",
-    "Haiku 4.5": "claude-haiku-4-5"
-  },
-  "defaultVariant": "Haiku 4.5"
-}'
-
-patch_flag "chatbot.research.openai.model" '{
-  "description": "What OpenAI model to use for the research agent in chatbot",
-  "state": "ENABLED",
-  "variants": {
-    "GPT-4o Mini": "gpt-4o-mini",
-    "GPT-4o": "gpt-4o"
-  },
-  "defaultVariant": "GPT-4o Mini"
-}'
-
-patch_flag "chatbot.writer.openai.model" '{
-  "description": "What OpenAI model to use for the response writer agent in chatbot",
-  "state": "ENABLED",
-  "variants": {
-    "GPT-4o Mini": "gpt-4o-mini",
-    "GPT-4o": "gpt-4o"
-  },
-  "defaultVariant": "GPT-4o Mini"
+  "variants": { "on": true, "off": false },
+  "defaultVariant": "off"
 }'
 
 echo "Restarting flagd to pick up new config..."

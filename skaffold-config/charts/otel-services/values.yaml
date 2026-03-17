@@ -19,6 +19,8 @@ services:
         value: "8087"
       - name: FRONTEND_ADDR
         value: "http://frontend:8080"
+      - name: LLM_EVALS_ADDR
+        value: "http://llm-evals:8088"
       - name: FLAGD_HOST
         value: "flagd"
       - name: FLAGD_PORT
@@ -62,6 +64,26 @@ services:
         value: "llm"
       - name: LLM_PORT
         value: "8000"
+
+  llmEvals:
+    enabled: true
+    name: llm-evals
+    image:
+      repository: ghcr.io/honeycombio/devrel-opentelemetry-demo
+      tag: latest-llm-evals
+      pullPolicy: IfNotPresent
+    imageOverride:
+      {}
+    openaiApiKey: ""
+    port: 8088
+    replicas: 1
+    env:
+      - name: LLM_EVALS_PORT
+        value: "8088"
+      - name: FLAGD_HOST
+        value: "flagd"
+      - name: FLAGD_PORT
+        value: "8013"
 
   llm:
     enabled: true

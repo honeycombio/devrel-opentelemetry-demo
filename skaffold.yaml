@@ -24,6 +24,10 @@ build:
       context: .
       docker:
         dockerfile: src/chatbot/Dockerfile
+    - image: llm-evals
+      context: .
+      docker:
+        dockerfile: src/llm-evals/Dockerfile
     - image: checkout
       context: .
       docker:
@@ -211,6 +215,9 @@ deploy:
           services.chatbot.openaiApiKey: "{{.OPENAI_API_KEY}}"
           services.chatbot.imageOverride.repository: "{{if .IMAGE_REPO_chatbot }}{{.IMAGE_REPO_chatbot}}{{end}}"
           services.chatbot.imageOverride.tag: "{{if .IMAGE_REPO_chatbot }}{{.IMAGE_TAG_chatbot}}@{{.IMAGE_DIGEST_chatbot}}{{end}}"
+          services.llmEvals.openaiApiKey: "{{.OPENAI_API_KEY}}"
+          services.llmEvals.imageOverride.repository: "{{if .IMAGE_REPO_llm_evals }}{{.IMAGE_REPO_llm_evals}}{{end}}"
+          services.llmEvals.imageOverride.tag: "{{if .IMAGE_REPO_llm_evals }}{{.IMAGE_TAG_llm_evals}}@{{.IMAGE_DIGEST_llm_evals}}{{end}}"
           services.productReviews.imageOverride.repository: "{{if .IMAGE_REPO_product_reviews }}{{.IMAGE_REPO_product_reviews}}{{end}}"
           services.productReviews.imageOverride.tag: "{{if .IMAGE_REPO_product_reviews }}{{.IMAGE_TAG_product_reviews}}@{{.IMAGE_DIGEST_product_reviews}}{{end}}"
           services.llm.imageOverride.repository: "{{if .IMAGE_REPO_llm }}{{.IMAGE_REPO_llm}}{{end}}"

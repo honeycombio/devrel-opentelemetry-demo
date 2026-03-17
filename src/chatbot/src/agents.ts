@@ -1,4 +1,4 @@
-import { trace, context, propagation, metrics, SpanStatusCode, Span } from '@opentelemetry/api';
+import { trace, context, propagation, metrics, SpanStatusCode, Span, ROOT_CONTEXT } from '@opentelemetry/api';
 import {
   ATTR_GEN_AI_AGENT_NAME,
   ATTR_GEN_AI_OPERATION_NAME,
@@ -35,6 +35,25 @@ const tracer = trace.getTracer('chatbot');
 const meter = metrics.getMeter('chatbot');
 
 const FRONTEND_ADDR = process.env.FRONTEND_ADDR || '';
+const LLM_EVALS_ADDR = process.env.LLM_EVALS_ADDR || '';
+
+/**
+ * Fire-and-forget POST to the llm-evals service.
+ * Sends traceId/spanId as plain body fields (not as traceparent).
+ * Runs in ROOT_CONTEXT to suppress auto-instrumentation from propagating
+ * the chatbot trace into the llm-evals HTTP call.
+ */
+function fireEvalRequest(span: Span, input: string, output: string, groundingContext: string, agentName: string): void {
+  if (!LLM_EVALS_ADDR) return;
+  const { traceId, spanId } = span.spanContext();
+  context.with(ROOT_CONTEXT, () => {
+    fetch(`${LLM_EVALS_ADDR}/api/evals`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ traceId, spanId, input, output, groundingContext, agentName }),
+    }).catch(() => {}); // fire-and-forget
+  });
+}
 
 const featureClient = OpenFeature.getClient();
 
@@ -58,12 +77,6 @@ async function getResearchModel(providerName: string): Promise<string> {
   return models[2];
 }
 
-async function getWriterModel(providerName: string): Promise<string> {
-  if (providerName === 'openai') {
-    return featureClient.getStringValue('chatbot.writer.openai.model', 'gpt-4o-mini');
-  }
-  return featureClient.getStringValue('chatbot.writer.model', 'claude-haiku-4-5-20251001');
-}
 
 // Gen-AI metrics
 const tokenUsageCounter = meter.createCounter(METRIC_GEN_AI_CLIENT_TOKEN_USAGE, {
@@ -420,15 +433,19 @@ async function fetchProductInfo(model: string, provider: LLMProvider, tokens: To
             tools: [FETCH_PRODUCTS_TOOL],
             messages: followUpMessages,
           });
-          const durationMs = performance.now() - startTime;
 
+          const durationMs = performance.now() - startTime;
           chatSpan2.setAttribute('app.response.ttft', ttftMs);
+
           setGenAIAttributes(chatSpan2, model, provider.providerName, PRODUCT_FETCHER_PROMPT, 1024, response2);
           chatSpan2.updateName(`${GEN_AI_OPERATION_NAME_VALUE_CHAT} product_fetcher`);
+
           emitInferenceEvent(chatSpan2, 'product_fetcher', PRODUCT_FETCHER_PROMPT,
             [{ role: 'user', content: typeof followUpMessages[2].content === 'string' ? followUpMessages[2].content : JSON.stringify(followUpMessages[2].content) }],
             response2);
+
           recordMetrics(GEN_AI_OPERATION_NAME_VALUE_CHAT, model, provider.providerName, response2.usage, durationMs);
+
           tokens.inputTokens += response2.usage.inputTokens;
           tokens.outputTokens += response2.usage.outputTokens;
 
@@ -442,6 +459,7 @@ async function fetchProductInfo(model: string, provider: LLMProvider, tokens: To
       });
 
       agentSpan.setAttribute(ATTR_GEN_AI_OUTPUT_MESSAGES, JSON.stringify([{ role: 'assistant', parts: [{ type: 'text', content: finalText }] }]));
+
       return finalText;
     } catch (error) {
       recordException(agentSpan, error);
@@ -453,9 +471,9 @@ async function fetchProductInfo(model: string, provider: LLMProvider, tokens: To
 }
 
 // Sub-agent 3: Response Generator
-async function generateResponse(question: string, productInfo: string, provider: LLMProvider, tokens: TokenAccumulator): Promise<{ text: string; responseModel: string }> {
-  const model = await getWriterModel(provider.providerName);
+async function generateResponse(question: string, productInfo: string, model: string, provider: LLMProvider, tokens: TokenAccumulator): Promise<{ text: string; responseModel: string }> {
   return tracer.startActiveSpan(`${GEN_AI_OPERATION_NAME_VALUE_INVOKE_AGENT} response_generator`, async (agentSpan) => {
+    let responseChatCompletionSpan = null;
     try {
       agentSpan.setAttribute(ATTR_GEN_AI_OPERATION_NAME, GEN_AI_OPERATION_NAME_VALUE_INVOKE_AGENT);
       agentSpan.setAttribute(ATTR_GEN_AI_AGENT_NAME, 'response_generator');
@@ -463,6 +481,8 @@ async function generateResponse(question: string, productInfo: string, provider:
 
       const answer = await tracer.startActiveSpan(`${GEN_AI_OPERATION_NAME_VALUE_CHAT} response_generator`, async (span) => {
         try {
+          // we need this to send to our eval so we can write the additional trace span for each completion later
+          responseChatCompletionSpan = span;
           span.setAttribute(ATTR_GEN_AI_OPERATION_NAME, GEN_AI_OPERATION_NAME_VALUE_CHAT);
           span.setAttribute('chatbot.question', question);
 
@@ -501,6 +521,10 @@ async function generateResponse(question: string, productInfo: string, provider:
       });
 
       agentSpan.setAttribute(ATTR_GEN_AI_OUTPUT_MESSAGES, JSON.stringify([{ role: 'assistant', parts: [{ type: 'text', content: answer.text }] }]));
+
+      // Fire eval on the response_generator chat span
+      responseChatCompletionSpan && fireEvalRequest(responseChatCompletionSpan, question, answer.text, productInfo, 'response_generator');
+
       return answer;
     } catch (error) {
       recordException(agentSpan, error);
@@ -557,7 +581,7 @@ export async function handleQuestion(question: string, productId?: string): Prom
       const productInfo = await fetchProductInfo(researchModel, provider, tokens, productId);
 
       // Step 3: Generate response
-      const { text: answer, responseModel } = await generateResponse(question, productInfo, provider, tokens);
+      const { text: answer, responseModel } = await generateResponse(question, productInfo, researchModel, provider, tokens);
 
       span.setAttribute('chatbot.result', 'success');
       span.setAttribute(ATTR_GEN_AI_OUTPUT_MESSAGES, JSON.stringify([{ role: 'assistant', parts: [{ type: 'text', content: answer }] }]));
