@@ -5,6 +5,7 @@ using Confluent.Kafka;
 using Microsoft.Extensions.Logging;
 using Oteldemo;
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
 using System.Diagnostics;
 
 namespace Accounting;
@@ -124,9 +125,15 @@ internal class Consumer : IDisposable
             _dbContext.Add(shipping);
             _dbContext.SaveChanges();
         }
+        catch (DbUpdateException ex) when (ex.InnerException is PostgresException pgEx && pgEx.SqlState == "23505")
+        {
+            _logger.LogWarning("Order already exists, skipping duplicate: {Message}", pgEx.MessageText);
+            _dbContext?.ChangeTracker.Clear();
+        }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Order parsing failed:");
+            _dbContext?.ChangeTracker.Clear();
         }
     }
 
