@@ -54,11 +54,12 @@ function applyEvalError(span: Span, evalName: string, error: unknown): void {
 /**
  * Base attributes for an eval scorer span.
  */
-function evalSpanAttrs(evalName: string, agentName: string) {
+function evalSpanAttrs(evalName: string, agentName: string, responseModel: string) {
   return {
     [ATTR_GEN_AI_OPERATION_NAME]: 'evaluate',
     [ATTR_GEN_AI_EVALUATION_NAME]: evalName,
     'gen_ai.agent.name': agentName,
+    'evaluated.model.name': responseModel,
   };
 }
 
@@ -78,18 +79,19 @@ async function runEvalDual(
   evalRootLink: Link,
   evalName: string,
   agentName: string,
+  responseModel: string,
   scorerFn: () => Promise<EvalResult>,
 ): Promise<EvalResult | null> {
   // Start both spans BEFORE the scorer runs so they capture real duration
   const evalTraceSpan = tracer.startSpan(
     `chat - Evaluation - ${evalName}`,
-    { attributes: evalSpanAttrs(evalName, agentName) },
+    { attributes: evalSpanAttrs(evalName, agentName, responseModel) },
     evalRootCtx,
   );
   const chatbotTraceSpan = tracer.startSpan(
     `chat - Evaluation - ${evalName}`,
     {
-      attributes: evalSpanAttrs(evalName, agentName),
+      attributes: evalSpanAttrs(evalName, agentName, responseModel),
       links: [evalRootLink],
     },
     remoteParentCtx,
@@ -130,6 +132,7 @@ export async function evaluateChat(
   output: string,
   groundingContext: string,
   agentName: string,
+  responseModel: string,
 ): Promise<void> {
   // Remote parent context for the original chatbot trace
   const remoteParentCtx = trace.setSpanContext(context.active(), {
@@ -145,6 +148,7 @@ export async function evaluateChat(
       'eval.source_trace_id': traceId,
       'eval.source_span_id': spanId,
       'gen_ai.agent.name': agentName,
+      'evaluated.model.name': responseModel,
     },
   });
   const evalRootCtx = trace.setSpanContext(context.active(), evalRootSpan.spanContext());
@@ -157,9 +161,9 @@ export async function evaluateChat(
 
   try {
     await Promise.all([
-      runEvalDual(remoteParentCtx, evalRootCtx, evalRootLink, 'Bias', agentName, () => runBias(input, output)),
-      runEvalDual(remoteParentCtx, evalRootCtx, evalRootLink, 'Hallucination', agentName, () => runHallucination(input, output, groundingContext)),
-      runEvalDual(remoteParentCtx, evalRootCtx, evalRootLink, 'Relevance', agentName, () => runRelevance(input, output)),
+      runEvalDual(remoteParentCtx, evalRootCtx, evalRootLink, 'Bias', agentName, responseModel, () => runBias(input, output)),
+      runEvalDual(remoteParentCtx, evalRootCtx, evalRootLink, 'Hallucination', agentName, responseModel, () => runHallucination(input, output, groundingContext)),
+      runEvalDual(remoteParentCtx, evalRootCtx, evalRootLink, 'Relevance', agentName, responseModel, () => runRelevance(input, output)),
     ]);
     evalRootSpan.setStatus({ code: SpanStatusCode.OK });
   } catch (error) {

@@ -1,4 +1,5 @@
-import { trace, context, propagation, metrics, SpanStatusCode, Span, ROOT_CONTEXT } from '@opentelemetry/api';
+import { trace, context, propagation, metrics, SpanStatusCode, Span } from '@opentelemetry/api';
+import { suppressTracing } from '@opentelemetry/core';
 import {
   ATTR_GEN_AI_AGENT_NAME,
   ATTR_GEN_AI_OPERATION_NAME,
@@ -40,17 +41,28 @@ const LLM_EVALS_ADDR = process.env.LLM_EVALS_ADDR || '';
 /**
  * Fire-and-forget POST to the llm-evals service.
  * Sends traceId/spanId as plain body fields (not as traceparent).
- * Runs in ROOT_CONTEXT to suppress auto-instrumentation from propagating
- * the chatbot trace into the llm-evals HTTP call.
+ * Uses suppressTracing to prevent auto-instrumentation from creating
+ * a span or injecting trace headers into the outgoing request.
  */
-function fireEvalRequest(span: Span, input: string, output: string, groundingContext: string, agentName: string): void {
+function fireEvalRequest(
+  span: Span,
+  input: string,
+  output: string,
+  groundingContext: string,
+  agentName: string,
+  responseModel: string,
+  inputTokens: number,
+  outputTokens: number,
+  ttftMs: number,
+): void {
   if (!LLM_EVALS_ADDR) return;
   const { traceId, spanId } = span.spanContext();
-  context.with(ROOT_CONTEXT, () => {
+  const suppressedCtx = suppressTracing(context.active());
+  context.with(suppressedCtx, () => {
     fetch(`${LLM_EVALS_ADDR}/api/evals`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ traceId, spanId, input, output, groundingContext, agentName }),
+      body: JSON.stringify({ traceId, spanId, input, output, groundingContext, agentName, responseModel, inputTokens, outputTokens, ttftMs }),
     }).catch(() => {}); // fire-and-forget
   });
 }
@@ -523,7 +535,7 @@ async function generateResponse(question: string, productInfo: string, model: st
       agentSpan.setAttribute(ATTR_GEN_AI_OUTPUT_MESSAGES, JSON.stringify([{ role: 'assistant', parts: [{ type: 'text', content: answer.text }] }]));
 
       // Fire eval on the response_generator chat span
-      responseChatCompletionSpan && fireEvalRequest(responseChatCompletionSpan, question, answer.text, productInfo, 'response_generator');
+      responseChatCompletionSpan && fireEvalRequest(responseChatCompletionSpan, question, answer.text, productInfo, 'response_generator', answer.responseModel);
 
       return answer;
     } catch (error) {

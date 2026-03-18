@@ -62,9 +62,9 @@ static_resources:
                             upgrade_configs:
                               - upgrade_type: websocket
                         - match: { prefix: "/api/evals" }
-                          route: { cluster: llm-evals }
+                          route: { cluster: llm-evals, timeout: 0s }
                         - match: { prefix: "/chat" }
-                          route: { cluster: chatbot }
+                          route: { cluster: chatbot, timeout: 0s }
                         - match: { prefix: "/" }  # Default/catch-all route - keep last since prefix:"/" matches everything
                           route: { cluster: api-gateway }
                 http_filters:
