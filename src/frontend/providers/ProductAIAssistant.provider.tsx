@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-import { createContext, useContext, useEffect, useMemo } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { useMutation, MutateOptions } from '@tanstack/react-query';
 import ApiGateway from '../gateways/Api.gateway';
 
@@ -9,16 +9,18 @@ export interface AiRequestPayload {
     question: string;
 }
 
-export type AiResponse = { text: string } | string;
+export type AiResponse = { text: string; traceId: string; spanId: string; requestModel: string; responseModel: string; totalInputTokens: number; totalOutputTokens: number };
 
 interface AiAssistantContextValue {
     aiResponse: AiResponse | null;
     aiLoading: boolean;
     aiError: Error | null;
+    feedbackSent: boolean;
     sendAiRequest: (
         payload: AiRequestPayload,
         options?: MutateOptions<AiResponse, Error, AiRequestPayload, unknown>
     ) => void;
+    sendFeedback: (traceId: string, spanId: string, sentiment: 1 | -1 | 0, requestModel?: string, responseModel?: string, totalInputTokens?: number, totalOutputTokens?: number) => Promise<void>;
     reset: () => void;
 }
 
@@ -26,7 +28,9 @@ const Context = createContext<AiAssistantContextValue>({
     aiResponse: null,
     aiLoading: false,
     aiError: null,
+    feedbackSent: false,
     sendAiRequest: () => {},
+    sendFeedback: async () => {},
     reset: () => {},
 });
 
@@ -38,29 +42,46 @@ interface ProductAIAssistantProviderProps {
 }
 
 const ProductAIAssistantProvider = ({ children, productId }: ProductAIAssistantProviderProps) => {
+    const [feedbackSent, setFeedbackSent] = useState(false);
+
     const mutation = useMutation<AiResponse, Error, AiRequestPayload>({
-        mutationFn: ({ question }) => ApiGateway.askProductAIAssistant(productId, question),
+        mutationFn: async ({ question }) => {
+            const { answer, traceId, spanId, requestModel, responseModel, totalInputTokens, totalOutputTokens } = await ApiGateway.askProductAIAssistant(productId, question);
+            return { text: answer, traceId, spanId, requestModel, responseModel, totalInputTokens, totalOutputTokens };
+        },
     });
 
     // Clear AI state when switching products.
     useEffect(() => {
         mutation.reset();
+        setFeedbackSent(false);
     }, [productId]);
+
+    const sendFeedback = useCallback(async (traceId: string, spanId: string, sentiment: 1 | -1 | 0, requestModel?: string, responseModel?: string, totalInputTokens?: number, totalOutputTokens?: number) => {
+        await ApiGateway.sendFeedback(traceId, spanId, sentiment, requestModel, responseModel, totalInputTokens, totalOutputTokens);
+        setFeedbackSent(true);
+    }, []);
 
     const value = useMemo(
         () => ({
             aiResponse: mutation.data ?? null,
             aiLoading: mutation.isPending,
             aiError: mutation.error ?? null,
+            feedbackSent,
             sendAiRequest: (
                 payload: AiRequestPayload,
                 options?: MutateOptions<AiResponse, Error, AiRequestPayload, unknown>
             ) => {
+                setFeedbackSent(false);
                 mutation.mutate(payload, options);
             },
-            reset: () => mutation.reset(),
+            sendFeedback,
+            reset: () => {
+                mutation.reset();
+                setFeedbackSent(false);
+            },
         }),
-        [mutation.data, mutation.isPending, mutation.error]
+        [mutation.data, mutation.isPending, mutation.error, feedbackSent, sendFeedback]
     );
 
     return <Context.Provider value={value}>{children}</Context.Provider>;

@@ -35,7 +35,6 @@ composer.lock
 .skaffold.env
 .dockerhub.env
 .ghcr.env
-.be
 
 src/frontend/cypress/videos
 src/frontend/cypress/screenshots
@@ -58,4 +57,7 @@ test/tracetesting/tracetesting-vars.yaml
 .mcp.json
 
 notes/
+
 .claude/settings.local.json
+
+tf/

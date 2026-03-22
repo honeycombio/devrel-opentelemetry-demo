@@ -133,6 +133,15 @@
       },
       "defaultVariant": "off"
     },
+    "llm.performEvals": {
+      "defaultVariant": "off",
+      "description": "Enable LLM evaluation scoring (bias, hallucination, relevance) on chatbot responses",
+      "state": "ENABLED",
+      "variants": {
+        "off": false,
+        "on": true
+      }
+    },
     "emailMemoryLeak": {
       "description": "Memory leak in the email service.",
       "state": "ENABLED",
