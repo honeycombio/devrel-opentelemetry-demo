@@ -28,16 +28,30 @@ const ATTR_GEN_AI_EVALUATION_EXPLANATION = 'gen_ai.evaluation.explanation';
 
 const tracer = trace.getTracer('llm-evals');
 
+interface EvaluatedContext {
+  responseModel: string;
+  inputTokens: number;
+  outputTokens: number;
+  ttftMs: number;
+  input: string;
+  output: string;
+}
 
 /**
  * Write eval result attributes and event onto a span.
  */
-function applyEvalResult(span: Span, evalName: string, result: EvalResult): void {
+function applyEvalResult(span: Span, evalName: string, result: EvalResult, evalCtx: EvaluatedContext): void {
   span.addEvent('gen_ai.evaluation.result', {
     [ATTR_GEN_AI_EVALUATION_NAME]: result.name,
     [ATTR_GEN_AI_EVALUATION_SCORE_VALUE]: result.score <= 0 ? 0.01 : result.score >= 1 ? 0.99 : result.score,
     [ATTR_GEN_AI_EVALUATION_SCORE_LABEL]: result.label,
     [ATTR_GEN_AI_EVALUATION_EXPLANATION]: result.explanation,
+    'evaluated.model.name': evalCtx.responseModel,
+    'evaluated.usage.input_tokens': evalCtx.inputTokens,
+    'evaluated.usage.output_tokens': evalCtx.outputTokens,
+    'evaluated.response.ttft': evalCtx.ttftMs,
+    'evaluated.input': evalCtx.input,
+    'evaluated.output': evalCtx.output,
   });
   span.setStatus({ code: SpanStatusCode.OK });
 }
@@ -54,12 +68,17 @@ function applyEvalError(span: Span, evalName: string, error: unknown): void {
 /**
  * Base attributes for an eval scorer span.
  */
-function evalSpanAttrs(evalName: string, agentName: string, responseModel: string) {
+function evalSpanAttrs(evalName: string, agentName: string, evalCtx: EvaluatedContext) {
   return {
     [ATTR_GEN_AI_OPERATION_NAME]: 'evaluate',
     [ATTR_GEN_AI_EVALUATION_NAME]: evalName,
     'gen_ai.agent.name': agentName,
-    'evaluated.model.name': responseModel,
+    'evaluated.model.name': evalCtx.responseModel,
+    'evaluated.usage.input_tokens': evalCtx.inputTokens,
+    'evaluated.usage.output_tokens': evalCtx.outputTokens,
+    'evaluated.response.ttft': evalCtx.ttftMs,
+    'evaluated.input': evalCtx.input,
+    'evaluated.output': evalCtx.output,
   };
 }
 
@@ -79,19 +98,19 @@ async function runEvalDual(
   evalRootLink: Link,
   evalName: string,
   agentName: string,
-  responseModel: string,
+  evalCtx: EvaluatedContext,
   scorerFn: () => Promise<EvalResult>,
 ): Promise<EvalResult | null> {
   // Start both spans BEFORE the scorer runs so they capture real duration
   const evalTraceSpan = tracer.startSpan(
     `chat - Evaluation - ${evalName}`,
-    { attributes: evalSpanAttrs(evalName, agentName, responseModel) },
+    { attributes: evalSpanAttrs(evalName, agentName, evalCtx) },
     evalRootCtx,
   );
   const chatbotTraceSpan = tracer.startSpan(
     `chat - Evaluation - ${evalName}`,
     {
-      attributes: evalSpanAttrs(evalName, agentName, responseModel),
+      attributes: evalSpanAttrs(evalName, agentName, evalCtx),
       links: [evalRootLink],
     },
     remoteParentCtx,
@@ -101,8 +120,8 @@ async function runEvalDual(
 
   try {
     result = await scorerFn();
-    applyEvalResult(evalTraceSpan, evalName, result);
-    applyEvalResult(chatbotTraceSpan, evalName, result);
+    applyEvalResult(evalTraceSpan, evalName, result, evalCtx);
+    applyEvalResult(chatbotTraceSpan, evalName, result, evalCtx);
   } catch (error) {
     applyEvalError(evalTraceSpan, evalName, error);
     applyEvalError(chatbotTraceSpan, evalName, error);
@@ -133,7 +152,12 @@ export async function evaluateChat(
   groundingContext: string,
   agentName: string,
   responseModel: string,
+  inputTokens: number,
+  outputTokens: number,
+  ttftMs: number,
 ): Promise<void> {
+  const evalCtx: EvaluatedContext = { responseModel, inputTokens, outputTokens, ttftMs, input, output };
+
   // Remote parent context for the original chatbot trace
   const remoteParentCtx = trace.setSpanContext(context.active(), {
     traceId,
@@ -149,6 +173,11 @@ export async function evaluateChat(
       'eval.source_span_id': spanId,
       'gen_ai.agent.name': agentName,
       'evaluated.model.name': responseModel,
+      'evaluated.usage.input_tokens': inputTokens,
+      'evaluated.usage.output_tokens': outputTokens,
+      'evaluated.response.ttft': ttftMs,
+      'evaluated.input': input,
+      'evaluated.output': output,
     },
   });
   const evalRootCtx = trace.setSpanContext(context.active(), evalRootSpan.spanContext());
@@ -161,9 +190,9 @@ export async function evaluateChat(
 
   try {
     await Promise.all([
-      runEvalDual(remoteParentCtx, evalRootCtx, evalRootLink, 'Bias', agentName, responseModel, () => runBias(input, output)),
-      runEvalDual(remoteParentCtx, evalRootCtx, evalRootLink, 'Hallucination', agentName, responseModel, () => runHallucination(input, output, groundingContext)),
-      runEvalDual(remoteParentCtx, evalRootCtx, evalRootLink, 'Relevance', agentName, responseModel, () => runRelevance(input, output)),
+      runEvalDual(remoteParentCtx, evalRootCtx, evalRootLink, 'Bias', agentName, evalCtx, () => runBias(input, output)),
+      runEvalDual(remoteParentCtx, evalRootCtx, evalRootLink, 'Hallucination', agentName, evalCtx, () => runHallucination(input, output, groundingContext)),
+      runEvalDual(remoteParentCtx, evalRootCtx, evalRootLink, 'Relevance', agentName, evalCtx, () => runRelevance(input, output)),
     ]);
     evalRootSpan.setStatus({ code: SpanStatusCode.OK });
   } catch (error) {

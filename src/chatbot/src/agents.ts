@@ -483,7 +483,7 @@ async function fetchProductInfo(model: string, provider: LLMProvider, tokens: To
 }
 
 // Sub-agent 3: Response Generator
-async function generateResponse(question: string, productInfo: string, model: string, provider: LLMProvider, tokens: TokenAccumulator): Promise<{ text: string; responseModel: string }> {
+async function generateResponse(question: string, productInfo: string, model: string, provider: LLMProvider, tokens: TokenAccumulator): Promise<{ text: string; responseModel: string; inputTokens: number; outputTokens: number; ttftMs: number }> {
   return tracer.startActiveSpan(`${GEN_AI_OPERATION_NAME_VALUE_INVOKE_AGENT} response_generator`, async (agentSpan) => {
     let responseChatCompletionSpan = null;
     try {
@@ -523,7 +523,7 @@ async function generateResponse(question: string, productInfo: string, model: st
 
           const text = extractText(response);
           span.setAttribute('chatbot.response_length', text.length);
-          return { text, responseModel: response.model };
+          return { text, responseModel: response.model, inputTokens: response.usage.inputTokens, outputTokens: response.usage.outputTokens, ttftMs };
         } catch (error) {
           recordException(span, error);
           throw error;
@@ -535,7 +535,7 @@ async function generateResponse(question: string, productInfo: string, model: st
       agentSpan.setAttribute(ATTR_GEN_AI_OUTPUT_MESSAGES, JSON.stringify([{ role: 'assistant', parts: [{ type: 'text', content: answer.text }] }]));
 
       // Fire eval on the response_generator chat span
-      responseChatCompletionSpan && fireEvalRequest(responseChatCompletionSpan, question, answer.text, productInfo, 'response_generator', answer.responseModel);
+      responseChatCompletionSpan && fireEvalRequest(responseChatCompletionSpan, question, answer.text, productInfo, 'response_generator', answer.responseModel, answer.inputTokens, answer.outputTokens, answer.ttftMs);
 
       return answer;
     } catch (error) {

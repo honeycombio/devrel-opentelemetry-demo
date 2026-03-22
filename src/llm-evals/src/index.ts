@@ -44,7 +44,7 @@ app.post('/api/evals', async (req: Request, res: Response) => {
     return;
   }
 
-  const { traceId, spanId, input, output, groundingContext, agentName, responseModel } = req.body;
+  const { traceId, spanId, input, output, groundingContext, agentName, responseModel, inputTokens, outputTokens, ttftMs } = req.body;
 
   if (!traceId || !spanId || !input || !output) {
     res.status(400).json({ error: 'Missing required fields: traceId, spanId, input, output' });
@@ -62,6 +62,9 @@ app.post('/api/evals', async (req: Request, res: Response) => {
     groundingContext || '',
     agentName || 'unknown',
     responseModel || 'unknown',
+    inputTokens ?? 0,
+    outputTokens ?? 0,
+    ttftMs ?? 0,
   ).catch((error) => {
     console.error('Evaluation failed:', error);
   });
