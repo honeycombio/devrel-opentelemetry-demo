@@ -1,25 +1,29 @@
 import type { LLMProvider } from './provider.js';
 import { AnthropicProvider } from './anthropic-provider.js';
 import { OpenAIProvider } from './openai-provider.js';
+import { BedrockProvider } from './bedrock-provider.js';
 
 const anthropicProvider = new AnthropicProvider();
 const openaiProvider = new OpenAIProvider();
+const bedrockProvider = new BedrockProvider();
 
 /**
  * Select a provider for the current request.
- * - If both API keys are set, randomly picks 50/50.
- * - If only one key is set, uses that provider.
- * - Throws if neither key is set.
+ * - Collects all configured providers (Anthropic, OpenAI, Bedrock).
+ * - Randomly picks one from the available pool (equal weight).
+ * - Bedrock is available when AWS_REGION is set.
+ * - Throws if no provider is configured.
  */
 export function getProvider(): LLMProvider {
-  const hasAnthropic = !!process.env.ANTHROPIC_API_KEY;
-  const hasOpenAI = !!process.env.OPENAI_API_KEY;
+  const providers: LLMProvider[] = [];
 
-  if (hasAnthropic && hasOpenAI) {
-    return Math.random() < 0.5 ? anthropicProvider : openaiProvider;
+  if (process.env.ANTHROPIC_API_KEY) providers.push(anthropicProvider);
+  if (process.env.OPENAI_API_KEY) providers.push(openaiProvider);
+  if (process.env.AWS_REGION) providers.push(bedrockProvider);
+
+  if (providers.length === 0) {
+    throw new Error('No LLM provider configured. Set ANTHROPIC_API_KEY, OPENAI_API_KEY, or AWS_REGION.');
   }
-  if (hasAnthropic) return anthropicProvider;
-  if (hasOpenAI) return openaiProvider;
 
-  throw new Error('No LLM API key configured. Set ANTHROPIC_API_KEY or OPENAI_API_KEY.');
+  return providers[Math.floor(Math.random() * providers.length)];
 }

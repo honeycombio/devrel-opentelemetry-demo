@@ -48,6 +48,18 @@ spec:
               value: {{ .Values.services.chatbot.anthropicApiKey | quote }}
             - name: OPENAI_API_KEY
               value: {{ .Values.services.chatbot.openaiApiKey | quote }}
+            {{- if .Values.services.chatbot.awsRegion }}
+            - name: AWS_REGION
+              value: {{ .Values.services.chatbot.awsRegion | quote }}
+            - name: BEDROCK_HAIKU_PROFILE_ARN
+              value: {{ .Values.services.chatbot.bedrockHaikuProfileArn | quote }}
+            - name: BEDROCK_SONNET_PROFILE_ARN
+              value: {{ .Values.services.chatbot.bedrockSonnetProfileArn | quote }}
+            {{- end }}
+            {{- if .Values.services.llmEvals.enabled }}
+            - name: LLM_EVALS_ADDR
+              value: "http://{{ .Values.services.llmEvals.name }}:{{ .Values.services.llmEvals.port }}"
+            {{- end }}
             - name: OTEL_EXPORTER_OTLP_ENDPOINT
               value: http://$(OTEL_COLLECTOR_NAME):4317
 ---

@@ -28,9 +28,13 @@ while [ $# -gt 0 ]; do
       REGION="$2"
       shift 2
       ;;
+    --bedrock-role-arn)
+      BEDROCK_ROLE_ARN="$2"
+      shift 2
+      ;;
     *)
       echo "Unknown option: $1"
-      echo "Usage: $0 [--cluster-name NAME] [--namespace NS] [--service-account SA] [--role-arn ARN] [--region REGION]"
+      echo "Usage: $0 [--cluster-name NAME] [--namespace NS] [--service-account SA] [--role-arn ARN] [--region REGION] [--bedrock-role-arn ARN]"
       exit 1
       ;;
   esac
@@ -112,6 +116,18 @@ setup_association() {
 for sa in $SERVICE_ACCOUNTS; do
   setup_association "$sa"
 done
+
+# Set up Bedrock pod identity association for the demo service account
+if [ -z "$BEDROCK_ROLE_ARN" ]; then
+  echo "BEDROCK_ROLE_ARN not set, fetching from infra stack"
+  BEDROCK_ROLE_ARN=$(pulumi stack output -s honeycomb-devrel/infra-aws/prod bedrockRoleArn 2>/dev/null)
+fi
+
+if [ -n "$BEDROCK_ROLE_ARN" ] && [ "$BEDROCK_ROLE_ARN" != "null" ] && [ "$BEDROCK_ROLE_ARN" != "None" ]; then
+  echo "Setting up Bedrock pod identity association for demo service account..."
+  ROLE_ARN="$BEDROCK_ROLE_ARN"
+  setup_association "otel-services"
+fi
 
 echo "All pod identity associations configured successfully"
 

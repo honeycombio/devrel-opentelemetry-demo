@@ -2,7 +2,7 @@ namespace: default
 
 services:
   chatbot:
-    enabled: true
+    enabled: false
     name: chatbot
     image:
       repository: ghcr.io/honeycombio/devrel-opentelemetry-demo
@@ -12,6 +12,9 @@ services:
       {}
     anthropicApiKey: ""
     openaiApiKey: ""
+    awsRegion: ""
+    bedrockHaikuProfileArn: ""
+    bedrockSonnetProfileArn: ""
     port: 8087
     replicas: 1
     env:
@@ -19,8 +22,6 @@ services:
         value: "8087"
       - name: FRONTEND_ADDR
         value: "http://frontend:8080"
-      - name: LLM_EVALS_ADDR
-        value: "http://llm-evals:8088"
       - name: FLAGD_HOST
         value: "flagd"
       - name: FLAGD_PORT
@@ -66,7 +67,7 @@ services:
         value: "8000"
 
   llmEvals:
-    enabled: true
+    enabled: false
     name: llm-evals
     image:
       repository: ghcr.io/honeycombio/devrel-opentelemetry-demo

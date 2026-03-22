@@ -3,6 +3,7 @@ import { Collector } from "./applications/collector";
 import { OtelDemo } from "./applications/oteldemo";
 import { HtpBuilder } from "./applications/htp-builder";
 import { PodIdentityAssociation } from "./applications/pod-identity-association";
+import { BedrockPodIdentityAssociation } from "./applications/bedrock-pia";
 import { DeploymentConfig } from "./config";
 import { HoneycombSecrets } from "./applications/secrets";
 import { getKubeconfig } from "./kubeconfig";
@@ -80,6 +81,15 @@ if (deployConfig.isAws) {
         namespace: demoNamespace.metadata.name,
         serviceAccountName: "htp-builder-htp-builder-primary-collector"
     }, { dependsOn: [htpBuilder] });
+
+    // Associate Bedrock role with the demo service account when Bedrock is enabled
+    if (deployConfig.enableBedrock) {
+        new BedrockPodIdentityAssociation("demo-bedrock", {
+            config: deployConfig,
+            namespace: demoNamespace.metadata.name,
+            serviceAccountName: "otel-services",
+        }, { dependsOn: [demo] });
+    }
 }
 
 // Export some values for use elsewhere

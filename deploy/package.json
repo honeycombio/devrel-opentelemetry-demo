@@ -5,7 +5,7 @@
         "typescript": "^5.0.0"
     },
     "dependencies": {
-        "@pulumi/aws": "^7.15.0",
+        "@pulumi/aws": "^7.23.0",
         "@pulumi/azure-native": "^2.90.0",
         "@pulumi/docker": "^4.8.2",
         "@pulumi/docker-build": "^0.0.13",

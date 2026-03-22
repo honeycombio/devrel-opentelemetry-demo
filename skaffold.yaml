@@ -210,9 +210,14 @@ deploy:
         chartPath: skaffold-config/charts/otel-services
         recreatePods: false
         skipBuildDependencies: false
+        setValues:
+          services.chatbot.enabled: "true"
         setValueTemplates:
           services.chatbot.anthropicApiKey: "{{.ANTHROPIC_API_KEY}}"
           services.chatbot.openaiApiKey: "{{.OPENAI_API_KEY}}"
+          services.chatbot.awsRegion: "{{.BEDROCK_AWS_REGION}}"
+          services.chatbot.bedrockHaikuProfileArn: "{{.BEDROCK_HAIKU_PROFILE_ARN}}"
+          services.chatbot.bedrockSonnetProfileArn: "{{.BEDROCK_SONNET_PROFILE_ARN}}"
           services.chatbot.imageOverride.repository: "{{if .IMAGE_REPO_chatbot }}{{.IMAGE_REPO_chatbot}}{{end}}"
           services.chatbot.imageOverride.tag: "{{if .IMAGE_REPO_chatbot }}{{.IMAGE_TAG_chatbot}}@{{.IMAGE_DIGEST_chatbot}}{{end}}"
           services.llmEvals.openaiApiKey: "{{.OPENAI_API_KEY}}"

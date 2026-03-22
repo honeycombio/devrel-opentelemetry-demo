@@ -59,6 +59,11 @@ if [[ "$CLOUD_PROVIDER" == "aws" ]]; then
     SOURCE_MAPS_BUCKET=$(pulumi stack output -s honeycomb-devrel/infra-aws/prod sourcemapsBucketName 2>/dev/null)
     SOURCE_MAPS_BUCKET_REGION=$(pulumi stack output -s honeycomb-devrel/infra-aws/prod s3Region 2>/dev/null)
     SOURCE_MAPS_PREFIX=$USER
+
+    # export Bedrock inference profile ARNs from shared infra stack
+    BEDROCK_HAIKU_PROFILE_ARN=$(pulumi stack output -s honeycomb-devrel/infra-aws/prod bedrockClaudeHaikuProfileArn 2>/dev/null)
+    BEDROCK_SONNET_PROFILE_ARN=$(pulumi stack output -s honeycomb-devrel/infra-aws/prod bedrockClaudeSonnetProfileArn 2>/dev/null)
+    BEDROCK_AWS_REGION=$(pulumi stack output -s honeycomb-devrel/infra-aws/prod clusterRegion 2>/dev/null)
 elif [[ "$CLOUD_PROVIDER" == "azure" ]]; then
     echo "Using Azure configuration"
     CONTAINER_REGISTRY=$(pulumi stack output -s honeycomb-devrel/infra-azure/prod acrName 2>/dev/null)
@@ -77,6 +82,9 @@ export DOMAINNAME
 export INGRESS_CLASS
 export SOURCE_MAPS_BUCKET
 export SOURCE_MAPS_BUCKET_REGION
+export BEDROCK_HAIKU_PROFILE_ARN
+export BEDROCK_SONNET_PROFILE_ARN
+export BEDROCK_AWS_REGION
 export SOURCE_MAPS_PREFIX
 
 # maybe someday the container registry name will change, but this is what it is now

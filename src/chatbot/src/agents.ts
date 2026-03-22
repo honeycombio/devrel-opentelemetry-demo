@@ -81,12 +81,26 @@ const OPENAI_RESEARCH_MODELS = [
   'gpt-4o',
 ];
 
+// Bedrock model ARNs injected at runtime from env vars (set from infra stack outputs)
+const BEDROCK_RESEARCH_MODELS: string[] = [
+  process.env.BEDROCK_HAIKU_PROFILE_ARN,
+  process.env.BEDROCK_SONNET_PROFILE_ARN,
+].filter(Boolean) as string[];
+
 async function getResearchModel(providerName: string): Promise<string> {
-  const models = providerName === 'openai' ? OPENAI_RESEARCH_MODELS : ANTHROPIC_RESEARCH_MODELS;
+  let models: string[];
+  if (providerName === 'openai') {
+    models = OPENAI_RESEARCH_MODELS;
+  } else if (providerName === 'bedrock') {
+    models = BEDROCK_RESEARCH_MODELS;
+    if (models.length === 0) throw new Error('Bedrock provider selected but no model ARNs configured');
+  } else {
+    models = ANTHROPIC_RESEARCH_MODELS;
+  }
   const roll = Math.random() * 100;
   if (roll < 34) return models[0];
-  if (roll < 67) return models[1];
-  return models[2];
+  if (roll < 67) return models[Math.min(1, models.length - 1)];
+  return models[models.length - 1];
 }
 
 
