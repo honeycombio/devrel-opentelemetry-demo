@@ -38,6 +38,21 @@ export class OtelDemo extends pulumi.ComponentResource {
             }
         };
 
+        // The otel-demo chart creates a flagd-config ConfigMap from its own bundled flags (no values override).
+        // Rather than fighting Helm's SSA ownership, we manage a separate ConfigMap with our custom flags
+        // and patch the flagd component to load from both URIs. The Helm release depends on this ConfigMap
+        // so that flagd never starts without it mounted — avoiding a deadlock on clean deployments.
+        const flagdConfigJson = fs.readFileSync("../src/flagd/demo.flagd.json", "utf-8");
+        const flagdCustomConfig = new ConfigMap(`${name}-flagd-custom-config`, {
+            metadata: {
+                name: "flagd-custom-config",
+                namespace: args.config.k8sNamespace,
+            },
+            data: {
+                "demo.flagd.json": flagdConfigJson,
+            },
+        }, { provider: opts.provider! });
+
         const demoRelease = new Release(`${name}-demo-release`, {
             chart: "opentelemetry-demo",
             name: name,
@@ -50,21 +65,7 @@ export class OtelDemo extends pulumi.ComponentResource {
             timeout: 900,
             values: values,
             valueYamlFiles: [new pulumi.asset.FileAsset("./config-files/demo/values.yaml")]
-        }, { provider: opts.provider! });
-
-        // The otel-demo chart creates a flagd-config ConfigMap from its own bundled flags (no values override).
-        // Rather than fighting Helm's SSA ownership, we manage a separate ConfigMap with our custom flags
-        // and patch the flagd component to load from both URIs.
-        const flagdConfigJson = fs.readFileSync("../src/flagd/demo.flagd.json", "utf-8");
-        new ConfigMap(`${name}-flagd-custom-config`, {
-            metadata: {
-                name: "flagd-custom-config",
-                namespace: args.config.k8sNamespace,
-            },
-            data: {
-                "demo.flagd.json": flagdConfigJson,
-            },
-        }, { provider: opts.provider! });
+        }, { provider: opts.provider!, dependsOn: [flagdCustomConfig] });
 
         // These services and deployments can be removed when the new helm chart is released
         const productReviewsService = new Service(`${name}-product-reviews-service`, {
