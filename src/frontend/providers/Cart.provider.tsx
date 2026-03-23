@@ -5,13 +5,14 @@ import { createContext, useCallback, useContext, useMemo } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import ApiGateway from '../gateways/Api.gateway';
 import { CartItem, OrderResult, PlaceOrderRequest } from '../protos/demo';
+import { Attributes } from '@opentelemetry/api';
 import { IProductCart } from '../types/Cart';
 import { useCurrency } from './Currency.provider';
 import { spanAttributesForRpc, tracedMutation, tracedQuery } from '../utils/telemetry/SpanUtils';
 
 interface IContext {
   cart: IProductCart;
-  addItem(item: CartItem): void;
+  addItem(item: CartItem, extraAttributes?: Attributes): void;
   emptyCart(): void;
   placeOrder(order: PlaceOrderRequest & { userCurrency: string}): Promise<OrderResult>;
 }
@@ -58,7 +59,18 @@ const CartProvider = ({ children }: IProps) => {
   });
 
   const addCartMutation = useMutation({
-    mutationFn: tracedMutation('addCartItem', ApiGateway.addCartItem, 'cart-provider', spanAttributesForRpc('CartService', 'addCartItem', 'CartProvider')),
+    mutationFn: (payload: CartItem & { currencyCode: string; extraAttributes?: Attributes }) => {
+      const { extraAttributes, ...itemData } = payload;
+      return tracedMutation(
+        'addCartItem',
+        (data: CartItem & { currencyCode: string }) => ApiGateway.addCartItem(data),
+        'cart-provider',
+        {
+          ...spanAttributesForRpc('CartService', 'addCartItem', 'CartProvider'),
+          ...extraAttributes,
+        }
+      )(itemData);
+    },
     ...mutationOptions,
     retry: false,
   });
@@ -87,7 +99,7 @@ const CartProvider = ({ children }: IProps) => {
   });
 
   const addItem = useCallback(
-    (item: CartItem) => addCartMutation.mutateAsync({ ...item, currencyCode: selectedCurrency }),
+    (item: CartItem, extraAttributes?: Attributes) => addCartMutation.mutateAsync({ ...item, currencyCode: selectedCurrency, extraAttributes }),
     [addCartMutation, selectedCurrency]
   );
   // note - we don't have a param to feed the empty cart, so it's undefined

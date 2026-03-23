@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"runtime/debug"
 	"log/slog"
 	"math/rand"
 	"net"
@@ -248,6 +249,7 @@ func main() {
 
 	var srv = grpc.NewServer(
 		grpc.StatsHandler(otelgrpc.NewServerHandler()),
+		grpc.ChainUnaryInterceptor(panicRecoveryInterceptor()),
 	)
 	pb.RegisterCheckoutServiceServer(srv, svc)
 
@@ -330,10 +332,32 @@ func (cs *checkout) PlaceOrder(ctx context.Context, req *pb.PlaceOrderRequest) (
 	total := &pb.Money{CurrencyCode: req.UserCurrency,
 		Units: 0,
 		Nanos: 0}
-	total = money.Must(money.Sum(total, prep.shippingCostLocalized))
+	total, err = money.Sum(total, prep.shippingCostLocalized)
+	if err != nil {
+		logger.LogAttrs(ctx, slog.LevelError, "failed to add shipping cost", slog.String("error", err.Error()))
+		span.SetStatus(otelcodes.Error, "invalid money calculation")
+		span.RecordError(err)
+		return nil, status.Errorf(codes.Internal, "failed to calculate order total: %+v", err)
+	}
 	for _, it := range prep.orderItems {
 		multPrice := money.MultiplySlow(it.Cost, uint32(it.GetItem().GetQuantity()))
-		total = money.Must(money.Sum(total, multPrice))
+		total, err = money.Sum(total, multPrice)
+		if err != nil {
+			logger.LogAttrs(ctx, slog.LevelError, "failed to add item cost", slog.String("error", err.Error()))
+			span.SetStatus(otelcodes.Error, "invalid money calculation")
+			span.RecordError(err)
+			return nil, status.Errorf(codes.Internal, "failed to calculate order total: %+v", err)
+		}
+
+		// Add tax per line item
+		tax := calculateTax(it.Cost, uint32(it.GetItem().GetQuantity()), 0.10)
+		total, err = money.Sum(total, tax)
+		if err != nil {
+			logger.LogAttrs(ctx, slog.LevelError, "failed to add tax", slog.String("error", err.Error()))
+			span.SetStatus(otelcodes.Error, "invalid money calculation")
+			span.RecordError(err)
+			return nil, status.Errorf(codes.Internal, "failed to calculate order total: %+v", err)
+		}
 	}
 
 	txID, err := cs.chargeCard(ctx, total, req.CreditCard)
@@ -402,6 +426,51 @@ func (cs *checkout) PlaceOrder(ctx context.Context, req *pb.PlaceOrderRequest) (
 	return resp, nil
 }
 
+func panicRecoveryInterceptor() grpc.UnaryServerInterceptor {
+	return func(ctx context.Context, req any, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp any, err error) {
+		defer func() {
+			if r := recover(); r != nil {
+				stack := string(debug.Stack())
+				span := trace.SpanFromContext(ctx)
+				logger.LogAttrs(ctx, slog.LevelError, "recovered from panic in gRPC handler",
+					slog.String("method", info.FullMethod),
+					slog.String("error", fmt.Sprintf("%v", r)),
+					slog.String("stacktrace", stack))
+				span.SetStatus(otelcodes.Error, "panic recovered")
+				span.AddEvent("exception", trace.WithAttributes(
+					semconv.ExceptionTypeKey.String(fmt.Sprintf("%T", r)),
+					semconv.ExceptionMessageKey.String(fmt.Sprintf("%v", r)),
+					semconv.ExceptionStacktraceKey.String(stack),
+				))
+				err = status.Errorf(codes.Internal, "internal error: %v", r)
+			}
+		}()
+		return handler(ctx, req)
+	}
+}
+
+// calculateTax computes the tax for a line item based on its cost and quantity.
+func calculateTax(itemCost *pb.Money, quantity uint32, taxRate float64) *pb.Money {
+	baseTaxUnits := int64(float64(itemCost.GetUnits()) * taxRate)
+	baseTaxNanos := int64(float64(itemCost.GetNanos()) * taxRate)
+
+	// Compute per-unit tax (divides by quantity — panics if quantity is 0)
+	taxPerUnit := baseTaxUnits / int64(quantity)
+
+	totalUnits := taxPerUnit * int64(quantity)
+	totalNanos := baseTaxNanos * int64(quantity)
+
+	// Normalize: carry overflow from nanos into units
+	totalUnits += totalNanos / 1000000000
+	totalNanos = totalNanos % 1000000000
+
+	return &pb.Money{
+		CurrencyCode: itemCost.GetCurrencyCode(),
+		Units:        totalUnits,
+		Nanos:        int32(totalNanos),
+	}
+}
+
 type orderPrep struct {
 	orderItems            []*pb.OrderItem
 	cartItems             []*pb.CartItem
@@ -422,6 +491,36 @@ func (cs *checkout) prepareOrderItemsAndShippingQuoteFromCart(ctx context.Contex
 	if err != nil {
 		return out, fmt.Errorf("failed to prepare order: %+v", err)
 	}
+
+	// Calculate tax for each order item (may panic on zero-quantity items)
+	for _, it := range orderItems {
+		ctx, taxSpan := tracer.Start(ctx, "calculateTax",
+			trace.WithAttributes(
+				attribute.String("app.product.id", it.GetItem().GetProductId()),
+				attribute.Int("app.product.quantity", int(it.GetItem().GetQuantity())),
+			))
+		func() {
+			defer func() {
+				if r := recover(); r != nil {
+					stack := string(debug.Stack())
+					taxSpan.SetStatus(otelcodes.Error, fmt.Sprintf("%v", r))
+					taxSpan.AddEvent("exception", trace.WithAttributes(
+						semconv.ExceptionTypeKey.String(fmt.Sprintf("%T", r)),
+						semconv.ExceptionMessageKey.String(fmt.Sprintf("%v", r)),
+						semconv.ExceptionStacktraceKey.String(stack),
+					))
+					logger.LogAttrs(ctx, slog.LevelError, "tax calculation failed",
+						slog.String("error", fmt.Sprintf("%v", r)),
+						slog.String("product_id", it.GetItem().GetProductId()),
+						slog.Int("quantity", int(it.GetItem().GetQuantity())),
+					)
+				}
+				taxSpan.End()
+			}()
+			calculateTax(it.Cost, uint32(it.GetItem().GetQuantity()), 0.10)
+		}()
+	}
+
 	shippingUSD, err := cs.quoteShipping(ctx, address, cartItems)
 	if err != nil {
 		return out, fmt.Errorf("shipping quote failure: %+v", err)
@@ -462,9 +561,17 @@ func mustCreateClient(svcAddr string) *grpc.ClientConn {
 }
 
 func (cs *checkout) quoteShipping(ctx context.Context, address *pb.Address, items []*pb.CartItem) (*pb.Money, error) {
+	// Filter out zero-quantity items to avoid shipping service deserialization errors
+	var nonZeroItems []*pb.CartItem
+	for _, item := range items {
+		if item.GetQuantity() > 0 {
+			nonZeroItems = append(nonZeroItems, item)
+		}
+	}
+
 	quotePayload, err := json.Marshal(map[string]interface{}{
 		"address": address,
-		"items":   items,
+		"items":   nonZeroItems,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal ship order request: %+v", err)
@@ -476,13 +583,15 @@ func (cs *checkout) quoteShipping(ctx context.Context, address *pb.Address, item
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("failed POST to email service: expected 200, got %d", resp.StatusCode)
-	}
-
 	shippingQuoteBytes, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read shipping quote response: %+v", err)
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		span := trace.SpanFromContext(ctx)
+		span.SetAttributes(attribute.String("shipping.error.response", string(shippingQuoteBytes)))
+		return nil, fmt.Errorf("failed POST to shipping service: expected 200, got %d: %s", resp.StatusCode, string(shippingQuoteBytes))
 	}
 
 	var quoteResp struct {
@@ -519,7 +628,7 @@ func (cs *checkout) prepOrderItems(ctx context.Context, items []*pb.CartItem, us
 	for i, item := range items {
 		product, err := cs.productCatalogSvcClient.GetProduct(ctx, &pb.GetProductRequest{Id: item.GetProductId()})
 		if err != nil {
-			return nil, fmt.Errorf("failed to get product #%q", item.GetProductId())
+			return nil, fmt.Errorf("failed to get the product #%q", item.GetProductId())
 		}
 		price, err := cs.convertCurrency(ctx, product.GetPriceUsd(), userCurrency)
 		if err != nil {

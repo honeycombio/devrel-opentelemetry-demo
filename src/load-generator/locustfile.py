@@ -150,13 +150,21 @@ class WebsiteUser(HttpUser):
     @task(1)
     def ask_product_ai_assistant(self):
         product = random.choice(products)
-        question = 'Can you summarize the product reviews?'
+        question = random.choice([
+            "Can you summarize the product reviews?",
+            "What magnification is best for stargazing with this product?",
+            "Is this product suitable for beginners?",
+            "How does this compare to other products in its category?",
+            "What accessories do I need to get started with this?",
+            "Is this good for observing planets or deep sky objects?",
+            "What is the field of view like on this product?",
+            "How portable is this for travel?",
+            "What are the main pros and cons of this product?",
+            "Would this work well for daytime nature observation?",
+        ])
         with self.tracer.start_as_current_span("user_ask_product_ai_assistant", context=Context(), attributes={"product.id": product, "question": question}):
             logging.info(f"Asking the AI Assistant a question for: {product} {question}")
-            question = {
-                "question": question
-            }
-            self.client.post("/api/product-ask-ai-assistant/" + product, json=question)
+            self.client.post("/chat/question", json={"question": question, "productId": product})
 
     @task(3)
     def get_ads(self):

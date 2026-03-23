@@ -6,35 +6,43 @@ build:
       context: deploy/config-files/custom-collector
       docker:
         dockerfile: deploy/config-files/custom-collector/Dockerfile
-    - image: accountingservice
+    - image: accounting
       context: .
       docker:
         dockerfile: src/accounting/Dockerfile
-    - image: adservice
+    - image: ad
       context: .
       docker:
         dockerfile: src/ad/Dockerfile
         buildArgs:
           OTEL_JAVA_AGENT_VERSION: 2.21.0
-    - image: cartservice
+    - image: cart
       context: .
       docker:
         dockerfile: src/cart/src/Dockerfile
-    - image: checkoutservice
+    - image: chatbot
+      context: .
+      docker:
+        dockerfile: src/chatbot/Dockerfile
+    - image: llm-evals
+      context: .
+      docker:
+        dockerfile: src/llm-evals/Dockerfile
+    - image: checkout
       context: .
       docker:
         dockerfile: src/checkout/Dockerfile
-    - image: currencyservice
+    - image: currency
       context: .
       docker:
         dockerfile: src/currency/Dockerfile
         buildArgs:
           OPENTELEMETRY_CPP_VERSION: 1.23.0
-    - image: emailservice
+    - image: email
       context: .
       docker:
         dockerfile: src/email/Dockerfile
-    - image: frauddetectionservice
+    - image: fraud-detection
       context: .
       docker:
         dockerfile: src/fraud-detection/Dockerfile
@@ -60,7 +68,7 @@ build:
       context: .
       docker:
         dockerfile: src/frontend-proxy/Dockerfile
-    - image: imageprovider
+    - image: image-provider
       context: .
       docker:
         dockerfile: src/image-provider/Dockerfile
@@ -70,15 +78,15 @@ build:
         dockerfile: src/kafka/Dockerfile
         buildArgs:
           OTEL_JAVA_AGENT_VERSION: 2.21.0
-    - image: llmservice
+    - image: llm
       context: .
       docker:
         dockerfile: src/llm/Dockerfile
-    - image: loadgenerator
+    - image: load-generator
       context: .
       docker:
         dockerfile: src/load-generator/Dockerfile
-    - image: paymentservice
+    - image: payment
       context: .
       docker:
         dockerfile: src/payment/Dockerfile
@@ -86,23 +94,23 @@ build:
       context: .
       docker:
         dockerfile: src/postgres/Dockerfile
-    - image: productcatalogservice
+    - image: product-catalog
       context: .
       docker:
         dockerfile: src/product-catalog/Dockerfile
-    - image: productreviewsservice
+    - image: product-reviews
       context: .
       docker:
         dockerfile: src/product-reviews/Dockerfile
-    - image: quoteservice
+    - image: quote
       context: .
       docker:
         dockerfile: src/quote/Dockerfile
-    - image: recommendationservice
+    - image: recommendation
       context: .
       docker:
         dockerfile: src/recommendation/Dockerfile
-    - image: shippingservice
+    - image: shipping
       context: .
       docker:
         dockerfile: src/shipping/Dockerfile
@@ -137,7 +145,6 @@ deploy:
           opentelemetry-collector:
             extraEnvs:
               - name: HONEYCOMB_API_KEY
-              - name: HTP_ENDPOINT
               - name: CLOUD_PROVIDER
               - name: SOURCE_MAPS_BUCKET
               - name: AWS_REGION
@@ -148,51 +155,50 @@ deploy:
                     fieldPath: metadata.namespace
         setValueTemplates:
           opentelemetry-collector.extraEnvs[0].value: "{{.HONEYCOMB_API_KEY}}"
-          opentelemetry-collector.extraEnvs[1].value: "{{.USER}}-htp-htp-builder-primary-collector:4317"
-          opentelemetry-collector.extraEnvs[2].value: "{{.CLOUD_PROVIDER}}"
-          opentelemetry-collector.extraEnvs[3].value: "{{.SOURCE_MAPS_BUCKET}}"
-          opentelemetry-collector.extraEnvs[4].value: "{{.SOURCE_MAPS_BUCKET_REGION}}"
-          opentelemetry-collector.extraEnvs[5].value: "{{if .IMAGE_REPO_frontend}}{{.SOURCE_MAPS_PREFIX}}/static/chunks{{else}}source-maps/static/chunks{{end}}"
+          opentelemetry-collector.extraEnvs[1].value: "{{.CLOUD_PROVIDER}}"
+          opentelemetry-collector.extraEnvs[2].value: "{{.SOURCE_MAPS_BUCKET}}"
+          opentelemetry-collector.extraEnvs[3].value: "{{.SOURCE_MAPS_BUCKET_REGION}}"
+          opentelemetry-collector.extraEnvs[4].value: "{{if .IMAGE_REPO_frontend}}{{.SOURCE_MAPS_PREFIX}}/static/chunks{{else}}source-maps/static/chunks{{end}}"
           opentelemetry-collector.clusterRole.name: "{{.USER}}-otel-collector"
           opentelemetry-collector.clusterRole.clusterRoleBinding.name: "{{.USER}}-otel-collector"
           opentelemetry-collector.image.repository: "{{if .IMAGE_REPO_otelcollector }}{{.IMAGE_REPO_otelcollector}}{{else}}ghcr.io/honeycombio/devrel-opentelemetry-demo{{end}}"
           opentelemetry-collector.image.tag: "{{if .IMAGE_REPO_otelcollector }}{{.IMAGE_TAG_otelcollector}}@{{.IMAGE_DIGEST_otelcollector}}{{else}}latest-collector{{end}}"
-          components.accounting.imageOverride.repository: "{{if .IMAGE_REPO_accountingservice }}{{.IMAGE_REPO_accountingservice}}{{end}}"
-          components.accounting.imageOverride.tag: "{{if .IMAGE_REPO_accountingservice }}{{.IMAGE_TAG_accountingservice}}@{{.IMAGE_DIGEST_accountingservice}}{{end}}"
-          components.ad.imageOverride.repository: "{{if .IMAGE_REPO_adservice }}{{.IMAGE_REPO_adservice}}{{end}}"
-          components.ad.imageOverride.tag: "{{if .IMAGE_REPO_adservice }}{{.IMAGE_TAG_adservice}}@{{.IMAGE_DIGEST_adservice}}{{end}}"
-          components.cart.imageOverride.repository: "{{if .IMAGE_REPO_cartservice }}{{.IMAGE_REPO_cartservice}}{{end}}"
-          components.cart.imageOverride.tag: "{{if .IMAGE_REPO_cartservice }}{{.IMAGE_TAG_cartservice}}@{{.IMAGE_DIGEST_cartservice}}{{end}}"
-          components.checkout.imageOverride.repository: "{{if .IMAGE_REPO_checkoutservice }}{{.IMAGE_REPO_checkoutservice}}{{end}}"
-          components.checkout.imageOverride.tag: "{{if .IMAGE_REPO_checkoutservice }}{{.IMAGE_TAG_checkoutservice}}@{{.IMAGE_DIGEST_checkoutservice}}{{end}}"
-          components.currency.imageOverride.repository: "{{if .IMAGE_REPO_currencyservice }}{{.IMAGE_REPO_currencyservice}}{{end}}"
-          components.currency.imageOverride.tag: "{{if .IMAGE_REPO_currencyservice }}{{.IMAGE_TAG_currencyservice}}@{{.IMAGE_DIGEST_currencyservice}}{{end}}"
-          components.email.imageOverride.repository: "{{if .IMAGE_REPO_emailservice }}{{.IMAGE_REPO_emailservice}}{{end}}"
-          components.email.imageOverride.tag: "{{if .IMAGE_REPO_emailservice }}{{.IMAGE_TAG_emailservice}}@{{.IMAGE_DIGEST_emailservice}}{{end}}"
-          components.fraud-detection.imageOverride.repository: "{{if .IMAGE_REPO_frauddetectionservice }}{{.IMAGE_REPO_frauddetectionservice}}{{end}}"
-          components.fraud-detection.imageOverride.tag: "{{if .IMAGE_REPO_frauddetectionservice }}{{.IMAGE_TAG_frauddetectionservice}}@{{.IMAGE_DIGEST_frauddetectionservice}}{{end}}"
+          components.accounting.imageOverride.repository: "{{if .IMAGE_REPO_accounting }}{{.IMAGE_REPO_accounting}}{{end}}"
+          components.accounting.imageOverride.tag: "{{if .IMAGE_REPO_accounting }}{{.IMAGE_TAG_accounting}}@{{.IMAGE_DIGEST_accounting}}{{end}}"
+          components.ad.imageOverride.repository: "{{if .IMAGE_REPO_ad }}{{.IMAGE_REPO_ad}}{{end}}"
+          components.ad.imageOverride.tag: "{{if .IMAGE_REPO_ad }}{{.IMAGE_TAG_ad}}@{{.IMAGE_DIGEST_ad}}{{end}}"
+          components.cart.imageOverride.repository: "{{if .IMAGE_REPO_cart }}{{.IMAGE_REPO_cart}}{{end}}"
+          components.cart.imageOverride.tag: "{{if .IMAGE_REPO_cart }}{{.IMAGE_TAG_cart}}@{{.IMAGE_DIGEST_cart}}{{end}}"
+          components.checkout.imageOverride.repository: "{{if .IMAGE_REPO_checkout }}{{.IMAGE_REPO_checkout}}{{end}}"
+          components.checkout.imageOverride.tag: "{{if .IMAGE_REPO_checkout }}{{.IMAGE_TAG_checkout}}@{{.IMAGE_DIGEST_checkout}}{{end}}"
+          components.currency.imageOverride.repository: "{{if .IMAGE_REPO_currency }}{{.IMAGE_REPO_currency}}{{end}}"
+          components.currency.imageOverride.tag: "{{if .IMAGE_REPO_currency }}{{.IMAGE_TAG_currency}}@{{.IMAGE_DIGEST_currency}}{{end}}"
+          components.email.imageOverride.repository: "{{if .IMAGE_REPO_email }}{{.IMAGE_REPO_email}}{{end}}"
+          components.email.imageOverride.tag: "{{if .IMAGE_REPO_email }}{{.IMAGE_TAG_email}}@{{.IMAGE_DIGEST_email}}{{end}}"
+          components.fraud-detection.imageOverride.repository: "{{if .IMAGE_REPO_fraud_detection }}{{.IMAGE_REPO_fraud_detection}}{{end}}"
+          components.fraud-detection.imageOverride.tag: "{{if .IMAGE_REPO_fraud_detection }}{{.IMAGE_TAG_fraud_detection}}@{{.IMAGE_DIGEST_fraud_detection}}{{end}}"
           components.frontend.imageOverride.repository: "{{if .IMAGE_REPO_frontend }}{{.IMAGE_REPO_frontend}}{{end}}"
           components.frontend.imageOverride.tag: "{{if .IMAGE_REPO_frontend }}{{.IMAGE_TAG_frontend}}@{{.IMAGE_DIGEST_frontend}}{{end}}"
           components.frontend-proxy.imageOverride.repository: "{{if .IMAGE_REPO_frontendproxy }}{{.IMAGE_REPO_frontendproxy}}{{end}}"
           components.frontend-proxy.imageOverride.tag: "{{if .IMAGE_REPO_frontendproxy }}{{.IMAGE_TAG_frontendproxy}}@{{.IMAGE_DIGEST_frontendproxy}}{{end}}"
-          components.image-provider.imageOverride.repository: "{{if .IMAGE_REPO_imageprovider }}{{.IMAGE_REPO_imageprovider}}{{end}}"
-          components.image-provider.imageOverride.tag: "{{if .IMAGE_REPO_imageprovider }}{{.IMAGE_TAG_imageprovider}}@{{.IMAGE_DIGEST_imageprovider}}{{end}}"
+          components.image-provider.imageOverride.repository: "{{if .IMAGE_REPO_image_provider }}{{.IMAGE_REPO_image_provider}}{{end}}"
+          components.image-provider.imageOverride.tag: "{{if .IMAGE_REPO_image_provider }}{{.IMAGE_TAG_image_provider}}@{{.IMAGE_DIGEST_image_provider}}{{end}}"
           components.kafka.imageOverride.repository: "{{if .IMAGE_REPO_kafka }}{{.IMAGE_REPO_kafka}}{{end}}"
           components.kafka.imageOverride.tag: "{{if .IMAGE_REPO_kafka }}{{.IMAGE_TAG_kafka}}@{{.IMAGE_DIGEST_kafka}}{{end}}"
-          components.load-generator.imageOverride.repository: "{{if .IMAGE_REPO_loadgenerator }}{{.IMAGE_REPO_loadgenerator}}{{end}}"
-          components.load-generator.imageOverride.tag: "{{if .IMAGE_REPO_loadgenerator }}{{.IMAGE_TAG_loadgenerator}}@{{.IMAGE_DIGEST_loadgenerator}}{{end}}"
-          components.payment.imageOverride.repository: "{{if .IMAGE_REPO_paymentservice }}{{.IMAGE_REPO_paymentservice}}{{end}}"
-          components.payment.imageOverride.tag: "{{if .IMAGE_REPO_paymentservice }}{{.IMAGE_TAG_paymentservice}}@{{.IMAGE_DIGEST_paymentservice}}{{end}}"
+          components.load-generator.imageOverride.repository: "{{if .IMAGE_REPO_load_generator }}{{.IMAGE_REPO_load_generator}}{{end}}"
+          components.load-generator.imageOverride.tag: "{{if .IMAGE_REPO_load_generator }}{{.IMAGE_TAG_load_generator}}@{{.IMAGE_DIGEST_load_generator}}{{end}}"
+          components.payment.imageOverride.repository: "{{if .IMAGE_REPO_payment }}{{.IMAGE_REPO_payment}}{{end}}"
+          components.payment.imageOverride.tag: "{{if .IMAGE_REPO_payment }}{{.IMAGE_TAG_payment}}@{{.IMAGE_DIGEST_payment}}{{end}}"
           components.postgresql.imageOverride.repository: "{{if .IMAGE_REPO_postgresql }}{{.IMAGE_REPO_postgresql}}{{end}}"
           components.postgresql.imageOverride.tag: "{{if .IMAGE_REPO_postgresql }}{{.IMAGE_TAG_postgresql}}@{{.IMAGE_DIGEST_postgresql}}{{end}}"
-          components.product-catalog.imageOverride.repository: "{{if .IMAGE_REPO_productcatalogservice }}{{.IMAGE_REPO_productcatalogservice}}{{end}}"
-          components.product-catalog.imageOverride.tag: "{{if .IMAGE_REPO_productcatalogservice }}{{.IMAGE_TAG_productcatalogservice}}@{{.IMAGE_DIGEST_productcatalogservice}}{{end}}"
-          components.quote.imageOverride.repository: "{{if .IMAGE_REPO_quoteservice }}{{.IMAGE_REPO_quoteservice}}{{end}}"
-          components.quote.imageOverride.tag: "{{if .IMAGE_REPO_quoteservice }}{{.IMAGE_TAG_quoteservice}}@{{.IMAGE_DIGEST_quoteservice}}{{end}}"
-          components.recommendation.imageOverride.repository: "{{if .IMAGE_REPO_recommendationservice }}{{.IMAGE_REPO_recommendationservice}}{{end}}"
-          components.recommendation.imageOverride.tag: "{{if .IMAGE_REPO_recommendationservice }}{{.IMAGE_TAG_recommendationservice}}@{{.IMAGE_DIGEST_recommendationservice}}{{end}}"
-          components.shipping.imageOverride.repository: "{{if .IMAGE_REPO_shippingservice }}{{.IMAGE_REPO_shippingservice}}{{end}}"
-          components.shipping.imageOverride.tag: "{{if .IMAGE_REPO_shippingservice }}{{.IMAGE_TAG_shippingservice}}@{{.IMAGE_DIGEST_shippingservice}}{{end}}"
+          components.product-catalog.imageOverride.repository: "{{if .IMAGE_REPO_product_catalog }}{{.IMAGE_REPO_product_catalog}}{{end}}"
+          components.product-catalog.imageOverride.tag: "{{if .IMAGE_REPO_product_catalog }}{{.IMAGE_TAG_product_catalog}}@{{.IMAGE_DIGEST_product_catalog}}{{end}}"
+          components.quote.imageOverride.repository: "{{if .IMAGE_REPO_quote }}{{.IMAGE_REPO_quote}}{{end}}"
+          components.quote.imageOverride.tag: "{{if .IMAGE_REPO_quote }}{{.IMAGE_TAG_quote}}@{{.IMAGE_DIGEST_quote}}{{end}}"
+          components.recommendation.imageOverride.repository: "{{if .IMAGE_REPO_recommendation }}{{.IMAGE_REPO_recommendation}}{{end}}"
+          components.recommendation.imageOverride.tag: "{{if .IMAGE_REPO_recommendation }}{{.IMAGE_TAG_recommendation}}@{{.IMAGE_DIGEST_recommendation}}{{end}}"
+          components.shipping.imageOverride.repository: "{{if .IMAGE_REPO_shipping }}{{.IMAGE_REPO_shipping}}{{end}}"
+          components.shipping.imageOverride.tag: "{{if .IMAGE_REPO_shipping }}{{.IMAGE_TAG_shipping}}@{{.IMAGE_DIGEST_shipping}}{{end}}"
         upgradeOnChange: true
         useHelmSecrets: false
         wait: true
@@ -202,30 +208,28 @@ deploy:
         chartPath: skaffold-config/charts/otel-services
         recreatePods: false
         skipBuildDependencies: false
+        setValues:
+          services.chatbot.enabled: "true"
         setValueTemplates:
-          services.productReviews.imageOverride.repository: "{{if .IMAGE_REPO_productreviewsservice }}{{.IMAGE_REPO_productreviewsservice}}{{end}}"
-          services.productReviews.imageOverride.tag: "{{if .IMAGE_REPO_productreviewsservice }}{{.IMAGE_TAG_productreviewsservice}}@{{.IMAGE_DIGEST_productreviewsservice}}{{end}}"
-          services.llm.imageOverride.repository: "{{if .IMAGE_REPO_llmservice }}{{.IMAGE_REPO_llmservice}}{{end}}"
-          services.llm.imageOverride.tag: "{{if .IMAGE_REPO_llmservice }}{{.IMAGE_TAG_llmservice}}@{{.IMAGE_DIGEST_llmservice}}{{end}}"
+          services.chatbot.anthropicApiKey: "{{.ANTHROPIC_API_KEY}}"
+          services.chatbot.openaiApiKey: "{{.OPENAI_API_KEY}}"
+          services.chatbot.awsRegion: "{{.BEDROCK_AWS_REGION}}"
+          services.chatbot.bedrockHaikuProfileArn: "{{.BEDROCK_HAIKU_PROFILE_ARN}}"
+          services.chatbot.bedrockSonnetProfileArn: "{{.BEDROCK_SONNET_PROFILE_ARN}}"
+          services.chatbot.imageOverride.repository: "{{if .IMAGE_REPO_chatbot }}{{.IMAGE_REPO_chatbot}}{{end}}"
+          services.chatbot.imageOverride.tag: "{{if .IMAGE_REPO_chatbot }}{{.IMAGE_TAG_chatbot}}@{{.IMAGE_DIGEST_chatbot}}{{end}}"
+          services.llmEvals.openaiApiKey: "{{.OPENAI_API_KEY}}"
+          services.llmEvals.imageOverride.repository: "{{if .IMAGE_REPO_llm_evals }}{{.IMAGE_REPO_llm_evals}}{{end}}"
+          services.llmEvals.imageOverride.tag: "{{if .IMAGE_REPO_llm_evals }}{{.IMAGE_TAG_llm_evals}}@{{.IMAGE_DIGEST_llm_evals}}{{end}}"
+          services.productReviews.imageOverride.repository: "{{if .IMAGE_REPO_product_reviews }}{{.IMAGE_REPO_product_reviews}}{{end}}"
+          services.productReviews.imageOverride.tag: "{{if .IMAGE_REPO_product_reviews }}{{.IMAGE_TAG_product_reviews}}@{{.IMAGE_DIGEST_product_reviews}}{{end}}"
+          services.llm.imageOverride.repository: "{{if .IMAGE_REPO_llm }}{{.IMAGE_REPO_llm}}{{end}}"
+          services.llm.imageOverride.tag: "{{if .IMAGE_REPO_llm }}{{.IMAGE_TAG_llm}}@{{.IMAGE_DIGEST_llm}}{{end}}"
           ingress.domainName: "{{if .DOMAINNAME}}{{.DOMAINNAME}}{{else}}aurelia.honeydemo.io{{end}}"
           ingress.subDomainName: "{{.USER}}-local"
           ingress.enabled: true
           ingress.className: "{{if .INGRESS_CLASS}}{{.INGRESS_CLASS}}{{else}}alb{{end}}"
           ingress.generateCertificate: '{{if eq .CLOUD_PROVIDER "aws"}}false{{else}}true{{end}}'
-        upgradeOnChange: true
-        useHelmSecrets: false
-        wait: true
-      - name: "{{.USER}}-htp"
-        createNamespace: true
-        namespace: "{{.USER}}-local"
-        repo: https://honeycombio.github.io/helm-charts
-        remoteChart: htp-builder
-        version: 0.2.0
-        recreatePods: false
-        skipBuildDependencies: false
-        setValueTemplates:
-          pipeline.id: "{{.PIPELINE_ID}}"
-          managementApiKey.id: "{{.PIPELINE_MANAGEMENT_API_KEY_ID}}"
         upgradeOnChange: true
         useHelmSecrets: false
         wait: true
@@ -236,3 +240,6 @@ deploy:
               - "./scripts/setup-pod-identity-association.sh"
               - "--namespace"
               - "$USER-local"
+        - host:
+            command:
+              - "./scripts/patch-flagd-config.sh"

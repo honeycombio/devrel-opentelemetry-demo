@@ -27,6 +27,9 @@ export class DeploymentConfig {
     public readonly collectorS3AccessKey?: string;
     public readonly collectorS3SecretKey?: string;
 
+    // Optional Bedrock enablement (AWS only)
+    public readonly enableBedrock: boolean;
+
     constructor() {
         this.config = new pulumi.Config();
         this.cloudProvider = this.config.require("cloud-provider");
@@ -41,6 +44,7 @@ export class DeploymentConfig {
         this.containerTag = this.config.get("container-tag") || "latest";
         this.collectorContainerTag = this.config.get("collector-container-tag") || `${this.containerTag}-collector`;
         this.collectorContainerRepository = this.config.get("collector-container-repository") || "ghcr.io/open-telemetry/opentelemetry-collector-releases/opentelemetry-collector-contrib";
+        this.enableBedrock = this.config.getBoolean("enable-bedrock") ?? false;
         this.k8sNamespace = this.config.get("k8s-namespace") || "devrel-demo";
     }
 
@@ -92,7 +96,7 @@ export class DeploymentVersions {
     constructor() {
         this.collectorHelmVersion = "0.134.0";
         this.defaultCollectorVersion = "0.135.0";
-        this.demoHelmVersion = "0.38.6";
+        this.demoHelmVersion = "0.39.0";
         this.refineryHelmVersion = "2.17.0";
         this.htpBuilderHelmVersion = "0.2.0";
     }

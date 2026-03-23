@@ -61,6 +61,10 @@ static_resources:
                             prefix_rewrite: "/"
                             upgrade_configs:
                               - upgrade_type: websocket
+                        - match: { prefix: "/api/evals" }
+                          route: { cluster: llm-evals, timeout: 0s }
+                        - match: { prefix: "/chat" }
+                          route: { cluster: chatbot, timeout: 0s }
                         - match: { prefix: "/" }  # Default/catch-all route - keep last since prefix:"/" matches everything
                           route: { cluster: api-gateway }
                 http_filters:
@@ -173,6 +177,30 @@ static_resources:
                     socket_address:
                       address: ${FRONTEND_HOST}
                       port_value: ${FRONTEND_PORT}
+    - name: chatbot
+      type: STRICT_DNS
+      lb_policy: ROUND_ROBIN
+      load_assignment:
+        cluster_name: chatbot
+        endpoints:
+          - lb_endpoints:
+              - endpoint:
+                  address:
+                    socket_address:
+                      address: chatbot
+                      port_value: ${CHATBOT_PORT}
+    - name: llm-evals
+      type: STRICT_DNS
+      lb_policy: ROUND_ROBIN
+      load_assignment:
+        cluster_name: llm-evals
+        endpoints:
+          - lb_endpoints:
+              - endpoint:
+                  address:
+                    socket_address:
+                      address: llm-evals
+                      port_value: ${LLM_EVALS_PORT}
     - name: image-provider
       type: STRICT_DNS
       lb_policy: ROUND_ROBIN

@@ -54,18 +54,13 @@ const ProductReviews = () => {
 
     // AI Assistant (provider-driven)
     const [aiQuestion, setAiQuestion] = useState('');
-    const { sendAiRequest, aiResponse, aiLoading, aiError, reset } = useAiAssistant();
+    const { sendAiRequest, aiResponse, aiLoading, aiError, reset, sendFeedback, feedbackSent } = useAiAssistant();
 
     const handleAskAI = (questionOverride?: string) => {
         const q = (questionOverride ?? aiQuestion).trim();
         if (!q) return;
         reset(); // optional: clears previous result
         sendAiRequest({ question: q });
-    };
-
-    const handleQuickPrompt = (prompt: string) => {
-        setAiQuestion(prompt);
-        handleAskAI(prompt);
     };
 
   return (
@@ -100,32 +95,6 @@ const ProductReviews = () => {
                 </S.AskAIButton>
             </S.AskAIInputRow>
 
-            <S.AskAIControls>
-                <S.QuickPromptButton
-                    type="button"
-                    onClick={() => handleQuickPrompt('Can you summarize the product reviews?')}
-                    data-cy="QuickPromptSummarize"
-                >
-                    Can you summarize the product reviews?
-                </S.QuickPromptButton>
-
-                <S.QuickPromptButton
-                    type="button"
-                    onClick={() => handleQuickPrompt('What age(s) is this recommended for?')}
-                    data-cy="QuickPromptAges"
-                >
-                    What age(s) is this recommended for?
-                </S.QuickPromptButton>
-
-                <S.QuickPromptButton
-                    type="button"
-                    onClick={() => handleQuickPrompt('Were there any negative reviews?')}
-                    data-cy="QuickPromptNegative"
-                >
-                    Were there any negative reviews?
-                </S.QuickPromptButton>
-            </S.AskAIControls>
-
             {aiError && (
                 <S.AIMessage role="alert" data-cy="AIError">
                     {aiError.message ?? 'Sorry, something went wrong while asking AI.'}
@@ -133,10 +102,37 @@ const ProductReviews = () => {
             )}
 
             {aiResponse && (
-                <S.AIMessage aria-live="polite" data-cy="AIAnswer">
-                    <strong>AI Response:</strong>{' '}
-                    {typeof aiResponse === 'string' ? aiResponse : aiResponse.text}
-                </S.AIMessage>
+                <>
+                    <S.AIMessage aria-live="polite" data-cy="AIAnswer">
+                        <strong>AI Response:</strong>{' '}
+                        <span dangerouslySetInnerHTML={{ __html: aiResponse.text }} />
+                    </S.AIMessage>
+                    {!feedbackSent &&
+                     !aiResponse.text.includes("Sorry, I'm not able to answer") &&
+                     !aiResponse.text.includes('The Chatbot is Unavailable') && (
+                        <S.FeedbackRow>
+                            <S.FeedbackButton
+                                type="button"
+                                onClick={() => sendFeedback(aiResponse.traceId, aiResponse.spanId, 1, aiResponse.requestModel, aiResponse.responseModel, aiResponse.totalInputTokens, aiResponse.totalOutputTokens)}
+                                data-cy="FeedbackGood"
+                            >
+                                👍
+                            </S.FeedbackButton>
+                            <S.FeedbackButton
+                                type="button"
+                                onClick={() => sendFeedback(aiResponse.traceId, aiResponse.spanId, -1, aiResponse.requestModel, aiResponse.responseModel, aiResponse.totalInputTokens, aiResponse.totalOutputTokens)}
+                                data-cy="FeedbackBad"
+                            >
+                                👎
+                            </S.FeedbackButton>
+                        </S.FeedbackRow>
+                    )}
+                    {feedbackSent && (
+                        <S.AIMessage aria-live="polite" data-cy="AIFeedbackThanks">
+                            Thanks for your feedback!
+                        </S.AIMessage>
+                    )}
+                </>
             )}
         </S.AskAISection>
 

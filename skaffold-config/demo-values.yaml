@@ -11,13 +11,15 @@ default:
 
 components:
   load-generator:
-    replicas: 0
+    replicas: 1
   frontend:
     replicas: 1
     envOverrides:
       # Needed until the demo helm chart updates to include it.
       - name: PRODUCT_REVIEWS_ADDR
         value: product-reviews:3551
+      - name: CHATBOT_ADDR
+        value: http://chatbot:8087
       - name: ENV_PLATFORM
         value: local
   frontend-proxy:
@@ -25,6 +27,10 @@ components:
       # Needed until the demo helm chart updates to include it.
       - name: ENVOY_ADDR
         value: 0.0.0.0
+      - name: CHATBOT_PORT
+        value: "8087"
+      - name: LLM_EVALS_PORT
+        value: "8088"
 
 opentelemetry-collector:
   enabled: true
@@ -129,6 +135,12 @@ opentelemetry-collector:
             statements:
               - set(attributes["service.name"], "api-gateway") where attributes["service.name"] == "frontend"
               - set(attributes["service.name"], "ingress-gateway") where attributes["service.name"] == "frontendproxy"
+              - set(attributes["service.name"], "postgresql") where attributes["service.instance.id"] == "postgresql:5432" and attributes["service.name"] == nil
+              - set(attributes["service.name"], "valkey-cart") where attributes["redis.version"] != nil and attributes["service.name"] == nil
+          - context: metric
+            statements:
+              - set(resource.attributes["service.name"], "image-provider-nginx") where resource.attributes["service.name"] == nil and HasPrefix(name, "nginx.")
+              - set(resource.attributes["service.name"], "frontend-proxy") where resource.attributes["service.name"] == nil and HasPrefix(name, "httpcheck.")
         trace_statements:
           - context: resource
             statements:
@@ -164,10 +176,10 @@ opentelemetry-collector:
     exporters:
       debug/detailed:
         verbosity: detailed
-      otlp/htp:
-        endpoint: ${env:HTP_ENDPOINT}
-        tls:
-          insecure: true
+      otlp/honeycomb:
+        endpoint: api.honeycomb.io:443
+        headers:
+          x-honeycomb-team: ${env:HONEYCOMB_API_KEY}
 
     service:
       telemetry:
@@ -187,7 +199,7 @@ opentelemetry-collector:
       pipelines:
         metrics:
           exporters:
-            - otlp/htp
+            - otlp/honeycomb
           processors:
             - transform/service_names
             - transform/attribution
@@ -196,7 +208,7 @@ opentelemetry-collector:
             - otlp
             - filelog
           exporters:
-            - otlp/htp
+            - otlp/honeycomb
           processors:
             - transform/parse_json_body
             - transform/service_names
@@ -206,7 +218,7 @@ opentelemetry-collector:
             - transform/attribution
         traces:
           exporters:
-            - otlp/htp
+            - otlp/honeycomb
             - spanmetrics
           processors:
             - transform/service_names

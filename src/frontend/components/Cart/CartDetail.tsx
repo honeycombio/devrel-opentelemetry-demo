@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { useRouter } from 'next/router';
-import { useCallback } from 'react';
+import { useCallback, useState } from 'react';
 import CartItems from '../CartItems';
 import CheckoutForm from '../CheckoutForm';
 import { IFormData } from '../CheckoutForm/CheckoutForm';
@@ -21,6 +21,7 @@ const CartDetail = () => {
   } = useCart();
   const { selectedCurrency } = useCurrency();
   const { push } = useRouter();
+  const [orderError, setOrderError] = useState('');
 
   const onPlaceOrder = useCallback(
     async ({
@@ -35,6 +36,7 @@ const CartDetail = () => {
       creditCardExpirationYear,
       creditCardNumber,
     }: IFormData) => {
+        setOrderError('');
         try {
             const order = await placeOrder({
                 userId,
@@ -60,10 +62,9 @@ const CartDetail = () => {
                 query: {order: JSON.stringify(order)},
             });
         } catch (e: unknown) {
-            // TODO - visual here that it failed
-            // log it for now to the console to know we hit this and swallowed the catch-all exception
+            const message = e instanceof Error ? e.message : 'Something went wrong placing your order.';
+            setOrderError(message);
             console.error(e);
-            // swallow this one - the `placeOrder` reports it in OpenTelmeetry
         }
     },
     [placeOrder, push, selectedCurrency]
@@ -80,6 +81,11 @@ const CartDetail = () => {
         </S.Header>
         <CartItems productList={items} />
       </div>
+      {orderError && (
+        <p style={{ color: '#c00', fontWeight: 'bold', margin: '0 0 12px' }}>
+          {orderError}
+        </p>
+      )}
       <CheckoutForm onSubmit={onPlaceOrder} />
     </S.Container>
   );
