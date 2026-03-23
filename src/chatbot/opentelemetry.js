@@ -24,6 +24,13 @@ const sdk = new opentelemetry.NodeSDK({
       '@opentelemetry/instrumentation-openai': {
         enabled: false,
       },
+      // disable low-signal network instrumentations
+      '@opentelemetry/instrumentation-dns': {
+        enabled: false,
+      },
+      '@opentelemetry/instrumentation-net': {
+        enabled: false,
+      },
     }),
     new RuntimeNodeInstrumentation({
       monitoringPrecision: 5000,
