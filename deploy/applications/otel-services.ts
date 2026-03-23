@@ -35,6 +35,9 @@ export class OtelServices extends pulumi.ComponentResource {
                     bedrockHaikuProfileArn: bedrockHaikuProfileArn,
                     bedrockSonnetProfileArn: bedrockSonnetProfileArn,
                 },
+                // product-reviews and llm are deployed directly by Pulumi in oteldemo.ts
+                productReviews: { enabled: false },
+                llm: { enabled: false },
             },
             otel: {
                 collectorName: args.collectorName,

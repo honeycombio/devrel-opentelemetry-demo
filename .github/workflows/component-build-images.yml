@@ -68,6 +68,14 @@ jobs:
             tag_suffix: accounting
             context: ./
             setup-qemu: true
+          - file: ./src/chatbot/Dockerfile
+            tag_suffix: chatbot
+            context: ./
+            setup-qemu: true
+          - file: ./src/llm-evals/Dockerfile
+            tag_suffix: llm-evals
+            context: ./
+            setup-qemu: true
           - file: ./src/ad/Dockerfile
             tag_suffix: ad
             context: ./
