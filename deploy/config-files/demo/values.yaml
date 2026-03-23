@@ -26,6 +26,10 @@ components:
     envOverrides:
       - name: ENVOY_ADDR
         value: 0.0.0.0
+      - name: CHATBOT_PORT
+        value: "8087"
+      - name: LLM_EVALS_PORT
+        value: "8088"
 
 opentelemetry-collector:
   enabled: false
