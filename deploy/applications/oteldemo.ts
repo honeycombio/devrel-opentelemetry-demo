@@ -45,6 +45,7 @@ export class OtelDemo extends pulumi.ComponentResource {
             },
             dependencyUpdate: true,
             namespace: args.config.k8sNamespace,
+            timeout: 900,
             values: values,
             valueYamlFiles: [new pulumi.asset.FileAsset("./config-files/demo/values.yaml")]
         }, { provider: opts.provider! });
