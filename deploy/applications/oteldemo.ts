@@ -1,8 +1,10 @@
 import * as pulumi from "@pulumi/pulumi";
+import * as fs from "fs";
 import { Release } from "@pulumi/kubernetes/helm/v3";
 import { Ingress } from "@pulumi/kubernetes/networking/v1/ingress";
 import { Deployment } from "@pulumi/kubernetes/apps/v1";
 import { Service } from "@pulumi/kubernetes/core/v1";
+import { ConfigMap } from "@pulumi/kubernetes/core/v1";
 import { CustomResource } from "@pulumi/kubernetes/apiextensions";
 import { DeploymentConfig } from "../config";
 
@@ -48,6 +50,20 @@ export class OtelDemo extends pulumi.ComponentResource {
             timeout: 900,
             values: values,
             valueYamlFiles: [new pulumi.asset.FileAsset("./config-files/demo/values.yaml")]
+        }, { provider: opts.provider! });
+
+        // The otel-demo chart creates a flagd-config ConfigMap from its own bundled flags (no values override).
+        // Rather than fighting Helm's SSA ownership, we manage a separate ConfigMap with our custom flags
+        // and patch the flagd component to load from both URIs.
+        const flagdConfigJson = fs.readFileSync("../src/flagd/demo.flagd.json", "utf-8");
+        new ConfigMap(`${name}-flagd-custom-config`, {
+            metadata: {
+                name: "flagd-custom-config",
+                namespace: args.config.k8sNamespace,
+            },
+            data: {
+                "demo.flagd.json": flagdConfigJson,
+            },
         }, { provider: opts.provider! });
 
         // These services and deployments can be removed when the new helm chart is released
