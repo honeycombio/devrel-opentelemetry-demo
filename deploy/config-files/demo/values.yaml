@@ -3,6 +3,9 @@ default:
     repository: "ghcr.io/honeycombio/devrel-opentelemetry-demo"
     tag: "latest"
   replicas: 2
+  envOverrides:
+    - name: OTEL_RESOURCE_ATTRIBUTES
+      value: "service.name=$(OTEL_SERVICE_NAME),service.namespace=opentelemetry-demo,service.version=latest"
 components:
   accounting:
     resources:
@@ -18,7 +21,7 @@ components:
   postgresql:
     resources:
       limits:
-        memory: 150Mi
+        memory: 512Mi
   frontend-proxy:
     envOverrides:
       - name: ENVOY_ADDR

@@ -176,10 +176,10 @@ opentelemetry-collector:
     exporters:
       debug/detailed:
         verbosity: detailed
-      otlp/htp:
-        endpoint: ${env:HTP_ENDPOINT}
-        tls:
-          insecure: true
+      otlp/honeycomb:
+        endpoint: api.honeycomb.io:443
+        headers:
+          x-honeycomb-team: ${env:HONEYCOMB_API_KEY}
 
     service:
       telemetry:
@@ -199,7 +199,7 @@ opentelemetry-collector:
       pipelines:
         metrics:
           exporters:
-            - otlp/htp
+            - otlp/honeycomb
           processors:
             - transform/service_names
             - transform/attribution
@@ -208,7 +208,7 @@ opentelemetry-collector:
             - otlp
             - filelog
           exporters:
-            - otlp/htp
+            - otlp/honeycomb
           processors:
             - transform/parse_json_body
             - transform/service_names
@@ -218,7 +218,7 @@ opentelemetry-collector:
             - transform/attribution
         traces:
           exporters:
-            - otlp/htp
+            - otlp/honeycomb
             - spanmetrics
           processors:
             - transform/service_names

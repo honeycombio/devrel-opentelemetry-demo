@@ -96,7 +96,7 @@ export class DeploymentVersions {
     constructor() {
         this.collectorHelmVersion = "0.134.0";
         this.defaultCollectorVersion = "0.135.0";
-        this.demoHelmVersion = "0.38.6";
+        this.demoHelmVersion = "0.39.0";
         this.refineryHelmVersion = "2.17.0";
         this.htpBuilderHelmVersion = "0.2.0";
     }

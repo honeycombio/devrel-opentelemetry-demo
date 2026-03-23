@@ -2,6 +2,7 @@ import * as kubernetes from "@pulumi/kubernetes";
 import { Collector } from "./applications/collector";
 import { OtelDemo } from "./applications/oteldemo";
 import { HtpBuilder } from "./applications/htp-builder";
+import { OtelServices } from "./applications/otel-services";
 import { PodIdentityAssociation } from "./applications/pod-identity-association";
 import { BedrockPodIdentityAssociation } from "./applications/bedrock-pia";
 import { DeploymentConfig } from "./config";
@@ -90,6 +91,15 @@ if (deployConfig.isAws) {
             serviceAccountName: "otel-services",
         }, { dependsOn: [demo] });
     }
+}
+
+// Deploy chatbot and supporting services when Bedrock is enabled
+if (deployConfig.enableBedrock) {
+    new OtelServices("otel-services", {
+        config: deployConfig,
+        namespace: demoNamespace.metadata.name,
+        collectorName: podTelemetryCollector.collectorName,
+    }, { provider: provider, dependsOn: [demo] });
 }
 
 // Export some values for use elsewhere

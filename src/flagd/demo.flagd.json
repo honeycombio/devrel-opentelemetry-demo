@@ -1,6 +1,15 @@
 {
   "$schema": "https://flagd.dev/schema/v0/flags.json",
   "flags": {
+    "chatbot.enabled": {
+      "defaultVariant": "on",
+      "description": "Enable chatbot LLM integration",
+      "state": "ENABLED",
+      "variants": {
+        "off": false,
+        "on": true
+      }
+    },
     "llmInaccurateResponse": {
       "defaultVariant": "off",
       "description": "LLM returns an inaccurate product summary for product ID L9ECAV7KIM",

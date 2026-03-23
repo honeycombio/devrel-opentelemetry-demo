@@ -58,7 +58,7 @@ fi
 
 # Default service account names (space-separated list)
 if [ -z "$SERVICE_ACCOUNT" ]; then
-  SERVICE_ACCOUNTS="otel-collector $USER-htp-htp-builder-primary-collector"
+  SERVICE_ACCOUNTS="otel-collector"
 else
   SERVICE_ACCOUNTS="$SERVICE_ACCOUNT"
 fi
@@ -126,7 +126,7 @@ fi
 if [ -n "$BEDROCK_ROLE_ARN" ] && [ "$BEDROCK_ROLE_ARN" != "null" ] && [ "$BEDROCK_ROLE_ARN" != "None" ]; then
   echo "Setting up Bedrock pod identity association for demo service account..."
   ROLE_ARN="$BEDROCK_ROLE_ARN"
-  setup_association "otel-services"
+  setup_association "$USER-otel-services"
 fi
 
 echo "All pod identity associations configured successfully"

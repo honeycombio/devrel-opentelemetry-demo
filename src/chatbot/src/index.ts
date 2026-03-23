@@ -8,7 +8,7 @@ const app = express();
 app.use(express.json());
 
 const PORT = parseInt(process.env.CHATBOT_PORT || '8087', 10);
-const HAS_LLM_KEY = !!(process.env.ANTHROPIC_API_KEY || process.env.OPENAI_API_KEY);
+const HAS_LLM_KEY = !!(process.env.ANTHROPIC_API_KEY || process.env.OPENAI_API_KEY || process.env.AWS_REGION);
 
 let demoEnabled = false;
 

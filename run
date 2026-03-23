@@ -40,13 +40,6 @@ if [ -z "$SERVICES" ]; then
   echo "************************************"
 fi
 
-# install/update the secret if it's changed
-# Note: hack until the helm file allows it to be specified as a value
-kubectl create namespace $USER-local --dry-run=client -o yaml | kubectl apply -f - > /dev/null
-kubectl create --namespace $USER-local secret generic htp-builder \
-   --from-literal=management-api-secret=$PIPELINE_MANAGEMENT_API_SECRET \
-   --from-literal=pipeline-telemetry-key=$PIPELINE_TELEMETRY_INGEST_KEY \
-   --dry-run=client -o yaml | kubectl apply -f - > /dev/null
 
 # Get container registry from Pulumi stack output based on cloud provider
 if [[ "$CLOUD_PROVIDER" == "aws" ]]; then
@@ -87,8 +80,14 @@ export BEDROCK_SONNET_PROFILE_ARN
 export BEDROCK_AWS_REGION
 export SOURCE_MAPS_PREFIX
 
+# Build -b flags: one per service (skaffold requires separate -b flags for each image)
+BUILD_FLAGS=""
+for svc in $SERVICES; do
+  BUILD_FLAGS="$BUILD_FLAGS -b $svc"
+done
+
 # maybe someday the container registry name will change, but this is what it is now
-skaffold run -d "$CONTAINER_REGISTRY" -b $SERVICES --port-forward=user -l skaffold.dev/run-id=static --cache-artifacts=false
+skaffold run -d "$CONTAINER_REGISTRY" $BUILD_FLAGS --port-forward=user -l skaffold.dev/run-id=static --cache-artifacts=false
 
 # note: if the output ends with
 #   Error: UPGRADE FAILED: another operation (install/upgrade/rollback) is in progress
