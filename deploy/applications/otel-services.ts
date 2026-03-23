@@ -34,6 +34,16 @@ export class OtelServices extends pulumi.ComponentResource {
                     awsRegion: clusterRegion,
                     bedrockHaikuProfileArn: bedrockHaikuProfileArn,
                     bedrockSonnetProfileArn: bedrockSonnetProfileArn,
+                    kafkaAddr: 'kafka:9092',
+                },
+                llmEvals: {
+                    enabled: true,
+                    image: {
+                        tag: `${args.config.containerTag}-llm-evals`,
+                    },
+                    awsRegion: clusterRegion,
+                    bedrockHaikuProfileArn: bedrockHaikuProfileArn,
+                    kafkaAddr: 'kafka:9092',
                 },
                 // product-reviews and llm are deployed directly by Pulumi in oteldemo.ts
                 productReviews: { enabled: false },

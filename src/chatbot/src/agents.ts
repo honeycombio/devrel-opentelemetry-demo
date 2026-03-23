@@ -1,5 +1,5 @@
 import { trace, context, propagation, metrics, SpanStatusCode, Span } from '@opentelemetry/api';
-import { suppressTracing } from '@opentelemetry/core';
+import { Kafka } from 'kafkajs';
 import {
   ATTR_GEN_AI_AGENT_NAME,
   ATTR_GEN_AI_OPERATION_NAME,
@@ -36,36 +36,17 @@ const tracer = trace.getTracer('chatbot');
 const meter = metrics.getMeter('chatbot');
 
 const FRONTEND_ADDR = process.env.FRONTEND_ADDR || '';
-const LLM_EVALS_ADDR = process.env.LLM_EVALS_ADDR || '';
 
-/**
- * Fire-and-forget POST to the llm-evals service.
- * Sends traceId/spanId as plain body fields (not as traceparent).
- * Uses suppressTracing to prevent auto-instrumentation from creating
- * a span or injecting trace headers into the outgoing request.
- */
-function fireEvalRequest(
-  span: Span,
-  input: string,
-  output: string,
-  groundingContext: string,
-  agentName: string,
-  responseModel: string,
-  inputTokens: number,
-  outputTokens: number,
-  ttftMs: number,
-): void {
-  if (!LLM_EVALS_ADDR) return;
-  const { traceId, spanId } = span.spanContext();
-  const suppressedCtx = suppressTracing(context.active());
-  context.with(suppressedCtx, () => {
-    fetch(`${LLM_EVALS_ADDR}/api/evals`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ traceId, spanId, input, output, groundingContext, agentName, responseModel, inputTokens, outputTokens, ttftMs }),
-    }).catch(() => {}); // fire-and-forget
-  });
-}
+// Kafka producer for llm-evals — fire-and-forget, only active if KAFKA_ADDR is set.
+// OTel kafkajs auto-instrumentation creates a child producer span and injects
+// W3C trace context into message headers automatically.
+const KAFKA_ADDR = process.env.KAFKA_ADDR;
+const kafkaProducer = KAFKA_ADDR ? (() => {
+  const kafka = new Kafka({ brokers: [KAFKA_ADDR], clientId: 'chatbot' });
+  const producer = kafka.producer();
+  producer.connect().catch(() => {});
+  return producer;
+})() : null;
 
 const featureClient = OpenFeature.getClient();
 
@@ -499,7 +480,7 @@ async function fetchProductInfo(model: string, provider: LLMProvider, tokens: To
 // Sub-agent 3: Response Generator
 async function generateResponse(question: string, productInfo: string, model: string, provider: LLMProvider, tokens: TokenAccumulator): Promise<{ text: string; responseModel: string; inputTokens: number; outputTokens: number; ttftMs: number }> {
   return tracer.startActiveSpan(`${GEN_AI_OPERATION_NAME_VALUE_INVOKE_AGENT} response_generator`, async (agentSpan) => {
-    let responseChatCompletionSpan = null;
+    let responseChatCompletionSpan: Span | null = null;
     try {
       agentSpan.setAttribute(ATTR_GEN_AI_OPERATION_NAME, GEN_AI_OPERATION_NAME_VALUE_INVOKE_AGENT);
       agentSpan.setAttribute(ATTR_GEN_AI_AGENT_NAME, 'response_generator');
@@ -548,8 +529,14 @@ async function generateResponse(question: string, productInfo: string, model: st
 
       agentSpan.setAttribute(ATTR_GEN_AI_OUTPUT_MESSAGES, JSON.stringify([{ role: 'assistant', parts: [{ type: 'text', content: answer.text }] }]));
 
-      // Fire eval on the response_generator chat span
-      responseChatCompletionSpan && fireEvalRequest(responseChatCompletionSpan, question, answer.text, productInfo, 'response_generator', answer.responseModel, answer.inputTokens, answer.outputTokens, answer.ttftMs);
+      // Fire eval payload to Kafka — fire-and-forget
+      const evalCtx = (responseChatCompletionSpan as Span | null)?.spanContext();
+      if (kafkaProducer && evalCtx) {
+        kafkaProducer.send({
+          topic: 'llm-evals',
+          messages: [{ value: JSON.stringify({ traceId: evalCtx.traceId, spanId: evalCtx.spanId, input: question, output: answer.text, groundingContext: productInfo, agentName: 'response_generator', responseModel: answer.responseModel, inputTokens: answer.inputTokens, outputTokens: answer.outputTokens, ttftMs: answer.ttftMs }) }],
+        }).catch(() => {});
+      }
 
       return answer;
     } catch (error) {

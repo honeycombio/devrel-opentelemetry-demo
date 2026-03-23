@@ -1,11 +1,17 @@
 /**
- * Shared types and constants for LLM evaluation scorers.
- * Always uses OpenAI gpt-4o as the judge model.
+ * Shared types and Bedrock adapter for LLM evaluation scorers.
  *
- * The autoevals library reads OPENAI_API_KEY from the environment automatically.
- * We pass EVAL_MODEL to each scorer call to ensure gpt-4o is used.
+ * The autoevals library accepts an optional `client` parameter implementing
+ * the OpenAI chat.completions.create interface. We provide a minimal Bedrock
+ * adapter so the same autoevals prompts run against Claude Haiku on Bedrock.
  */
-export declare const EVAL_MODEL = "gpt-4o";
+/**
+ * Minimal OpenAI-compatible adapter backed by Bedrock Converse API.
+ * autoevals calls client.chat.completions.create({ messages, model, ... })
+ * and expects { choices: [{ message: { content } }], usage: { ... } }.
+ */
+export declare const bedrockAdapter: any;
+export declare const EVAL_MODEL = "bedrock-haiku";
 export interface EvalResult {
     name: string;
     score: number;

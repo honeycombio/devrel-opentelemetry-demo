@@ -1,82 +1,47 @@
-import express, { Request, Response } from 'express';
-import { OpenFeature } from '@openfeature/server-sdk';
-import { FlagdProvider } from '@openfeature/flagd-provider';
+import { Kafka } from 'kafkajs';
 import { evaluateChat } from './eval/index.js';
 
-const app = express();
-app.use(express.json());
-
-const PORT = parseInt(process.env.LLM_EVALS_PORT || '8088', 10);
-
-// Initialize OpenFeature with FlagD provider
-const flagProvider = new FlagdProvider();
-OpenFeature.setProviderAndWait(flagProvider).catch((err) => {
-  console.error('Failed to initialize FlagD provider:', err);
-});
-const featureClient = OpenFeature.getClient();
-
-let evalsDisabledByStartup = false;
-
-/**
- * Startup check: if llm.performEvals is enabled but OPENAI_API_KEY is missing,
- * log a warning and disable evals for the process lifetime.
- */
-async function checkEvalsStartup(): Promise<void> {
-  const evalsEnabled = await featureClient.getBooleanValue('llm.performEvals', false);
-  if (evalsEnabled && !process.env.OPENAI_API_KEY) {
-    console.warn(
-      'WARNING: llm.performEvals is enabled but OPENAI_API_KEY is not set. Evaluations will be disabled.',
-    );
-    evalsDisabledByStartup = true;
-  }
+const KAFKA_ADDR = process.env.KAFKA_ADDR;
+if (!KAFKA_ADDR) {
+  console.error('KAFKA_ADDR is not set');
+  process.exit(1);
 }
 
-// POST /api/evals
-app.post('/api/evals', async (req: Request, res: Response) => {
-  if (evalsDisabledByStartup) {
-    res.json({ status: 'disabled_at_startup' });
-    return;
-  }
+const kafka = new Kafka({ brokers: [KAFKA_ADDR], clientId: 'llm-evals' });
+const consumer = kafka.consumer({ groupId: 'llm-evals' });
 
-  const evalsEnabled = await featureClient.getBooleanValue('llm.performEvals', false);
-  if (!evalsEnabled) {
-    res.json({ status: 'skipped' });
-    return;
-  }
+async function main() {
+  await consumer.connect();
+  await consumer.subscribe({ topic: 'llm-evals', fromBeginning: false });
+  console.log('LLM Evals consumer connected, waiting for messages on topic "llm-evals"');
 
-  const { traceId, spanId, input, output, groundingContext, agentName, responseModel, inputTokens, outputTokens, ttftMs } = req.body;
-
-  if (!traceId || !spanId || !input || !output) {
-    res.status(400).json({ error: 'Missing required fields: traceId, spanId, input, output' });
-    return;
-  }
-
-  // Respond immediately, run evals in the background
-  res.status(202).json({ status: 'queued' });
-
-  evaluateChat(
-    traceId,
-    spanId,
-    input,
-    output,
-    groundingContext || '',
-    agentName || 'unknown',
-    responseModel || 'unknown',
-    inputTokens ?? 0,
-    outputTokens ?? 0,
-    ttftMs ?? 0,
-  ).catch((error) => {
-    console.error('Evaluation failed:', error);
+  await consumer.run({
+    eachMessage: async ({ message }) => {
+      if (!message.value) return;
+      const payload = JSON.parse(message.value.toString());
+      await evaluateChat(
+        payload.traceId,
+        payload.spanId,
+        payload.input,
+        payload.output,
+        payload.groundingContext ?? '',
+        payload.agentName ?? 'unknown',
+        payload.responseModel ?? 'unknown',
+        payload.inputTokens ?? 0,
+        payload.outputTokens ?? 0,
+        payload.ttftMs ?? 0,
+      ).catch((err) => {
+        console.error('Evaluation failed:', err);
+      });
+    },
   });
+}
+
+main().catch((err) => {
+  console.error('Fatal error in llm-evals consumer:', err);
+  process.exit(1);
 });
 
-// Health check
-app.get('/api/evals/health', (_req: Request, res: Response) => {
-  res.json({ status: 'ok', evalsDisabledByStartup });
-});
-
-checkEvalsStartup().then(() => {
-  app.listen(PORT, () => {
-    console.log(`LLM Evals service listening on port ${PORT}`);
-  });
+process.on('SIGTERM', async () => {
+  await consumer.disconnect();
 });

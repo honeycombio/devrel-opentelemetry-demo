@@ -15,6 +15,7 @@ services:
     awsRegion: ""
     bedrockHaikuProfileArn: ""
     bedrockSonnetProfileArn: ""
+    kafkaAddr: ""
     port: 8087
     replicas: 1
     env:
@@ -75,16 +76,11 @@ services:
       pullPolicy: IfNotPresent
     imageOverride:
       {}
-    openaiApiKey: ""
-    port: 8088
+    awsRegion: ""
+    bedrockHaikuProfileArn: ""
+    kafkaAddr: ""
     replicas: 1
-    env:
-      - name: LLM_EVALS_PORT
-        value: "8088"
-      - name: FLAGD_HOST
-        value: "flagd"
-      - name: FLAGD_PORT
-        value: "8013"
+    env: []
 
   llm:
     enabled: true

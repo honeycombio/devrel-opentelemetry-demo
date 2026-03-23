@@ -1,21 +1,24 @@
 /**
- * Orchestrates eval scorer execution and emits OTel child spans.
+ * Orchestrates eval scorer execution and emits OTel spans in two traces:
  *
- * Each scorer gets its own child span named "chat - Evaluation - <type>"
- * with a gen_ai.evaluation.result span event containing the results.
- * All three evals run in parallel via Promise.all.
+ * 1. Original chatbot trace (via remote parent from traceparent):
+ *    3 eval scorer child spans with gen_ai.evaluation.result events
+ *    and span links to the eval trace root.
  *
- * Unlike the in-process reference implementation, this version creates
- * child spans from a deserialized W3C traceparent (remote parent).
+ * 2. New eval trace:
+ *    1 root span + 3 eval scorer child spans with the same events.
+ *
+ * Scorers run once; results are written to both traces.
  */
 /**
- * Run bias, hallucination, and relevance evaluations as child spans
- * of the remote parent identified by the traceparent header.
+ * Run bias, hallucination, and relevance evaluations.
+ * Results are written to both the original chatbot trace and a new eval trace.
  *
- * @param traceparent - W3C traceparent header (00-traceId-spanId-flags)
+ * @param traceId - Trace ID from the chatbot's chat completion span
+ * @param spanId - Span ID from the chatbot's chat completion span
  * @param input - The user's input/question
  * @param output - The LLM's response text
  * @param groundingContext - Context for hallucination detection
- * @param agentName - Which agent made the call (e.g. "product_fetcher")
+ * @param agentName - Which agent made the call (e.g. "response_generator")
  */
-export declare function evaluateChat(traceparent: string, input: string, output: string, groundingContext: string, agentName: string): Promise<void>;
+export declare function evaluateChat(traceId: string, spanId: string, input: string, output: string, groundingContext: string, agentName: string, responseModel: string, inputTokens: number, outputTokens: number, ttftMs: number): Promise<void>;

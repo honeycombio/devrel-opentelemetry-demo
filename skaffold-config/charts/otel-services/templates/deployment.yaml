@@ -56,9 +56,9 @@ spec:
             - name: BEDROCK_SONNET_PROFILE_ARN
               value: {{ .Values.services.chatbot.bedrockSonnetProfileArn | quote }}
             {{- end }}
-            {{- if .Values.services.llmEvals.enabled }}
-            - name: LLM_EVALS_ADDR
-              value: "http://{{ .Values.services.llmEvals.name }}:{{ .Values.services.llmEvals.port }}"
+            {{- if .Values.services.chatbot.kafkaAddr }}
+            - name: KAFKA_ADDR
+              value: {{ .Values.services.chatbot.kafkaAddr | quote }}
             {{- end }}
             - name: OTEL_EXPORTER_OTLP_ENDPOINT
               value: http://$(OTEL_COLLECTOR_NAME):4317
@@ -193,9 +193,6 @@ spec:
         - name: {{ .Values.services.llmEvals.name }}
           image: "{{ if .Values.services.llmEvals.imageOverride.repository }}{{ .Values.services.llmEvals.imageOverride.repository }}{{ else }}{{ .Values.services.llmEvals.image.repository }}{{ end }}:{{ if .Values.services.llmEvals.imageOverride.tag }}{{ .Values.services.llmEvals.imageOverride.tag }}{{ else }}{{ .Values.services.llmEvals.image.tag }}{{ end }}"
           imagePullPolicy: {{ .Values.services.llmEvals.image.pullPolicy }}
-          ports:
-            - containerPort: {{ .Values.services.llmEvals.port }}
-              name: service
           env:
             - name: OTEL_SERVICE_NAME
               valueFrom:
@@ -210,8 +207,16 @@ spec:
             - name: {{ .name }}
               value: {{ .value | quote }}
             {{- end }}
-            - name: OPENAI_API_KEY
-              value: {{ .Values.services.llmEvals.openaiApiKey | quote }}
+            {{- if .Values.services.llmEvals.awsRegion }}
+            - name: AWS_REGION
+              value: {{ .Values.services.llmEvals.awsRegion | quote }}
+            - name: BEDROCK_HAIKU_PROFILE_ARN
+              value: {{ .Values.services.llmEvals.bedrockHaikuProfileArn | quote }}
+            {{- end }}
+            {{- if .Values.services.llmEvals.kafkaAddr }}
+            - name: KAFKA_ADDR
+              value: {{ .Values.services.llmEvals.kafkaAddr | quote }}
+            {{- end }}
             - name: OTEL_EXPORTER_OTLP_ENDPOINT
               value: http://$(OTEL_COLLECTOR_NAME):4317
 {{- end }}
