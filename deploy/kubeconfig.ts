@@ -63,10 +63,18 @@ function generateEksKubeconfig(clusterName: pulumi.Output<string>): pulumi.Outpu
                             "--cluster-name", name,
                             "--output", "json",
                         ],
-                        env: [{
-                            name: "KUBERNETES_EXEC_INFO",
-                            value: '{"apiVersion": "client.authentication.k8s.io/v1beta1"}',
-                        }],
+                        env: [
+                            {
+                                name: "KUBERNETES_EXEC_INFO",
+                                value: '{"apiVersion": "client.authentication.k8s.io/v1beta1"}',
+                            },
+                            // Pass KUBE_AWS_PROFILE as AWS_PROFILE if set (needed for local deployments
+                            // where the SSO profile for k8s auth differs from the AWS provider profile)
+                            ...(process.env.KUBE_AWS_PROFILE ? [{
+                                name: "AWS_PROFILE",
+                                value: process.env.KUBE_AWS_PROFILE,
+                            }] : []),
+                        ],
                     },
                 },
             }],

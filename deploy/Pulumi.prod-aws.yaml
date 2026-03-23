@@ -3,3 +3,8 @@ environment:
 config:
   pulumi:disable-default-providers:
     - kubernetes
+  devrel-opentelemetry-demo:cloud-provider: aws
+  devrel-opentelemetry-demo:collector-container-repository: ghcr.io/honeycombio/devrel-opentelemetry-demo
+  devrel-opentelemetry-demo:collector-container-tag: 2.3.0-release-collector
+  devrel-opentelemetry-demo:container-tag: 2.3.0-release
+  devrel-opentelemetry-demo:enable-bedrock: "true"
