@@ -238,6 +238,11 @@ deploy:
         useHelmSecrets: false
         wait: true
     hooks:
+      before:
+        - host:
+            command:
+              - "./scripts/create-flagd-custom-config.sh"
+              - "$USER-local"
       after:
         - host:
             command:
