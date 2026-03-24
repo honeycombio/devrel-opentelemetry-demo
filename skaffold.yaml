@@ -242,7 +242,6 @@ deploy:
         - host:
             command:
               - "./scripts/create-flagd-custom-config.sh"
-              - "$USER-local"
       after:
         - host:
             command:
