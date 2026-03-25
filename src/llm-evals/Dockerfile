@@ -33,6 +33,4 @@ COPY --from=builder /usr/src/app/dist/ dist/
 COPY --from=deps /usr/src/app/node_modules/ node_modules/
 COPY ./src/llm-evals/opentelemetry.js opentelemetry.js
 
-EXPOSE ${LLM_EVALS_PORT}
-
 CMD ["--require=./opentelemetry.js", "dist/index.js"]

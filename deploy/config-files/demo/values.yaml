@@ -28,6 +28,8 @@ components:
         value: 0.0.0.0
       - name: CHATBOT_PORT
         value: "8087"
+      - name: LLM_EVALS_PORT
+        value: "8088"
   flagd:
     # Load custom flags (chatbot.enabled, llm flags, etc.) from a second ConfigMap
     # managed by Pulumi, alongside the chart's built-in flagd-config.

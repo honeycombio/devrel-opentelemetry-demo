@@ -18,7 +18,14 @@ async function main() {
   await consumer.run({
     eachMessage: async ({ message }) => {
       if (!message.value) return;
-      const payload = JSON.parse(message.value.toString());
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      let payload: any;
+      try {
+        payload = JSON.parse(message.value.toString());
+      } catch {
+        console.warn('Skipping non-JSON message on llm-evals topic');
+        return;
+      }
       await evaluateChat(
         payload.traceId,
         payload.spanId,
