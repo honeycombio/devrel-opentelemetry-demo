@@ -155,6 +155,8 @@ config:
       endpoint: ${REFINERY_ENDPOINT}
       tls:
         insecure: true
+      headers:
+        x-honeycomb-team: ${HONEYCOMB_API_KEY}
     otlp/honeycomb:
       endpoint: api.honeycomb.io:443
       headers:
