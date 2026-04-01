@@ -1,18 +1,27 @@
 #!/bin/bash
 # Bump the release version tag
-# Usage: ./scripts/bump-release.sh <major|minor|patch>
+# Usage: ./scripts/bump-release.sh <major|minor|patch> [--yes]
 
 set -e
 
 BUMP_TYPE="${1:-}"
+AUTO_CONFIRM=false
+
+if [[ "${2:-}" == "--yes" || "${2:-}" == "-y" ]]; then
+    AUTO_CONFIRM=true
+fi
 
 if [[ -z "$BUMP_TYPE" ]]; then
-    echo "Usage: $0 <major|minor|patch>"
+    echo "Usage: $0 <major|minor|patch> [--yes]"
+    echo ""
+    echo "Options:"
+    echo "  --yes, -y  Skip confirmation prompts"
     echo ""
     echo "Examples:"
-    echo "  $0 patch   # 2.2.7-release -> 2.2.8-release"
-    echo "  $0 minor   # 2.2.7-release -> 2.3.0-release"
-    echo "  $0 major   # 2.2.7-release -> 3.0.0-release"
+    echo "  $0 patch         # 2.2.7-release -> 2.2.8-release"
+    echo "  $0 minor         # 2.2.7-release -> 2.3.0-release"
+    echo "  $0 major         # 2.2.7-release -> 3.0.0-release"
+    echo "  $0 patch --yes   # Non-interactive mode"
     exit 1
 fi
 
@@ -57,25 +66,31 @@ NEW_TAG="${MAJOR}.${MINOR}.${PATCH}-release"
 echo "New version: $NEW_TAG"
 echo ""
 
-# Confirm with user
-read -p "Create and push tag '$NEW_TAG'? [y/N] " -n 1 -r
-echo ""
-
-if [[ $REPLY =~ ^[Yy]$ ]]; then
+if [[ "$AUTO_CONFIRM" == true ]]; then
     git tag "$NEW_TAG"
     echo "Created tag: $NEW_TAG"
-    
-    read -p "Push tag to origin? [y/N] " -n 1 -r
-    echo ""
-    
-    if [[ $REPLY =~ ^[Yy]$ ]]; then
-        git push origin "$NEW_TAG"
-        echo "Pushed tag: $NEW_TAG"
-    else
-        echo "Tag created locally. Push manually with: git push origin $NEW_TAG"
-    fi
+    git push origin "$NEW_TAG"
+    echo "Pushed tag: $NEW_TAG"
 else
-    echo "Aborted."
-    exit 0
-fi
+    # Confirm with user
+    read -p "Create and push tag '$NEW_TAG'? [y/N] " -n 1 -r
+    echo ""
 
+    if [[ $REPLY =~ ^[Yy]$ ]]; then
+        git tag "$NEW_TAG"
+        echo "Created tag: $NEW_TAG"
+
+        read -p "Push tag to origin? [y/N] " -n 1 -r
+        echo ""
+
+        if [[ $REPLY =~ ^[Yy]$ ]]; then
+            git push origin "$NEW_TAG"
+            echo "Pushed tag: $NEW_TAG"
+        else
+            echo "Tag created locally. Push manually with: git push origin $NEW_TAG"
+        fi
+    else
+        echo "Aborted."
+        exit 0
+    fi
+fi
