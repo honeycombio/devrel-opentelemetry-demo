@@ -9,7 +9,7 @@ export interface CollectorArgs {
     secrets: HoneycombSecrets;
     valuesFile: string;
     useCustomCollector: boolean;
-    htpReleaseName: pulumi.Input<string>;
+    refineryHostname: pulumi.Input<string>;
 }
 
 export class Collector extends pulumi.ComponentResource {
@@ -55,8 +55,8 @@ export class Collector extends pulumi.ComponentResource {
                     }
                 },
                 {
-                    "name": "HTP_ENDPOINT",
-                    "value": pulumi.interpolate `${args.htpReleaseName}-primary-collector:4317`
+                    "name": "REFINERY_ENDPOINT",
+                    "value": pulumi.interpolate `${args.refineryHostname}:4317`
                 },
             ]
         }

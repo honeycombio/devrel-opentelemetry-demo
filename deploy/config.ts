@@ -7,7 +7,6 @@ import * as pulumi from "@pulumi/pulumi";
 export class DeploymentConfig {
     private readonly config: pulumi.Config;
 
-    public readonly htpBuilderConfig: HtpBuilderConfig = new HtpBuilderConfig();
     public readonly infraStack: pulumi.StackReference;
     public readonly versions: DeploymentVersions = new DeploymentVersions();
 
@@ -68,36 +67,15 @@ export class DeploymentConfig {
 
 }
 
-export class HtpBuilderConfig {
-    private readonly config: pulumi.Config;
-
-    public readonly pipelineId: string;
-    public readonly managementApiKeyId: string;
-    public readonly managementApiKeySecret: pulumi.Output<string>;
-    public readonly pipelineTelemetryKey: pulumi.Output<string>;
-
-    constructor() {
-        this.config = new pulumi.Config();
-
-        this.pipelineId = this.config.require("pipeline-id");
-        this.managementApiKeyId = this.config.require("pipeline-management-key-id");
-        this.managementApiKeySecret = this.config.requireSecret("pipeline-management-key-secret");
-        this.pipelineTelemetryKey = this.config.requireSecret("pipeline-telemetry-ingest-key");
-    }
-}
-
 export class DeploymentVersions {
     public readonly collectorHelmVersion: string;
     public readonly demoHelmVersion: string;
     public readonly refineryHelmVersion: string;
     public readonly defaultCollectorVersion: string;
-    public readonly htpBuilderHelmVersion: string;
-
     constructor() {
         this.collectorHelmVersion = "0.134.0";
         this.defaultCollectorVersion = "0.135.0";
         this.demoHelmVersion = "0.39.0";
         this.refineryHelmVersion = "2.17.0";
-        this.htpBuilderHelmVersion = "0.2.0";
     }
 }

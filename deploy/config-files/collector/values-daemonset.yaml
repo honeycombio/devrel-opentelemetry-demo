@@ -151,10 +151,14 @@ config:
             log_record:
                 - severity_number < SEVERITY_NUMBER_WARN
   exporters:
-    otlp/htp:
-      endpoint: ${HTP_ENDPOINT}
+    otlp/refinery:
+      endpoint: ${REFINERY_ENDPOINT}
       tls:
         insecure: true
+    otlp/honeycomb:
+      endpoint: api.honeycomb.io:443
+      headers:
+        x-honeycomb-team: ${HONEYCOMB_API_KEY}
     otlp/bindplane:
       endpoint: bindplane-node-agent.bindplane-agent:4317
       tls:
@@ -180,14 +184,14 @@ config:
     pipelines:
       metrics:
         exporters:
-          - otlp/htp
+          - otlp/honeycomb
           - otlp/metrics-dogfood
         processors:
           - transform/service_names
 
       logs:
         exporters:
-          - otlp/htp
+          - otlp/refinery
           - otlp/logging-dogfood
           - otlp/bindplane
         processors:
@@ -200,7 +204,7 @@ config:
 
       traces:
         exporters:
-          - otlp/htp
+          - otlp/refinery
           - otlp/traces-dogfood
           - otlp/bindplane
         processors:

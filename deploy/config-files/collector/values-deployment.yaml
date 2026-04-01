@@ -34,10 +34,14 @@ config:
             - set(severity_number, SEVERITY_NUMBER_INFO) where attributes["type"] == "Normal"
             - set(severity_number, SEVERITY_NUMBER_WARN) where attributes["type"] == "Warning"
   exporters:
-    otlp/htp:
-      endpoint: ${HTP_ENDPOINT}
+    otlp/refinery:
+      endpoint: ${REFINERY_ENDPOINT}
       tls:
         insecure: true
+    otlp/honeycomb:
+      endpoint: api.honeycomb.io:443
+      headers:
+        x-honeycomb-team: ${env:HONEYCOMB_API_KEY}
     otlp/logging-dogfood:
       endpoint: api-dogfood.honeycomb.io:443
       headers:
@@ -54,7 +58,7 @@ config:
     pipelines:
       metrics:
         exporters:
-          - otlp/htp
+          - otlp/honeycomb
           - otlp/metrics-dogfood
       logs:
         processors:
@@ -62,7 +66,7 @@ config:
           - transform/events
           - batch
         exporters:
-          - otlp/htp
+          - otlp/refinery
           - otlp/logging-dogfood
 
 clusterRole:

@@ -1,7 +1,7 @@
 import * as kubernetes from "@pulumi/kubernetes";
 import { Collector } from "./applications/collector";
 import { OtelDemo } from "./applications/oteldemo";
-import { HtpBuilder } from "./applications/htp-builder";
+import { Refinery } from "./applications/refinery";
 import { OtelServices } from "./applications/otel-services";
 import { PodIdentityAssociation } from "./applications/pod-identity-association";
 import { BedrockPodIdentityAssociation } from "./applications/bedrock-pia";
@@ -30,10 +30,11 @@ const honeycombSecrets = new HoneycombSecrets("honeycomb", {
     config: deployConfig
 }, { provider: provider });
 
-// Deploy HTP Builder first (collectors depend on it)
-const htpBuilder = new HtpBuilder("htp-builder", {
-    config: deployConfig,
-    namespace: demoNamespace.metadata.name
+// Deploy Refinery first (collectors depend on it)
+const refinery = new Refinery("refinery", {
+    refineryHelmVersion: deployConfig.versions.refineryHelmVersion,
+    namespace: demoNamespace.metadata.name,
+    telemetryApiKey: deployConfig.honeycombProdApiKey
 }, { provider: provider });
 
 var podTelemetryCollector = new Collector("pod-telemetry-collector", {
@@ -42,8 +43,8 @@ var podTelemetryCollector = new Collector("pod-telemetry-collector", {
     secrets: honeycombSecrets,
     valuesFile: "./config-files/collector/values-daemonset.yaml",
     useCustomCollector: true,
-    htpReleaseName: htpBuilder.releaseName
-}, { provider: provider, dependsOn: [htpBuilder] });
+    refineryHostname: refinery.refineryHostname
+}, { provider: provider, dependsOn: [refinery] });
 
 var clusterTelemetryCollector = new Collector("cluster-telemetry-collector", {
     config: deployConfig,
@@ -51,8 +52,8 @@ var clusterTelemetryCollector = new Collector("cluster-telemetry-collector", {
     secrets: honeycombSecrets,
     valuesFile: "./config-files/collector/values-deployment.yaml",
     useCustomCollector: false,
-    htpReleaseName: htpBuilder.releaseName
-}, { provider: provider, dependsOn: [htpBuilder] });
+    refineryHostname: refinery.refineryHostname
+}, { provider: provider, dependsOn: [refinery] });
 
 var demo = new OtelDemo("otel-demo", {
     config: deployConfig,
@@ -75,13 +76,6 @@ if (deployConfig.isAws) {
         namespace: demoNamespace.metadata.name,
         serviceAccountName: "cluster-telemetry-collector-opentelemetry-collector"
     }, { dependsOn: [clusterTelemetryCollector] });
-
-    // Associate S3 role with the htp-builder primary collector service account
-    new PodIdentityAssociation("htp-collector-s3", {
-        config: deployConfig,
-        namespace: demoNamespace.metadata.name,
-        serviceAccountName: "htp-builder-htp-builder-primary-collector"
-    }, { dependsOn: [htpBuilder] });
 
     // Associate Bedrock role with the demo service account when Bedrock is enabled
     if (deployConfig.enableBedrock) {
