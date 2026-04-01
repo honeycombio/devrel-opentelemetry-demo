@@ -13,10 +13,6 @@ const transport = pino.transport({
           protocol: 'grpc',
         }
       },
-      {
-        recordProcessorType: 'simple',
-        exporterOptions: { protocol: 'console' }
-      }
     ],
     loggerName: 'payment-logger',
     serviceVersion: '1.0.0'
