@@ -8,8 +8,8 @@ The OpenTelemetry demo app has **transient orders** (the accounting service pers
 2. Create API endpoints to query orders by email and by order ID
 3. Create refund capability that flows through the payment service
 4. Add a shipping status check endpoint (currently tracking IDs are fire-and-forget UUIDs)
-5. Build a chatbot **order sub-agent** that uses these APIs as tools
-6. Include an **error scenario** in the chatbot flow (shipping status check can fail)
+5. Build chatbot **sub-agents** (5 distinct agents) for order status and refund flows
+6. Include an **error scenario** on the refund path (payment service failure via feature flag)
 
 Email is optional at checkout (anonymous checkout stays fine). No passwords, no user accounts, no sign-in UI.
 
@@ -125,7 +125,7 @@ Add a new HTTP endpoint: **`GET /shipping-status/{trackingId}`**
 
 Returns a simulated shipping status randomly picked from: `"processing"`, `"shipped"`, `"in_transit"`, `"delivered"`. The status is deterministic per tracking ID (use the tracking ID as a hash seed) so repeated calls return the same status.
 
-**Error scenario via feature flag**: Add a `shippingStatusFailure` feature flag (via FlagD). When enabled, the endpoint returns HTTP 503 with a delay (simulating a downstream dependency failure). This gives the chatbot an error to handle gracefully, and creates interesting error traces.
+The status is simulated - no real shipping tracking. This endpoint is straightforward and always succeeds.
 
 ### Files to modify
 - `src/shipping/src/shipping_service.rs` - add `get_shipping_status` handler
@@ -168,86 +168,120 @@ HTTP routes that proxy to backend gRPC services. These are the tool-call endpoin
 
 ---
 
-## Phase 8: Chatbot Order Sub-Agent
+## Phase 8: Chatbot Sub-Agents for Order Flow
 
-Extend the existing chatbot (`src/chatbot/`) with an order-handling sub-agent, following the same multi-agent pattern as the existing product flow.
+The chatbot uses a **supervisor + sub-agent** pattern. Each step in the conversation spawns a **distinct sub-agent** with its own span, LLM call, and/or tool call. This creates rich, readable trace trees.
 
-### 8a. Scope classifier update (`src/chatbot/src/agents.ts`, ~line 199)
+### Target conversation flow
 
-Update `SCOPE_CLASSIFIER_PROMPT` to recognize order-related questions and return a category:
 ```
-Respond with: { "inScope": true, "category": "product" | "order" } or { "inScope": false }
+User:  "I haven't received my order, my email is alice@example.com"
+        → Intent Classifier    → "order_status"
+        → Order Lookup          → finds order, gets tracking ID
+        → Shipping Status       → queries shipping service
+        → Response Generator    → "Your order #X is due to ship on Monday"
 
-IN SCOPE (product): questions about products, prices, descriptions, availability, recommendations, comparisons.
-IN SCOPE (order): questions about orders, order status, shipping status, refunds, returns. Requires an email address or order ID.
+User:  "That's too late, I want a refund"
+        → Intent Classifier    → "refund"
+        → Refund Processor      → calls payment service (CAN FAIL)
+        → Response Generator    → "Certainly, your refund has been processed"
+                                   or "I'm sorry, I wasn't able to process your refund..."
 ```
 
-### 8b. New sub-agent: Order Agent (`src/chatbot/src/agents.ts`)
+### 8a. Sub-agent 1: Intent Classifier
 
-Tool-calling agent (same pattern as `fetchProductInfo`) with these tools:
+Determines what the user wants. Returns a structured classification.
 
+- **Span**: `invoke_agent intent_classifier`
+- **LLM call**: Single chat completion
+- **Prompt**: Classify the user's message into one of: `order_status`, `refund`, `product`, `out_of_scope`
+- **Output**: `{ "intent": "order_status" | "refund" | "product" | "out_of_scope" }`
+- **Replaces** the existing `classifyScope` for order-related flows
+
+### 8b. Sub-agent 2: Order Lookup
+
+Finds the customer's order and retrieves details. Tool-calling agent.
+
+- **Span**: `invoke_agent order_lookup`
+- **LLM call**: Chat with tools, potentially multi-turn
+- **Tools**:
+  - `lookup_orders` → `GET ${FRONTEND_ADDR}/api/orders?email={email}`
+  - `get_order` → `GET ${FRONTEND_ADDR}/api/orders/{orderId}`
+- **Output**: Order details JSON (order ID, tracking ID, items, status, etc.)
+- **Trace shape**: Chatbot → LLM → `execute_tool lookup_orders` → Frontend → Accounting → PostgreSQL
+
+### 8c. Sub-agent 3: Shipping Status Checker
+
+Checks shipping status for a specific tracking ID. Single tool call.
+
+- **Span**: `invoke_agent shipping_checker`
+- **LLM call**: Chat with tool
+- **Tool**: `check_shipping` → `GET ${FRONTEND_ADDR}/api/shipping/{trackingId}`
+- **Output**: Shipping status (processing / shipped / in_transit / delivered) with estimated dates
+- **Trace shape**: Chatbot → LLM → `execute_tool check_shipping` → Frontend → Shipping Service
+
+### 8d. Sub-agent 4: Refund Processor
+
+Processes a refund for an order. This is the **action** sub-agent — it mutates state.
+
+- **Span**: `invoke_agent refund_processor`
+- **LLM call**: Chat with tool
+- **Tool**: `refund_order` → `POST ${FRONTEND_ADDR}/api/orders/{orderId}/refund`
+- **Output**: Refund result (success + refund transaction ID, or error)
+- **Trace shape**: Chatbot → LLM → `execute_tool refund_order` → Frontend → Accounting → Payment Service → PostgreSQL
+- **Error scenario**: The Payment Service `Refund` RPC can fail via the `paymentServiceFailure` feature flag. When this happens:
+  - The tool returns an error result to the LLM
+  - The refund_processor span gets error status
+  - The trace shows: Chatbot → Accounting → Payment (ERROR) → back to Accounting (rolls back)
+  - The Response Generator receives the error context and explains the failure to the user
+
+### 8e. Sub-agent 5: Response Generator
+
+Composes the final human-readable answer from the data gathered by previous sub-agents. Same pattern as the existing product response generator.
+
+- **Span**: `invoke_agent response_generator`
+- **LLM call**: Single chat completion
+- **Input**: The user's question + context from previous sub-agents (order details, shipping status, or refund result)
+- **Output**: HTML-formatted response for the user
+- **Handles both success and error cases** — if the refund failed, it explains why and suggests next steps
+
+### 8f. Supervisor orchestration
+
+The supervisor routes based on intent and chains the appropriate sub-agents:
+
+```
+handleQuestion(question, conversationHistory)
+  │
+  ├─ Intent Classifier → intent
+  │
+  ├─ if "order_status":
+  │    Order Lookup → orderDetails
+  │    Shipping Status Checker → shippingStatus
+  │    Response Generator(orderDetails + shippingStatus) → answer
+  │
+  ├─ if "refund":
+  │    Order Lookup → orderDetails  (need order ID to refund)
+  │    Refund Processor(orderDetails) → refundResult (may error!)
+  │    Response Generator(refundResult) → answer
+  │
+  ├─ if "product": → existing product flow
+  └─ if "out_of_scope": → "Sorry, I can't help with that"
+```
+
+The supervisor needs **conversation history** so that on the second turn ("I want a refund"), it knows which order the user is talking about. The frontend passes conversation history with each request.
+
+### 8g. HTTP endpoint update (`src/chatbot/src/index.ts`)
+
+Update `/chat/question` to accept conversation history:
 ```typescript
-const ORDER_TOOLS = [
-  {
-    name: 'lookup_orders',
-    description: 'Find all orders for a customer by their email address.',
-    parameters: { type: 'object', properties: { email: { type: 'string' } }, required: ['email'] }
-  },
-  {
-    name: 'get_order',
-    description: 'Get details of a specific order by order ID.',
-    parameters: { type: 'object', properties: { order_id: { type: 'string' } }, required: ['order_id'] }
-  },
-  {
-    name: 'check_shipping',
-    description: 'Check the shipping status for a tracking ID.',
-    parameters: { type: 'object', properties: { tracking_id: { type: 'string' } }, required: ['tracking_id'] }
-  },
-  {
-    name: 'refund_order',
-    description: 'Process a refund for an order. Requires order ID and customer email for verification.',
-    parameters: { type: 'object', properties: { order_id: { type: 'string' }, email: { type: 'string' } }, required: ['order_id', 'email'] }
-  }
-];
+// Request body
+{ question: string, conversationHistory?: Array<{role: string, content: string}>, email?: string }
 ```
 
-The agent prompt instructs the LLM to:
-- Ask the customer for their email if not provided
-- Look up orders and provide status information
-- Check shipping status when asked (this is the call that can fail - the agent must handle the error gracefully)
-- Process refunds when requested, confirming with the customer first
+### 8h. Feature flags
 
-Tool implementations call the frontend API routes (same pattern as `doProductFetch`):
-- `lookup_orders` -> `GET ${FRONTEND_ADDR}/api/orders?email={email}`
-- `get_order` -> `GET ${FRONTEND_ADDR}/api/orders/{orderId}`
-- `check_shipping` -> `GET ${FRONTEND_ADDR}/api/shipping/{trackingId}` (**can return 503 error**)
-- `refund_order` -> `POST ${FRONTEND_ADDR}/api/orders/{orderId}/refund`
-
-### 8c. Error handling in chatbot
-
-When `check_shipping` returns a 503 (shipping service failure via feature flag):
-- The tool result returns an error message
-- The LLM should respond gracefully: "I'm sorry, the shipping status system is currently unavailable. Here's what I can tell you about your order..."
-- The span gets an error status, creating visible error traces in Honeycomb
-- This demonstrates: error propagation across services, graceful degradation, error traces
-
-### 8d. Supervisor update (`handleQuestion`, ~line 567)
-
-```
-1. Scope classifier -> { inScope, category }
-2. If category == "product" -> existing product flow
-3. If category == "order" -> order agent (tool-calling loop) -> response generator
-```
-
-The order agent may need **multiple tool-call turns** (e.g., first lookup orders, then check shipping for a specific order). This is a real agentic loop, unlike the product fetcher's hardcoded 2-turn pattern.
-
-### 8e. HTTP endpoint update (`src/chatbot/src/index.ts`)
-
-No changes needed to the `/chat/question` endpoint signature. The chatbot determines intent from the question text. The order agent extracts email/order ID from the conversation.
-
-### 8f. Feature flag
-
-Add `chatbot.orders.enabled` flag in FlagD config to gate the order capability independently.
+- `chatbot.orders.enabled` — gates the order flow (boolean)
+- `paymentServiceFailure` — existing-style flag, causes `PaymentService.Refund` to fail randomly (number 0-1 representing failure rate)
 
 ---
 
@@ -263,7 +297,7 @@ Add `chatbot.orders.enabled` flag in FlagD config to gate the order capability i
 - Add `ACCOUNTING_SERVICE_ADDR=accounting:${ACCOUNTING_SERVICE_PORT}`
 
 ### FlagD config
-- Add `shippingStatusFailure` flag (number 0-1 representing failure rate)
+- Add `paymentServiceFailure` flag (number 0-1 representing refund failure rate)
 - Add `chatbot.orders.enabled` flag (boolean)
 
 ---
@@ -305,8 +339,8 @@ Phases 2-5 can be done in parallel after Phase 1.
 | `src/payment/index.js` | Register new gRPC handlers |
 | `src/shipping/src/shipping_service.rs` | Add `/shipping-status/{trackingId}` endpoint |
 | `src/shipping/src/main.rs` | Register new route |
-| `src/chatbot/src/agents.ts` | Order sub-agent + updated scope classifier + supervisor |
-| `src/chatbot/src/index.ts` | Minor updates if needed |
+| `src/chatbot/src/agents.ts` | 5 new sub-agents: intent_classifier, order_lookup, shipping_checker, refund_processor, response_generator + supervisor update |
+| `src/chatbot/src/index.ts` | Accept conversationHistory in /chat/question |
 | **New:** `src/accounting/OrderServiceImpl.cs` | Order query + refund gRPC |
 | **New:** `src/frontend/gateways/rpc/Order.gateway.ts` | gRPC client for OrderService |
 | **New:** `src/frontend/pages/api/orders.ts` | GET orders by email |
@@ -327,29 +361,78 @@ Phases 2-5 can be done in parallel after Phase 1.
 5. **Refund flow**: `POST /api/orders/{orderId}/refund` -> payment service called -> order status updated
 6. **Refund guards**: Wrong email rejected, already-refunded rejected
 7. **Shipping status**: `GET /api/shipping/{trackingId}` returns simulated status
-8. **Shipping error**: Enable `shippingStatusFailure` flag -> endpoint returns 503
-9. **Chatbot - order lookup**: Ask "what are my orders?" -> chatbot asks for email -> returns order list
-10. **Chatbot - shipping check**: Ask "where is my order?" -> checks shipping status
-11. **Chatbot - shipping error**: With flag enabled, chatbot handles 503 gracefully
-12. **Chatbot - refund**: Ask "I want a refund" -> chatbot processes refund via tool call
-13. **Traces in Honeycomb**:
-    - Checkout: enriched with email, transaction_id
-    - Order query: Chatbot -> Frontend -> Accounting -> Payment -> PostgreSQL
-    - Refund: Chatbot -> Frontend -> Accounting -> Payment -> PostgreSQL
-    - Shipping error: Chatbot -> Frontend -> Shipping (503 error span)
+9. **Chatbot - order status flow**: "I haven't received my order" → spawns intent_classifier → order_lookup → shipping_checker → response_generator as separate sub-agent spans
+10. **Chatbot - refund flow**: "I want a refund" → spawns intent_classifier → order_lookup → refund_processor → response_generator as separate sub-agent spans
+11. **Chatbot - refund error**: Enable `paymentServiceFailure` flag → refund_processor tool call fails → response_generator explains the error
+12. **Traces in Honeycomb**:
+    - Each sub-agent visible as a distinct `invoke_agent` span under the supervisor
+    - Tool calls visible as `execute_tool` child spans within each sub-agent
+    - Error path: refund_processor span has error status, Payment Service span shows the failure
+    - 5 sub-agent spans per turn, creating a wide trace tree
 
-## Chatbot Tool Call Summary
+## Chatbot Sub-Agents Summary
+
+| Sub-Agent | Tools | When Used |
+|-----------|-------|-----------|
+| Intent Classifier | (none - LLM only) | Every turn |
+| Order Lookup | `lookup_orders`, `get_order` | Order status + refund flows |
+| Shipping Status Checker | `check_shipping` | Order status flow |
+| Refund Processor | `refund_order` | Refund flow (can error!) |
+| Response Generator | (none - LLM only) | Every turn |
+
+## Tool Endpoints
 
 | Tool | Endpoint | Purpose |
 |------|----------|---------|
 | `lookup_orders` | `GET /api/orders?email={email}` | Find all orders for a customer |
 | `get_order` | `GET /api/orders/{orderId}` | Get order details + payment status |
-| `check_shipping` | `GET /api/shipping/{trackingId}` | Check shipping status (can fail!) |
+| `check_shipping` | `GET /api/shipping/{trackingId}` | Check shipping status |
 | `refund_order` | `POST /api/orders/{orderId}/refund` | Process refund via payment service |
 
-## Interesting Trace Topologies
+## Trace Topologies
 
-1. **Happy path order query**: Chatbot -> LLM (classify) -> LLM (order agent + tool calls) -> Frontend -> Accounting -> Payment -> PostgreSQL -> LLM (response generator) -> User
-2. **Shipping error path**: Same as above but Shipping returns 503 -> error span -> LLM gracefully handles -> User gets partial answer
-3. **Refund**: Chatbot -> LLM -> Frontend -> Accounting -> Payment (refund) -> PostgreSQL (status update) -> LLM -> User
-4. **Multi-turn agent**: Order agent calls `lookup_orders`, then `get_order`, then `check_shipping` in sequence - multiple tool-call turns visible as child spans
+### Turn 1: "I haven't received my order"
+```
+supervisor
+  ├─ invoke_agent intent_classifier
+  │    └─ chat intent_classifier (LLM)          → "order_status"
+  ├─ invoke_agent order_lookup
+  │    ├─ chat order_lookup (LLM)                → calls lookup_orders tool
+  │    ├─ execute_tool lookup_orders              → Frontend → Accounting → PostgreSQL
+  │    └─ chat order_lookup (LLM)                → returns order data
+  ├─ invoke_agent shipping_checker
+  │    ├─ chat shipping_checker (LLM)            → calls check_shipping tool
+  │    ├─ execute_tool check_shipping             → Frontend → Shipping Service
+  │    └─ chat shipping_checker (LLM)            → returns shipping status
+  └─ invoke_agent response_generator
+       └─ chat response_generator (LLM)          → "Your order is due to ship Monday"
+```
+
+### Turn 2 (happy): "That's too late, I want a refund"
+```
+supervisor
+  ├─ invoke_agent intent_classifier
+  │    └─ chat intent_classifier (LLM)          → "refund"
+  ├─ invoke_agent order_lookup
+  │    └─ (uses order from conversation context, or re-fetches)
+  ├─ invoke_agent refund_processor
+  │    ├─ chat refund_processor (LLM)            → calls refund_order tool
+  │    ├─ execute_tool refund_order               → Frontend → Accounting → Payment → PostgreSQL
+  │    └─ chat refund_processor (LLM)            → returns refund confirmation
+  └─ invoke_agent response_generator
+       └─ chat response_generator (LLM)          → "Certainly, your refund has been processed"
+```
+
+### Turn 2 (error): Refund fails via payment service feature flag
+```
+supervisor
+  ├─ invoke_agent intent_classifier              → "refund"
+  ├─ invoke_agent order_lookup                   → order details
+  ├─ invoke_agent refund_processor
+  │    ├─ chat refund_processor (LLM)            → calls refund_order tool
+  │    ├─ execute_tool refund_order               → Frontend → Accounting → Payment (ERROR!) 
+  │    │                                            ↑ PaymentService.Refund fails
+  │    └─ chat refund_processor (LLM)            → returns error context
+  └─ invoke_agent response_generator
+       └─ chat response_generator (LLM)          → "I'm sorry, I wasn't able to process your refund..."
+```
