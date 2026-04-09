@@ -15,7 +15,7 @@ components:
       port: 5060
     envOverrides:
       - name: PAYMENT_ADDR
-        value: payment:50051
+        value: payment:8080
       - name: ACCOUNTING_SERVICE_PORT
         value: "5060"
       - name: ASPNETCORE_URLS
