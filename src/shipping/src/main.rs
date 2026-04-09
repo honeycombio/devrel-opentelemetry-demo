@@ -9,7 +9,7 @@ use tracing::info;
 mod telemetry_conf;
 use telemetry_conf::init_otel;
 mod shipping_service;
-use shipping_service::{get_quote, ship_order};
+use shipping_service::{get_quote, get_shipping_status, ship_order};
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
@@ -49,6 +49,7 @@ async fn main() -> std::io::Result<()> {
             .wrap(RequestMetrics::default())
             .service(get_quote)
             .service(ship_order)
+            .service(get_shipping_status)
     })
     .bind(&addr)?
     .run()
