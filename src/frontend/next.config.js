@@ -13,6 +13,7 @@ const myEnv = dotEnv.config({
 dotenvExpand.expand(myEnv);
 
 const {
+  ACCOUNTING_ADDR = '',
   AD_ADDR = '',
   CART_ADDR = '',
   CHECKOUT_ADDR = '',
@@ -52,6 +53,7 @@ const nextConfig = {
     return config;
   },
   env: {
+    ACCOUNTING_ADDR,
     AD_ADDR,
     CART_ADDR,
     CHECKOUT_ADDR,
