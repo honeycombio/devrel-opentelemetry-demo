@@ -215,6 +215,8 @@ message CurrencyConversionRequest {
 
 service PaymentService {
     rpc Charge(ChargeRequest) returns (ChargeResponse) {}
+    rpc Refund(RefundRequest) returns (RefundResponse) {}
+    rpc GetPaymentStatus(GetPaymentStatusRequest) returns (PaymentStatus) {}
 }
 
 message CreditCardInfo {
@@ -231,6 +233,26 @@ message ChargeRequest {
 
 message ChargeResponse {
     string transaction_id = 1;
+}
+
+message RefundRequest {
+    string transaction_id = 1;
+    Money amount = 2;
+}
+
+message RefundResponse {
+    string refund_transaction_id = 1;
+    bool success = 2;
+}
+
+message GetPaymentStatusRequest {
+    string transaction_id = 1;
+}
+
+message PaymentStatus {
+    string transaction_id = 1;
+    string status = 2;
+    Money amount = 3;
 }
 
 // -------------Email service-----------------
@@ -250,6 +272,10 @@ message OrderResult {
     Money shipping_cost = 3;
     Address  shipping_address = 4;
     repeated OrderItem items = 5;
+    string   user_id = 6;
+    string   email = 7;
+    string   transaction_id = 8;
+    Money    total_cost = 9;
 }
 
 message SendOrderConfirmationRequest {
@@ -275,6 +301,49 @@ message PlaceOrderRequest {
 
 message PlaceOrderResponse {
     OrderResult order = 1;
+}
+
+// -------------Order service-----------------
+
+service OrderService {
+    rpc GetOrdersByEmail(GetOrdersByEmailRequest) returns (GetOrdersByEmailResponse) {}
+    rpc GetOrder(GetOrderRequest) returns (OrderDetail) {}
+    rpc RefundOrder(RefundOrderRequest) returns (RefundOrderResponse) {}
+}
+
+message GetOrdersByEmailRequest {
+    string email = 1;
+}
+
+message GetOrdersByEmailResponse {
+    repeated OrderDetail orders = 1;
+}
+
+message GetOrderRequest {
+    string order_id = 1;
+}
+
+message OrderDetail {
+    string order_id = 1;
+    string email = 2;
+    string status = 3;
+    Money total_cost = 4;
+    string shipping_tracking_id = 5;
+    Address shipping_address = 6;
+    repeated OrderItem items = 7;
+    string created_at = 8;
+    string transaction_id = 9;
+}
+
+message RefundOrderRequest {
+    string order_id = 1;
+    string email = 2;
+}
+
+message RefundOrderResponse {
+    bool success = 1;
+    string status = 2;
+    string refund_transaction_id = 3;
 }
 
 // ------------Ad service------------------
