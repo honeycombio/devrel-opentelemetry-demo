@@ -1,7 +1,6 @@
-<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk.Web">
 
 	<PropertyGroup>
-		<OutputType>Exe</OutputType>
 		<TargetFramework>net8.0</TargetFramework>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
@@ -18,13 +17,13 @@
 		</PackageReference>
 		<PackageReference Include="Microsoft.Extensions.Logging" Version="9.0.7" />
 		<PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.22.1" />
+		<PackageReference Include="Grpc.AspNetCore" Version="2.67.0" />
 		<PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="9.0.4" />
 		<PackageReference Include="OpenTelemetry.AutoInstrumentation" Version="1.12.0" />
 	</ItemGroup>
 
 	<ItemGroup>
-		<!-- GrpcServices is 'none' so that we do not need to depend on the grpc nuget package, and we only need protobuf support. -->
-		<Protobuf Include="src\protos\demo.proto" GrpcServices="none" />
+		<Protobuf Include="src\protos\demo.proto" GrpcServices="Both" />
 	</ItemGroup>
 
 	<ItemGroup>
