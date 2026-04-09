@@ -49,6 +49,10 @@ services:
         condition: service_started
       kafka:
         condition: service_healthy
+      postgresql:
+        condition: service_started
+      payment:
+        condition: service_started
     logging: *logging
 
   # AdService
