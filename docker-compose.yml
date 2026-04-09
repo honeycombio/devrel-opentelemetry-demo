@@ -31,14 +31,19 @@ services:
         limits:
           memory: 120M
     restart: unless-stopped
+    ports:
+      - "${ACCOUNTING_SERVICE_PORT}"
     environment:
+      - ACCOUNTING_SERVICE_PORT
       - KAFKA_ADDR
+      - PAYMENT_ADDR
       - OTEL_EXPORTER_OTLP_ENDPOINT=http://${OTEL_COLLECTOR_HOST}:${OTEL_COLLECTOR_PORT_HTTP}
       - OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE
       - OTEL_RESOURCE_ATTRIBUTES
       - OTEL_SERVICE_NAME=accounting
       - DB_CONNECTION_STRING=Host=${POSTGRES_HOST};Username=otelu;Password=otelp;Database=${POSTGRES_DB}
       - OTEL_DOTNET_AUTO_TRACES_ENTITYFRAMEWORKCORE_INSTRUMENTATION_ENABLED=false
+      - ASPNETCORE_URLS=http://*:${ACCOUNTING_SERVICE_PORT}
     depends_on:
       otel-collector:
         condition: service_started
@@ -291,6 +296,7 @@ services:
       - PRODUCT_REVIEWS_ADDR
       - RECOMMENDATION_ADDR
       - SHIPPING_ADDR
+      - ACCOUNTING_ADDR
       - OTEL_EXPORTER_OTLP_ENDPOINT
       - OTEL_RESOURCE_ATTRIBUTES
       - ENV_PLATFORM
@@ -317,6 +323,8 @@ services:
       recommendation:
         condition: service_started
       shipping:
+        condition: service_started
+      accounting:
         condition: service_started
       otel-collector:
         condition: service_started

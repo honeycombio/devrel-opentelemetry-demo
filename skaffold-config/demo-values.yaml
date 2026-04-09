@@ -10,6 +10,16 @@ default:
   # List of environment variables applied to all components
 
 components:
+  accounting:
+    service:
+      port: 5060
+    envOverrides:
+      - name: PAYMENT_ADDR
+        value: payment:50051
+      - name: ACCOUNTING_SERVICE_PORT
+        value: "5060"
+      - name: ASPNETCORE_URLS
+        value: "http://*:5060"
   load-generator:
     replicas: 1
   frontend:
@@ -20,6 +30,8 @@ components:
         value: product-reviews:3551
       - name: CHATBOT_ADDR
         value: http://chatbot:8087
+      - name: ACCOUNTING_ADDR
+        value: accounting:5060
       - name: ENV_PLATFORM
         value: local
   frontend-proxy:
