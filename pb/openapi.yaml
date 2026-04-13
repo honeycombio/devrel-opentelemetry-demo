@@ -1,0 +1,587 @@
+# Copyright The OpenTelemetry Authors
+# SPDX-License-Identifier: Apache-2.0
+
+openapi: 3.0.3
+info:
+  title: OpenTelemetry Demo - Telescope Shop API
+  description: Public REST API for the OpenTelemetry Demo e-commerce application (Telescope Shop).
+  version: 1.0.0
+  license:
+    name: Apache 2.0
+    url: https://www.apache.org/licenses/LICENSE-2.0
+
+paths:
+  /api/products:
+    get:
+      operationId: listProducts
+      summary: List all products
+      tags: [Products]
+      parameters:
+        - name: currencyCode
+          in: query
+          schema: { type: string }
+          description: ISO 4217 currency code for price conversion (e.g. USD, EUR)
+      responses:
+        '200':
+          description: Array of all products
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Product'
+
+  /api/products/{productId}:
+    get:
+      operationId: getProduct
+      summary: Get a single product by ID
+      tags: [Products]
+      parameters:
+        - name: productId
+          in: path
+          required: true
+          schema: { type: string }
+        - name: currencyCode
+          in: query
+          schema: { type: string }
+          description: ISO 4217 currency code for price conversion
+      responses:
+        '200':
+          description: Product detail
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Product'
+
+  /api/recommendations:
+    get:
+      operationId: getRecommendations
+      summary: Get product recommendations
+      tags: [Products]
+      parameters:
+        - name: productIds[]
+          in: query
+          schema:
+            type: array
+            items: { type: string }
+          description: Product IDs to base recommendations on
+        - name: sessionId
+          in: query
+          schema: { type: string }
+        - name: currencyCode
+          in: query
+          schema: { type: string }
+      responses:
+        '200':
+          description: Recommended products
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Product'
+
+  /api/cart:
+    get:
+      operationId: getCart
+      summary: Get the shopping cart for a session
+      tags: [Cart]
+      parameters:
+        - name: sessionId
+          in: query
+          required: true
+          schema: { type: string }
+        - name: currencyCode
+          in: query
+          schema: { type: string }
+      responses:
+        '200':
+          description: Cart with product details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Cart'
+    post:
+      operationId: addToCart
+      summary: Add an item to the cart
+      tags: [Cart]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [userId, item]
+              properties:
+                userId:
+                  type: string
+                item:
+                  $ref: '#/components/schemas/CartItem'
+      responses:
+        '200':
+          description: Updated cart
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Cart'
+    delete:
+      operationId: emptyCart
+      summary: Empty the cart
+      tags: [Cart]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [userId]
+              properties:
+                userId:
+                  type: string
+      responses:
+        '204':
+          description: Cart emptied
+
+  /api/checkout:
+    post:
+      operationId: placeOrder
+      summary: Place an order (checkout)
+      tags: [Orders]
+      parameters:
+        - name: currencyCode
+          in: query
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PlaceOrderRequest'
+      responses:
+        '200':
+          description: Order result with tracking and cost details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderResult'
+
+  /api/orders:
+    get:
+      operationId: getOrdersByEmail
+      summary: Find all orders for a customer by email
+      tags: [Orders]
+      parameters:
+        - name: email
+          in: query
+          required: true
+          schema: { type: string }
+          description: Customer email address
+      responses:
+        '200':
+          description: Array of orders (empty array if none found)
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/OrderDetail'
+
+  /api/orders/{orderId}:
+    get:
+      operationId: getOrderDetail
+      summary: Get full order details including live payment status
+      tags: [Orders]
+      parameters:
+        - name: orderId
+          in: path
+          required: true
+          schema: { type: string }
+          description: UUID order identifier
+      responses:
+        '200':
+          description: Order detail with items, shipping, and payment status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderDetail'
+
+  /api/orders/{orderId}/refund:
+    post:
+      operationId: refundOrder
+      summary: Process a refund for an order
+      description: |
+        Refunds the order via the payment service. Requires email for customer verification.
+        Can fail if: email doesn't match, order is already refunded, or payment service error
+        (controllable via the paymentServiceRefundFailure feature flag).
+      tags: [Orders]
+      parameters:
+        - name: orderId
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email]
+              properties:
+                email:
+                  type: string
+                  description: Customer email for verification — must match the order
+      responses:
+        '200':
+          description: Refund processed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RefundResponse'
+        '500':
+          description: Refund failed (wrong email, already refunded, or payment service error)
+
+  /api/shipping:
+    get:
+      operationId: getShippingQuote
+      summary: Get a shipping cost quote
+      tags: [Shipping]
+      parameters:
+        - name: itemList
+          in: query
+          required: true
+          schema: { type: string }
+          description: JSON-stringified array of CartItem objects
+        - name: address
+          in: query
+          required: true
+          schema: { type: string }
+          description: JSON-stringified Address object
+        - name: currencyCode
+          in: query
+          schema: { type: string, default: USD }
+      responses:
+        '200':
+          description: Shipping cost
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Money'
+
+  /api/shipping/{trackingId}:
+    get:
+      operationId: checkShippingStatus
+      summary: Check shipping status for a tracking ID
+      description: Returns a simulated shipping status. Status is deterministic per tracking ID.
+      tags: [Shipping]
+      parameters:
+        - name: trackingId
+          in: path
+          required: true
+          schema: { type: string }
+          description: Shipping tracking ID (UUID from the order's shippingTrackingId)
+      responses:
+        '200':
+          description: Shipping status with estimated delivery
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ShippingStatus'
+
+  /api/currency:
+    get:
+      operationId: listCurrencies
+      summary: List supported currency codes
+      tags: [Currency]
+      responses:
+        '200':
+          description: Array of ISO 4217 currency codes
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+                example: ["USD", "EUR", "JPY", "GBP", "CAD"]
+
+  /api/data:
+    get:
+      operationId: getAds
+      summary: Get contextual advertisements
+      tags: [Ads]
+      parameters:
+        - name: contextKeys[]
+          in: query
+          schema:
+            type: array
+            items: { type: string }
+          description: Context keywords for ad targeting
+      responses:
+        '200':
+          description: Array of ads
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Ad'
+
+  /api/product-reviews/{productId}:
+    get:
+      operationId: getProductReviews
+      summary: Get reviews for a product
+      tags: [Reviews]
+      parameters:
+        - name: productId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Array of product reviews
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ProductReview'
+
+  /api/product-reviews-avg-score/{productId}:
+    get:
+      operationId: getProductReviewAvgScore
+      summary: Get the average review score for a product
+      tags: [Reviews]
+      parameters:
+        - name: productId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Average score as a string
+          content:
+            application/json:
+              schema:
+                type: string
+                example: "4.2"
+
+components:
+  schemas:
+    Money:
+      type: object
+      properties:
+        currencyCode:
+          type: string
+          description: ISO 4217 3-letter currency code
+          example: USD
+        units:
+          type: integer
+          format: int64
+          description: Whole units of the amount (e.g. dollars)
+          example: 175
+        nanos:
+          type: integer
+          format: int32
+          description: Fractional units in nano (10^-9). 500000000 = 0.50
+          example: 0
+
+    Address:
+      type: object
+      properties:
+        streetAddress:
+          type: string
+          example: "410 Terry Ave N"
+        city:
+          type: string
+          example: Seattle
+        state:
+          type: string
+          example: WA
+        country:
+          type: string
+          example: United States
+        zipCode:
+          type: string
+          example: "98109"
+
+    CartItem:
+      type: object
+      required: [productId, quantity]
+      properties:
+        productId:
+          type: string
+          example: "OLJCESPC7Z"
+        quantity:
+          type: integer
+          example: 2
+
+    Product:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "OLJCESPC7Z"
+        name:
+          type: string
+          example: "Explorascope 114AZ Telescope"
+        description:
+          type: string
+        picture:
+          type: string
+        priceUsd:
+          $ref: '#/components/schemas/Money'
+        categories:
+          type: array
+          items: { type: string }
+
+    Cart:
+      type: object
+      properties:
+        userId:
+          type: string
+        items:
+          type: array
+          items:
+            type: object
+            properties:
+              productId:
+                type: string
+              quantity:
+                type: integer
+              product:
+                $ref: '#/components/schemas/Product'
+
+    PlaceOrderRequest:
+      type: object
+      required: [userId, email, address, creditCard]
+      properties:
+        userId:
+          type: string
+        userCurrency:
+          type: string
+        email:
+          type: string
+        address:
+          $ref: '#/components/schemas/Address'
+        creditCard:
+          type: object
+          properties:
+            creditCardNumber:
+              type: string
+              example: "4432-8015-6152-0454"
+            creditCardCvv:
+              type: integer
+              example: 672
+            creditCardExpirationYear:
+              type: integer
+              example: 2030
+            creditCardExpirationMonth:
+              type: integer
+              example: 1
+
+    OrderResult:
+      type: object
+      properties:
+        orderId:
+          type: string
+          format: uuid
+        shippingTrackingId:
+          type: string
+          format: uuid
+        shippingCost:
+          $ref: '#/components/schemas/Money'
+        shippingAddress:
+          $ref: '#/components/schemas/Address'
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrderItem'
+        userId:
+          type: string
+        email:
+          type: string
+        transactionId:
+          type: string
+        totalCost:
+          $ref: '#/components/schemas/Money'
+
+    OrderItem:
+      type: object
+      properties:
+        item:
+          $ref: '#/components/schemas/CartItem'
+        cost:
+          $ref: '#/components/schemas/Money'
+
+    OrderDetail:
+      type: object
+      properties:
+        orderId:
+          type: string
+          format: uuid
+        email:
+          type: string
+        status:
+          type: string
+          description: '"completed", "charged", or "refunded"'
+          example: completed
+        totalCost:
+          $ref: '#/components/schemas/Money'
+        shippingTrackingId:
+          type: string
+          format: uuid
+        shippingAddress:
+          $ref: '#/components/schemas/Address'
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrderItem'
+        createdAt:
+          type: string
+          format: date-time
+        transactionId:
+          type: string
+
+    RefundResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        status:
+          type: string
+          example: refunded
+        refundTransactionId:
+          type: string
+          format: uuid
+
+    ShippingStatus:
+      type: object
+      properties:
+        tracking_id:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [processing, shipped, in_transit, delivered]
+        estimated_delivery:
+          type: string
+          format: date
+          example: "2026-04-15"
+
+    Ad:
+      type: object
+      properties:
+        redirectUrl:
+          type: string
+        text:
+          type: string
+
+    ProductReview:
+      type: object
+      properties:
+        username:
+          type: string
+        description:
+          type: string
+        score:
+          type: string
+          example: "4.5"
