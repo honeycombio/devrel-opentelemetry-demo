@@ -7,6 +7,9 @@ the release.
 
 ## Unreleased
 
+* [telemetry-docs] Add a new service to provide telemetry documentation based
+  on Weaver
+  ([#2794](https://github.com/open-telemetry/opentelemetry-demo/pull/2794))
 * [feat] add ipv6 support
   ([#2594](https://github.com/open-telemetry/opentelemetry-demo/pull/2594))
 * [chore] Use pre-built nginx otel image
