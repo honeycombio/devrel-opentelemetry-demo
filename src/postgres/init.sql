@@ -131,3 +131,8 @@ VALUES
     ('HQTGWGPNH4', 'ancient_texts', 'Such a unique and intriguing read. The historical context is captivating. It offers a different perspective on celestial events.', '4.0'),
     ('HQTGWGPNH4', 'celestial_history', 'I love historical astronomy, and this book delivers. It''s well-researched and provides a window into past beliefs. Highly recommended for scholars.', '5.0'),
     ('HQTGWGPNH4', 'rare_find', 'A truly special book for enthusiasts of astronomical history. The details about ancient astrologers are very interesting. Great for a deeper understanding.', '4.5');
+
+-- pg_cron: expire orders older than 48 hours (runs every hour)
+CREATE EXTENSION IF NOT EXISTS pg_cron;
+SELECT cron.schedule('expire-orders', '0 * * * *',
+    $$DELETE FROM accounting."order" WHERE created_at < NOW() - INTERVAL '48 hours'$$);
