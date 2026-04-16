@@ -76,11 +76,4 @@ jobs:
           IS_IN_PIPELINE: true
           AWS_REGION: ${{ env.AWS_REGION }}
 
-      - name: Extract and upload js sourcemaps to S3
-        run: ./scripts/extract-and-upload-js-sourcemaps-s3.sh
-        env:
-          REPO: ghcr.io/${{ github.repository }}
-          CONTAINER_PATH: /app/.next/static/
-          S3_BUCKET: ${{ steps.pulumi-deploy-aws.outputs.s3BucketName }}
-          S3_PREFIX: source-maps
-          VERSION: ${{ github.event.inputs.version }}
+

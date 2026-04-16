@@ -30,7 +30,6 @@ const {
 
 const nextConfig = {
   reactStrictMode: true,
-  productionBrowserSourceMaps: true,
   output: 'standalone',
   compiler: {
     styledComponents: true,
