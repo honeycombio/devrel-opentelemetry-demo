@@ -39,6 +39,10 @@ components:
         value: 0.0.0.0
       - name: CHATBOT_PORT
         value: "8087"
+      - name: STORE_CHAT_HOST
+        value: "store-chat"
+      - name: STORE_CHAT_PORT
+        value: "8080"
       - name: LLM_EVALS_PORT
         value: "8088"
   flagd:

@@ -72,6 +72,10 @@ jobs:
             tag_suffix: chatbot
             context: ./
             setup-qemu: true
+          - file: ./src/storechat/Dockerfile
+            tag_suffix: storechat
+            context: ./
+            setup-qemu: true
           - file: ./src/llm-evals/Dockerfile
             tag_suffix: llm-evals
             context: ./
