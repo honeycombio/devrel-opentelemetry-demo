@@ -55,3 +55,10 @@ pub struct ShipOrderRequest {
 pub struct ShipOrderResponse {
     pub tracking_id: String,
 }
+
+#[derive(Debug, Serialize)]
+pub struct ShippingStatusResponse {
+    pub tracking_id: String,
+    pub status: String,
+    pub estimated_delivery: String,
+}

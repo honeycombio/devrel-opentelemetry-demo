@@ -1,7 +1,8 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-use actix_web::{post, web, HttpResponse, Responder};
+use actix_web::{get, post, web, HttpResponse, Responder};
+use chrono::{Duration, Utc};
 use tracing::info;
 
 mod quote;
@@ -53,6 +54,34 @@ pub async fn ship_order(_req: web::Json<ShipOrderRequest>) -> impl Responder {
         message = "Tracking ID Created"
     );
     HttpResponse::Ok().json(ShipOrderResponse { tracking_id: tid })
+}
+
+#[get("/shipping-status/{trackingId}")]
+pub async fn get_shipping_status(tracking_id: web::Path<String>) -> impl Responder {
+    let tracking_id = tracking_id.into_inner();
+    let hash: usize = tracking_id.bytes().map(|b| b as usize).sum();
+
+    let statuses = ["processing", "shipped", "in_transit", "delivered"];
+    let status = statuses[hash % 4];
+
+    let days_ahead = (hash % 7) as i64;
+    let estimated_delivery = (Utc::now() + Duration::days(days_ahead))
+        .format("%Y-%m-%d")
+        .to_string();
+
+    info!(
+        name = "GetShippingStatus",
+        tracking_id = tracking_id.as_str(),
+        status = status,
+        estimated_delivery = estimated_delivery.as_str(),
+        message = "Shipping status retrieved"
+    );
+
+    HttpResponse::Ok().json(ShippingStatusResponse {
+        tracking_id,
+        status: status.to_string(),
+        estimated_delivery,
+    })
 }
 
 #[cfg(test)]

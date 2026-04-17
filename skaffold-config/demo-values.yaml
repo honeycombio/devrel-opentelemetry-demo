@@ -10,6 +10,16 @@ default:
   # List of environment variables applied to all components
 
 components:
+  accounting:
+    service:
+      port: 5060
+    envOverrides:
+      - name: PAYMENT_ADDR
+        value: payment:8080
+      - name: ACCOUNTING_SERVICE_PORT
+        value: "5060"
+      - name: ASPNETCORE_URLS
+        value: "http://*:5060"
   load-generator:
     replicas: 1
   frontend:
@@ -20,6 +30,8 @@ components:
         value: product-reviews:3551
       - name: CHATBOT_ADDR
         value: http://chatbot:8087
+      - name: ACCOUNTING_ADDR
+        value: accounting:5060
       - name: ENV_PLATFORM
         value: local
   frontend-proxy:
@@ -29,6 +41,10 @@ components:
         value: 0.0.0.0
       - name: CHATBOT_PORT
         value: "8087"
+      - name: STORE_CHAT_HOST
+        value: "store-chat"
+      - name: STORE_CHAT_PORT
+        value: "8080"
       - name: LLM_EVALS_PORT
         value: "8088"
 
@@ -122,6 +138,22 @@ opentelemetry-collector:
               - set(attributes["trace.trace_id"], attributes["trace_id"])
               - set(attributes["trace.parent_id"], attributes["span_id"])
               - set(attributes["meta.annotation_type"], "span_event")
+      transform/genai_span_events_to_attributes:
+        error_mode: ignore
+        trace_statements:
+          - context: spanevent
+            conditions:
+              - IsMatch(name, "^gen_ai\\..*")
+            statements:
+              - set(span.attributes["gen_ai.input.messages"], attributes["gen_ai.input.messages"]) where attributes["gen_ai.input.messages"] != nil
+              - set(span.attributes["gen_ai.output.messages"], attributes["gen_ai.output.messages"]) where attributes["gen_ai.output.messages"] != nil
+              - set(span.attributes["gen_ai.system_instructions"], attributes["gen_ai.system_instructions"]) where attributes["gen_ai.system_instructions"] != nil
+              - set(span.attributes["gen_ai.usage.input_tokens"], attributes["gen_ai.usage.input_tokens"]) where attributes["gen_ai.usage.input_tokens"] != nil
+              - set(span.attributes["gen_ai.usage.output_tokens"], attributes["gen_ai.usage.output_tokens"]) where attributes["gen_ai.usage.output_tokens"] != nil
+              - set(span.attributes["gen_ai.usage.total_tokens"], attributes["gen_ai.usage.total_tokens"]) where attributes["gen_ai.usage.total_tokens"] != nil
+              - set(span.attributes["gen_ai.response.finish_reasons"], attributes["gen_ai.response.finish_reasons"]) where attributes["gen_ai.response.finish_reasons"] != nil
+              - set(span.attributes["gen_ai.request.model"], attributes["gen_ai.request.model"]) where attributes["gen_ai.request.model"] != nil
+              - set(span.attributes["gen_ai.operation.name"], attributes["gen_ai.operation.name"]) where attributes["gen_ai.operation.name"] != nil
       transform/service_names:
         error_mode: ignore
         log_statements:
@@ -159,20 +191,6 @@ opentelemetry-collector:
           - context: log
             statements:
               - set(resource.attributes["service.name"], "api-gateway") where resource.attributes["k8s.container.name"] == "frontend"
-      source_map_symbolicator/aws:
-        allowed_languages: ["javascript", "webjs"]
-        source_map_store: s3_store
-        s3_source_maps:
-          bucket: ${env:SOURCE_MAPS_BUCKET}
-          region: ${env:AWS_REGION}
-          prefix: ${env:SOURCE_MAPS_PREFIX}
-      source_map_symbolicator/azure:
-        allowed_languages: ["javascript", "webjs"]
-        source_map_store: azure_store
-        azure_source_maps:
-          container: ${env:SOURCEMAPS_CONTAINER_NAME}
-          prefix: source-maps
-          connection_string: ${env:SOURCEMAPS_STORAGE_CONNECTION_STRING}
     exporters:
       debug/detailed:
         verbosity: detailed
@@ -221,9 +239,9 @@ opentelemetry-collector:
             - otlp/honeycomb
             - spanmetrics
           processors:
+            - transform/genai_span_events_to_attributes
             - transform/service_names
             - transform/attribution
-            - source_map_symbolicator/${env:CLOUD_PROVIDER}
   ports:
     otlp:
       hostPort: 0

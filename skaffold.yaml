@@ -24,6 +24,10 @@ build:
       context: .
       docker:
         dockerfile: src/chatbot/Dockerfile
+    - image: storechat
+      context: .
+      docker:
+        dockerfile: src/storechat/Dockerfile
     - image: llm-evals
       context: .
       docker:
@@ -52,18 +56,6 @@ build:
       context: .
       docker:
         dockerfile: src/frontend/Dockerfile
-      hooks:
-        after:
-          - command:
-              - "./scripts/extract-and-upload-js-sourcemaps-s3.sh"
-              - "--repo"
-              - "$SKAFFOLD_IMAGE_REPO"
-              - "--container-path"
-              - "/app/.next/static/"
-              - "--version"
-              - "$SKAFFOLD_IMAGE_TAG"
-              - "--prefix"
-              - "$SOURCE_MAPS_PREFIX"
     - image: frontendproxy
       context: .
       docker:
@@ -146,9 +138,7 @@ deploy:
             extraEnvs:
               - name: HONEYCOMB_API_KEY
               - name: CLOUD_PROVIDER
-              - name: SOURCE_MAPS_BUCKET
               - name: AWS_REGION
-              - name: SOURCE_MAPS_PREFIX
               - name: NAMESPACE
                 valueFrom:
                   fieldRef:
@@ -156,9 +146,6 @@ deploy:
         setValueTemplates:
           opentelemetry-collector.extraEnvs[0].value: "{{.HONEYCOMB_API_KEY}}"
           opentelemetry-collector.extraEnvs[1].value: "{{.CLOUD_PROVIDER}}"
-          opentelemetry-collector.extraEnvs[2].value: "{{.SOURCE_MAPS_BUCKET}}"
-          opentelemetry-collector.extraEnvs[3].value: "{{.SOURCE_MAPS_BUCKET_REGION}}"
-          opentelemetry-collector.extraEnvs[4].value: "{{if .IMAGE_REPO_frontend}}{{.SOURCE_MAPS_PREFIX}}/static/chunks{{else}}source-maps/static/chunks{{end}}"
           opentelemetry-collector.clusterRole.name: "{{.USER}}-otel-collector"
           opentelemetry-collector.clusterRole.clusterRoleBinding.name: "{{.USER}}-otel-collector"
           opentelemetry-collector.image.repository: "{{if .IMAGE_REPO_otelcollector }}{{.IMAGE_REPO_otelcollector}}{{else}}ghcr.io/honeycombio/devrel-opentelemetry-demo{{end}}"
@@ -220,6 +207,10 @@ deploy:
           services.chatbot.kafkaAddr: "kafka:9092"
           services.chatbot.imageOverride.repository: "{{if .IMAGE_REPO_chatbot }}{{.IMAGE_REPO_chatbot}}{{end}}"
           services.chatbot.imageOverride.tag: "{{if .IMAGE_REPO_chatbot }}{{.IMAGE_TAG_chatbot}}@{{.IMAGE_DIGEST_chatbot}}{{end}}"
+          services.storechat.awsRegion: "{{.BEDROCK_AWS_REGION}}"
+          services.storechat.bedrockSonnetProfileArn: "{{.BEDROCK_SONNET_PROFILE_ARN}}"
+          services.storechat.imageOverride.repository: "{{if .IMAGE_REPO_storechat }}{{.IMAGE_REPO_storechat}}{{end}}"
+          services.storechat.imageOverride.tag: "{{if .IMAGE_REPO_storechat }}{{.IMAGE_TAG_storechat}}@{{.IMAGE_DIGEST_storechat}}{{end}}"
           services.llmEvals.awsRegion: "{{.BEDROCK_AWS_REGION}}"
           services.llmEvals.bedrockHaikuProfileArn: "{{.BEDROCK_HAIKU_PROFILE_ARN}}"
           services.llmEvals.kafkaAddr: "kafka:9092"

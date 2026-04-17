@@ -31,19 +31,28 @@ services:
         limits:
           memory: 120M
     restart: unless-stopped
+    ports:
+      - "${ACCOUNTING_SERVICE_PORT}"
     environment:
+      - ACCOUNTING_SERVICE_PORT
       - KAFKA_ADDR
+      - PAYMENT_ADDR
       - OTEL_EXPORTER_OTLP_ENDPOINT=http://${OTEL_COLLECTOR_HOST}:${OTEL_COLLECTOR_PORT_HTTP}
       - OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE
       - OTEL_RESOURCE_ATTRIBUTES
       - OTEL_SERVICE_NAME=accounting
       - DB_CONNECTION_STRING=Host=${POSTGRES_HOST};Username=otelu;Password=otelp;Database=${POSTGRES_DB}
       - OTEL_DOTNET_AUTO_TRACES_ENTITYFRAMEWORKCORE_INSTRUMENTATION_ENABLED=false
+      - ASPNETCORE_URLS=http://*:${ACCOUNTING_SERVICE_PORT}
     depends_on:
       otel-collector:
         condition: service_started
       kafka:
         condition: service_healthy
+      postgresql:
+        condition: service_started
+      payment:
+        condition: service_started
     logging: *logging
 
   # AdService
@@ -291,6 +300,7 @@ services:
       - PRODUCT_REVIEWS_ADDR
       - RECOMMENDATION_ADDR
       - SHIPPING_ADDR
+      - ACCOUNTING_ADDR
       - OTEL_EXPORTER_OTLP_ENDPOINT
       - OTEL_RESOURCE_ATTRIBUTES
       - ENV_PLATFORM
@@ -317,6 +327,8 @@ services:
       recommendation:
         condition: service_started
       shipping:
+        condition: service_started
+      accounting:
         condition: service_started
       otel-collector:
         condition: service_started
@@ -366,6 +378,8 @@ services:
       - FLAGD_PORT
       - FLAGD_UI_HOST
       - FLAGD_UI_PORT
+      - STORE_CHAT_HOST
+      - STORE_CHAT_PORT
     depends_on:
       frontend:
         condition: service_started
@@ -810,6 +824,42 @@ services:
       - "${VALKEY_PORT}"
     logging: *logging
 
+
+  # Store Chat (Strands Agents)
+  store-chat:
+    image: ${IMAGE_NAME}:${DEMO_VERSION}-storechat
+    container_name: store-chat
+    build:
+      context: ./
+      dockerfile: src/storechat/Dockerfile
+      cache_from:
+        - ${IMAGE_NAME}:${IMAGE_VERSION}-storechat
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+    restart: unless-stopped
+    ports:
+      - "${STORE_CHAT_PORT}"
+    environment:
+      - STORE_CHAT_PORT
+      - ACCOUNTING_ADDR=accounting:${ACCOUNTING_SERVICE_PORT}
+      - SHIPPING_ADDR=http://shipping:${SHIPPING_SERVICE_PORT}
+      - VALKEY_ADDR=valkey-cart:${VALKEY_PORT}
+      - AWS_REGION=${AWS_REGION:-us-west-2}
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://${OTEL_COLLECTOR_HOST}:${OTEL_COLLECTOR_PORT_GRPC}
+      - OTEL_RESOURCE_ATTRIBUTES
+      - OTEL_SERVICE_NAME=store-chat
+      - OTEL_SEMCONV_STABILITY_OPT_IN=gen_ai_latest_experimental
+      - BEDROCK_SONNET_PROFILE_ARN=${BEDROCK_SONNET_PROFILE_ARN:-}
+      - FLAGD_HOST
+      - FLAGD_PORT
+    depends_on:
+      frontend:
+        condition: service_started
+      valkey-cart:
+        condition: service_started
+    logging: *logging
 
   # ********************
   # Telemetry Components

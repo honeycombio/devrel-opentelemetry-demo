@@ -9,34 +9,31 @@ using System.Diagnostics;
 
 namespace Accounting;
 
-internal class DBContext : DbContext
+internal class AccountingDbContext : DbContext
 {
     public DbSet<OrderEntity> Orders { get; set; }
     public DbSet<OrderItemEntity> CartItems { get; set; }
     public DbSet<ShippingEntity> Shipping { get; set; }
 
-    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+    public AccountingDbContext(DbContextOptions<AccountingDbContext> options) : base(options)
     {
-        var connectionString = Environment.GetEnvironmentVariable("DB_CONNECTION_STRING");
-
-        optionsBuilder.UseNpgsql(connectionString).UseSnakeCaseNamingConvention();
     }
 }
 
 
-internal class Consumer : IDisposable
+internal class Consumer : BackgroundService
 {
     private const string TopicName = "orders";
 
-    private ILogger _logger;
-    private IConsumer<string, byte[]> _consumer;
-    private bool _isListening;
-    private DBContext? _dbContext;
+    private readonly ILogger _logger;
+    private readonly IConsumer<string, byte[]> _consumer;
+    private readonly IDbContextFactory<AccountingDbContext>? _dbContextFactory;
     private static readonly ActivitySource MyActivitySource = new("Accounting.Consumer");
 
-    public Consumer(ILogger<Consumer> logger)
+    public Consumer(ILogger<Consumer> logger, IDbContextFactory<AccountingDbContext>? dbContextFactory = null)
     {
         _logger = logger;
+        _dbContextFactory = dbContextFactory;
 
         var servers = Environment.GetEnvironmentVariable("KAFKA_ADDR")
             ?? throw new ArgumentNullException("KAFKA_ADDR");
@@ -45,35 +42,37 @@ internal class Consumer : IDisposable
         _consumer.Subscribe(TopicName);
 
         _logger.LogInformation($"Connecting to Kafka: {servers}");
-        _dbContext = Environment.GetEnvironmentVariable("DB_CONNECTION_STRING") == null ? null : new DBContext();
     }
 
-    public void StartListening()
+    protected override Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        _isListening = true;
-
-        try
+        return Task.Run(() =>
         {
-            while (_isListening)
+            try
             {
-                try
+                while (!stoppingToken.IsCancellationRequested)
                 {
-                    using var activity = MyActivitySource.StartActivity("order-consumed",  ActivityKind.Internal);
-                    var consumeResult = _consumer.Consume();
-                    ProcessMessage(consumeResult.Message);
-                }
-                catch (ConsumeException e)
-                {
-                    _logger.LogError(e, "Consume error: {0}", e.Error.Reason);
+                    try
+                    {
+                        using var activity = MyActivitySource.StartActivity("order-consumed", ActivityKind.Internal);
+                        var consumeResult = _consumer.Consume(stoppingToken);
+                        ProcessMessage(consumeResult.Message);
+                    }
+                    catch (ConsumeException e)
+                    {
+                        _logger.LogError(e, "Consume error: {0}", e.Error.Reason);
+                    }
                 }
             }
-        }
-        catch (OperationCanceledException)
-        {
-            _logger.LogInformation("Closing consumer");
-
-            _consumer.Close();
-        }
+            catch (OperationCanceledException)
+            {
+                _logger.LogInformation("Closing consumer");
+            }
+            finally
+            {
+                _consumer.Close();
+            }
+        }, stoppingToken);
     }
 
     private void ProcessMessage(Message<string, byte[]> message)
@@ -83,16 +82,24 @@ internal class Consumer : IDisposable
             var order = OrderResult.Parser.ParseFrom(message.Value);
             Log.OrderReceivedMessage(_logger, order);
 
-            if (_dbContext == null)
+            if (_dbContextFactory == null)
             {
                 return;
             }
 
+            using var dbContext = _dbContextFactory.CreateDbContext();
+
             var orderEntity = new OrderEntity
             {
-                Id = order.OrderId
+                Id = order.OrderId,
+                Email = string.IsNullOrEmpty(order.Email) ? null : order.Email,
+                UserId = string.IsNullOrEmpty(order.UserId) ? null : order.UserId,
+                TransactionId = string.IsNullOrEmpty(order.TransactionId) ? null : order.TransactionId,
+                TotalCostCurrencyCode = order.TotalCost?.CurrencyCode,
+                TotalCostUnits = order.TotalCost?.Units,
+                TotalCostNanos = order.TotalCost?.Nanos,
             };
-            _dbContext.Add(orderEntity);
+            dbContext.Add(orderEntity);
             foreach (var item in order.Items)
             {
                 var orderItem = new OrderItemEntity
@@ -105,7 +112,7 @@ internal class Consumer : IDisposable
                     OrderId = order.OrderId
                 };
 
-                _dbContext.Add(orderItem);
+                dbContext.Add(orderItem);
             }
 
             var shipping = new ShippingEntity
@@ -121,8 +128,8 @@ internal class Consumer : IDisposable
                 ZipCode = order.ShippingAddress.ZipCode,
                 OrderId = order.OrderId
             };
-            _dbContext.Add(shipping);
-            _dbContext.SaveChanges();
+            dbContext.Add(shipping);
+            dbContext.SaveChanges();
         }
         catch (Exception ex)
         {
@@ -143,11 +150,5 @@ internal class Consumer : IDisposable
 
         return new ConsumerBuilder<string, byte[]>(conf)
             .Build();
-    }
-
-    public void Dispose()
-    {
-        _isListening = false;
-        _consumer?.Dispose();
     }
 }

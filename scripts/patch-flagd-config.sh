@@ -43,6 +43,27 @@ patch_flag "llm.performEvals" '{
   "defaultVariant": "off"
 }'
 
+patch_flag "paymentServiceRefundFailure" '{
+  "description": "Fail payment service refund requests n%",
+  "state": "ENABLED",
+  "variants": { "100%": 1, "90%": 0.95, "75%": 0.75, "50%": 0.5, "25%": 0.25, "10%": 0.1, "off": 0 },
+  "defaultVariant": "off"
+}'
+
+patch_flag "chatbot.orders.enabled" '{
+  "description": "Enable chatbot order status and refund flow",
+  "state": "ENABLED",
+  "variants": { "on": true, "off": false },
+  "defaultVariant": "off"
+}'
+
+patch_flag "storechatConversationFailure" '{
+  "description": "Simulate conversation store failures in store chat (1-in-5 when enabled)",
+  "state": "ENABLED",
+  "variants": { "on": true, "off": false },
+  "defaultVariant": "off"
+}'
+
 echo "Restarting flagd to pick up new config..."
 kubectl rollout restart deployment flagd -n "$NAMESPACE"
 kubectl rollout status deployment flagd -n "$NAMESPACE" --timeout=60s

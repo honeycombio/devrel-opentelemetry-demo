@@ -23,6 +23,13 @@ const sdk = new opentelemetry.NodeSDK({
       '@opentelemetry/instrumentation-fs': {
         enabled: false,
       },
+      // disable dns/net instrumentation — produces low-signal spans for every request
+      '@opentelemetry/instrumentation-dns': {
+        enabled: false,
+      },
+      '@opentelemetry/instrumentation-net': {
+        enabled: false,
+      },
     }),
     new BunyanInstrumentation(),
   ],
