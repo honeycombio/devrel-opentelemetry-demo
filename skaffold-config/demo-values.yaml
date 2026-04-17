@@ -138,11 +138,6 @@ opentelemetry-collector:
               - set(attributes["trace.trace_id"], attributes["trace_id"])
               - set(attributes["trace.parent_id"], attributes["span_id"])
               - set(attributes["meta.annotation_type"], "span_event")
-      filter/drop_noisy_spans:
-        error_mode: ignore
-        traces:
-          span:
-            - name == "dns.lookup" or name == "tcp.connect"
       transform/genai_span_events_to_attributes:
         error_mode: ignore
         trace_statements:
@@ -244,7 +239,6 @@ opentelemetry-collector:
             - otlp/honeycomb
             - spanmetrics
           processors:
-            - filter/drop_noisy_spans
             - transform/genai_span_events_to_attributes
             - transform/service_names
             - transform/attribution

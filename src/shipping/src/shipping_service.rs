@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use actix_web::{get, post, web, HttpResponse, Responder};
-use std::time::{SystemTime, UNIX_EPOCH};
+use chrono::{Duration, Utc};
 use tracing::info;
 
 mod quote;
@@ -64,25 +64,10 @@ pub async fn get_shipping_status(tracking_id: web::Path<String>) -> impl Respond
     let statuses = ["processing", "shipped", "in_transit", "delivered"];
     let status = statuses[hash % 4];
 
-    let day_offset = (hash % 7) as u64;
-    let secs = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .unwrap_or_default()
-        .as_secs()
-        + day_offset * 86400;
-    let days_since_epoch = secs / 86400;
-    // Civil date from days since epoch (algorithm from Howard Hinnant)
-    let z = days_since_epoch as i64 + 719468;
-    let era = z.div_euclid(146097);
-    let doe = z.rem_euclid(146097) as u64;
-    let yoe = (doe - doe / 1460 + doe / 36524 - doe / 146096) / 365;
-    let y = yoe as i64 + era * 400;
-    let doy = doe - (365 * yoe + yoe / 4 - yoe / 100);
-    let mp = (5 * doy + 2) / 153;
-    let d = doy - (153 * mp + 2) / 5 + 1;
-    let m = if mp < 10 { mp + 3 } else { mp - 9 };
-    let y = if m <= 2 { y + 1 } else { y };
-    let estimated_delivery = format!("{:04}-{:02}-{:02}", y, m, d);
+    let days_ahead = (hash % 7) as i64;
+    let estimated_delivery = (Utc::now() + Duration::days(days_ahead))
+        .format("%Y-%m-%d")
+        .to_string();
 
     info!(
         name = "GetShippingStatus",

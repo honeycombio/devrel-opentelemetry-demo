@@ -267,26 +267,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/Money'
 
-  /api/shipping/{trackingId}:
-    get:
-      operationId: checkShippingStatus
-      summary: Check shipping status for a tracking ID
-      description: Returns a simulated shipping status. Status is deterministic per tracking ID.
-      tags: [Shipping]
-      parameters:
-        - name: trackingId
-          in: path
-          required: true
-          schema: { type: string }
-          description: Shipping tracking ID (UUID from the order's shippingTrackingId)
-      responses:
-        '200':
-          description: Shipping status with estimated delivery
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ShippingStatus'
-
   /api/currency:
     get:
       operationId: listCurrencies
@@ -552,20 +532,6 @@ components:
         refundTransactionId:
           type: string
           format: uuid
-
-    ShippingStatus:
-      type: object
-      properties:
-        tracking_id:
-          type: string
-          format: uuid
-        status:
-          type: string
-          enum: [processing, shipped, in_transit, delivered]
-        estimated_delivery:
-          type: string
-          format: date
-          example: "2026-04-15"
 
     Ad:
       type: object
