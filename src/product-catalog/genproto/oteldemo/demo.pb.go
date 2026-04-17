@@ -1609,6 +1609,7 @@ type RefundRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	TransactionId string                 `protobuf:"bytes,1,opt,name=transaction_id,json=transactionId,proto3" json:"transaction_id,omitempty"`
 	Amount        *Money                 `protobuf:"bytes,2,opt,name=amount,proto3" json:"amount,omitempty"`
+	Email         string                 `protobuf:"bytes,3,opt,name=email,proto3" json:"email,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1655,6 +1656,13 @@ func (x *RefundRequest) GetAmount() *Money {
 		return x.Amount
 	}
 	return nil
+}
+
+func (x *RefundRequest) GetEmail() string {
+	if x != nil {
+		return x.Email
+	}
+	return ""
 }
 
 type RefundResponse struct {
@@ -3241,10 +3249,11 @@ const file_demo_proto_rawDesc = "" +
 	"\vcredit_card\x18\x02 \x01(\v2\x18.oteldemo.CreditCardInfoR\n" +
 	"creditCard\"7\n" +
 	"\x0eChargeResponse\x12%\n" +
-	"\x0etransaction_id\x18\x01 \x01(\tR\rtransactionId\"_\n" +
+	"\x0etransaction_id\x18\x01 \x01(\tR\rtransactionId\"u\n" +
 	"\rRefundRequest\x12%\n" +
 	"\x0etransaction_id\x18\x01 \x01(\tR\rtransactionId\x12'\n" +
-	"\x06amount\x18\x02 \x01(\v2\x0f.oteldemo.MoneyR\x06amount\"^\n" +
+	"\x06amount\x18\x02 \x01(\v2\x0f.oteldemo.MoneyR\x06amount\x12\x14\n" +
+	"\x05email\x18\x03 \x01(\tR\x05email\"^\n" +
 	"\x0eRefundResponse\x122\n" +
 	"\x15refund_transaction_id\x18\x01 \x01(\tR\x13refundTransactionId\x12\x18\n" +
 	"\asuccess\x18\x02 \x01(\bR\asuccess\"@\n" +

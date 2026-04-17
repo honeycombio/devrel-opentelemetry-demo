@@ -196,6 +196,7 @@ export interface ChargeResponse {
 export interface RefundRequest {
   transactionId: string;
   amount: Money | undefined;
+  email: string;
 }
 
 export interface RefundResponse {
@@ -2604,7 +2605,7 @@ export const ChargeResponse: MessageFns<ChargeResponse> = {
 };
 
 function createBaseRefundRequest(): RefundRequest {
-  return { transactionId: "", amount: undefined };
+  return { transactionId: "", amount: undefined, email: "" };
 }
 
 export const RefundRequest: MessageFns<RefundRequest> = {
@@ -2614,6 +2615,9 @@ export const RefundRequest: MessageFns<RefundRequest> = {
     }
     if (message.amount !== undefined) {
       Money.encode(message.amount, writer.uint32(18).fork()).join();
+    }
+    if (message.email !== "") {
+      writer.uint32(26).string(message.email);
     }
     return writer;
   },
@@ -2641,6 +2645,14 @@ export const RefundRequest: MessageFns<RefundRequest> = {
           message.amount = Money.decode(reader, reader.uint32());
           continue;
         }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.email = reader.string();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -2654,6 +2666,7 @@ export const RefundRequest: MessageFns<RefundRequest> = {
     return {
       transactionId: isSet(object.transactionId) ? globalThis.String(object.transactionId) : "",
       amount: isSet(object.amount) ? Money.fromJSON(object.amount) : undefined,
+      email: isSet(object.email) ? globalThis.String(object.email) : "",
     };
   },
 
@@ -2664,6 +2677,9 @@ export const RefundRequest: MessageFns<RefundRequest> = {
     }
     if (message.amount !== undefined) {
       obj.amount = Money.toJSON(message.amount);
+    }
+    if (message.email !== "") {
+      obj.email = message.email;
     }
     return obj;
   },
@@ -2677,6 +2693,7 @@ export const RefundRequest: MessageFns<RefundRequest> = {
     message.amount = (object.amount !== undefined && object.amount !== null)
       ? Money.fromPartial(object.amount)
       : undefined;
+    message.email = object.email ?? "";
     return message;
   },
 };

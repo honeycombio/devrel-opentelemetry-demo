@@ -2569,11 +2569,29 @@ class PaymentService final {
     std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::oteldemo::ChargeResponse>> PrepareAsyncCharge(::grpc::ClientContext* context, const ::oteldemo::ChargeRequest& request, ::grpc::CompletionQueue* cq) {
       return std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::oteldemo::ChargeResponse>>(PrepareAsyncChargeRaw(context, request, cq));
     }
+    virtual ::grpc::Status Refund(::grpc::ClientContext* context, const ::oteldemo::RefundRequest& request, ::oteldemo::RefundResponse* response) = 0;
+    std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::oteldemo::RefundResponse>> AsyncRefund(::grpc::ClientContext* context, const ::oteldemo::RefundRequest& request, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::oteldemo::RefundResponse>>(AsyncRefundRaw(context, request, cq));
+    }
+    std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::oteldemo::RefundResponse>> PrepareAsyncRefund(::grpc::ClientContext* context, const ::oteldemo::RefundRequest& request, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::oteldemo::RefundResponse>>(PrepareAsyncRefundRaw(context, request, cq));
+    }
+    virtual ::grpc::Status GetPaymentStatus(::grpc::ClientContext* context, const ::oteldemo::GetPaymentStatusRequest& request, ::oteldemo::PaymentStatus* response) = 0;
+    std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::oteldemo::PaymentStatus>> AsyncGetPaymentStatus(::grpc::ClientContext* context, const ::oteldemo::GetPaymentStatusRequest& request, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::oteldemo::PaymentStatus>>(AsyncGetPaymentStatusRaw(context, request, cq));
+    }
+    std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::oteldemo::PaymentStatus>> PrepareAsyncGetPaymentStatus(::grpc::ClientContext* context, const ::oteldemo::GetPaymentStatusRequest& request, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::oteldemo::PaymentStatus>>(PrepareAsyncGetPaymentStatusRaw(context, request, cq));
+    }
     class async_interface {
      public:
       virtual ~async_interface() {}
       virtual void Charge(::grpc::ClientContext* context, const ::oteldemo::ChargeRequest* request, ::oteldemo::ChargeResponse* response, std::function<void(::grpc::Status)>) = 0;
       virtual void Charge(::grpc::ClientContext* context, const ::oteldemo::ChargeRequest* request, ::oteldemo::ChargeResponse* response, ::grpc::ClientUnaryReactor* reactor) = 0;
+      virtual void Refund(::grpc::ClientContext* context, const ::oteldemo::RefundRequest* request, ::oteldemo::RefundResponse* response, std::function<void(::grpc::Status)>) = 0;
+      virtual void Refund(::grpc::ClientContext* context, const ::oteldemo::RefundRequest* request, ::oteldemo::RefundResponse* response, ::grpc::ClientUnaryReactor* reactor) = 0;
+      virtual void GetPaymentStatus(::grpc::ClientContext* context, const ::oteldemo::GetPaymentStatusRequest* request, ::oteldemo::PaymentStatus* response, std::function<void(::grpc::Status)>) = 0;
+      virtual void GetPaymentStatus(::grpc::ClientContext* context, const ::oteldemo::GetPaymentStatusRequest* request, ::oteldemo::PaymentStatus* response, ::grpc::ClientUnaryReactor* reactor) = 0;
     };
     typedef class async_interface experimental_async_interface;
     virtual class async_interface* async() { return nullptr; }
@@ -2581,6 +2599,10 @@ class PaymentService final {
    private:
     virtual ::grpc::ClientAsyncResponseReaderInterface< ::oteldemo::ChargeResponse>* AsyncChargeRaw(::grpc::ClientContext* context, const ::oteldemo::ChargeRequest& request, ::grpc::CompletionQueue* cq) = 0;
     virtual ::grpc::ClientAsyncResponseReaderInterface< ::oteldemo::ChargeResponse>* PrepareAsyncChargeRaw(::grpc::ClientContext* context, const ::oteldemo::ChargeRequest& request, ::grpc::CompletionQueue* cq) = 0;
+    virtual ::grpc::ClientAsyncResponseReaderInterface< ::oteldemo::RefundResponse>* AsyncRefundRaw(::grpc::ClientContext* context, const ::oteldemo::RefundRequest& request, ::grpc::CompletionQueue* cq) = 0;
+    virtual ::grpc::ClientAsyncResponseReaderInterface< ::oteldemo::RefundResponse>* PrepareAsyncRefundRaw(::grpc::ClientContext* context, const ::oteldemo::RefundRequest& request, ::grpc::CompletionQueue* cq) = 0;
+    virtual ::grpc::ClientAsyncResponseReaderInterface< ::oteldemo::PaymentStatus>* AsyncGetPaymentStatusRaw(::grpc::ClientContext* context, const ::oteldemo::GetPaymentStatusRequest& request, ::grpc::CompletionQueue* cq) = 0;
+    virtual ::grpc::ClientAsyncResponseReaderInterface< ::oteldemo::PaymentStatus>* PrepareAsyncGetPaymentStatusRaw(::grpc::ClientContext* context, const ::oteldemo::GetPaymentStatusRequest& request, ::grpc::CompletionQueue* cq) = 0;
   };
   class Stub final : public StubInterface {
    public:
@@ -2592,11 +2614,29 @@ class PaymentService final {
     std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::oteldemo::ChargeResponse>> PrepareAsyncCharge(::grpc::ClientContext* context, const ::oteldemo::ChargeRequest& request, ::grpc::CompletionQueue* cq) {
       return std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::oteldemo::ChargeResponse>>(PrepareAsyncChargeRaw(context, request, cq));
     }
+    ::grpc::Status Refund(::grpc::ClientContext* context, const ::oteldemo::RefundRequest& request, ::oteldemo::RefundResponse* response) override;
+    std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::oteldemo::RefundResponse>> AsyncRefund(::grpc::ClientContext* context, const ::oteldemo::RefundRequest& request, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::oteldemo::RefundResponse>>(AsyncRefundRaw(context, request, cq));
+    }
+    std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::oteldemo::RefundResponse>> PrepareAsyncRefund(::grpc::ClientContext* context, const ::oteldemo::RefundRequest& request, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::oteldemo::RefundResponse>>(PrepareAsyncRefundRaw(context, request, cq));
+    }
+    ::grpc::Status GetPaymentStatus(::grpc::ClientContext* context, const ::oteldemo::GetPaymentStatusRequest& request, ::oteldemo::PaymentStatus* response) override;
+    std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::oteldemo::PaymentStatus>> AsyncGetPaymentStatus(::grpc::ClientContext* context, const ::oteldemo::GetPaymentStatusRequest& request, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::oteldemo::PaymentStatus>>(AsyncGetPaymentStatusRaw(context, request, cq));
+    }
+    std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::oteldemo::PaymentStatus>> PrepareAsyncGetPaymentStatus(::grpc::ClientContext* context, const ::oteldemo::GetPaymentStatusRequest& request, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::oteldemo::PaymentStatus>>(PrepareAsyncGetPaymentStatusRaw(context, request, cq));
+    }
     class async final :
       public StubInterface::async_interface {
      public:
       void Charge(::grpc::ClientContext* context, const ::oteldemo::ChargeRequest* request, ::oteldemo::ChargeResponse* response, std::function<void(::grpc::Status)>) override;
       void Charge(::grpc::ClientContext* context, const ::oteldemo::ChargeRequest* request, ::oteldemo::ChargeResponse* response, ::grpc::ClientUnaryReactor* reactor) override;
+      void Refund(::grpc::ClientContext* context, const ::oteldemo::RefundRequest* request, ::oteldemo::RefundResponse* response, std::function<void(::grpc::Status)>) override;
+      void Refund(::grpc::ClientContext* context, const ::oteldemo::RefundRequest* request, ::oteldemo::RefundResponse* response, ::grpc::ClientUnaryReactor* reactor) override;
+      void GetPaymentStatus(::grpc::ClientContext* context, const ::oteldemo::GetPaymentStatusRequest* request, ::oteldemo::PaymentStatus* response, std::function<void(::grpc::Status)>) override;
+      void GetPaymentStatus(::grpc::ClientContext* context, const ::oteldemo::GetPaymentStatusRequest* request, ::oteldemo::PaymentStatus* response, ::grpc::ClientUnaryReactor* reactor) override;
      private:
       friend class Stub;
       explicit async(Stub* stub): stub_(stub) { }
@@ -2610,7 +2650,13 @@ class PaymentService final {
     class async async_stub_{this};
     ::grpc::ClientAsyncResponseReader< ::oteldemo::ChargeResponse>* AsyncChargeRaw(::grpc::ClientContext* context, const ::oteldemo::ChargeRequest& request, ::grpc::CompletionQueue* cq) override;
     ::grpc::ClientAsyncResponseReader< ::oteldemo::ChargeResponse>* PrepareAsyncChargeRaw(::grpc::ClientContext* context, const ::oteldemo::ChargeRequest& request, ::grpc::CompletionQueue* cq) override;
+    ::grpc::ClientAsyncResponseReader< ::oteldemo::RefundResponse>* AsyncRefundRaw(::grpc::ClientContext* context, const ::oteldemo::RefundRequest& request, ::grpc::CompletionQueue* cq) override;
+    ::grpc::ClientAsyncResponseReader< ::oteldemo::RefundResponse>* PrepareAsyncRefundRaw(::grpc::ClientContext* context, const ::oteldemo::RefundRequest& request, ::grpc::CompletionQueue* cq) override;
+    ::grpc::ClientAsyncResponseReader< ::oteldemo::PaymentStatus>* AsyncGetPaymentStatusRaw(::grpc::ClientContext* context, const ::oteldemo::GetPaymentStatusRequest& request, ::grpc::CompletionQueue* cq) override;
+    ::grpc::ClientAsyncResponseReader< ::oteldemo::PaymentStatus>* PrepareAsyncGetPaymentStatusRaw(::grpc::ClientContext* context, const ::oteldemo::GetPaymentStatusRequest& request, ::grpc::CompletionQueue* cq) override;
     const ::grpc::internal::RpcMethod rpcmethod_Charge_;
+    const ::grpc::internal::RpcMethod rpcmethod_Refund_;
+    const ::grpc::internal::RpcMethod rpcmethod_GetPaymentStatus_;
   };
   static std::unique_ptr<Stub> NewStub(const std::shared_ptr< ::grpc::ChannelInterface>& channel, const ::grpc::StubOptions& options = ::grpc::StubOptions());
 
@@ -2619,6 +2665,8 @@ class PaymentService final {
     Service();
     virtual ~Service();
     virtual ::grpc::Status Charge(::grpc::ServerContext* context, const ::oteldemo::ChargeRequest* request, ::oteldemo::ChargeResponse* response);
+    virtual ::grpc::Status Refund(::grpc::ServerContext* context, const ::oteldemo::RefundRequest* request, ::oteldemo::RefundResponse* response);
+    virtual ::grpc::Status GetPaymentStatus(::grpc::ServerContext* context, const ::oteldemo::GetPaymentStatusRequest* request, ::oteldemo::PaymentStatus* response);
   };
   template <class BaseClass>
   class WithAsyncMethod_Charge : public BaseClass {
@@ -2640,7 +2688,47 @@ class PaymentService final {
       ::grpc::Service::RequestAsyncUnary(0, context, request, response, new_call_cq, notification_cq, tag);
     }
   };
-  typedef WithAsyncMethod_Charge<Service > AsyncService;
+  template <class BaseClass>
+  class WithAsyncMethod_Refund : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithAsyncMethod_Refund() {
+      ::grpc::Service::MarkMethodAsync(1);
+    }
+    ~WithAsyncMethod_Refund() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status Refund(::grpc::ServerContext* /*context*/, const ::oteldemo::RefundRequest* /*request*/, ::oteldemo::RefundResponse* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    void RequestRefund(::grpc::ServerContext* context, ::oteldemo::RefundRequest* request, ::grpc::ServerAsyncResponseWriter< ::oteldemo::RefundResponse>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
+      ::grpc::Service::RequestAsyncUnary(1, context, request, response, new_call_cq, notification_cq, tag);
+    }
+  };
+  template <class BaseClass>
+  class WithAsyncMethod_GetPaymentStatus : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithAsyncMethod_GetPaymentStatus() {
+      ::grpc::Service::MarkMethodAsync(2);
+    }
+    ~WithAsyncMethod_GetPaymentStatus() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status GetPaymentStatus(::grpc::ServerContext* /*context*/, const ::oteldemo::GetPaymentStatusRequest* /*request*/, ::oteldemo::PaymentStatus* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    void RequestGetPaymentStatus(::grpc::ServerContext* context, ::oteldemo::GetPaymentStatusRequest* request, ::grpc::ServerAsyncResponseWriter< ::oteldemo::PaymentStatus>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
+      ::grpc::Service::RequestAsyncUnary(2, context, request, response, new_call_cq, notification_cq, tag);
+    }
+  };
+  typedef WithAsyncMethod_Charge<WithAsyncMethod_Refund<WithAsyncMethod_GetPaymentStatus<Service > > > AsyncService;
   template <class BaseClass>
   class WithCallbackMethod_Charge : public BaseClass {
    private:
@@ -2668,7 +2756,61 @@ class PaymentService final {
     virtual ::grpc::ServerUnaryReactor* Charge(
       ::grpc::CallbackServerContext* /*context*/, const ::oteldemo::ChargeRequest* /*request*/, ::oteldemo::ChargeResponse* /*response*/)  { return nullptr; }
   };
-  typedef WithCallbackMethod_Charge<Service > CallbackService;
+  template <class BaseClass>
+  class WithCallbackMethod_Refund : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithCallbackMethod_Refund() {
+      ::grpc::Service::MarkMethodCallback(1,
+          new ::grpc::internal::CallbackUnaryHandler< ::oteldemo::RefundRequest, ::oteldemo::RefundResponse>(
+            [this](
+                   ::grpc::CallbackServerContext* context, const ::oteldemo::RefundRequest* request, ::oteldemo::RefundResponse* response) { return this->Refund(context, request, response); }));}
+    void SetMessageAllocatorFor_Refund(
+        ::grpc::MessageAllocator< ::oteldemo::RefundRequest, ::oteldemo::RefundResponse>* allocator) {
+      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::GetHandler(1);
+      static_cast<::grpc::internal::CallbackUnaryHandler< ::oteldemo::RefundRequest, ::oteldemo::RefundResponse>*>(handler)
+              ->SetMessageAllocator(allocator);
+    }
+    ~WithCallbackMethod_Refund() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status Refund(::grpc::ServerContext* /*context*/, const ::oteldemo::RefundRequest* /*request*/, ::oteldemo::RefundResponse* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    virtual ::grpc::ServerUnaryReactor* Refund(
+      ::grpc::CallbackServerContext* /*context*/, const ::oteldemo::RefundRequest* /*request*/, ::oteldemo::RefundResponse* /*response*/)  { return nullptr; }
+  };
+  template <class BaseClass>
+  class WithCallbackMethod_GetPaymentStatus : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithCallbackMethod_GetPaymentStatus() {
+      ::grpc::Service::MarkMethodCallback(2,
+          new ::grpc::internal::CallbackUnaryHandler< ::oteldemo::GetPaymentStatusRequest, ::oteldemo::PaymentStatus>(
+            [this](
+                   ::grpc::CallbackServerContext* context, const ::oteldemo::GetPaymentStatusRequest* request, ::oteldemo::PaymentStatus* response) { return this->GetPaymentStatus(context, request, response); }));}
+    void SetMessageAllocatorFor_GetPaymentStatus(
+        ::grpc::MessageAllocator< ::oteldemo::GetPaymentStatusRequest, ::oteldemo::PaymentStatus>* allocator) {
+      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::GetHandler(2);
+      static_cast<::grpc::internal::CallbackUnaryHandler< ::oteldemo::GetPaymentStatusRequest, ::oteldemo::PaymentStatus>*>(handler)
+              ->SetMessageAllocator(allocator);
+    }
+    ~WithCallbackMethod_GetPaymentStatus() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status GetPaymentStatus(::grpc::ServerContext* /*context*/, const ::oteldemo::GetPaymentStatusRequest* /*request*/, ::oteldemo::PaymentStatus* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    virtual ::grpc::ServerUnaryReactor* GetPaymentStatus(
+      ::grpc::CallbackServerContext* /*context*/, const ::oteldemo::GetPaymentStatusRequest* /*request*/, ::oteldemo::PaymentStatus* /*response*/)  { return nullptr; }
+  };
+  typedef WithCallbackMethod_Charge<WithCallbackMethod_Refund<WithCallbackMethod_GetPaymentStatus<Service > > > CallbackService;
   typedef CallbackService ExperimentalCallbackService;
   template <class BaseClass>
   class WithGenericMethod_Charge : public BaseClass {
@@ -2683,6 +2825,40 @@ class PaymentService final {
     }
     // disable synchronous version of this method
     ::grpc::Status Charge(::grpc::ServerContext* /*context*/, const ::oteldemo::ChargeRequest* /*request*/, ::oteldemo::ChargeResponse* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+  };
+  template <class BaseClass>
+  class WithGenericMethod_Refund : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithGenericMethod_Refund() {
+      ::grpc::Service::MarkMethodGeneric(1);
+    }
+    ~WithGenericMethod_Refund() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status Refund(::grpc::ServerContext* /*context*/, const ::oteldemo::RefundRequest* /*request*/, ::oteldemo::RefundResponse* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+  };
+  template <class BaseClass>
+  class WithGenericMethod_GetPaymentStatus : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithGenericMethod_GetPaymentStatus() {
+      ::grpc::Service::MarkMethodGeneric(2);
+    }
+    ~WithGenericMethod_GetPaymentStatus() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status GetPaymentStatus(::grpc::ServerContext* /*context*/, const ::oteldemo::GetPaymentStatusRequest* /*request*/, ::oteldemo::PaymentStatus* /*response*/) override {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
@@ -2708,6 +2884,46 @@ class PaymentService final {
     }
   };
   template <class BaseClass>
+  class WithRawMethod_Refund : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithRawMethod_Refund() {
+      ::grpc::Service::MarkMethodRaw(1);
+    }
+    ~WithRawMethod_Refund() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status Refund(::grpc::ServerContext* /*context*/, const ::oteldemo::RefundRequest* /*request*/, ::oteldemo::RefundResponse* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    void RequestRefund(::grpc::ServerContext* context, ::grpc::ByteBuffer* request, ::grpc::ServerAsyncResponseWriter< ::grpc::ByteBuffer>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
+      ::grpc::Service::RequestAsyncUnary(1, context, request, response, new_call_cq, notification_cq, tag);
+    }
+  };
+  template <class BaseClass>
+  class WithRawMethod_GetPaymentStatus : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithRawMethod_GetPaymentStatus() {
+      ::grpc::Service::MarkMethodRaw(2);
+    }
+    ~WithRawMethod_GetPaymentStatus() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status GetPaymentStatus(::grpc::ServerContext* /*context*/, const ::oteldemo::GetPaymentStatusRequest* /*request*/, ::oteldemo::PaymentStatus* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    void RequestGetPaymentStatus(::grpc::ServerContext* context, ::grpc::ByteBuffer* request, ::grpc::ServerAsyncResponseWriter< ::grpc::ByteBuffer>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
+      ::grpc::Service::RequestAsyncUnary(2, context, request, response, new_call_cq, notification_cq, tag);
+    }
+  };
+  template <class BaseClass>
   class WithRawCallbackMethod_Charge : public BaseClass {
    private:
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
@@ -2727,6 +2943,50 @@ class PaymentService final {
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
     virtual ::grpc::ServerUnaryReactor* Charge(
+      ::grpc::CallbackServerContext* /*context*/, const ::grpc::ByteBuffer* /*request*/, ::grpc::ByteBuffer* /*response*/)  { return nullptr; }
+  };
+  template <class BaseClass>
+  class WithRawCallbackMethod_Refund : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithRawCallbackMethod_Refund() {
+      ::grpc::Service::MarkMethodRawCallback(1,
+          new ::grpc::internal::CallbackUnaryHandler< ::grpc::ByteBuffer, ::grpc::ByteBuffer>(
+            [this](
+                   ::grpc::CallbackServerContext* context, const ::grpc::ByteBuffer* request, ::grpc::ByteBuffer* response) { return this->Refund(context, request, response); }));
+    }
+    ~WithRawCallbackMethod_Refund() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status Refund(::grpc::ServerContext* /*context*/, const ::oteldemo::RefundRequest* /*request*/, ::oteldemo::RefundResponse* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    virtual ::grpc::ServerUnaryReactor* Refund(
+      ::grpc::CallbackServerContext* /*context*/, const ::grpc::ByteBuffer* /*request*/, ::grpc::ByteBuffer* /*response*/)  { return nullptr; }
+  };
+  template <class BaseClass>
+  class WithRawCallbackMethod_GetPaymentStatus : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithRawCallbackMethod_GetPaymentStatus() {
+      ::grpc::Service::MarkMethodRawCallback(2,
+          new ::grpc::internal::CallbackUnaryHandler< ::grpc::ByteBuffer, ::grpc::ByteBuffer>(
+            [this](
+                   ::grpc::CallbackServerContext* context, const ::grpc::ByteBuffer* request, ::grpc::ByteBuffer* response) { return this->GetPaymentStatus(context, request, response); }));
+    }
+    ~WithRawCallbackMethod_GetPaymentStatus() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status GetPaymentStatus(::grpc::ServerContext* /*context*/, const ::oteldemo::GetPaymentStatusRequest* /*request*/, ::oteldemo::PaymentStatus* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    virtual ::grpc::ServerUnaryReactor* GetPaymentStatus(
       ::grpc::CallbackServerContext* /*context*/, const ::grpc::ByteBuffer* /*request*/, ::grpc::ByteBuffer* /*response*/)  { return nullptr; }
   };
   template <class BaseClass>
@@ -2756,9 +3016,63 @@ class PaymentService final {
     // replace default version of method with streamed unary
     virtual ::grpc::Status StreamedCharge(::grpc::ServerContext* context, ::grpc::ServerUnaryStreamer< ::oteldemo::ChargeRequest,::oteldemo::ChargeResponse>* server_unary_streamer) = 0;
   };
-  typedef WithStreamedUnaryMethod_Charge<Service > StreamedUnaryService;
+  template <class BaseClass>
+  class WithStreamedUnaryMethod_Refund : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithStreamedUnaryMethod_Refund() {
+      ::grpc::Service::MarkMethodStreamed(1,
+        new ::grpc::internal::StreamedUnaryHandler<
+          ::oteldemo::RefundRequest, ::oteldemo::RefundResponse>(
+            [this](::grpc::ServerContext* context,
+                   ::grpc::ServerUnaryStreamer<
+                     ::oteldemo::RefundRequest, ::oteldemo::RefundResponse>* streamer) {
+                       return this->StreamedRefund(context,
+                         streamer);
+                  }));
+    }
+    ~WithStreamedUnaryMethod_Refund() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable regular version of this method
+    ::grpc::Status Refund(::grpc::ServerContext* /*context*/, const ::oteldemo::RefundRequest* /*request*/, ::oteldemo::RefundResponse* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    // replace default version of method with streamed unary
+    virtual ::grpc::Status StreamedRefund(::grpc::ServerContext* context, ::grpc::ServerUnaryStreamer< ::oteldemo::RefundRequest,::oteldemo::RefundResponse>* server_unary_streamer) = 0;
+  };
+  template <class BaseClass>
+  class WithStreamedUnaryMethod_GetPaymentStatus : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithStreamedUnaryMethod_GetPaymentStatus() {
+      ::grpc::Service::MarkMethodStreamed(2,
+        new ::grpc::internal::StreamedUnaryHandler<
+          ::oteldemo::GetPaymentStatusRequest, ::oteldemo::PaymentStatus>(
+            [this](::grpc::ServerContext* context,
+                   ::grpc::ServerUnaryStreamer<
+                     ::oteldemo::GetPaymentStatusRequest, ::oteldemo::PaymentStatus>* streamer) {
+                       return this->StreamedGetPaymentStatus(context,
+                         streamer);
+                  }));
+    }
+    ~WithStreamedUnaryMethod_GetPaymentStatus() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable regular version of this method
+    ::grpc::Status GetPaymentStatus(::grpc::ServerContext* /*context*/, const ::oteldemo::GetPaymentStatusRequest* /*request*/, ::oteldemo::PaymentStatus* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    // replace default version of method with streamed unary
+    virtual ::grpc::Status StreamedGetPaymentStatus(::grpc::ServerContext* context, ::grpc::ServerUnaryStreamer< ::oteldemo::GetPaymentStatusRequest,::oteldemo::PaymentStatus>* server_unary_streamer) = 0;
+  };
+  typedef WithStreamedUnaryMethod_Charge<WithStreamedUnaryMethod_Refund<WithStreamedUnaryMethod_GetPaymentStatus<Service > > > StreamedUnaryService;
   typedef Service SplitStreamedService;
-  typedef WithStreamedUnaryMethod_Charge<Service > StreamedService;
+  typedef WithStreamedUnaryMethod_Charge<WithStreamedUnaryMethod_Refund<WithStreamedUnaryMethod_GetPaymentStatus<Service > > > StreamedService;
 };
 
 // -------------Email service-----------------
@@ -3177,6 +3491,529 @@ class CheckoutService final {
   typedef WithStreamedUnaryMethod_PlaceOrder<Service > StreamedUnaryService;
   typedef Service SplitStreamedService;
   typedef WithStreamedUnaryMethod_PlaceOrder<Service > StreamedService;
+};
+
+// -------------Order service-----------------
+//
+class OrderService final {
+ public:
+  static constexpr char const* service_full_name() {
+    return "oteldemo.OrderService";
+  }
+  class StubInterface {
+   public:
+    virtual ~StubInterface() {}
+    virtual ::grpc::Status GetOrdersByEmail(::grpc::ClientContext* context, const ::oteldemo::GetOrdersByEmailRequest& request, ::oteldemo::GetOrdersByEmailResponse* response) = 0;
+    std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::oteldemo::GetOrdersByEmailResponse>> AsyncGetOrdersByEmail(::grpc::ClientContext* context, const ::oteldemo::GetOrdersByEmailRequest& request, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::oteldemo::GetOrdersByEmailResponse>>(AsyncGetOrdersByEmailRaw(context, request, cq));
+    }
+    std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::oteldemo::GetOrdersByEmailResponse>> PrepareAsyncGetOrdersByEmail(::grpc::ClientContext* context, const ::oteldemo::GetOrdersByEmailRequest& request, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::oteldemo::GetOrdersByEmailResponse>>(PrepareAsyncGetOrdersByEmailRaw(context, request, cq));
+    }
+    virtual ::grpc::Status GetOrder(::grpc::ClientContext* context, const ::oteldemo::GetOrderRequest& request, ::oteldemo::OrderDetail* response) = 0;
+    std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::oteldemo::OrderDetail>> AsyncGetOrder(::grpc::ClientContext* context, const ::oteldemo::GetOrderRequest& request, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::oteldemo::OrderDetail>>(AsyncGetOrderRaw(context, request, cq));
+    }
+    std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::oteldemo::OrderDetail>> PrepareAsyncGetOrder(::grpc::ClientContext* context, const ::oteldemo::GetOrderRequest& request, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::oteldemo::OrderDetail>>(PrepareAsyncGetOrderRaw(context, request, cq));
+    }
+    virtual ::grpc::Status RefundOrder(::grpc::ClientContext* context, const ::oteldemo::RefundOrderRequest& request, ::oteldemo::RefundOrderResponse* response) = 0;
+    std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::oteldemo::RefundOrderResponse>> AsyncRefundOrder(::grpc::ClientContext* context, const ::oteldemo::RefundOrderRequest& request, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::oteldemo::RefundOrderResponse>>(AsyncRefundOrderRaw(context, request, cq));
+    }
+    std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::oteldemo::RefundOrderResponse>> PrepareAsyncRefundOrder(::grpc::ClientContext* context, const ::oteldemo::RefundOrderRequest& request, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::oteldemo::RefundOrderResponse>>(PrepareAsyncRefundOrderRaw(context, request, cq));
+    }
+    class async_interface {
+     public:
+      virtual ~async_interface() {}
+      virtual void GetOrdersByEmail(::grpc::ClientContext* context, const ::oteldemo::GetOrdersByEmailRequest* request, ::oteldemo::GetOrdersByEmailResponse* response, std::function<void(::grpc::Status)>) = 0;
+      virtual void GetOrdersByEmail(::grpc::ClientContext* context, const ::oteldemo::GetOrdersByEmailRequest* request, ::oteldemo::GetOrdersByEmailResponse* response, ::grpc::ClientUnaryReactor* reactor) = 0;
+      virtual void GetOrder(::grpc::ClientContext* context, const ::oteldemo::GetOrderRequest* request, ::oteldemo::OrderDetail* response, std::function<void(::grpc::Status)>) = 0;
+      virtual void GetOrder(::grpc::ClientContext* context, const ::oteldemo::GetOrderRequest* request, ::oteldemo::OrderDetail* response, ::grpc::ClientUnaryReactor* reactor) = 0;
+      virtual void RefundOrder(::grpc::ClientContext* context, const ::oteldemo::RefundOrderRequest* request, ::oteldemo::RefundOrderResponse* response, std::function<void(::grpc::Status)>) = 0;
+      virtual void RefundOrder(::grpc::ClientContext* context, const ::oteldemo::RefundOrderRequest* request, ::oteldemo::RefundOrderResponse* response, ::grpc::ClientUnaryReactor* reactor) = 0;
+    };
+    typedef class async_interface experimental_async_interface;
+    virtual class async_interface* async() { return nullptr; }
+    class async_interface* experimental_async() { return async(); }
+   private:
+    virtual ::grpc::ClientAsyncResponseReaderInterface< ::oteldemo::GetOrdersByEmailResponse>* AsyncGetOrdersByEmailRaw(::grpc::ClientContext* context, const ::oteldemo::GetOrdersByEmailRequest& request, ::grpc::CompletionQueue* cq) = 0;
+    virtual ::grpc::ClientAsyncResponseReaderInterface< ::oteldemo::GetOrdersByEmailResponse>* PrepareAsyncGetOrdersByEmailRaw(::grpc::ClientContext* context, const ::oteldemo::GetOrdersByEmailRequest& request, ::grpc::CompletionQueue* cq) = 0;
+    virtual ::grpc::ClientAsyncResponseReaderInterface< ::oteldemo::OrderDetail>* AsyncGetOrderRaw(::grpc::ClientContext* context, const ::oteldemo::GetOrderRequest& request, ::grpc::CompletionQueue* cq) = 0;
+    virtual ::grpc::ClientAsyncResponseReaderInterface< ::oteldemo::OrderDetail>* PrepareAsyncGetOrderRaw(::grpc::ClientContext* context, const ::oteldemo::GetOrderRequest& request, ::grpc::CompletionQueue* cq) = 0;
+    virtual ::grpc::ClientAsyncResponseReaderInterface< ::oteldemo::RefundOrderResponse>* AsyncRefundOrderRaw(::grpc::ClientContext* context, const ::oteldemo::RefundOrderRequest& request, ::grpc::CompletionQueue* cq) = 0;
+    virtual ::grpc::ClientAsyncResponseReaderInterface< ::oteldemo::RefundOrderResponse>* PrepareAsyncRefundOrderRaw(::grpc::ClientContext* context, const ::oteldemo::RefundOrderRequest& request, ::grpc::CompletionQueue* cq) = 0;
+  };
+  class Stub final : public StubInterface {
+   public:
+    Stub(const std::shared_ptr< ::grpc::ChannelInterface>& channel, const ::grpc::StubOptions& options = ::grpc::StubOptions());
+    ::grpc::Status GetOrdersByEmail(::grpc::ClientContext* context, const ::oteldemo::GetOrdersByEmailRequest& request, ::oteldemo::GetOrdersByEmailResponse* response) override;
+    std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::oteldemo::GetOrdersByEmailResponse>> AsyncGetOrdersByEmail(::grpc::ClientContext* context, const ::oteldemo::GetOrdersByEmailRequest& request, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::oteldemo::GetOrdersByEmailResponse>>(AsyncGetOrdersByEmailRaw(context, request, cq));
+    }
+    std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::oteldemo::GetOrdersByEmailResponse>> PrepareAsyncGetOrdersByEmail(::grpc::ClientContext* context, const ::oteldemo::GetOrdersByEmailRequest& request, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::oteldemo::GetOrdersByEmailResponse>>(PrepareAsyncGetOrdersByEmailRaw(context, request, cq));
+    }
+    ::grpc::Status GetOrder(::grpc::ClientContext* context, const ::oteldemo::GetOrderRequest& request, ::oteldemo::OrderDetail* response) override;
+    std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::oteldemo::OrderDetail>> AsyncGetOrder(::grpc::ClientContext* context, const ::oteldemo::GetOrderRequest& request, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::oteldemo::OrderDetail>>(AsyncGetOrderRaw(context, request, cq));
+    }
+    std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::oteldemo::OrderDetail>> PrepareAsyncGetOrder(::grpc::ClientContext* context, const ::oteldemo::GetOrderRequest& request, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::oteldemo::OrderDetail>>(PrepareAsyncGetOrderRaw(context, request, cq));
+    }
+    ::grpc::Status RefundOrder(::grpc::ClientContext* context, const ::oteldemo::RefundOrderRequest& request, ::oteldemo::RefundOrderResponse* response) override;
+    std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::oteldemo::RefundOrderResponse>> AsyncRefundOrder(::grpc::ClientContext* context, const ::oteldemo::RefundOrderRequest& request, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::oteldemo::RefundOrderResponse>>(AsyncRefundOrderRaw(context, request, cq));
+    }
+    std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::oteldemo::RefundOrderResponse>> PrepareAsyncRefundOrder(::grpc::ClientContext* context, const ::oteldemo::RefundOrderRequest& request, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::oteldemo::RefundOrderResponse>>(PrepareAsyncRefundOrderRaw(context, request, cq));
+    }
+    class async final :
+      public StubInterface::async_interface {
+     public:
+      void GetOrdersByEmail(::grpc::ClientContext* context, const ::oteldemo::GetOrdersByEmailRequest* request, ::oteldemo::GetOrdersByEmailResponse* response, std::function<void(::grpc::Status)>) override;
+      void GetOrdersByEmail(::grpc::ClientContext* context, const ::oteldemo::GetOrdersByEmailRequest* request, ::oteldemo::GetOrdersByEmailResponse* response, ::grpc::ClientUnaryReactor* reactor) override;
+      void GetOrder(::grpc::ClientContext* context, const ::oteldemo::GetOrderRequest* request, ::oteldemo::OrderDetail* response, std::function<void(::grpc::Status)>) override;
+      void GetOrder(::grpc::ClientContext* context, const ::oteldemo::GetOrderRequest* request, ::oteldemo::OrderDetail* response, ::grpc::ClientUnaryReactor* reactor) override;
+      void RefundOrder(::grpc::ClientContext* context, const ::oteldemo::RefundOrderRequest* request, ::oteldemo::RefundOrderResponse* response, std::function<void(::grpc::Status)>) override;
+      void RefundOrder(::grpc::ClientContext* context, const ::oteldemo::RefundOrderRequest* request, ::oteldemo::RefundOrderResponse* response, ::grpc::ClientUnaryReactor* reactor) override;
+     private:
+      friend class Stub;
+      explicit async(Stub* stub): stub_(stub) { }
+      Stub* stub() { return stub_; }
+      Stub* stub_;
+    };
+    class async* async() override { return &async_stub_; }
+
+   private:
+    std::shared_ptr< ::grpc::ChannelInterface> channel_;
+    class async async_stub_{this};
+    ::grpc::ClientAsyncResponseReader< ::oteldemo::GetOrdersByEmailResponse>* AsyncGetOrdersByEmailRaw(::grpc::ClientContext* context, const ::oteldemo::GetOrdersByEmailRequest& request, ::grpc::CompletionQueue* cq) override;
+    ::grpc::ClientAsyncResponseReader< ::oteldemo::GetOrdersByEmailResponse>* PrepareAsyncGetOrdersByEmailRaw(::grpc::ClientContext* context, const ::oteldemo::GetOrdersByEmailRequest& request, ::grpc::CompletionQueue* cq) override;
+    ::grpc::ClientAsyncResponseReader< ::oteldemo::OrderDetail>* AsyncGetOrderRaw(::grpc::ClientContext* context, const ::oteldemo::GetOrderRequest& request, ::grpc::CompletionQueue* cq) override;
+    ::grpc::ClientAsyncResponseReader< ::oteldemo::OrderDetail>* PrepareAsyncGetOrderRaw(::grpc::ClientContext* context, const ::oteldemo::GetOrderRequest& request, ::grpc::CompletionQueue* cq) override;
+    ::grpc::ClientAsyncResponseReader< ::oteldemo::RefundOrderResponse>* AsyncRefundOrderRaw(::grpc::ClientContext* context, const ::oteldemo::RefundOrderRequest& request, ::grpc::CompletionQueue* cq) override;
+    ::grpc::ClientAsyncResponseReader< ::oteldemo::RefundOrderResponse>* PrepareAsyncRefundOrderRaw(::grpc::ClientContext* context, const ::oteldemo::RefundOrderRequest& request, ::grpc::CompletionQueue* cq) override;
+    const ::grpc::internal::RpcMethod rpcmethod_GetOrdersByEmail_;
+    const ::grpc::internal::RpcMethod rpcmethod_GetOrder_;
+    const ::grpc::internal::RpcMethod rpcmethod_RefundOrder_;
+  };
+  static std::unique_ptr<Stub> NewStub(const std::shared_ptr< ::grpc::ChannelInterface>& channel, const ::grpc::StubOptions& options = ::grpc::StubOptions());
+
+  class Service : public ::grpc::Service {
+   public:
+    Service();
+    virtual ~Service();
+    virtual ::grpc::Status GetOrdersByEmail(::grpc::ServerContext* context, const ::oteldemo::GetOrdersByEmailRequest* request, ::oteldemo::GetOrdersByEmailResponse* response);
+    virtual ::grpc::Status GetOrder(::grpc::ServerContext* context, const ::oteldemo::GetOrderRequest* request, ::oteldemo::OrderDetail* response);
+    virtual ::grpc::Status RefundOrder(::grpc::ServerContext* context, const ::oteldemo::RefundOrderRequest* request, ::oteldemo::RefundOrderResponse* response);
+  };
+  template <class BaseClass>
+  class WithAsyncMethod_GetOrdersByEmail : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithAsyncMethod_GetOrdersByEmail() {
+      ::grpc::Service::MarkMethodAsync(0);
+    }
+    ~WithAsyncMethod_GetOrdersByEmail() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status GetOrdersByEmail(::grpc::ServerContext* /*context*/, const ::oteldemo::GetOrdersByEmailRequest* /*request*/, ::oteldemo::GetOrdersByEmailResponse* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    void RequestGetOrdersByEmail(::grpc::ServerContext* context, ::oteldemo::GetOrdersByEmailRequest* request, ::grpc::ServerAsyncResponseWriter< ::oteldemo::GetOrdersByEmailResponse>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
+      ::grpc::Service::RequestAsyncUnary(0, context, request, response, new_call_cq, notification_cq, tag);
+    }
+  };
+  template <class BaseClass>
+  class WithAsyncMethod_GetOrder : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithAsyncMethod_GetOrder() {
+      ::grpc::Service::MarkMethodAsync(1);
+    }
+    ~WithAsyncMethod_GetOrder() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status GetOrder(::grpc::ServerContext* /*context*/, const ::oteldemo::GetOrderRequest* /*request*/, ::oteldemo::OrderDetail* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    void RequestGetOrder(::grpc::ServerContext* context, ::oteldemo::GetOrderRequest* request, ::grpc::ServerAsyncResponseWriter< ::oteldemo::OrderDetail>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
+      ::grpc::Service::RequestAsyncUnary(1, context, request, response, new_call_cq, notification_cq, tag);
+    }
+  };
+  template <class BaseClass>
+  class WithAsyncMethod_RefundOrder : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithAsyncMethod_RefundOrder() {
+      ::grpc::Service::MarkMethodAsync(2);
+    }
+    ~WithAsyncMethod_RefundOrder() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status RefundOrder(::grpc::ServerContext* /*context*/, const ::oteldemo::RefundOrderRequest* /*request*/, ::oteldemo::RefundOrderResponse* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    void RequestRefundOrder(::grpc::ServerContext* context, ::oteldemo::RefundOrderRequest* request, ::grpc::ServerAsyncResponseWriter< ::oteldemo::RefundOrderResponse>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
+      ::grpc::Service::RequestAsyncUnary(2, context, request, response, new_call_cq, notification_cq, tag);
+    }
+  };
+  typedef WithAsyncMethod_GetOrdersByEmail<WithAsyncMethod_GetOrder<WithAsyncMethod_RefundOrder<Service > > > AsyncService;
+  template <class BaseClass>
+  class WithCallbackMethod_GetOrdersByEmail : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithCallbackMethod_GetOrdersByEmail() {
+      ::grpc::Service::MarkMethodCallback(0,
+          new ::grpc::internal::CallbackUnaryHandler< ::oteldemo::GetOrdersByEmailRequest, ::oteldemo::GetOrdersByEmailResponse>(
+            [this](
+                   ::grpc::CallbackServerContext* context, const ::oteldemo::GetOrdersByEmailRequest* request, ::oteldemo::GetOrdersByEmailResponse* response) { return this->GetOrdersByEmail(context, request, response); }));}
+    void SetMessageAllocatorFor_GetOrdersByEmail(
+        ::grpc::MessageAllocator< ::oteldemo::GetOrdersByEmailRequest, ::oteldemo::GetOrdersByEmailResponse>* allocator) {
+      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::GetHandler(0);
+      static_cast<::grpc::internal::CallbackUnaryHandler< ::oteldemo::GetOrdersByEmailRequest, ::oteldemo::GetOrdersByEmailResponse>*>(handler)
+              ->SetMessageAllocator(allocator);
+    }
+    ~WithCallbackMethod_GetOrdersByEmail() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status GetOrdersByEmail(::grpc::ServerContext* /*context*/, const ::oteldemo::GetOrdersByEmailRequest* /*request*/, ::oteldemo::GetOrdersByEmailResponse* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    virtual ::grpc::ServerUnaryReactor* GetOrdersByEmail(
+      ::grpc::CallbackServerContext* /*context*/, const ::oteldemo::GetOrdersByEmailRequest* /*request*/, ::oteldemo::GetOrdersByEmailResponse* /*response*/)  { return nullptr; }
+  };
+  template <class BaseClass>
+  class WithCallbackMethod_GetOrder : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithCallbackMethod_GetOrder() {
+      ::grpc::Service::MarkMethodCallback(1,
+          new ::grpc::internal::CallbackUnaryHandler< ::oteldemo::GetOrderRequest, ::oteldemo::OrderDetail>(
+            [this](
+                   ::grpc::CallbackServerContext* context, const ::oteldemo::GetOrderRequest* request, ::oteldemo::OrderDetail* response) { return this->GetOrder(context, request, response); }));}
+    void SetMessageAllocatorFor_GetOrder(
+        ::grpc::MessageAllocator< ::oteldemo::GetOrderRequest, ::oteldemo::OrderDetail>* allocator) {
+      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::GetHandler(1);
+      static_cast<::grpc::internal::CallbackUnaryHandler< ::oteldemo::GetOrderRequest, ::oteldemo::OrderDetail>*>(handler)
+              ->SetMessageAllocator(allocator);
+    }
+    ~WithCallbackMethod_GetOrder() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status GetOrder(::grpc::ServerContext* /*context*/, const ::oteldemo::GetOrderRequest* /*request*/, ::oteldemo::OrderDetail* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    virtual ::grpc::ServerUnaryReactor* GetOrder(
+      ::grpc::CallbackServerContext* /*context*/, const ::oteldemo::GetOrderRequest* /*request*/, ::oteldemo::OrderDetail* /*response*/)  { return nullptr; }
+  };
+  template <class BaseClass>
+  class WithCallbackMethod_RefundOrder : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithCallbackMethod_RefundOrder() {
+      ::grpc::Service::MarkMethodCallback(2,
+          new ::grpc::internal::CallbackUnaryHandler< ::oteldemo::RefundOrderRequest, ::oteldemo::RefundOrderResponse>(
+            [this](
+                   ::grpc::CallbackServerContext* context, const ::oteldemo::RefundOrderRequest* request, ::oteldemo::RefundOrderResponse* response) { return this->RefundOrder(context, request, response); }));}
+    void SetMessageAllocatorFor_RefundOrder(
+        ::grpc::MessageAllocator< ::oteldemo::RefundOrderRequest, ::oteldemo::RefundOrderResponse>* allocator) {
+      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::GetHandler(2);
+      static_cast<::grpc::internal::CallbackUnaryHandler< ::oteldemo::RefundOrderRequest, ::oteldemo::RefundOrderResponse>*>(handler)
+              ->SetMessageAllocator(allocator);
+    }
+    ~WithCallbackMethod_RefundOrder() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status RefundOrder(::grpc::ServerContext* /*context*/, const ::oteldemo::RefundOrderRequest* /*request*/, ::oteldemo::RefundOrderResponse* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    virtual ::grpc::ServerUnaryReactor* RefundOrder(
+      ::grpc::CallbackServerContext* /*context*/, const ::oteldemo::RefundOrderRequest* /*request*/, ::oteldemo::RefundOrderResponse* /*response*/)  { return nullptr; }
+  };
+  typedef WithCallbackMethod_GetOrdersByEmail<WithCallbackMethod_GetOrder<WithCallbackMethod_RefundOrder<Service > > > CallbackService;
+  typedef CallbackService ExperimentalCallbackService;
+  template <class BaseClass>
+  class WithGenericMethod_GetOrdersByEmail : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithGenericMethod_GetOrdersByEmail() {
+      ::grpc::Service::MarkMethodGeneric(0);
+    }
+    ~WithGenericMethod_GetOrdersByEmail() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status GetOrdersByEmail(::grpc::ServerContext* /*context*/, const ::oteldemo::GetOrdersByEmailRequest* /*request*/, ::oteldemo::GetOrdersByEmailResponse* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+  };
+  template <class BaseClass>
+  class WithGenericMethod_GetOrder : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithGenericMethod_GetOrder() {
+      ::grpc::Service::MarkMethodGeneric(1);
+    }
+    ~WithGenericMethod_GetOrder() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status GetOrder(::grpc::ServerContext* /*context*/, const ::oteldemo::GetOrderRequest* /*request*/, ::oteldemo::OrderDetail* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+  };
+  template <class BaseClass>
+  class WithGenericMethod_RefundOrder : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithGenericMethod_RefundOrder() {
+      ::grpc::Service::MarkMethodGeneric(2);
+    }
+    ~WithGenericMethod_RefundOrder() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status RefundOrder(::grpc::ServerContext* /*context*/, const ::oteldemo::RefundOrderRequest* /*request*/, ::oteldemo::RefundOrderResponse* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+  };
+  template <class BaseClass>
+  class WithRawMethod_GetOrdersByEmail : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithRawMethod_GetOrdersByEmail() {
+      ::grpc::Service::MarkMethodRaw(0);
+    }
+    ~WithRawMethod_GetOrdersByEmail() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status GetOrdersByEmail(::grpc::ServerContext* /*context*/, const ::oteldemo::GetOrdersByEmailRequest* /*request*/, ::oteldemo::GetOrdersByEmailResponse* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    void RequestGetOrdersByEmail(::grpc::ServerContext* context, ::grpc::ByteBuffer* request, ::grpc::ServerAsyncResponseWriter< ::grpc::ByteBuffer>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
+      ::grpc::Service::RequestAsyncUnary(0, context, request, response, new_call_cq, notification_cq, tag);
+    }
+  };
+  template <class BaseClass>
+  class WithRawMethod_GetOrder : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithRawMethod_GetOrder() {
+      ::grpc::Service::MarkMethodRaw(1);
+    }
+    ~WithRawMethod_GetOrder() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status GetOrder(::grpc::ServerContext* /*context*/, const ::oteldemo::GetOrderRequest* /*request*/, ::oteldemo::OrderDetail* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    void RequestGetOrder(::grpc::ServerContext* context, ::grpc::ByteBuffer* request, ::grpc::ServerAsyncResponseWriter< ::grpc::ByteBuffer>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
+      ::grpc::Service::RequestAsyncUnary(1, context, request, response, new_call_cq, notification_cq, tag);
+    }
+  };
+  template <class BaseClass>
+  class WithRawMethod_RefundOrder : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithRawMethod_RefundOrder() {
+      ::grpc::Service::MarkMethodRaw(2);
+    }
+    ~WithRawMethod_RefundOrder() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status RefundOrder(::grpc::ServerContext* /*context*/, const ::oteldemo::RefundOrderRequest* /*request*/, ::oteldemo::RefundOrderResponse* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    void RequestRefundOrder(::grpc::ServerContext* context, ::grpc::ByteBuffer* request, ::grpc::ServerAsyncResponseWriter< ::grpc::ByteBuffer>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
+      ::grpc::Service::RequestAsyncUnary(2, context, request, response, new_call_cq, notification_cq, tag);
+    }
+  };
+  template <class BaseClass>
+  class WithRawCallbackMethod_GetOrdersByEmail : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithRawCallbackMethod_GetOrdersByEmail() {
+      ::grpc::Service::MarkMethodRawCallback(0,
+          new ::grpc::internal::CallbackUnaryHandler< ::grpc::ByteBuffer, ::grpc::ByteBuffer>(
+            [this](
+                   ::grpc::CallbackServerContext* context, const ::grpc::ByteBuffer* request, ::grpc::ByteBuffer* response) { return this->GetOrdersByEmail(context, request, response); }));
+    }
+    ~WithRawCallbackMethod_GetOrdersByEmail() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status GetOrdersByEmail(::grpc::ServerContext* /*context*/, const ::oteldemo::GetOrdersByEmailRequest* /*request*/, ::oteldemo::GetOrdersByEmailResponse* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    virtual ::grpc::ServerUnaryReactor* GetOrdersByEmail(
+      ::grpc::CallbackServerContext* /*context*/, const ::grpc::ByteBuffer* /*request*/, ::grpc::ByteBuffer* /*response*/)  { return nullptr; }
+  };
+  template <class BaseClass>
+  class WithRawCallbackMethod_GetOrder : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithRawCallbackMethod_GetOrder() {
+      ::grpc::Service::MarkMethodRawCallback(1,
+          new ::grpc::internal::CallbackUnaryHandler< ::grpc::ByteBuffer, ::grpc::ByteBuffer>(
+            [this](
+                   ::grpc::CallbackServerContext* context, const ::grpc::ByteBuffer* request, ::grpc::ByteBuffer* response) { return this->GetOrder(context, request, response); }));
+    }
+    ~WithRawCallbackMethod_GetOrder() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status GetOrder(::grpc::ServerContext* /*context*/, const ::oteldemo::GetOrderRequest* /*request*/, ::oteldemo::OrderDetail* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    virtual ::grpc::ServerUnaryReactor* GetOrder(
+      ::grpc::CallbackServerContext* /*context*/, const ::grpc::ByteBuffer* /*request*/, ::grpc::ByteBuffer* /*response*/)  { return nullptr; }
+  };
+  template <class BaseClass>
+  class WithRawCallbackMethod_RefundOrder : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithRawCallbackMethod_RefundOrder() {
+      ::grpc::Service::MarkMethodRawCallback(2,
+          new ::grpc::internal::CallbackUnaryHandler< ::grpc::ByteBuffer, ::grpc::ByteBuffer>(
+            [this](
+                   ::grpc::CallbackServerContext* context, const ::grpc::ByteBuffer* request, ::grpc::ByteBuffer* response) { return this->RefundOrder(context, request, response); }));
+    }
+    ~WithRawCallbackMethod_RefundOrder() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status RefundOrder(::grpc::ServerContext* /*context*/, const ::oteldemo::RefundOrderRequest* /*request*/, ::oteldemo::RefundOrderResponse* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    virtual ::grpc::ServerUnaryReactor* RefundOrder(
+      ::grpc::CallbackServerContext* /*context*/, const ::grpc::ByteBuffer* /*request*/, ::grpc::ByteBuffer* /*response*/)  { return nullptr; }
+  };
+  template <class BaseClass>
+  class WithStreamedUnaryMethod_GetOrdersByEmail : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithStreamedUnaryMethod_GetOrdersByEmail() {
+      ::grpc::Service::MarkMethodStreamed(0,
+        new ::grpc::internal::StreamedUnaryHandler<
+          ::oteldemo::GetOrdersByEmailRequest, ::oteldemo::GetOrdersByEmailResponse>(
+            [this](::grpc::ServerContext* context,
+                   ::grpc::ServerUnaryStreamer<
+                     ::oteldemo::GetOrdersByEmailRequest, ::oteldemo::GetOrdersByEmailResponse>* streamer) {
+                       return this->StreamedGetOrdersByEmail(context,
+                         streamer);
+                  }));
+    }
+    ~WithStreamedUnaryMethod_GetOrdersByEmail() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable regular version of this method
+    ::grpc::Status GetOrdersByEmail(::grpc::ServerContext* /*context*/, const ::oteldemo::GetOrdersByEmailRequest* /*request*/, ::oteldemo::GetOrdersByEmailResponse* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    // replace default version of method with streamed unary
+    virtual ::grpc::Status StreamedGetOrdersByEmail(::grpc::ServerContext* context, ::grpc::ServerUnaryStreamer< ::oteldemo::GetOrdersByEmailRequest,::oteldemo::GetOrdersByEmailResponse>* server_unary_streamer) = 0;
+  };
+  template <class BaseClass>
+  class WithStreamedUnaryMethod_GetOrder : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithStreamedUnaryMethod_GetOrder() {
+      ::grpc::Service::MarkMethodStreamed(1,
+        new ::grpc::internal::StreamedUnaryHandler<
+          ::oteldemo::GetOrderRequest, ::oteldemo::OrderDetail>(
+            [this](::grpc::ServerContext* context,
+                   ::grpc::ServerUnaryStreamer<
+                     ::oteldemo::GetOrderRequest, ::oteldemo::OrderDetail>* streamer) {
+                       return this->StreamedGetOrder(context,
+                         streamer);
+                  }));
+    }
+    ~WithStreamedUnaryMethod_GetOrder() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable regular version of this method
+    ::grpc::Status GetOrder(::grpc::ServerContext* /*context*/, const ::oteldemo::GetOrderRequest* /*request*/, ::oteldemo::OrderDetail* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    // replace default version of method with streamed unary
+    virtual ::grpc::Status StreamedGetOrder(::grpc::ServerContext* context, ::grpc::ServerUnaryStreamer< ::oteldemo::GetOrderRequest,::oteldemo::OrderDetail>* server_unary_streamer) = 0;
+  };
+  template <class BaseClass>
+  class WithStreamedUnaryMethod_RefundOrder : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithStreamedUnaryMethod_RefundOrder() {
+      ::grpc::Service::MarkMethodStreamed(2,
+        new ::grpc::internal::StreamedUnaryHandler<
+          ::oteldemo::RefundOrderRequest, ::oteldemo::RefundOrderResponse>(
+            [this](::grpc::ServerContext* context,
+                   ::grpc::ServerUnaryStreamer<
+                     ::oteldemo::RefundOrderRequest, ::oteldemo::RefundOrderResponse>* streamer) {
+                       return this->StreamedRefundOrder(context,
+                         streamer);
+                  }));
+    }
+    ~WithStreamedUnaryMethod_RefundOrder() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable regular version of this method
+    ::grpc::Status RefundOrder(::grpc::ServerContext* /*context*/, const ::oteldemo::RefundOrderRequest* /*request*/, ::oteldemo::RefundOrderResponse* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    // replace default version of method with streamed unary
+    virtual ::grpc::Status StreamedRefundOrder(::grpc::ServerContext* context, ::grpc::ServerUnaryStreamer< ::oteldemo::RefundOrderRequest,::oteldemo::RefundOrderResponse>* server_unary_streamer) = 0;
+  };
+  typedef WithStreamedUnaryMethod_GetOrdersByEmail<WithStreamedUnaryMethod_GetOrder<WithStreamedUnaryMethod_RefundOrder<Service > > > StreamedUnaryService;
+  typedef Service SplitStreamedService;
+  typedef WithStreamedUnaryMethod_GetOrdersByEmail<WithStreamedUnaryMethod_GetOrder<WithStreamedUnaryMethod_RefundOrder<Service > > > StreamedService;
 };
 
 // ------------Ad service------------------
