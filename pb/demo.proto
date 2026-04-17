@@ -238,6 +238,7 @@ message ChargeResponse {
 message RefundRequest {
     string transaction_id = 1;
     Money amount = 2;
+    string email = 3;
 }
 
 message RefundResponse {

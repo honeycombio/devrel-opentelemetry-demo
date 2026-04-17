@@ -25,6 +25,14 @@ module.exports.refund = async request => {
       span.end();
       throw new Error('Refund request failed.');
     }
+
+    // Deterministic failure for demo: emails ending in "125"
+    const email = request.email || '';
+    if (email.match(/125@/)) {
+      span.setStatus({ code: 2, message: 'Payment processor declined refund' });
+      span.end();
+      throw new Error('Payment processor declined the refund request.');
+    }
   }
 
   const { transactionId } = request;

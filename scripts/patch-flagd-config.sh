@@ -57,6 +57,13 @@ patch_flag "chatbot.orders.enabled" '{
   "defaultVariant": "off"
 }'
 
+patch_flag "storechatConversationFailure" '{
+  "description": "Simulate conversation store failures in store chat (1-in-5 when enabled)",
+  "state": "ENABLED",
+  "variants": { "on": true, "off": false },
+  "defaultVariant": "off"
+}'
+
 echo "Restarting flagd to pick up new config..."
 kubectl rollout restart deployment flagd -n "$NAMESPACE"
 kubectl rollout status deployment flagd -n "$NAMESPACE" --timeout=60s

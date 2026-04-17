@@ -126,6 +126,7 @@ internal class OrderServiceImpl : OrderService.OrderServiceBase
             {
                 TransactionId = order.TransactionId ?? "",
                 Amount = refundAmount,
+                Email = order.Email ?? "",
             },
             cancellationToken: context.CancellationToken);
 

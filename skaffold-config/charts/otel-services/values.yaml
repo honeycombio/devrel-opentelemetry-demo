@@ -82,6 +82,39 @@ services:
     replicas: 1
     env: []
 
+  storechat:
+    enabled: true
+    name: store-chat
+    image:
+      repository: ghcr.io/honeycombio/devrel-opentelemetry-demo
+      tag: latest-storechat
+      pullPolicy: IfNotPresent
+    imageOverride:
+      {}
+    awsRegion: ""
+    bedrockSonnetProfileArn: ""
+    port: 8080
+    replicas: 1
+    env:
+      - name: STORE_CHAT_PORT
+        value: "8080"
+      - name: ACCOUNTING_ADDR
+        value: "accounting:5060"
+      - name: SHIPPING_ADDR
+        value: "http://shipping:8080"
+      - name: VALKEY_ADDR
+        value: "valkey-cart:6379"
+      - name: FLAGD_HOST
+        value: "flagd"
+      - name: FLAGD_PORT
+        value: "8013"
+      - name: FLAGD_OFREP_PORT
+        value: "8016"
+      - name: OTEL_SEMCONV_STABILITY_OPT_IN
+        value: "gen_ai_latest_experimental"
+      - name: OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT
+        value: "true"
+
   llm:
     enabled: true
     name: llm

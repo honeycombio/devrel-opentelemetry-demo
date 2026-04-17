@@ -186,6 +186,15 @@
         "on": true
       },
       "defaultVariant": "off"
+    },
+    "storechatConversationFailure": {
+      "description": "Simulate conversation store failures in store chat (1-in-5 when enabled)",
+      "state": "ENABLED",
+      "variants": {
+        "on": true,
+        "off": false
+      },
+      "defaultVariant": "off"
     }
   }
 }

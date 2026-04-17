@@ -1,0 +1,120 @@
+import json
+import os
+
+import grpc
+import httpx
+from strands import tool
+
+from genproto import demo_pb2, demo_pb2_grpc
+
+ACCOUNTING_ADDR = os.environ.get("ACCOUNTING_ADDR", "accounting:5060")
+SHIPPING_ADDR = os.environ.get("SHIPPING_ADDR", "http://shipping:8080")
+
+_accounting_channel = grpc.insecure_channel(ACCOUNTING_ADDR)
+_order_stub = demo_pb2_grpc.OrderServiceStub(_accounting_channel)
+
+
+def _order_detail_to_dict(d) -> dict:
+    result = {
+        "orderId": d.order_id,
+        "email": d.email,
+        "status": d.status,
+        "createdAt": d.created_at,
+        "transactionId": d.transaction_id,
+        "shippingTrackingId": d.shipping_tracking_id,
+    }
+    if d.HasField("total_cost"):
+        result["totalCost"] = {
+            "currencyCode": d.total_cost.currency_code,
+            "units": d.total_cost.units,
+            "nanos": d.total_cost.nanos,
+        }
+    if d.HasField("shipping_address"):
+        result["shippingAddress"] = {
+            "streetAddress": d.shipping_address.street_address,
+            "city": d.shipping_address.city,
+            "state": d.shipping_address.state,
+            "country": d.shipping_address.country,
+            "zipCode": d.shipping_address.zip_code,
+        }
+    result["items"] = [
+        {
+            "item": {"productId": item.item.product_id, "quantity": item.item.quantity},
+            "cost": {
+                "currencyCode": item.cost.currency_code,
+                "units": item.cost.units,
+                "nanos": item.cost.nanos,
+            },
+        }
+        for item in d.items
+    ]
+    return result
+
+
+@tool
+def lookup_orders(email: str) -> str:
+    """Find all orders for a customer by their email address.
+
+    Args:
+        email: The customer's email address.
+
+    Returns:
+        JSON array of orders, or an error message.
+    """
+    response = _order_stub.GetOrdersByEmail(
+        demo_pb2.GetOrdersByEmailRequest(email=email)
+    )
+    orders = [_order_detail_to_dict(o) for o in response.orders]
+    return json.dumps(orders, indent=2)
+
+
+@tool
+def get_order(order_id: str) -> str:
+    """Get full details for a specific order including items, shipping, and payment status.
+
+    Args:
+        order_id: The UUID order identifier.
+
+    Returns:
+        JSON object with order details, or an error message.
+    """
+    detail = _order_stub.GetOrder(
+        demo_pb2.GetOrderRequest(order_id=order_id)
+    )
+    return json.dumps(_order_detail_to_dict(detail), indent=2)
+
+
+@tool
+def check_shipping(tracking_id: str) -> str:
+    """Check the shipping status for a tracking ID.
+
+    Args:
+        tracking_id: The shipping tracking ID (UUID from the order's shippingTrackingId).
+
+    Returns:
+        JSON object with shipping status and estimated delivery date.
+    """
+    resp = httpx.get(f"{SHIPPING_ADDR}/shipping-status/{tracking_id}", timeout=10)
+    resp.raise_for_status()
+    return json.dumps(resp.json(), indent=2)
+
+
+@tool
+def refund_order(order_id: str, email: str) -> str:
+    """Process a refund for an order. Requires the customer's email for verification.
+
+    Args:
+        order_id: The UUID order identifier to refund.
+        email: The customer's email address (must match the order).
+
+    Returns:
+        JSON object with refund result (success/failure and transaction ID).
+    """
+    response = _order_stub.RefundOrder(
+        demo_pb2.RefundOrderRequest(order_id=order_id, email=email)
+    )
+    return json.dumps({
+        "success": response.success,
+        "status": response.status,
+        "refundTransactionId": response.refund_transaction_id,
+    }, indent=2)

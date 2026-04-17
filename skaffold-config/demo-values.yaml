@@ -138,6 +138,27 @@ opentelemetry-collector:
               - set(attributes["trace.trace_id"], attributes["trace_id"])
               - set(attributes["trace.parent_id"], attributes["span_id"])
               - set(attributes["meta.annotation_type"], "span_event")
+      filter/drop_noisy_spans:
+        error_mode: ignore
+        traces:
+          span:
+            - name == "dns.lookup" or name == "tcp.connect"
+      transform/genai_span_events_to_attributes:
+        error_mode: ignore
+        trace_statements:
+          - context: spanevent
+            conditions:
+              - IsMatch(name, "^gen_ai\\..*")
+            statements:
+              - set(span.attributes["gen_ai.input.messages"], attributes["gen_ai.input.messages"]) where attributes["gen_ai.input.messages"] != nil
+              - set(span.attributes["gen_ai.output.messages"], attributes["gen_ai.output.messages"]) where attributes["gen_ai.output.messages"] != nil
+              - set(span.attributes["gen_ai.system_instructions"], attributes["gen_ai.system_instructions"]) where attributes["gen_ai.system_instructions"] != nil
+              - set(span.attributes["gen_ai.usage.input_tokens"], attributes["gen_ai.usage.input_tokens"]) where attributes["gen_ai.usage.input_tokens"] != nil
+              - set(span.attributes["gen_ai.usage.output_tokens"], attributes["gen_ai.usage.output_tokens"]) where attributes["gen_ai.usage.output_tokens"] != nil
+              - set(span.attributes["gen_ai.usage.total_tokens"], attributes["gen_ai.usage.total_tokens"]) where attributes["gen_ai.usage.total_tokens"] != nil
+              - set(span.attributes["gen_ai.response.finish_reasons"], attributes["gen_ai.response.finish_reasons"]) where attributes["gen_ai.response.finish_reasons"] != nil
+              - set(span.attributes["gen_ai.request.model"], attributes["gen_ai.request.model"]) where attributes["gen_ai.request.model"] != nil
+              - set(span.attributes["gen_ai.operation.name"], attributes["gen_ai.operation.name"]) where attributes["gen_ai.operation.name"] != nil
       transform/service_names:
         error_mode: ignore
         log_statements:
@@ -223,6 +244,8 @@ opentelemetry-collector:
             - otlp/honeycomb
             - spanmetrics
           processors:
+            - filter/drop_noisy_spans
+            - transform/genai_span_events_to_attributes
             - transform/service_names
             - transform/attribution
   ports:
