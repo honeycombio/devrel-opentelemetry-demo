@@ -9,7 +9,7 @@ export interface OtelServicesArgs {
 }
 
 /**
- * Deploys the otel-services Helm chart (chatbot, llm-evals, product-reviews, llm).
+ * Deploys the otel-services Helm chart (chatbot, storechat, llm-evals, product-reviews, llm).
  * The Helm release is named "otel-services", which means the Kubernetes ServiceAccount
  * will also be named "otel-services" — matching the BedrockPodIdentityAssociation.
  */
@@ -35,6 +35,14 @@ export class OtelServices extends pulumi.ComponentResource {
                     bedrockHaikuProfileArn: bedrockHaikuProfileArn,
                     bedrockSonnetProfileArn: bedrockSonnetProfileArn,
                     kafkaAddr: 'kafka:9092',
+                },
+                storechat: {
+                    enabled: true,
+                    image: {
+                        tag: `${args.config.containerTag}-storechat`,
+                    },
+                    awsRegion: clusterRegion,
+                    bedrockSonnetProfileArn: bedrockSonnetProfileArn,
                 },
                 llmEvals: {
                     enabled: true,
