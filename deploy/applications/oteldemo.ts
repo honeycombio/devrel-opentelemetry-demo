@@ -39,9 +39,10 @@ export class OtelDemo extends pulumi.ComponentResource {
         };
 
         // The otel-demo chart creates a flagd-config ConfigMap from its own bundled flags (no values override).
-        // Rather than fighting Helm's SSA ownership, we manage a separate ConfigMap with our custom flags
-        // and patch the flagd component to load from both URIs. The Helm release depends on this ConfigMap
-        // so that flagd never starts without it mounted — avoiding a deadlock on clean deployments.
+        // We manage our own ConfigMap with the full superset of flags and rebind the chart's `config-ro`
+        // volume to it in values.yaml — flagd and the flagd-ui sidecar both mount config-ro, so the UI can
+        // see and toggle every flag. The chart's default flagd-config ConfigMap is still rendered but unused.
+        // The Helm release depends on this ConfigMap so that flagd never starts without it mounted.
         const flagdConfigJson = fs.readFileSync("../src/flagd/demo.flagd.json", "utf-8");
         const flagdCustomConfig = new ConfigMap(`${name}-flagd-custom-config`, {
             metadata: {

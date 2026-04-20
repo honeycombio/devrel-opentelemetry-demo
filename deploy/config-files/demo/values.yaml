@@ -46,29 +46,13 @@ components:
       - name: LLM_EVALS_PORT
         value: "8088"
   flagd:
-    # Load custom flags (chatbot.enabled, llm flags, etc.) from a second ConfigMap
-    # managed by Pulumi, alongside the chart's built-in flagd-config.
-    command:
-      - "/flagd-build"
-      - "start"
-      - "--port"
-      - "8013"
-      - "--ofrep-port"
-      - "8016"
-      - "--uri"
-      - "file:./etc/flagd/demo.flagd.json"
-      - "--uri"
-      - "file:./etc/flagd-custom/demo.flagd.json"
+    # Rebind the chart's `config-ro` volume to our flagd-custom-config ConfigMap
+    # (a superset of the chart's default flags). flagd and the flagd-ui sidecar
+    # both mount config-ro, so the UI can now see and edit every flag.
     additionalVolumes:
       - name: config-ro
         configMap:
-          name: flagd-config
-      - name: config-custom
-        configMap:
           name: flagd-custom-config
-    additionalVolumeMounts:
-      - name: config-custom
-        mountPath: /etc/flagd-custom
 
 opentelemetry-collector:
   enabled: false
