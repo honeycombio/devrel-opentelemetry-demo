@@ -61,8 +61,6 @@ static_resources:
                             prefix_rewrite: "/"
                             upgrade_configs:
                               - upgrade_type: websocket
-                        - match: { prefix: "/chat" }
-                          route: { cluster: chatbot, timeout: 0s }
                         - match: { prefix: "/store-chat/" }
                           route: { cluster: store-chat, prefix_rewrite: "/", timeout: 0s }
                         - match: { path: "/store-chat" }
@@ -179,18 +177,6 @@ static_resources:
                     socket_address:
                       address: ${FRONTEND_HOST}
                       port_value: ${FRONTEND_PORT}
-    - name: chatbot
-      type: STRICT_DNS
-      lb_policy: ROUND_ROBIN
-      load_assignment:
-        cluster_name: chatbot
-        endpoints:
-          - lb_endpoints:
-              - endpoint:
-                  address:
-                    socket_address:
-                      address: chatbot
-                      port_value: ${CHATBOT_PORT}
     - name: store-chat
       type: STRICT_DNS
       lb_policy: ROUND_ROBIN

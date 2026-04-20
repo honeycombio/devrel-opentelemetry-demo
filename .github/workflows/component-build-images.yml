@@ -68,10 +68,6 @@ jobs:
             tag_suffix: accounting
             context: ./
             setup-qemu: true
-          - file: ./src/chatbot/Dockerfile
-            tag_suffix: chatbot
-            context: ./
-            setup-qemu: true
           - file: ./src/storechat/Dockerfile
             tag_suffix: storechat
             context: ./

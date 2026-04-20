@@ -202,6 +202,32 @@ export const AskAIInput = styled.input`
   }
 `;
 
+export const AskAIControls = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+`;
+
+export const QuickPromptButton = styled.button`
+  padding: 8px 12px;
+  border: 1px solid ${({ theme }) => theme.colors.borderGray};
+  border-radius: 6px;
+  background: ${({ theme }) => theme.colors.white};
+  color: ${({ theme }) => theme.colors.otelGray};
+  font-size: 14px;
+  cursor: pointer;
+
+  &:hover {
+    border-color: ${({ theme }) => theme.colors.otelBlue};
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+`;
+
 export const AskAIButton = styled.button`
   padding: 8px 16px;
   border: none;
@@ -226,24 +252,4 @@ export const AIMessage = styled.p`
   margin: 0;
   line-height: 1.5;
   color: ${({ theme }) => theme.colors.otelGray};
-`;
-
-export const FeedbackRow = styled.div`
-  display: flex;
-  gap: 8px;
-  align-items: center;
-`;
-
-export const FeedbackButton = styled.button`
-  padding: 8px 16px;
-  border: none;
-  border-radius: 6px;
-  background: ${({ theme }) => theme.colors.otelBlue};
-  color: ${({ theme }) => theme.colors.white};
-  font-size: 18px;
-  cursor: pointer;
-
-  &:hover {
-    filter: brightness(1.05);
-  }
 `;

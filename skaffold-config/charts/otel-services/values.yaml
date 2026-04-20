@@ -1,33 +1,6 @@
 namespace: default
 
 services:
-  chatbot:
-    enabled: false
-    name: chatbot
-    image:
-      repository: ghcr.io/honeycombio/devrel-opentelemetry-demo
-      tag: latest-chatbot
-      pullPolicy: IfNotPresent
-    imageOverride:
-      {}
-    anthropicApiKey: ""
-    openaiApiKey: ""
-    awsRegion: ""
-    bedrockHaikuProfileArn: ""
-    bedrockSonnetProfileArn: ""
-    kafkaAddr: ""
-    port: 8087
-    replicas: 1
-    env:
-      - name: CHATBOT_PORT
-        value: "8087"
-      - name: FRONTEND_ADDR
-        value: "http://frontend:8080"
-      - name: FLAGD_HOST
-        value: "flagd"
-      - name: FLAGD_PORT
-        value: "8013"
-
   productReviews:
     enabled: true
     name: product-reviews

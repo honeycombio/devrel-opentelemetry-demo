@@ -20,10 +20,6 @@ build:
       context: .
       docker:
         dockerfile: src/cart/src/Dockerfile
-    - image: chatbot
-      context: .
-      docker:
-        dockerfile: src/chatbot/Dockerfile
     - image: storechat
       context: .
       docker:
@@ -196,17 +192,8 @@ deploy:
         recreatePods: false
         skipBuildDependencies: false
         setValues:
-          services.chatbot.enabled: "true"
           services.llmEvals.enabled: "true"
         setValueTemplates:
-          services.chatbot.anthropicApiKey: "{{.ANTHROPIC_API_KEY}}"
-          services.chatbot.openaiApiKey: "{{.OPENAI_API_KEY}}"
-          services.chatbot.awsRegion: "{{.BEDROCK_AWS_REGION}}"
-          services.chatbot.bedrockHaikuProfileArn: "{{.BEDROCK_HAIKU_PROFILE_ARN}}"
-          services.chatbot.bedrockSonnetProfileArn: "{{.BEDROCK_SONNET_PROFILE_ARN}}"
-          services.chatbot.kafkaAddr: "kafka:9092"
-          services.chatbot.imageOverride.repository: "{{if .IMAGE_REPO_chatbot }}{{.IMAGE_REPO_chatbot}}{{end}}"
-          services.chatbot.imageOverride.tag: "{{if .IMAGE_REPO_chatbot }}{{.IMAGE_TAG_chatbot}}@{{.IMAGE_DIGEST_chatbot}}{{end}}"
           services.storechat.awsRegion: "{{.BEDROCK_AWS_REGION}}"
           services.storechat.bedrockSonnetProfileArn: "{{.BEDROCK_SONNET_PROFILE_ARN}}"
           services.storechat.imageOverride.repository: "{{if .IMAGE_REPO_storechat }}{{.IMAGE_REPO_storechat}}{{end}}"
@@ -239,6 +226,3 @@ deploy:
               - "./scripts/setup-pod-identity-association.sh"
               - "--namespace"
               - "$USER-local"
-        - host:
-            command:
-              - "./scripts/patch-flagd-config.sh"

@@ -1,15 +1,6 @@
 {
   "$schema": "https://flagd.dev/schema/v0/flags.json",
   "flags": {
-    "chatbot.enabled": {
-      "defaultVariant": "on",
-      "description": "Enable chatbot LLM integration",
-      "state": "ENABLED",
-      "variants": {
-        "off": false,
-        "on": true
-      }
-    },
     "llmInaccurateResponse": {
       "defaultVariant": "off",
       "description": "LLM returns an inaccurate product summary for product ID L9ECAV7KIM",
@@ -142,15 +133,6 @@
       },
       "defaultVariant": "off"
     },
-    "llm.performEvals": {
-      "defaultVariant": "off",
-      "description": "Enable LLM evaluation scoring (bias, hallucination, relevance) on chatbot responses",
-      "state": "ENABLED",
-      "variants": {
-        "off": false,
-        "on": true
-      }
-    },
     "emailMemoryLeak": {
       "description": "Memory leak in the email service.",
       "state": "ENABLED",
@@ -175,15 +157,6 @@
         "25%": 0.25,
         "10%": 0.1,
         "off": 0
-      },
-      "defaultVariant": "off"
-    },
-    "chatbot.orders.enabled": {
-      "description": "Enable chatbot order status and refund flow",
-      "state": "ENABLED",
-      "variants": {
-        "off": false,
-        "on": true
       },
       "defaultVariant": "off"
     },

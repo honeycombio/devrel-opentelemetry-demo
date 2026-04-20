@@ -87,7 +87,7 @@ if (deployConfig.isAws) {
     }
 }
 
-// Deploy chatbot and supporting services when Bedrock is enabled
+// Deploy storechat and llm-evals when Bedrock is enabled
 if (deployConfig.enableBedrock) {
     new OtelServices("otel-services", {
         config: deployConfig,

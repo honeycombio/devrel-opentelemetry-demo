@@ -37,8 +37,6 @@ components:
     envOverrides:
       - name: ENVOY_ADDR
         value: 0.0.0.0
-      - name: CHATBOT_PORT
-        value: "8087"
       - name: STORE_CHAT_HOST
         value: "store-chat"
       - name: STORE_CHAT_PORT

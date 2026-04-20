@@ -3,6 +3,7 @@
 
 import { NextPage } from 'next';
 import Head from 'next/head';
+import Image from 'next/image';
 import { useRouter } from 'next/router';
 import { useCallback, useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
@@ -20,43 +21,15 @@ import { useCart } from '../../../providers/Cart.provider';
 import * as S from '../../../styles/ProductDetail.styled';
 import { useCurrency } from '../../../providers/Currency.provider';
 import ProductReviewProvider from '../../../providers/ProductReview.provider';
-import ProductAIAssistantProvider, { useAiAssistant } from '../../../providers/ProductAIAssistant.provider';
-import { tracedQuery } from '../../../utils/telemetry/SpanUtils';
+import ProductAIAssistantProvider from '../../../providers/ProductAIAssistant.provider';
 
-const quantityOptions = new Array(11).fill(0).map((_, i) => i);
-
-const AddToCartButton = ({ productId, quantity }: { productId: string; quantity: number }) => {
-  const { push } = useRouter();
-  const { addItem } = useCart();
-  const { aiResponse, feedbackSent, sendFeedback } = useAiAssistant();
-
-  const onAddItem = useCallback(async () => {
-    const extraAttributes = aiResponse?.requestModel
-      ? { 'chatbot.research.model': aiResponse.requestModel }
-      : undefined;
-    await addItem({ productId, quantity }, extraAttributes);
-    if (aiResponse) {
-      const isValidAnswer = !aiResponse.text.includes("Sorry, I'm not able to answer") &&
-        !aiResponse.text.includes('The Chatbot is Unavailable');
-      if (!feedbackSent && isValidAnswer) {
-        await sendFeedback(aiResponse.traceId, aiResponse.spanId, 0, aiResponse.requestModel, aiResponse.responseModel, aiResponse.totalInputTokens, aiResponse.totalOutputTokens);
-      }
-      await ApiGateway.sendAddedToCart(aiResponse.traceId, aiResponse.spanId, productId, quantity, aiResponse.requestModel, aiResponse.responseModel, aiResponse.totalInputTokens, aiResponse.totalOutputTokens);
-    }
-    push('/cart');
-  }, [addItem, productId, quantity, push, aiResponse, feedbackSent, sendFeedback]);
-
-  return (
-    <S.AddToCart data-cy={CypressFields.ProductAddToCart} onClick={onAddItem}>
-      <img id="add-to-cart-image" src="/icons/CartIcon.svg" height="15" width="15" alt="cart" /> Add To Cart
-    </S.AddToCart>
-  );
-};
+const quantityOptions = new Array(10).fill(0).map((_, i) => i + 1);
 
 const ProductDetail: NextPage = () => {
-  const { query } = useRouter();
+  const { push, query } = useRouter();
   const [quantity, setQuantity] = useState(1);
   const {
+    addItem,
     cart: { items },
   } = useCart();
   const { selectedCurrency } = useCurrency();
@@ -76,14 +49,18 @@ const ProductDetail: NextPage = () => {
     } = {} as Product,
   } = useQuery({
       queryKey: ['product', productId, 'selectedCurrency', selectedCurrency],
-      queryFn: () => {
-        return tracedQuery('getProduct', () => ApiGateway.getProduct(productId, selectedCurrency), 'product-detail');
-      },
-      // KJR - by default ReactQuery retries forever, so lots of spans.
-      retry: false,
+      queryFn: () => ApiGateway.getProduct(productId, selectedCurrency),
       enabled: !!productId,
     }
   ) as { data: Product };
+
+  const onAddItem = useCallback(async () => {
+    await addItem({
+      productId,
+      quantity,
+    });
+    push('/cart');
+  }, [addItem, productId, quantity, push]);
 
   return (
     <AdProvider
@@ -94,39 +71,41 @@ const ProductDetail: NextPage = () => {
         <title>Otel Demo - Product</title>
       </Head>
       <Layout>
-        <ProductAIAssistantProvider productId={productId || ''}>
-          <S.ProductDetail data-cy={CypressFields.ProductDetail}>
-            <S.Container id="product-dt-container">
-              { picture && <S.Image $src={"/images/products/" + picture} id="product-picture" data-cy={CypressFields.ProductPicture} /> }
-              <S.Details id="s-product-details">
-                <S.Name id="product-name" data-cy={CypressFields.ProductName}>{name}</S.Name>
-                <S.Description id="product-description" data-cy={CypressFields.ProductDescription}>{description}</S.Description>
-                <S.ProductPrice>
-                  <ProductPrice price={priceUsd} />
-                </S.ProductPrice>
-                <S.Text>Quantity</S.Text>
-                <Select
-                  data-cy={CypressFields.ProductQuantity}
-                  onChange={event => setQuantity(+event.target.value)}
-                  value={quantity}
-                >
-                  {quantityOptions.map(option => (
-                    <option key={option} value={option}>
-                      {option}
-                    </option>
-                  ))}
-                </Select>
-                {productId && <AddToCartButton productId={productId} quantity={quantity} />}
-              </S.Details>
-            </S.Container>
-            {productId && (
+        <S.ProductDetail data-cy={CypressFields.ProductDetail}>
+          <S.Container>
+            <S.Image $src={"/images/products/" + picture} data-cy={CypressFields.ProductPicture} />
+            <S.Details>
+              <S.Name data-cy={CypressFields.ProductName}>{name}</S.Name>
+              <S.Description data-cy={CypressFields.ProductDescription}>{description}</S.Description>
+              <S.ProductPrice>
+                <ProductPrice price={priceUsd} />
+              </S.ProductPrice>
+              <S.Text>Quantity</S.Text>
+              <Select
+                data-cy={CypressFields.ProductQuantity}
+                onChange={event => setQuantity(+event.target.value)}
+                value={quantity}
+              >
+                {quantityOptions.map(option => (
+                  <option key={option} value={option}>
+                    {option}
+                  </option>
+                ))}
+              </Select>
+              <S.AddToCart data-cy={CypressFields.ProductAddToCart} onClick={onAddItem}>
+                <Image src="/icons/Cart.svg" height="15" width="15" alt="cart" /> Add To Cart
+              </S.AddToCart>
+            </S.Details>
+          </S.Container>
+          {productId && (
+              <ProductAIAssistantProvider productId={productId}>
                 <ProductReviewProvider productId={productId}>
                   <ProductReviews />
                 </ProductReviewProvider>
-            )}
-            <Recommendations />
-          </S.ProductDetail>
-        </ProductAIAssistantProvider>
+              </ProductAIAssistantProvider>
+          )}
+          <Recommendations />
+        </S.ProductDetail>
         <Ad />
       </Layout>
     </AdProvider>
