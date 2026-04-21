@@ -150,6 +150,16 @@ config:
         logs:
             log_record:
                 - severity_number < SEVERITY_NUMBER_WARN
+
+    # Drop low-signal flagd feature-flag evaluation spans from all traces:
+    # client-side `/flagd.evaluation.v1.Service/*` invocations and the
+    # server-side `resolveBoolean` / jsonEvaluator internals inside flagd.
+    filter/drop_flagd_spans:
+        error_mode: ignore
+        traces:
+            span:
+                - attributes["rpc.service"] == "flagd.evaluation.v1.Service"
+                - resource.attributes["service.name"] == "flagd"
   exporters:
     otlp/refinery:
       endpoint: ${REFINERY_ENDPOINT}
@@ -210,6 +220,7 @@ config:
           - otlp/traces-dogfood
           - otlp/bindplane
         processors:
+          - filter/drop_flagd_spans
           - transform/service_names
           - transform/attribution
 

@@ -77,12 +77,20 @@ if (deployConfig.isAws) {
         serviceAccountName: "cluster-telemetry-collector-opentelemetry-collector"
     }, { dependsOn: [clusterTelemetryCollector] });
 
-    // Associate Bedrock role with the demo service account when Bedrock is enabled
+    // Associate Bedrock role with the demo service accounts when Bedrock is enabled.
+    // `otel-services` runs storechat/llm-evals (our chart); `otel-demo` runs
+    // product-reviews (the upstream chart) — both need Bedrock when we point
+    // product-reviews at `LLM_PROVIDER=bedrock`.
     if (deployConfig.enableBedrock) {
         new BedrockPodIdentityAssociation("demo-bedrock", {
             config: deployConfig,
             namespace: demoNamespace.metadata.name,
             serviceAccountName: "otel-services",
+        }, { dependsOn: [demo] });
+        new BedrockPodIdentityAssociation("demo-bedrock-otel-demo", {
+            config: deployConfig,
+            namespace: demoNamespace.metadata.name,
+            serviceAccountName: "otel-demo",
         }, { dependsOn: [demo] });
     }
 }

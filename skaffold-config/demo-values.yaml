@@ -187,6 +187,15 @@ opentelemetry-collector:
           - context: log
             statements:
               - set(resource.attributes["service.name"], "api-gateway") where resource.attributes["k8s.container.name"] == "frontend"
+      # Drop low-signal flagd feature-flag evaluation spans:
+      # client-side `/flagd.evaluation.v1.Service/*` gRPC calls, and the
+      # server-side `resolveBoolean` / jsonEvaluator internals inside flagd.
+      filter/drop_flagd_spans:
+        error_mode: ignore
+        traces:
+          span:
+            - attributes["rpc.service"] == "flagd.evaluation.v1.Service"
+            - resource.attributes["service.name"] == "flagd"
     exporters:
       debug/detailed:
         verbosity: detailed
@@ -235,6 +244,7 @@ opentelemetry-collector:
             - otlp/honeycomb
             - spanmetrics
           processors:
+            - filter/drop_flagd_spans
             - transform/genai_span_events_to_attributes
             - transform/service_names
             - transform/attribution

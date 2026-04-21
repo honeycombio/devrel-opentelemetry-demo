@@ -147,12 +147,24 @@ export class OtelDemo extends pulumi.ComponentResource {
                                 { name: "PRODUCT_REVIEWS_PORT", value: "3551" },
                                 { name: "OTEL_PYTHON_LOG_CORRELATION", value: "true" },
                                 { name: "OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT", value: "true" },
+                                { name: "OTEL_SEMCONV_STABILITY_OPT_IN", value: "gen_ai_latest_experimental" },
+                                // Suppress botocore auto-instrumentation — its Bedrock extension emits a
+                                // duplicate `chat <modelId>` span and per-message Events-API records that
+                                // we already capture on the llm.chat wrapper span in `llm_client.py`.
+                                { name: "OTEL_PYTHON_DISABLED_INSTRUMENTATIONS", value: "botocore" },
                                 { name: "PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION", value: "python" },
                                 { name: "DB_CONNECTION_STRING", value: "host=postgresql user=otelu password=otelp dbname=otel" },
+                                // LLM provider — `bedrock` uses our Pod Identity to call Bedrock Converse;
+                                // `openai` falls back to the upstream `src/llm/` fake. Both paths exercise
+                                // real tool-use; only the LLM backend differs.
+                                { name: "LLM_PROVIDER", value: "bedrock" },
+                                { name: "AWS_REGION", value: args.config.infraStack.getOutput("clusterRegion") as pulumi.Output<string> },
+                                { name: "BEDROCK_SONNET_PROFILE_ARN", value: args.config.infraStack.getOutput("bedrockClaudeSonnetProfileArn") as pulumi.Output<string> },
+                                // Retained so `LLM_PROVIDER=openai` still works as the upstream A/B option.
                                 { name: "LLM_BASE_URL", value: "http://llm:8000/v1" },
                                 { name: "OPENAI_API_KEY", value: "dummy" },
                                 { name: "LLM_MODEL", value: "astronomy-llm" },
-                                { name: "PRODUCT_CATALOG_ADDR", value: "product-catalog:3550" },
+                                { name: "PRODUCT_CATALOG_ADDR", value: "product-catalog:8080" },
                                 { name: "FLAGD_HOST", value: "flagd" },
                                 { name: "FLAGD_PORT", value: "8013" },
                                 { name: "LLM_HOST", value: "llm" },
