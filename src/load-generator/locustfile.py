@@ -166,34 +166,75 @@ class WebsiteUser(HttpUser):
             logging.info(f"Asking the AI Assistant a question for: {product} {question}")
             self.client.post(f"/api/product-ask-ai-assistant/{product}", json={"question": question})
 
+    # Multi-turn scripts for store-chat. Each entry is a list of 2-4 user
+    # messages that a real customer might send in one session. The agent
+    # keeps conversation state keyed by sessionId, so follow-ups inherit
+    # context from earlier turns.
+    STORE_CHAT_CONVERSATIONS = [
+        [
+            "What's the status of my most recent order?",
+            "When will it arrive?",
+            "Thanks!",
+        ],
+        [
+            "Has my package shipped yet?",
+            "Can you give me the tracking number?",
+        ],
+        [
+            "I need to return something.",
+            "Yes, please refund my most recent order — it arrived damaged.",
+            "When will the money be back on my card?",
+        ],
+        [
+            "Can you look up my recent orders?",
+            "Refund the telescope, it's the wrong model.",
+        ],
+        [
+            "My order hasn't arrived yet and it's been a week.",
+            "Can you check the shipping status?",
+            "If it's lost, please refund it.",
+        ],
+        [
+            "I bought something last week, what was it?",
+            "How much did I pay for it?",
+        ],
+    ]
+
     @task(1)
     def ask_store_chat(self):
         # store-chat is the post-purchase customer-service agent (orders,
         # refunds, shipping status). Pick an email from the people fixture
-        # so the order lookup has something plausible to resolve against.
+        # so order lookup has something plausible to resolve against, and
+        # run a multi-turn conversation sharing a single sessionId so the
+        # agent can carry context across turns.
         checkout_person = random.choice(people)
         email = checkout_person.get("email", "")
         session_id = str(uuid.uuid4())
-        question = random.choice([
-            "What's the status of my most recent order?",
-            "When will my order arrive?",
-            "Can you check the shipping status for my last purchase?",
-            "I need to refund my most recent order, it arrived damaged.",
-            "Has my package been shipped yet?",
-            "Can you help me track my order?",
-            "I want to return the telescope I bought last week.",
-            "What are the tracking details for my latest order?",
-        ])
+        conversation = random.choice(self.STORE_CHAT_CONVERSATIONS)
         with self.tracer.start_as_current_span(
             "user_ask_store_chat",
             context=Context(),
-            attributes={"session.id": session_id, "email": email, "question": question},
+            attributes={
+                "session.id": session_id,
+                "email": email,
+                "conversation.length": len(conversation),
+            },
         ):
-            logging.info(f"Asking store-chat as {email} (session {session_id}): {question}")
-            self.client.post(
-                "/store-chat/chat",
-                json={"question": question, "sessionId": session_id, "email": email},
-            )
+            logging.info(f"Starting store-chat session {session_id} as {email} ({len(conversation)} turns)")
+            for turn_index, question in enumerate(conversation):
+                with self.tracer.start_as_current_span(
+                    "user_store_chat_turn",
+                    attributes={
+                        "session.id": session_id,
+                        "turn.index": turn_index,
+                        "question": question,
+                    },
+                ):
+                    logging.info(f"[session {session_id}] turn {turn_index}: {question}")
+                    self.client.post(
+                        "/store-chat/chat",
+                        json={"question": question, "sessionId": session_id, "email": email},
+                    )
 
     @task(3)
     def get_ads(self):
