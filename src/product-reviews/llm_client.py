@@ -265,6 +265,11 @@ def _messages_to_bedrock(messages: list[dict]) -> list[dict]:
 
 
 def _tools_to_bedrock(tools: list[dict]) -> dict:
+    # Trailing `cachePoint` block marks the end of the (stable) tool definitions
+    # as a Bedrock prompt-cache boundary. Bedrock caches everything before it —
+    # system prompt + tools — and charges ~0.1x on subsequent turns/requests
+    # that hit the cache. Caching silently no-ops if the cached prefix is below
+    # the model's minimum token threshold, so this is always safe to include.
     return {
         "tools": [
             {
@@ -275,7 +280,7 @@ def _tools_to_bedrock(tools: list[dict]) -> dict:
                 }
             }
             for t in tools
-        ]
+        ] + [{"cachePoint": {"type": "default"}}]
     }
 
 
@@ -283,7 +288,13 @@ def _bedrock_chat(system_prompt: str, messages: list[dict], tools: list[dict]) -
     bedrock_messages = _messages_to_bedrock(messages)
     kwargs = {
         "modelId": os.environ["BEDROCK_SONNET_PROFILE_ARN"],
-        "system": [{"text": system_prompt}],
+        # Cache the system prompt alongside the tools (see _tools_to_bedrock) —
+        # together they form the stable prefix that's identical across every
+        # turn of the tool-use loop and across requests.
+        "system": [
+            {"text": system_prompt},
+            {"cachePoint": {"type": "default"}},
+        ],
         "messages": bedrock_messages,
         "inferenceConfig": {"maxTokens": 1024},
     }
@@ -334,6 +345,17 @@ def _bedrock_chat(system_prompt: str, messages: list[dict], tools: list[dict]) -
         span.set_attribute("gen_ai.response.finish_reasons", [stop_reason])
         span.set_attribute("gen_ai.usage.input_tokens", usage.get("inputTokens", 0))
         span.set_attribute("gen_ai.usage.output_tokens", usage.get("outputTokens", 0))
+        # Bedrock returns these only when a cachePoint is configured and the
+        # prefix hits the model's minimum. Missing -> 0 means we either didn't
+        # try to cache or the cacheable prefix was too small this turn.
+        span.set_attribute(
+            "gen_ai.usage.cache_read.input_tokens",
+            usage.get("cacheReadInputTokens", 0) or 0,
+        )
+        span.set_attribute(
+            "gen_ai.usage.cache_write.input_tokens",
+            usage.get("cacheWriteInputTokens", 0) or 0,
+        )
     text_parts: list[str] = []
     tool_calls: list[ToolCall] = []
     for block in output_message.get("content", []):
