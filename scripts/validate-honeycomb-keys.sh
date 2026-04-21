@@ -72,24 +72,26 @@ log "Validating Honeycomb API Key"
 log "=============================================="
 log ""
 
+HONEYCOMB_API_ENDPOINT="${HONEYCOMB_API_ENDPOINT:-api.honeycomb.io}"
+
 if [ -z "$HONEYCOMB_API_KEY" ]; then
   log_error "   ${RED}✗ HONEYCOMB_API_KEY is not set${NC}"
   errors=$((errors + 1))
 else
   response=$(curl -s -w "\n%{http_code}" -H "X-Honeycomb-Team: $HONEYCOMB_API_KEY" \
-                   "https://api.honeycomb.io/1/auth")
+                   "https://${HONEYCOMB_API_ENDPOINT}/1/auth")
 
   http_code=$(echo "$response" | tail -n1)
   body=$(echo "$response" | sed '$d')
 
   if [ "$http_code" != "200" ]; then
-    log_error "   ${RED}✗ Failed to authenticate with HONEYCOMB_API_KEY (HTTP $http_code)${NC}"
+    log_error "   ${RED}✗ Failed to authenticate with HONEYCOMB_API_KEY against ${HONEYCOMB_API_ENDPOINT} (HTTP $http_code)${NC}"
     log_error "   ${RED}  Response: $body${NC}"
     errors=$((errors + 1))
   else
     env_name=$(echo "$body" | jq -r '.environment.name // "classic"')
     team_name=$(echo "$body" | jq -r '.team.name // empty')
-    log "   ${GREEN}✓ API key is valid (Team: $team_name, Environment: $env_name)${NC}"
+    log "   ${GREEN}✓ API key is valid against ${HONEYCOMB_API_ENDPOINT} (Team: $team_name, Environment: $env_name)${NC}"
   fi
 fi
 

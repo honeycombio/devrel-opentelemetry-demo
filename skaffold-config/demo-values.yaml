@@ -200,7 +200,7 @@ opentelemetry-collector:
       debug/detailed:
         verbosity: detailed
       otlp/honeycomb:
-        endpoint: api.honeycomb.io:443
+        endpoint: api-dogfood.honeycomb.io:443
         headers:
           x-honeycomb-team: ${env:HONEYCOMB_API_KEY}
 
@@ -211,7 +211,7 @@ opentelemetry-collector:
             - periodic:
                 exporter:
                   otlp:
-                    endpoint: https://api.honeycomb.io
+                    endpoint: https://api-dogfood.honeycomb.io
                     headers:
                       - name: x-honeycomb-dataset
                         value: otel-collector-metrics
