@@ -164,7 +164,36 @@ class WebsiteUser(HttpUser):
         ])
         with self.tracer.start_as_current_span("user_ask_product_ai_assistant", context=Context(), attributes={"product.id": product, "question": question}):
             logging.info(f"Asking the AI Assistant a question for: {product} {question}")
-            self.client.post("/chat/question", json={"question": question, "productId": product})
+            self.client.post(f"/api/product-ask-ai-assistant/{product}", json={"question": question})
+
+    @task(1)
+    def ask_store_chat(self):
+        # store-chat is the post-purchase customer-service agent (orders,
+        # refunds, shipping status). Pick an email from the people fixture
+        # so the order lookup has something plausible to resolve against.
+        checkout_person = random.choice(people)
+        email = checkout_person.get("email", "")
+        session_id = str(uuid.uuid4())
+        question = random.choice([
+            "What's the status of my most recent order?",
+            "When will my order arrive?",
+            "Can you check the shipping status for my last purchase?",
+            "I need to refund my most recent order, it arrived damaged.",
+            "Has my package been shipped yet?",
+            "Can you help me track my order?",
+            "I want to return the telescope I bought last week.",
+            "What are the tracking details for my latest order?",
+        ])
+        with self.tracer.start_as_current_span(
+            "user_ask_store_chat",
+            context=Context(),
+            attributes={"session.id": session_id, "email": email, "question": question},
+        ):
+            logging.info(f"Asking store-chat as {email} (session {session_id}): {question}")
+            self.client.post(
+                "/store-chat/chat",
+                json={"question": question, "sessionId": session_id, "email": email},
+            )
 
     @task(3)
     def get_ads(self):
