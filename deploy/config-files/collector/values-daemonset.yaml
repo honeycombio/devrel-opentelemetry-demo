@@ -160,6 +160,29 @@ config:
             span:
                 - attributes["rpc.service"] == "flagd.evaluation.v1.Service"
                 - resource.attributes["service.name"] == "flagd"
+
+    # Promote Strands-style gen_ai.* span-event attributes onto the parent
+    # span so the latest-semconv attribute form (gen_ai.input.messages /
+    # gen_ai.output.messages / gen_ai.system_instructions / gen_ai.usage.*)
+    # shows up directly on chat spans. Strands emits these on
+    # `gen_ai.client.inference.operation.details` events — this transform
+    # copies each attribute up to span level when present.
+    transform/genai_span_events_to_attributes:
+        error_mode: ignore
+        trace_statements:
+            - context: spanevent
+              conditions:
+                  - IsMatch(name, "^gen_ai\\..*")
+              statements:
+                  - set(span.attributes["gen_ai.input.messages"], attributes["gen_ai.input.messages"]) where attributes["gen_ai.input.messages"] != nil
+                  - set(span.attributes["gen_ai.output.messages"], attributes["gen_ai.output.messages"]) where attributes["gen_ai.output.messages"] != nil
+                  - set(span.attributes["gen_ai.system_instructions"], attributes["gen_ai.system_instructions"]) where attributes["gen_ai.system_instructions"] != nil
+                  - set(span.attributes["gen_ai.usage.input_tokens"], attributes["gen_ai.usage.input_tokens"]) where attributes["gen_ai.usage.input_tokens"] != nil
+                  - set(span.attributes["gen_ai.usage.output_tokens"], attributes["gen_ai.usage.output_tokens"]) where attributes["gen_ai.usage.output_tokens"] != nil
+                  - set(span.attributes["gen_ai.usage.total_tokens"], attributes["gen_ai.usage.total_tokens"]) where attributes["gen_ai.usage.total_tokens"] != nil
+                  - set(span.attributes["gen_ai.response.finish_reasons"], attributes["gen_ai.response.finish_reasons"]) where attributes["gen_ai.response.finish_reasons"] != nil
+                  - set(span.attributes["gen_ai.request.model"], attributes["gen_ai.request.model"]) where attributes["gen_ai.request.model"] != nil
+                  - set(span.attributes["gen_ai.operation.name"], attributes["gen_ai.operation.name"]) where attributes["gen_ai.operation.name"] != nil
   exporters:
     otlp/refinery:
       endpoint: ${REFINERY_ENDPOINT}
@@ -221,6 +244,7 @@ config:
           - otlp/bindplane
         processors:
           - filter/drop_flagd_spans
+          - transform/genai_span_events_to_attributes
           - transform/service_names
           - transform/attribution
 
