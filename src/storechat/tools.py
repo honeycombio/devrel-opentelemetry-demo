@@ -61,11 +61,19 @@ def lookup_orders(email: str) -> str:
     Returns:
         JSON array of orders, or an error message.
     """
-    response = _order_stub.GetOrdersByEmail(
-        demo_pb2.GetOrdersByEmailRequest(email=email)
-    )
-    orders = [_order_detail_to_dict(o) for o in response.orders]
-    return json.dumps(orders, indent=2)
+    try:
+        response = _order_stub.GetOrdersByEmail(
+            demo_pb2.GetOrdersByEmailRequest(email=email),
+            timeout=5,
+        )
+        orders = [_order_detail_to_dict(o) for o in response.orders]
+        return json.dumps(orders, indent=2)
+    except grpc.RpcError as e:
+        return json.dumps({
+            "error": "order lookup failed",
+            "code": e.code().name,
+            "detail": e.details(),
+        })
 
 
 @tool
@@ -78,10 +86,18 @@ def get_order(order_id: str) -> str:
     Returns:
         JSON object with order details, or an error message.
     """
-    detail = _order_stub.GetOrder(
-        demo_pb2.GetOrderRequest(order_id=order_id)
-    )
-    return json.dumps(_order_detail_to_dict(detail), indent=2)
+    try:
+        detail = _order_stub.GetOrder(
+            demo_pb2.GetOrderRequest(order_id=order_id),
+            timeout=5,
+        )
+        return json.dumps(_order_detail_to_dict(detail), indent=2)
+    except grpc.RpcError as e:
+        return json.dumps({
+            "error": "order lookup failed",
+            "code": e.code().name,
+            "detail": e.details(),
+        })
 
 
 @tool
@@ -94,9 +110,15 @@ def check_shipping(tracking_id: str) -> str:
     Returns:
         JSON object with shipping status and estimated delivery date.
     """
-    resp = httpx.get(f"{SHIPPING_ADDR}/shipping-status/{tracking_id}", timeout=10)
-    resp.raise_for_status()
-    return json.dumps(resp.json(), indent=2)
+    try:
+        resp = httpx.get(f"{SHIPPING_ADDR}/shipping-status/{tracking_id}", timeout=10)
+        resp.raise_for_status()
+        return json.dumps(resp.json(), indent=2)
+    except httpx.HTTPError as e:
+        return json.dumps({
+            "error": "shipping lookup failed",
+            "detail": str(e),
+        })
 
 
 @tool
@@ -110,11 +132,19 @@ def refund_order(order_id: str, email: str) -> str:
     Returns:
         JSON object with refund result (success/failure and transaction ID).
     """
-    response = _order_stub.RefundOrder(
-        demo_pb2.RefundOrderRequest(order_id=order_id, email=email)
-    )
-    return json.dumps({
-        "success": response.success,
-        "status": response.status,
-        "refundTransactionId": response.refund_transaction_id,
-    }, indent=2)
+    try:
+        response = _order_stub.RefundOrder(
+            demo_pb2.RefundOrderRequest(order_id=order_id, email=email),
+            timeout=5,
+        )
+        return json.dumps({
+            "success": response.success,
+            "status": response.status,
+            "refundTransactionId": response.refund_transaction_id,
+        }, indent=2)
+    except grpc.RpcError as e:
+        return json.dumps({
+            "error": "refund failed",
+            "code": e.code().name,
+            "detail": e.details(),
+        })
