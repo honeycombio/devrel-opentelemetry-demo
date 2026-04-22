@@ -6,7 +6,7 @@ import grpc
 import httpx
 from strands import tool
 
-from conversation import evaluate_flag
+from conversation import evaluate_flag_percentage
 from genproto import demo_pb2, demo_pb2_grpc
 
 ACCOUNTING_ADDR = os.environ.get("ACCOUNTING_ADDR", "accounting:5060")
@@ -112,9 +112,11 @@ def check_shipping(tracking_id: str) -> str:
     Returns:
         JSON object with shipping status and estimated delivery date.
     """
-    # Chaos injection: when flag is on, fail 1-in-5 calls to exercise the agent's
-    # tool-failure handling path. Raises so the execute_tool span is marked error=true.
-    if evaluate_flag("storechatConversationFailure") and random.random() < 0.2:
+    # Chaos injection: fail at the probability set by the storeChatShippingToolFailure
+    # flag variant (off=0, 20%, 50%, 75%, 100%). Raises so the execute_tool span is
+    # marked error=true and the supervisor's event loop gets to react.
+    failure_rate = evaluate_flag_percentage("storeChatShippingToolFailure")
+    if failure_rate > 0 and random.random() < failure_rate:
         raise ConnectionError("shipping service unreachable")
 
     try:

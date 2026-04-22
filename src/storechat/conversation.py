@@ -19,7 +19,7 @@ _FLAGD_OFREP_URL = f"http://{_FLAGD_HOST}:{_FLAGD_OFREP_PORT}/ofrep/v1/evaluate/
 logger = logging.getLogger(__name__)
 
 
-def evaluate_flag(flag_key: str, default: bool = False) -> bool:
+def _fetch_flag_value(flag_key: str, default):
     try:
         resp = httpx.post(f"{_FLAGD_OFREP_URL}/{flag_key}", json={}, timeout=2)
         if resp.status_code == 200:
@@ -27,6 +27,18 @@ def evaluate_flag(flag_key: str, default: bool = False) -> bool:
     except Exception:
         logger.debug("Failed to evaluate flag %s, using default", flag_key)
     return default
+
+
+def evaluate_flag(flag_key: str, default: bool = False) -> bool:
+    return bool(_fetch_flag_value(flag_key, default))
+
+
+def evaluate_flag_percentage(flag_key: str, default: float = 0.0) -> float:
+    """Read a numeric flag variant (0.0–1.0). Returns default on any error."""
+    try:
+        return float(_fetch_flag_value(flag_key, default))
+    except (TypeError, ValueError):
+        return default
 
 
 def _get_client() -> redis.Redis:

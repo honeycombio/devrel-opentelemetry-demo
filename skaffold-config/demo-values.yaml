@@ -13,6 +13,9 @@ components:
   accounting:
     service:
       port: 5060
+    resources:
+      limits:
+        memory: 384Mi
     envOverrides:
       - name: PAYMENT_ADDR
         value: payment:8080
@@ -21,7 +24,7 @@ components:
       - name: ASPNETCORE_URLS
         value: "http://*:5060"
   load-generator:
-    replicas: 1
+    replicas: 2
   frontend:
     replicas: 1
     envOverrides:

@@ -160,12 +160,15 @@
       },
       "defaultVariant": "off"
     },
-    "storechatConversationFailure": {
-      "description": "Simulate check_shipping tool failures in store chat (1-in-5 when enabled); raises from inside the @tool so the execute_tool span is marked error=true",
+    "storeChatShippingToolFailure": {
+      "description": "Fail the store-chat check_shipping @tool at n% probability per call; raises from inside the @tool so the execute_tool span is marked error=true",
       "state": "ENABLED",
       "variants": {
-        "on": true,
-        "off": false
+        "100%": 1,
+        "75%": 0.75,
+        "50%": 0.5,
+        "20%": 0.2,
+        "off": 0
       },
       "defaultVariant": "off"
     }
