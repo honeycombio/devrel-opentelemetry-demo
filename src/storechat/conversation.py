@@ -1,7 +1,6 @@
 import json
 import logging
 import os
-import random
 
 import httpx
 import redis
@@ -20,7 +19,7 @@ _FLAGD_OFREP_URL = f"http://{_FLAGD_HOST}:{_FLAGD_OFREP_PORT}/ofrep/v1/evaluate/
 logger = logging.getLogger(__name__)
 
 
-def _evaluate_flag(flag_key: str, default: bool = False) -> bool:
+def evaluate_flag(flag_key: str, default: bool = False) -> bool:
     try:
         resp = httpx.post(f"{_FLAGD_OFREP_URL}/{flag_key}", json={}, timeout=2)
         if resp.status_code == 200:
@@ -37,11 +36,6 @@ def _get_client() -> redis.Redis:
 
 def get_history(session_id: str) -> list[dict]:
     """Load conversation history from Valkey."""
-    # Feature flag: simulate conversation store failure 1-in-5 times
-    if _evaluate_flag("storechatConversationFailure"):
-        if random.random() < 0.2:
-            raise ConnectionError("Failed to connect to conversation store")
-
     client = _get_client()
     raw = client.get(f"{_KEY_PREFIX}{session_id}")
     if raw is None:

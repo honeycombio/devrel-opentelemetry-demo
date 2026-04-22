@@ -1,10 +1,12 @@
 import json
 import os
+import random
 
 import grpc
 import httpx
 from strands import tool
 
+from conversation import evaluate_flag
 from genproto import demo_pb2, demo_pb2_grpc
 
 ACCOUNTING_ADDR = os.environ.get("ACCOUNTING_ADDR", "accounting:5060")
@@ -110,6 +112,11 @@ def check_shipping(tracking_id: str) -> str:
     Returns:
         JSON object with shipping status and estimated delivery date.
     """
+    # Chaos injection: when flag is on, fail 1-in-5 calls to exercise the agent's
+    # tool-failure handling path. Raises so the execute_tool span is marked error=true.
+    if evaluate_flag("storechatConversationFailure") and random.random() < 0.2:
+        raise ConnectionError("shipping service unreachable")
+
     try:
         resp = httpx.get(f"{SHIPPING_ADDR}/shipping-status/{tracking_id}", timeout=10)
         resp.raise_for_status()

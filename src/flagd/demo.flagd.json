@@ -161,7 +161,7 @@
       "defaultVariant": "off"
     },
     "storechatConversationFailure": {
-      "description": "Simulate conversation store failures in store chat (1-in-5 when enabled)",
+      "description": "Simulate check_shipping tool failures in store chat (1-in-5 when enabled); raises from inside the @tool so the execute_tool span is marked error=true",
       "state": "ENABLED",
       "variants": {
         "on": true,
