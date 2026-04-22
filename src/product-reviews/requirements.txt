@@ -11,5 +11,5 @@ python-dotenv==1.2.1
 python-json-logger==4.0.0
 psycopg2-binary==2.9.11
 openai==2.8.1
-boto3==1.35.93
+boto3==1.42.93
 simplejson==3.20.2
