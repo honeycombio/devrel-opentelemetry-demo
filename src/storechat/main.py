@@ -61,7 +61,7 @@ async def health():
 
 
 @app.post("/chat", response_model=ChatResponse)
-async def chat(req: ChatRequest):
+def chat(req: ChatRequest):
     # Set conversation ID on the current span
     current_span = trace.get_current_span()
     current_span.set_attribute("gen_ai.conversation.id", req.sessionId)
