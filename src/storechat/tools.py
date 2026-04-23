@@ -22,7 +22,12 @@ _order_stub = demo_pb2_grpc.OrderServiceStub(_accounting_channel)
 def _mark_tool_error(exc: Exception, message: str) -> None:
     span = trace.get_current_span()
     span.set_status(Status(StatusCode.ERROR, message))
-    span.set_attribute("gen_ai.tool.status", "error")
+    error_type = type(exc).__name__
+    if isinstance(exc, grpc.RpcError):
+        code_name = getattr(exc.code(), "name", None) if callable(getattr(exc, "code", None)) else None
+        if code_name:
+            error_type = f"{error_type}.{code_name}"
+    span.set_attribute("error.type", error_type)
     span.record_exception(exc)
 
 
@@ -82,11 +87,7 @@ def lookup_orders(email: str) -> str:
         return json.dumps(orders, indent=2)
     except grpc.RpcError as e:
         _mark_tool_error(e, "order lookup failed")
-        return json.dumps({
-            "error": "order lookup failed",
-            "code": e.code().name,
-            "detail": e.details(),
-        })
+        raise
 
 
 @tool
@@ -107,11 +108,7 @@ def get_order(order_id: str) -> str:
         return json.dumps(_order_detail_to_dict(detail), indent=2)
     except grpc.RpcError as e:
         _mark_tool_error(e, "order lookup failed")
-        return json.dumps({
-            "error": "order lookup failed",
-            "code": e.code().name,
-            "detail": e.details(),
-        })
+        raise
 
 
 @tool
@@ -137,10 +134,7 @@ def check_shipping(tracking_id: str) -> str:
         return json.dumps(resp.json(), indent=2)
     except httpx.HTTPError as e:
         _mark_tool_error(e, "shipping lookup failed")
-        return json.dumps({
-            "error": "shipping lookup failed",
-            "detail": str(e),
-        })
+        raise
 
 
 @tool
@@ -166,8 +160,4 @@ def refund_order(order_id: str, email: str) -> str:
         }, indent=2)
     except grpc.RpcError as e:
         _mark_tool_error(e, "refund failed")
-        return json.dumps({
-            "error": "refund failed",
-            "code": e.code().name,
-            "detail": e.details(),
-        })
+        raise
