@@ -120,7 +120,7 @@ done
 # Set up Bedrock pod identity association for the demo service account
 if [ -z "$BEDROCK_ROLE_ARN" ]; then
   echo "BEDROCK_ROLE_ARN not set, fetching from infra stack"
-  BEDROCK_ROLE_ARN=$(pulumi stack output -s honeycomb-devrel/infra-aws/prod bedrockRoleArn 2>/dev/null)
+  BEDROCK_ROLE_ARN=$(pulumi stack output -s honeycomb-devrel/infra-aws/prod bedrockLocalsRoleArn 2>/dev/null)
 fi
 
 if [ -n "$BEDROCK_ROLE_ARN" ] && [ "$BEDROCK_ROLE_ARN" != "null" ] && [ "$BEDROCK_ROLE_ARN" != "None" ]; then

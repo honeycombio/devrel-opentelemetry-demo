@@ -69,6 +69,7 @@ export class Refinery extends pulumi.ComponentResource {
             },
             valueYamlFiles: [new pulumi.asset.FileAsset("./config-files/refinery/values.yaml")],
             values: values,
+            timeout: 1800,
         }, { provider: opts.provider!});
 
         this.refineryHostname = pulumi.interpolate `${refinery.name}.${args.namespace}`;

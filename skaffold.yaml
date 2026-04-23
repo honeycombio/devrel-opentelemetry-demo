@@ -195,7 +195,7 @@ deploy:
           services.llmEvals.enabled: "true"
         setValueTemplates:
           services.storechat.awsRegion: "{{.BEDROCK_AWS_REGION}}"
-          services.storechat.bedrockSonnetProfileArn: "{{.BEDROCK_SONNET_PROFILE_ARN}}"
+          services.storechat.bedrockHaikuProfileArn: "{{.BEDROCK_HAIKU_PROFILE_ARN}}"
           services.storechat.imageOverride.repository: "{{if .IMAGE_REPO_storechat }}{{.IMAGE_REPO_storechat}}{{end}}"
           services.storechat.imageOverride.tag: "{{if .IMAGE_REPO_storechat }}{{.IMAGE_TAG_storechat}}@{{.IMAGE_DIGEST_storechat}}{{end}}"
           services.llmEvals.awsRegion: "{{.BEDROCK_AWS_REGION}}"

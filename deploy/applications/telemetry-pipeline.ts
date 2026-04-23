@@ -98,6 +98,7 @@ export class TelemetryPipeline extends pulumi.ComponentResource {
             },
             dependencyUpdate: true,
             namespace: args.namespace,
+            timeout: 1800,
             values: values,
         }, { provider: opts.provider! });
 

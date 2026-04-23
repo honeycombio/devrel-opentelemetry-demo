@@ -70,6 +70,7 @@ export class Collector extends pulumi.ComponentResource {
             },
             dependencyUpdate: true,
             namespace: args.namespace,
+            timeout: 1800,
             values: values,
             valueYamlFiles: [new pulumi.asset.FileAsset(args.valuesFile)]
         }, { provider: opts.provider! });

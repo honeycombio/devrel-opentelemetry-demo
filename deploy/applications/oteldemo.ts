@@ -63,7 +63,9 @@ export class OtelDemo extends pulumi.ComponentResource {
             },
             dependencyUpdate: true,
             namespace: args.config.k8sNamespace,
-            timeout: 900,
+            // Previous 900s was exceeded (954s) on the 2.5.0-release deploy
+            // when accounting was OOM-looping; failure left state corrupted.
+            timeout: 1800,
             values: values,
             valueYamlFiles: [new pulumi.asset.FileAsset("./config-files/demo/values.yaml")]
         }, { provider: opts.provider!, dependsOn: [flagdCustomConfig] });
@@ -159,7 +161,7 @@ export class OtelDemo extends pulumi.ComponentResource {
                                 // real tool-use; only the LLM backend differs.
                                 { name: "LLM_PROVIDER", value: "bedrock" },
                                 { name: "AWS_REGION", value: args.config.infraStack.getOutput("clusterRegion") as pulumi.Output<string> },
-                                { name: "BEDROCK_SONNET_PROFILE_ARN", value: args.config.infraStack.getOutput("bedrockClaudeSonnetProfileArn") as pulumi.Output<string> },
+                                { name: "BEDROCK_HAIKU_PROFILE_ARN", value: (args.config.infraStack.getOutput("bedrockProdProfiles") as pulumi.Output<Record<string, string>>).apply(p => p.claudeHaiku) },
                                 // Retained so `LLM_PROVIDER=openai` still works as the upstream A/B option.
                                 { name: "LLM_BASE_URL", value: "http://llm:8000/v1" },
                                 { name: "OPENAI_API_KEY", value: "dummy" },

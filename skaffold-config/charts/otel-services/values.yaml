@@ -38,8 +38,8 @@ services:
         value: "bedrock"
       - name: AWS_REGION
         value: "eu-west-1"
-      - name: BEDROCK_SONNET_PROFILE_ARN
-        value: "arn:aws:bedrock:eu-west-1:657166037864:inference-profile/eu.anthropic.claude-3-7-sonnet-20250219-v1:0"
+      - name: BEDROCK_HAIKU_PROFILE_ARN
+        value: "arn:aws:bedrock:eu-west-1:657166037864:inference-profile/eu.anthropic.claude-haiku-4-5-20251001-v1:0"
       # Retained so LLM_PROVIDER=openai still works as the A/B option.
       - name: LLM_BASE_URL
         value: "http://llm:8000/v1"
@@ -83,7 +83,7 @@ services:
     imageOverride:
       {}
     awsRegion: ""
-    bedrockSonnetProfileArn: ""
+    bedrockHaikuProfileArn: ""
     port: 8080
     replicas: 1
     env:
