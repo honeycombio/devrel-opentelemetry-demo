@@ -24,7 +24,7 @@ components:
       - name: ASPNETCORE_URLS
         value: "http://*:5060"
   load-generator:
-    replicas: 2
+    replicas: 1
   frontend:
     replicas: 1
     envOverrides:
