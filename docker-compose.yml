@@ -851,7 +851,7 @@ services:
       - OTEL_RESOURCE_ATTRIBUTES
       - OTEL_SERVICE_NAME=store-chat
       - OTEL_SEMCONV_STABILITY_OPT_IN=gen_ai_latest_experimental
-      - BEDROCK_SONNET_PROFILE_ARN=${BEDROCK_SONNET_PROFILE_ARN:-}
+      - BEDROCK_HAIKU_PROFILE_ARN=${BEDROCK_HAIKU_PROFILE_ARN:-}
       - FLAGD_HOST
       - FLAGD_PORT
     depends_on:

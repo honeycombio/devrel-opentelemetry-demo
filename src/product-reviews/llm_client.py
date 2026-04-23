@@ -11,7 +11,7 @@ Pluggable LLM client for product-reviews. Two providers, selected by the
                          a valid target; so is any other OpenAI-compatible
                          server. Requires LLM_BASE_URL + LLM_MODEL.
   * "bedrock"            talks to AWS Bedrock's Converse API via `boto3`.
-                         Requires AWS_REGION + BEDROCK_SONNET_PROFILE_ARN.
+                         Requires AWS_REGION + BEDROCK_HAIKU_PROFILE_ARN.
                          Auth comes from whichever AWS credential provider
                          chain is in effect (EKS Pod Identity, env vars, etc.).
 
@@ -287,7 +287,7 @@ def _tools_to_bedrock(tools: list[dict]) -> dict:
 def _bedrock_chat(system_prompt: str, messages: list[dict], tools: list[dict]) -> ChatResult:
     bedrock_messages = _messages_to_bedrock(messages)
     kwargs = {
-        "modelId": os.environ["BEDROCK_SONNET_PROFILE_ARN"],
+        "modelId": os.environ["BEDROCK_HAIKU_PROFILE_ARN"],
         # Cache the system prompt alongside the tools (see _tools_to_bedrock) —
         # together they form the stable prefix that's identical across every
         # turn of the tool-use loop and across requests.

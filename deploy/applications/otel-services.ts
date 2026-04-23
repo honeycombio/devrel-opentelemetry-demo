@@ -20,8 +20,8 @@ export class OtelServices extends pulumi.ComponentResource {
         opts: pulumi.ComponentResourceOptions = {}) {
         super("devrel:otel-services", name, args, opts);
 
-        const bedrockHaikuProfileArn = args.config.infraStack.getOutput("bedrockClaudeHaikuProfileArn") as pulumi.Output<string>;
-        const bedrockSonnetProfileArn = args.config.infraStack.getOutput("bedrockClaudeSonnetProfileArn") as pulumi.Output<string>;
+        const bedrockProfiles = args.config.infraStack.getOutput("bedrockProdProfiles") as pulumi.Output<Record<string, string>>;
+        const bedrockHaikuProfileArn = bedrockProfiles.apply(p => p.claudeHaiku);
         const clusterRegion = args.config.infraStack.getOutput("clusterRegion") as pulumi.Output<string>;
 
         const values: Record<string, unknown> = {
@@ -32,7 +32,7 @@ export class OtelServices extends pulumi.ComponentResource {
                         tag: `${args.config.containerTag}-storechat`,
                     },
                     awsRegion: clusterRegion,
-                    bedrockSonnetProfileArn: bedrockSonnetProfileArn,
+                    bedrockHaikuProfileArn: bedrockHaikuProfileArn,
                 },
                 llmEvals: {
                     enabled: true,
@@ -57,6 +57,10 @@ export class OtelServices extends pulumi.ComponentResource {
             name: "otel-services",
             namespace: args.namespace,
             values: values,
+            // Default is 300s; a slow-to-ready pod would then abort the whole
+            // release and can leave pulumi state with a malformed secret marker
+            // (we hit this on the 2.5.0-release deploy). 30 min is generous.
+            timeout: 1800,
         }, { parent: this, provider: opts.provider! });
 
         this.registerOutputs({});

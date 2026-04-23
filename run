@@ -48,9 +48,10 @@ if [[ "$CLOUD_PROVIDER" == "aws" ]]; then
     echo "Logging in to ECR, because it's so annoying when we forget."
     scripts/login-ecr.sh > /dev/null 2>&1
 
-    # export Bedrock inference profile ARNs from shared infra stack
-    BEDROCK_HAIKU_PROFILE_ARN=$(pulumi stack output -s honeycomb-devrel/infra-aws/prod bedrockClaudeHaikuProfileArn 2>/dev/null)
-    BEDROCK_SONNET_PROFILE_ARN=$(pulumi stack output -s honeycomb-devrel/infra-aws/prod bedrockClaudeSonnetProfileArn 2>/dev/null)
+    # Pull Bedrock inference profiles + local-dev IAM role from the shared infra stack.
+    # `bedrockLocalsProfiles` is a JSON map keyed by model alias (claudeHaiku, claudeSonnet, ...).
+    BEDROCK_LOCALS_PROFILES=$(pulumi stack output -s honeycomb-devrel/infra-aws/prod bedrockLocalsProfiles 2>/dev/null)
+    BEDROCK_HAIKU_PROFILE_ARN=$(echo "$BEDROCK_LOCALS_PROFILES" | jq -r '.claudeHaiku')
     BEDROCK_AWS_REGION=$(pulumi stack output -s honeycomb-devrel/infra-aws/prod clusterRegion 2>/dev/null)
 elif [[ "$CLOUD_PROVIDER" == "azure" ]]; then
     echo "Using Azure configuration"
@@ -69,7 +70,6 @@ export CLOUD_PROVIDER
 export DOMAINNAME
 export INGRESS_CLASS
 export BEDROCK_HAIKU_PROFILE_ARN
-export BEDROCK_SONNET_PROFILE_ARN
 export BEDROCK_AWS_REGION
 
 # Build -b flags: one per service (skaffold requires separate -b flags for each image)

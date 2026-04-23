@@ -282,7 +282,7 @@ if __name__ == "__main__":
     health_pb2_grpc.add_HealthServicer_to_server(service, server)
 
     # LLM provider credentials (LLM_BASE_URL / LLM_MODEL / OPENAI_API_KEY for
-    # the openai path; AWS_REGION / BEDROCK_SONNET_PROFILE_ARN for bedrock)
+    # the openai path; AWS_REGION / BEDROCK_HAIKU_PROFILE_ARN for bedrock)
     # are read directly by `llm_client` on demand.
 
     catalog_addr = must_map_env('PRODUCT_CATALOG_ADDR')

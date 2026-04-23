@@ -147,8 +147,8 @@ spec:
             {{- if .Values.services.storechat.awsRegion }}
             - name: AWS_REGION
               value: {{ .Values.services.storechat.awsRegion | quote }}
-            - name: BEDROCK_SONNET_PROFILE_ARN
-              value: {{ .Values.services.storechat.bedrockSonnetProfileArn | quote }}
+            - name: BEDROCK_HAIKU_PROFILE_ARN
+              value: {{ .Values.services.storechat.bedrockHaikuProfileArn | quote }}
             {{- end }}
             - name: OTEL_EXPORTER_OTLP_ENDPOINT
               value: http://$(OTEL_COLLECTOR_NAME):4317

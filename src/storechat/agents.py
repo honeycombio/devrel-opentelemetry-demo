@@ -8,7 +8,7 @@ from tools import check_shipping, get_order, lookup_orders, refund_order
 # Configure Bedrock model — use inference profile ARN if provided, otherwise default
 _model_id = os.environ.get(
     "BEDROCK_MODEL_ID",
-    os.environ.get("BEDROCK_SONNET_PROFILE_ARN", ""),
+    os.environ.get("BEDROCK_HAIKU_PROFILE_ARN", ""),
 )
 
 

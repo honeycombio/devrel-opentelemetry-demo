@@ -21,7 +21,7 @@ export class BedrockPodIdentityAssociation extends pulumi.ComponentResource {
         super("devrel:bedrock-pod-identity-association", name, args, opts);
 
         const clusterName = args.config.infraStack.getOutput("clusterName") as pulumi.Output<string>;
-        const bedrockRoleArn = args.config.infraStack.getOutput("bedrockRoleArn") as pulumi.Output<string>;
+        const bedrockRoleArn = args.config.infraStack.getOutput("bedrockProdRoleArn") as pulumi.Output<string>;
 
         const association = new aws.eks.PodIdentityAssociation(`${name}-association`, {
             clusterName: clusterName,
