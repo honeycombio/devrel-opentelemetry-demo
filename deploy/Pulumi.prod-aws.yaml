@@ -1,10 +1,12 @@
 environment:
   - devrel-opentelemetry-demo/prod-aws
+# Everything the deploy needs lives in the ESC environment above (including
+# all api keys, the Bedrock/pipeline config, and the domain name). These two
+# keys aren't ESC-managed so they stay inline:
+#   - pulumi:disable-default-providers keeps pulumi from creating an implicit
+#     k8s default provider alongside our explicit one.
+#   - enable-bedrock is a plain bool toggle read via config.getBoolean.
 config:
   pulumi:disable-default-providers:
     - kubernetes
-  devrel-opentelemetry-demo:cloud-provider: aws
-  devrel-opentelemetry-demo:collector-container-repository: ghcr.io/honeycombio/devrel-opentelemetry-demo
-  devrel-opentelemetry-demo:collector-container-tag: 2.3.0-release-collector
-  devrel-opentelemetry-demo:container-tag: 2.3.0-release
   devrel-opentelemetry-demo:enable-bedrock: "true"
