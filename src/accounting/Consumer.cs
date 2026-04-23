@@ -2,7 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 
 using Confluent.Kafka;
+using Google.Protobuf;
 using Microsoft.Extensions.Logging;
+using Npgsql;
 using Oteldemo;
 using Microsoft.EntityFrameworkCore;
 using System.Diagnostics;
@@ -56,7 +58,17 @@ internal class Consumer : BackgroundService
                     {
                         using var activity = MyActivitySource.StartActivity("order-consumed", ActivityKind.Internal);
                         var consumeResult = _consumer.Consume(stoppingToken);
-                        ProcessMessage(consumeResult.Message);
+
+                        if (ProcessMessage(consumeResult.Message) == ProcessResult.Processed)
+                        {
+                            _consumer.Commit(consumeResult);
+                        }
+                        else
+                        {
+                            // Rewind so the next Consume() re-delivers the same offset.
+                            _consumer.Seek(consumeResult.TopicPartitionOffset);
+                            Thread.Sleep(TimeSpan.FromSeconds(1));
+                        }
                     }
                     catch (ConsumeException e)
                     {
@@ -75,19 +87,44 @@ internal class Consumer : BackgroundService
         }, stoppingToken);
     }
 
-    private void ProcessMessage(Message<string, byte[]> message)
+    private enum ProcessResult
     {
+        Processed,
+        Retry,
+    }
+
+    private ProcessResult ProcessMessage(Message<string, byte[]> message)
+    {
+        OrderResult order;
         try
         {
-            var order = OrderResult.Parser.ParseFrom(message.Value);
-            Log.OrderReceivedMessage(_logger, order);
+            order = OrderResult.Parser.ParseFrom(message.Value);
+        }
+        catch (InvalidProtocolBufferException ex)
+        {
+            // Poison pill — unparseable payload will never succeed on retry.
+            _logger.LogError(ex, "Dropping unparseable Kafka message");
+            return ProcessResult.Processed;
+        }
 
-            if (_dbContextFactory == null)
-            {
-                return;
-            }
+        Log.OrderReceivedMessage(_logger, order);
 
+        if (_dbContextFactory == null)
+        {
+            return ProcessResult.Processed;
+        }
+
+        try
+        {
             using var dbContext = _dbContextFactory.CreateDbContext();
+
+            // At-least-once delivery from Kafka + offset commits after DB write
+            // means restart windows can replay already-persisted messages.
+            // Skip the insert if this order_id is already in the DB.
+            if (dbContext.Orders.Any(o => o.Id == order.OrderId))
+            {
+                return ProcessResult.Processed;
+            }
 
             var orderEntity = new OrderEntity
             {
@@ -130,10 +167,19 @@ internal class Consumer : BackgroundService
             };
             dbContext.Add(shipping);
             dbContext.SaveChanges();
+            return ProcessResult.Processed;
+        }
+        catch (DbUpdateException ex) when (ex.InnerException is PostgresException { SqlState: "23505" })
+        {
+            // Racy idempotent check — row appeared between Any() and SaveChanges().
+            // Data is persisted; safe to commit.
+            _logger.LogWarning(ex, "Duplicate order {OrderId}; treating as processed", order.OrderId);
+            return ProcessResult.Processed;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Order parsing failed:");
+            _logger.LogError(ex, "Failed to persist order {OrderId}; rewinding for retry", order.OrderId);
+            return ProcessResult.Retry;
         }
     }
 
@@ -145,7 +191,9 @@ internal class Consumer : BackgroundService
             BootstrapServers = servers,
             // https://github.com/confluentinc/confluent-kafka-dotnet/tree/07de95ed647af80a0db39ce6a8891a630423b952#basic-consumer-example
             AutoOffsetReset = AutoOffsetReset.Earliest,
-            EnableAutoCommit = true
+            EnableAutoCommit = false,
+            QueuedMaxMessagesKbytes = 4096,
+            MaxPartitionFetchBytes = 262144,
         };
 
         return new ConsumerBuilder<string, byte[]>(conf)

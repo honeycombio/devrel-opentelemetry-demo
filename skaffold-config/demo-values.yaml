@@ -13,6 +13,9 @@ components:
   accounting:
     service:
       port: 5060
+    resources:
+      limits:
+        memory: 200Mi
     envOverrides:
       - name: PAYMENT_ADDR
         value: payment:8080
