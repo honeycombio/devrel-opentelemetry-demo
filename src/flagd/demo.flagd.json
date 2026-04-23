@@ -171,6 +171,18 @@
         "off": 0
       },
       "defaultVariant": "off"
+    },
+    "storeChatConversationFailure": {
+      "description": "Fail the store-chat conversation store (get_history) at n% probability per call; raises ConnectionError from outside any @tool span so the failure surfaces at the request boundary",
+      "state": "ENABLED",
+      "variants": {
+        "100%": 1,
+        "75%": 0.75,
+        "50%": 0.5,
+        "20%": 0.2,
+        "off": 0
+      },
+      "defaultVariant": "off"
     }
   }
 }

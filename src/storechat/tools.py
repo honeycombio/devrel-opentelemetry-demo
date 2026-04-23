@@ -4,16 +4,26 @@ import random
 
 import grpc
 import httpx
+from opentelemetry import trace
+from opentelemetry.trace import Status, StatusCode
 from strands import tool
 
 from conversation import evaluate_flag_percentage
 from genproto import demo_pb2, demo_pb2_grpc
+
 
 ACCOUNTING_ADDR = os.environ.get("ACCOUNTING_ADDR", "accounting:5060")
 SHIPPING_ADDR = os.environ.get("SHIPPING_ADDR", "http://shipping:8080")
 
 _accounting_channel = grpc.insecure_channel(ACCOUNTING_ADDR)
 _order_stub = demo_pb2_grpc.OrderServiceStub(_accounting_channel)
+
+
+def _mark_tool_error(exc: Exception, message: str) -> None:
+    span = trace.get_current_span()
+    span.set_status(Status(StatusCode.ERROR, message))
+    span.set_attribute("gen_ai.tool.status", "error")
+    span.record_exception(exc)
 
 
 def _order_detail_to_dict(d) -> dict:
@@ -71,6 +81,7 @@ def lookup_orders(email: str) -> str:
         orders = [_order_detail_to_dict(o) for o in response.orders]
         return json.dumps(orders, indent=2)
     except grpc.RpcError as e:
+        _mark_tool_error(e, "order lookup failed")
         return json.dumps({
             "error": "order lookup failed",
             "code": e.code().name,
@@ -95,6 +106,7 @@ def get_order(order_id: str) -> str:
         )
         return json.dumps(_order_detail_to_dict(detail), indent=2)
     except grpc.RpcError as e:
+        _mark_tool_error(e, "order lookup failed")
         return json.dumps({
             "error": "order lookup failed",
             "code": e.code().name,
@@ -124,6 +136,7 @@ def check_shipping(tracking_id: str) -> str:
         resp.raise_for_status()
         return json.dumps(resp.json(), indent=2)
     except httpx.HTTPError as e:
+        _mark_tool_error(e, "shipping lookup failed")
         return json.dumps({
             "error": "shipping lookup failed",
             "detail": str(e),
@@ -152,6 +165,7 @@ def refund_order(order_id: str, email: str) -> str:
             "refundTransactionId": response.refund_transaction_id,
         }, indent=2)
     except grpc.RpcError as e:
+        _mark_tool_error(e, "refund failed")
         return json.dumps({
             "error": "refund failed",
             "code": e.code().name,

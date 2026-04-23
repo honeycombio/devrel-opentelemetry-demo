@@ -1,6 +1,7 @@
 import json
 import logging
 import os
+import random
 
 import httpx
 import redis
@@ -48,6 +49,10 @@ def _get_client() -> redis.Redis:
 
 def get_history(session_id: str) -> list[dict]:
     """Load conversation history from Valkey."""
+    failure_rate = evaluate_flag_percentage("storeChatConversationFailure")
+    if failure_rate > 0 and random.random() < failure_rate:
+        raise ConnectionError("Failed to connect to conversation store")
+
     client = _get_client()
     raw = client.get(f"{_KEY_PREFIX}{session_id}")
     if raw is None:
