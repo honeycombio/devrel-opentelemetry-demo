@@ -171,6 +171,7 @@ export class OtelDemo extends pulumi.ComponentResource {
                                 { name: "FLAGD_PORT", value: "8013" },
                                 { name: "LLM_HOST", value: "llm" },
                                 { name: "LLM_PORT", value: "8000" },
+                                { name: "KAFKA_ADDR", value: "kafka:9092" },
                                 { name: "OTEL_EXPORTER_OTLP_ENDPOINT", value: `http://$(OTEL_COLLECTOR_NAME):4317` }
                             ]
                         }]

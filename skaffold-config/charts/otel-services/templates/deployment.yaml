@@ -44,6 +44,10 @@ spec:
             - name: {{ .name }}
               value: {{ .value | quote }}
             {{- end }}
+            {{- if .Values.services.productReviews.kafkaAddr }}
+            - name: KAFKA_ADDR
+              value: {{ .Values.services.productReviews.kafkaAddr | quote }}
+            {{- end }}
             - name: OTEL_EXPORTER_OTLP_ENDPOINT
               value: http://$(OTEL_COLLECTOR_NAME):4317
 ---
@@ -149,6 +153,10 @@ spec:
               value: {{ .Values.services.storechat.awsRegion | quote }}
             - name: BEDROCK_HAIKU_PROFILE_ARN
               value: {{ .Values.services.storechat.bedrockHaikuProfileArn | quote }}
+            {{- end }}
+            {{- if .Values.services.storechat.kafkaAddr }}
+            - name: KAFKA_ADDR
+              value: {{ .Values.services.storechat.kafkaAddr | quote }}
             {{- end }}
             - name: OTEL_EXPORTER_OTLP_ENDPOINT
               value: http://$(OTEL_COLLECTOR_NAME):4317

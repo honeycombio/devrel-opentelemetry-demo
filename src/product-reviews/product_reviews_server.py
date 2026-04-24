@@ -29,6 +29,7 @@ from grpc_health.v1 import health_pb2
 from grpc_health.v1 import health_pb2_grpc
 from database import fetch_product_reviews, fetch_product_reviews_from_db, fetch_avg_product_review_score_from_db
 import llm_client
+from llm_evals_publisher import publish_eval
 
 from openfeature import api
 from openfeature.contrib.provider.flagd import FlagdProvider
@@ -168,10 +169,8 @@ def get_ai_assistant_response(request_product_id, question):
         span.set_attribute("app.product.id", request_product_id)
         span.set_attribute("app.product.question", question)
 
-        messages = [{
-            "role": "user",
-            "content": f"Answer the following question about product ID:{request_product_id}: {question}",
-        }]
+        user_message = f"Answer the following question about product ID:{request_product_id}: {question}"
+        messages = [{"role": "user", "content": user_message}]
 
         try:
             for _ in range(llm_client.MAX_TOOL_ROUNDS):
@@ -182,6 +181,25 @@ def get_ai_assistant_response(request_product_id, question):
                     logger.info(f"Returning an AI assistant response: '{result.text}'")
                     product_review_svc_metrics["app_ai_assistant_counter"].add(
                         1, {"product.id": request_product_id}
+                    )
+                    grounding = "\n\n".join(
+                        m["content"] for m in messages
+                        if m["role"] == "tool" and isinstance(m.get("content"), str)
+                    )
+                    provider = os.environ.get("LLM_PROVIDER", "openai").lower()
+                    response_model = (
+                        os.environ.get("BEDROCK_HAIKU_PROFILE_ARN")
+                        if provider == "bedrock"
+                        else os.environ.get("LLM_MODEL")
+                    )
+                    publish_eval(
+                        input_text=user_message,
+                        output_text=result.text or "",
+                        agent_name="product_reviews_ai_assistant",
+                        grounding_context=grounding,
+                        response_model=response_model,
+                        input_tokens=result.input_tokens,
+                        output_tokens=result.output_tokens,
                     )
                     return ai_assistant_response
 
