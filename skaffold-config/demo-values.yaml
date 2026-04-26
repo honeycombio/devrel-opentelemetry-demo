@@ -190,6 +190,30 @@ opentelemetry-collector:
           - context: log
             statements:
               - set(resource.attributes["service.name"], "api-gateway") where resource.attributes["k8s.container.name"] == "frontend"
+      # Strip the noisy `app.feature_flag.storeChatTokenMaxxing` attribute
+      # from store-chat spans (keep the span, drop the attribute).
+      transform/drop_token_maxxing_attr:
+        error_mode: ignore
+        trace_statements:
+          - context: span
+            conditions:
+              - resource.attributes["service.name"] == "store-chat"
+            statements:
+              - delete_key(attributes, "app.feature_flag.storeChatTokenMaxxing")
+      # Drop per-token usage attributes from store-chat invoke_agent spans.
+      # The agent span aggregates many model calls; per-call token counts
+      # belong on the child execute_tool / chat spans, not the parent.
+      transform/drop_invoke_agent_token_attrs:
+        error_mode: ignore
+        trace_statements:
+          - context: span
+            conditions:
+              - resource.attributes["service.name"] == "store-chat" and attributes["gen_ai.operation.name"] == "invoke_agent"
+            statements:
+              - delete_key(attributes, "gen_ai.usage.input_tokens")
+              - delete_key(attributes, "gen_ai.usage.output_tokens")
+              - delete_key(attributes, "gen_ai.usage.cache_write_input_tokens")
+              - delete_key(attributes, "gen_ai.usage.cache_read_input_tokens")
       # Drop low-signal flagd feature-flag evaluation spans:
       # client-side `/flagd.evaluation.v1.Service/*` gRPC calls, and the
       # server-side `resolveBoolean` / jsonEvaluator internals inside flagd.
@@ -248,7 +272,9 @@ opentelemetry-collector:
             - spanmetrics
           processors:
             - filter/drop_flagd_spans
+            - transform/drop_token_maxxing_attr
             - transform/genai_span_events_to_attributes
+            - transform/drop_invoke_agent_token_attrs
             - transform/service_names
             - transform/attribution
   ports:

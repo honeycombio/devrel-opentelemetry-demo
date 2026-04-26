@@ -183,6 +183,15 @@
         "off": 0
       },
       "defaultVariant": "off"
+    },
+    "storeChatTokenMaxxing": {
+      "description": "Inflate store-chat token usage: disables prompt caching, adds http_request to the agents, and mandates per-item product + review fetches in the order-status flow so each completion re-ingests large tool outputs",
+      "state": "ENABLED",
+      "variants": {
+        "on": true,
+        "off": false
+      },
+      "defaultVariant": "off"
     }
   }
 }

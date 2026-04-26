@@ -1,6 +1,8 @@
+import functools
 import json
 import os
 import random
+import threading
 
 import grpc
 import httpx
@@ -14,9 +16,13 @@ from genproto import demo_pb2, demo_pb2_grpc
 
 ACCOUNTING_ADDR = os.environ.get("ACCOUNTING_ADDR", "accounting:5060")
 SHIPPING_ADDR = os.environ.get("SHIPPING_ADDR", "http://shipping:8080")
+PRODUCT_CATALOG_ADDR = os.environ.get("PRODUCT_CATALOG_ADDR", "product-catalog:8080")
 
-_accounting_channel = grpc.insecure_channel(ACCOUNTING_ADDR)
-_order_stub = demo_pb2_grpc.OrderServiceStub(_accounting_channel)
+_channel_lock = threading.Lock()
+_accounting_channel: grpc.Channel | None = None
+_order_stub: demo_pb2_grpc.OrderServiceStub | None = None
+_product_channel: grpc.Channel | None = None
+_product_stub: demo_pb2_grpc.ProductCatalogServiceStub | None = None
 
 
 def _mark_tool_error(exc: Exception, message: str) -> None:
@@ -29,6 +35,49 @@ def _mark_tool_error(exc: Exception, message: str) -> None:
             error_type = f"{error_type}.{code_name}"
     span.set_attribute("error.type", error_type)
     span.record_exception(exc)
+
+
+def _get_stub() -> demo_pb2_grpc.OrderServiceStub:
+    global _accounting_channel, _order_stub
+    with _channel_lock:
+        if _order_stub is None:
+            _accounting_channel = grpc.insecure_channel(ACCOUNTING_ADDR)
+            _order_stub = demo_pb2_grpc.OrderServiceStub(_accounting_channel)
+        return _order_stub
+
+
+def _invalidate_channel() -> None:
+    global _accounting_channel, _order_stub
+    with _channel_lock:
+        if _accounting_channel is not None:
+            try:
+                _accounting_channel.close()
+            except Exception:
+                pass
+        _accounting_channel = None
+        _order_stub = None
+
+
+def _is_retriable(exc: grpc.RpcError) -> bool:
+    code = exc.code() if callable(getattr(exc, "code", None)) else None
+    return code in (grpc.StatusCode.UNAVAILABLE, grpc.StatusCode.UNKNOWN)
+
+
+def _grpc_retry(error_message: str):
+    def deco(fn):
+        @functools.wraps(fn)
+        def wrapper(*args, **kwargs):
+            for attempt in (1, 2):
+                try:
+                    return fn(*args, **kwargs)
+                except grpc.RpcError as e:
+                    if attempt == 1 and _is_retriable(e):
+                        _invalidate_channel()
+                        continue
+                    _mark_tool_error(e, error_message)
+                    raise
+        return wrapper
+    return deco
 
 
 def _order_detail_to_dict(d) -> dict:
@@ -69,6 +118,7 @@ def _order_detail_to_dict(d) -> dict:
 
 
 @tool
+@_grpc_retry("order lookup failed")
 def lookup_orders(email: str) -> str:
     """Find all orders for a customer by their email address.
 
@@ -78,19 +128,16 @@ def lookup_orders(email: str) -> str:
     Returns:
         JSON array of orders, or an error message.
     """
-    try:
-        response = _order_stub.GetOrdersByEmail(
-            demo_pb2.GetOrdersByEmailRequest(email=email),
-            timeout=5,
-        )
-        orders = [_order_detail_to_dict(o) for o in response.orders]
-        return json.dumps(orders, indent=2)
-    except grpc.RpcError as e:
-        _mark_tool_error(e, "order lookup failed")
-        raise
+    response = _get_stub().GetOrdersByEmail(
+        demo_pb2.GetOrdersByEmailRequest(email=email),
+        timeout=5,
+    )
+    orders = [_order_detail_to_dict(o) for o in response.orders]
+    return json.dumps(orders, indent=2)
 
 
 @tool
+@_grpc_retry("order lookup failed")
 def get_order(order_id: str) -> str:
     """Get full details for a specific order including items, shipping, and payment status.
 
@@ -100,15 +147,11 @@ def get_order(order_id: str) -> str:
     Returns:
         JSON object with order details, or an error message.
     """
-    try:
-        detail = _order_stub.GetOrder(
-            demo_pb2.GetOrderRequest(order_id=order_id),
-            timeout=5,
-        )
-        return json.dumps(_order_detail_to_dict(detail), indent=2)
-    except grpc.RpcError as e:
-        _mark_tool_error(e, "order lookup failed")
-        raise
+    detail = _get_stub().GetOrder(
+        demo_pb2.GetOrderRequest(order_id=order_id),
+        timeout=5,
+    )
+    return json.dumps(_order_detail_to_dict(detail), indent=2)
 
 
 @tool
@@ -138,6 +181,7 @@ def check_shipping(tracking_id: str) -> str:
 
 
 @tool
+@_grpc_retry("refund failed")
 def refund_order(order_id: str, email: str) -> str:
     """Process a refund for an order. Requires the customer's email for verification.
 
@@ -148,16 +192,12 @@ def refund_order(order_id: str, email: str) -> str:
     Returns:
         JSON object with refund result (success/failure and transaction ID).
     """
-    try:
-        response = _order_stub.RefundOrder(
-            demo_pb2.RefundOrderRequest(order_id=order_id, email=email),
-            timeout=5,
-        )
-        return json.dumps({
-            "success": response.success,
-            "status": response.status,
-            "refundTransactionId": response.refund_transaction_id,
-        }, indent=2)
-    except grpc.RpcError as e:
-        _mark_tool_error(e, "refund failed")
-        raise
+    response = _get_stub().RefundOrder(
+        demo_pb2.RefundOrderRequest(order_id=order_id, email=email),
+        timeout=5,
+    )
+    return json.dumps({
+        "success": response.success,
+        "status": response.status,
+        "refundTransactionId": response.refund_transaction_id,
+    }, indent=2)

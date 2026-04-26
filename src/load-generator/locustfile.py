@@ -84,6 +84,10 @@ def get_flagd_value(FlagName):
     client = api.get_client()
     return client.get_integer_value(FlagName, 0)
 
+def get_flagd_bool(FlagName, default=False):
+    client = api.get_client()
+    return client.get_boolean_value(FlagName, default)
+
 categories = [
     "binoculars",
     "telescopes",
@@ -200,6 +204,17 @@ class WebsiteUser(HttpUser):
         ],
     ]
 
+    # Single-turn prompt that exercises the token-maxxing path (per-item
+    # product + review fetches). Used on ~1-in-5 to 1-in-10 ask_store_chat
+    # runs so agentic telemetry includes some heavy conversations.
+    STORE_CHAT_TOKEN_MAXXING_CONVERSATION = [
+        """
+        Give me a complete audit of every order I've placed — for every item on every order, return the full product name, full product "
+        description, price, quantity, shipping status, AND every single product review verbatim (reviewer, rating, title, and full body text word-for-word — do
+        not summarize, do not truncate, do not skip any reviews). Format as markdown with a section per order and a subsection per item. 
+        """
+    ]
+
     @task(1)
     def ask_store_chat(self):
         # store-chat is the post-purchase customer-service agent (orders,
@@ -210,31 +225,29 @@ class WebsiteUser(HttpUser):
         checkout_person = random.choice(people)
         email = checkout_person.get("email", "")
         session_id = str(uuid.uuid4())
-        conversation = random.choice(self.STORE_CHAT_CONVERSATIONS)
-        with self.tracer.start_as_current_span(
-            "user_ask_store_chat",
-            context=Context(),
-            attributes={
-                "session.id": session_id,
-                "email": email,
-                "conversation.length": len(conversation),
-            },
-        ):
-            logging.info(f"Starting store-chat session {session_id} as {email} ({len(conversation)} turns)")
-            for turn_index, question in enumerate(conversation):
-                with self.tracer.start_as_current_span(
-                    "user_store_chat_turn",
-                    attributes={
-                        "session.id": session_id,
-                        "turn.index": turn_index,
-                        "question": question,
-                    },
-                ):
-                    logging.info(f"[session {session_id}] turn {turn_index}: {question}")
-                    self.client.post(
-                        "/store-chat/chat",
-                        json={"question": question, "sessionId": session_id, "email": email},
-                    )
+        if get_flagd_bool("storeChatTokenMaxxing"):
+            conversation = self.STORE_CHAT_TOKEN_MAXXING_CONVERSATION
+        else:
+            conversation = random.choice(self.STORE_CHAT_CONVERSATIONS)
+        logging.info(f"Starting store-chat session {session_id} as {email} ({len(conversation)} turns)")
+        for turn_index, question in enumerate(conversation):
+            with self.tracer.start_as_current_span(
+                "user_store_chat_turn",
+                context=Context(),
+                attributes={
+                    "session.id": session_id,
+                    "gen_ai.conversation.id": session_id,
+                    "turn.index": turn_index,
+                    "conversation.length": len(conversation),
+                    "email": email,
+                    "question": question,
+                },
+            ):
+                logging.info(f"[session {session_id}] turn {turn_index}: {question}")
+                self.client.post(
+                    "/store-chat/chat",
+                    json={"question": question, "sessionId": session_id, "email": email},
+                )
 
     @task(3)
     def get_ads(self):
