@@ -12,6 +12,7 @@ services:
       {}
     port: 3551
     replicas: 1
+    kafkaAddr: ""
     env:
       - name: PRODUCT_REVIEWS_PORT
         value: "3551"
@@ -86,6 +87,7 @@ services:
     bedrockHaikuProfileArn: ""
     port: 8080
     replicas: 1
+    kafkaAddr: ""
     env:
       - name: STORE_CHAT_PORT
         value: "8080"

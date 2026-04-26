@@ -193,6 +193,8 @@ deploy:
         skipBuildDependencies: false
         setValues:
           services.llmEvals.enabled: "true"
+          services.storechat.kafkaAddr: "kafka:9092"
+          services.productReviews.kafkaAddr: "kafka:9092"
         setValueTemplates:
           services.storechat.awsRegion: "{{.BEDROCK_AWS_REGION}}"
           services.storechat.bedrockHaikuProfileArn: "{{.BEDROCK_HAIKU_PROFILE_ARN}}"

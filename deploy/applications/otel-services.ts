@@ -33,6 +33,7 @@ export class OtelServices extends pulumi.ComponentResource {
                     },
                     awsRegion: clusterRegion,
                     bedrockHaikuProfileArn: bedrockHaikuProfileArn,
+                    kafkaAddr: 'kafka:9092',
                 },
                 llmEvals: {
                     enabled: true,
