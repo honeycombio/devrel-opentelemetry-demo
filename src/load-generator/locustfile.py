@@ -31,6 +31,8 @@ from opentelemetry.exporter.otlp.proto.grpc._log_exporter import OTLPLogExporter
 from opentelemetry.sdk._logs import LoggerProvider, LoggingHandler
 from opentelemetry.sdk._logs.export import BatchLogRecordProcessor
 from opentelemetry.sdk.resources import Resource
+from opentelemetry.propagate import set_global_textmap
+from opentelemetry.baggage.propagation import W3CBaggagePropagator
 
 from openfeature import api
 from openfeature.contrib.provider.ofrep import OFREPProvider
@@ -42,6 +44,12 @@ from playwright.async_api import Route, Request
 tracer_provider = TracerProvider()
 trace.set_tracer_provider(tracer_provider)
 tracer_provider.add_span_processor(BatchSpanProcessor(OTLPSpanExporter(insecure=True)))
+
+# Drop traceparent from outbound HTTP. Loadgen still emits its own spans, but
+# downstream services see no incoming trace context and start fresh root
+# traces — matching how real edge traffic looks. Baggage still propagates so
+# synthetic_request=true survives.
+set_global_textmap(W3CBaggagePropagator())
 
 # Configure logger provider with the same resource
 logger_provider = LoggerProvider()
