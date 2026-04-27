@@ -101,6 +101,7 @@ def chat(req: ChatRequest):
         agent_name="supervisor",
         response_model=os.environ.get("BEDROCK_MODEL_ID")
         or os.environ.get("BEDROCK_HAIKU_PROFILE_ARN"),
+        conversation_id=req.sessionId,
     )
 
     return ChatResponse(response=response_text)

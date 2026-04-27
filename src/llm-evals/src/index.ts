@@ -37,6 +37,7 @@ async function main() {
         payload.inputTokens ?? 0,
         payload.outputTokens ?? 0,
         payload.ttftMs ?? 0,
+        payload.conversationId,
       ).catch((err) => {
         console.error('Evaluation failed:', err);
       });

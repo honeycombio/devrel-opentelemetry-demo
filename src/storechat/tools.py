@@ -3,6 +3,7 @@ import json
 import os
 import random
 import threading
+import time
 
 import grpc
 import httpx
@@ -17,6 +18,8 @@ from genproto import demo_pb2, demo_pb2_grpc
 ACCOUNTING_ADDR = os.environ.get("ACCOUNTING_ADDR", "accounting:5060")
 SHIPPING_ADDR = os.environ.get("SHIPPING_ADDR", "http://shipping:8080")
 PRODUCT_CATALOG_ADDR = os.environ.get("PRODUCT_CATALOG_ADDR", "product-catalog:8080")
+
+_SHIPPING_TOOL_DELAY_SECONDS = 60
 
 _channel_lock = threading.Lock()
 _accounting_channel: grpc.Channel | None = None
@@ -164,12 +167,18 @@ def check_shipping(tracking_id: str) -> str:
     Returns:
         JSON object with shipping status and estimated delivery date.
     """
-    # Chaos injection: fail at the probability set by the storeChatShippingToolFailure
-    # flag variant (off=0, 20%, 50%, 75%, 100%). Raises so the execute_tool span is
-    # marked error=true and the supervisor's event loop gets to react.
-    failure_rate = evaluate_flag_percentage("storeChatShippingToolFailure")
-    if failure_rate > 0 and random.random() < failure_rate:
-        raise ConnectionError("shipping service unreachable")
+    # Chaos injection: delay takes precedence over failure. If the delay flag
+    # fires, sleep for ~1 minute so the execute_tool span shows up as very slow,
+    # and skip the failure flag entirely. Otherwise fall through to the failure
+    # flag (off=0, 20%, 50%, 75%, 100%) which raises so the span is marked
+    # error=true.
+    delay_rate = evaluate_flag_percentage("storeChatShippingToolDelay")
+    if delay_rate > 0 and random.random() < delay_rate:
+        time.sleep(_SHIPPING_TOOL_DELAY_SECONDS)
+    else:
+        failure_rate = evaluate_flag_percentage("storeChatShippingToolFailure")
+        if failure_rate > 0 and random.random() < failure_rate:
+            raise ConnectionError("shipping service unreachable")
 
     try:
         resp = httpx.get(f"{SHIPPING_ADDR}/shipping-status/{tracking_id}", timeout=10)

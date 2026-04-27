@@ -11,7 +11,7 @@ metadata:
     app.kubernetes.io/part-of: opentelemetry-demo
 spec:
   replicas: {{ .Values.services.productReviews.replicas }}
-  revisionHistoryLimit: 10
+  revisionHistoryLimit: 1
   selector:
     matchLabels:
       opentelemetry.io/name: {{ .Values.services.productReviews.name }}
@@ -65,7 +65,7 @@ metadata:
     app.kubernetes.io/part-of: opentelemetry-demo
 spec:
   replicas: {{ .Values.services.llm.replicas }}
-  revisionHistoryLimit: 10
+  revisionHistoryLimit: 1
   selector:
     matchLabels:
       opentelemetry.io/name: {{ .Values.services.llm.name }}
@@ -115,7 +115,7 @@ metadata:
     app.kubernetes.io/part-of: opentelemetry-demo
 spec:
   replicas: {{ .Values.services.storechat.replicas }}
-  revisionHistoryLimit: 10
+  revisionHistoryLimit: 1
   selector:
     matchLabels:
       opentelemetry.io/name: {{ .Values.services.storechat.name }}
@@ -175,7 +175,7 @@ metadata:
     app.kubernetes.io/part-of: opentelemetry-demo
 spec:
   replicas: {{ .Values.services.llmEvals.replicas }}
-  revisionHistoryLimit: 10
+  revisionHistoryLimit: 1
   selector:
     matchLabels:
       opentelemetry.io/name: {{ .Values.services.llmEvals.name }}

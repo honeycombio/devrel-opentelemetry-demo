@@ -25,6 +25,11 @@ const ATTR_GEN_AI_EVALUATION_NAME = 'gen_ai.evaluation.name';
 const ATTR_GEN_AI_EVALUATION_SCORE_VALUE = 'gen_ai.evaluation.score.value';
 const ATTR_GEN_AI_EVALUATION_SCORE_LABEL = 'gen_ai.evaluation.score.label';
 const ATTR_GEN_AI_EVALUATION_EXPLANATION = 'gen_ai.evaluation.explanation';
+const ATTR_GEN_AI_CONVERSATION_ID = 'gen_ai.conversation.id';
+// Renamed form used on eval-trace spans so the agentic timeline doesn't pick them up.
+// The real gen_ai.conversation.id is only set on spans written back to the original
+// (chatbot) trace, which is what asked for the eval.
+const ATTR_REQUEST_GEN_AI_CONVERSATION_ID = 'request.gen_ai.conversation.id';
 
 const tracer = trace.getTracer('llm-evals');
 
@@ -35,15 +40,28 @@ interface EvaluatedContext {
   ttftMs: number;
   input: string;
   output: string;
+  conversationId?: string;
 }
 
 /**
  * Write eval result attributes and event onto a span.
+ *
+ * @param conversationIdAttr - Attribute key for the conversation id. Use
+ *   ATTR_GEN_AI_CONVERSATION_ID for spans on the original (chatbot) trace,
+ *   ATTR_REQUEST_GEN_AI_CONVERSATION_ID for spans on the eval trace.
  */
-function applyEvalResult(span: Span, evalName: string, result: EvalResult, evalCtx: EvaluatedContext): void {
-  span.addEvent('gen_ai.evaluation.result', {
+function applyEvalResult(
+  span: Span,
+  evalName: string,
+  result: EvalResult,
+  evalCtx: EvaluatedContext,
+  conversationIdAttr: string,
+  mirrorEvalAttrsOnSpan = false,
+): void {
+  const score = result.score <= 0 ? 0.01 : result.score >= 1 ? 0.99 : result.score;
+  const eventAttrs: Record<string, string | number> = {
     [ATTR_GEN_AI_EVALUATION_NAME]: result.name,
-    [ATTR_GEN_AI_EVALUATION_SCORE_VALUE]: result.score <= 0 ? 0.01 : result.score >= 1 ? 0.99 : result.score,
+    [ATTR_GEN_AI_EVALUATION_SCORE_VALUE]: score,
     [ATTR_GEN_AI_EVALUATION_SCORE_LABEL]: result.label,
     [ATTR_GEN_AI_EVALUATION_EXPLANATION]: result.explanation,
     'evaluated.model.name': evalCtx.responseModel,
@@ -52,7 +70,21 @@ function applyEvalResult(span: Span, evalName: string, result: EvalResult, evalC
     'evaluated.response.ttft': evalCtx.ttftMs,
     'evaluated.input': evalCtx.input,
     'evaluated.output': evalCtx.output,
-  });
+  };
+  if (evalCtx.conversationId) {
+    eventAttrs[conversationIdAttr] = evalCtx.conversationId;
+  }
+  span.addEvent('gen_ai.evaluation.result', eventAttrs);
+
+  // TEMPORARY:  mirror eval name/label/value/explanation onto the span itself
+  // so they show up on the requesting (chatbot) trace. 
+  if (mirrorEvalAttrsOnSpan) {
+    span.setAttribute(ATTR_GEN_AI_EVALUATION_NAME, result.name);
+    span.setAttribute(ATTR_GEN_AI_EVALUATION_SCORE_LABEL, result.label);
+    span.setAttribute(ATTR_GEN_AI_EVALUATION_SCORE_VALUE, score);
+    span.setAttribute(ATTR_GEN_AI_EVALUATION_EXPLANATION, result.explanation);
+  }
+
   span.setStatus({ code: SpanStatusCode.OK });
 }
 
@@ -67,9 +99,16 @@ function applyEvalError(span: Span, evalName: string, error: unknown): void {
 
 /**
  * Base attributes for an eval scorer span.
+ *
+ * @param conversationIdAttr - Attribute key for the conversation id. See applyEvalResult.
  */
-function evalSpanAttrs(evalName: string, agentName: string, evalCtx: EvaluatedContext) {
-  return {
+function evalSpanAttrs(
+  evalName: string,
+  agentName: string,
+  evalCtx: EvaluatedContext,
+  conversationIdAttr: string,
+) {
+  const attrs: Record<string, string | number> = {
     [ATTR_GEN_AI_OPERATION_NAME]: 'evaluate',
     [ATTR_GEN_AI_EVALUATION_NAME]: evalName,
     'gen_ai.agent.name': agentName,
@@ -80,6 +119,10 @@ function evalSpanAttrs(evalName: string, agentName: string, evalCtx: EvaluatedCo
     'evaluated.input': evalCtx.input,
     'evaluated.output': evalCtx.output,
   };
+  if (evalCtx.conversationId) {
+    attrs[conversationIdAttr] = evalCtx.conversationId;
+  }
+  return attrs;
 }
 
 /**
@@ -101,16 +144,18 @@ async function runEvalDual(
   evalCtx: EvaluatedContext,
   scorerFn: () => Promise<EvalResult>,
 ): Promise<EvalResult | null> {
-  // Start both spans BEFORE the scorer runs so they capture real duration
+  // Start both spans BEFORE the scorer runs so they capture real duration.
+  // Eval-trace spans use request.gen_ai.conversation.id so the agentic timeline
+  // doesn't pull them in; chatbot-trace spans get the real gen_ai.conversation.id.
   const evalTraceSpan = tracer.startSpan(
     `chat - Evaluation - ${evalName}`,
-    { attributes: evalSpanAttrs(evalName, agentName, evalCtx) },
+    { attributes: evalSpanAttrs(evalName, agentName, evalCtx, ATTR_REQUEST_GEN_AI_CONVERSATION_ID) },
     evalRootCtx,
   );
   const chatbotTraceSpan = tracer.startSpan(
     `chat - Evaluation - ${evalName}`,
     {
-      attributes: evalSpanAttrs(evalName, agentName, evalCtx),
+      attributes: evalSpanAttrs(evalName, agentName, evalCtx, ATTR_GEN_AI_CONVERSATION_ID),
       links: [evalRootLink],
     },
     remoteParentCtx,
@@ -120,8 +165,8 @@ async function runEvalDual(
 
   try {
     result = await scorerFn();
-    applyEvalResult(evalTraceSpan, evalName, result, evalCtx);
-    applyEvalResult(chatbotTraceSpan, evalName, result, evalCtx);
+    applyEvalResult(evalTraceSpan, evalName, result, evalCtx, ATTR_REQUEST_GEN_AI_CONVERSATION_ID);
+    applyEvalResult(chatbotTraceSpan, evalName, result, evalCtx, ATTR_GEN_AI_CONVERSATION_ID, true);
   } catch (error) {
     applyEvalError(evalTraceSpan, evalName, error);
     applyEvalError(chatbotTraceSpan, evalName, error);
@@ -155,8 +200,9 @@ export async function evaluateChat(
   inputTokens: number,
   outputTokens: number,
   ttftMs: number,
+  conversationId?: string,
 ): Promise<void> {
-  const evalCtx: EvaluatedContext = { responseModel, inputTokens, outputTokens, ttftMs, input, output };
+  const evalCtx: EvaluatedContext = { responseModel, inputTokens, outputTokens, ttftMs, input, output, conversationId };
 
   // Remote parent context for the original chatbot trace
   const remoteParentCtx = trace.setSpanContext(context.active(), {
@@ -167,18 +213,23 @@ export async function evaluateChat(
   });
 
   // New eval trace: create a root span
+  const rootAttrs: Record<string, string | number> = {
+    'eval.source_trace_id': traceId,
+    'eval.source_span_id': spanId,
+    'gen_ai.agent.name': agentName,
+    'evaluated.model.name': responseModel,
+    'evaluated.usage.input_tokens': inputTokens,
+    'evaluated.usage.output_tokens': outputTokens,
+    'evaluated.response.ttft': ttftMs,
+    'evaluated.input': input,
+    'evaluated.output': output,
+  };
+  if (conversationId) {
+    // Eval trace -- use renamed attr so the agentic timeline ignores it.
+    rootAttrs[ATTR_REQUEST_GEN_AI_CONVERSATION_ID] = conversationId;
+  }
   const evalRootSpan = tracer.startSpan('eval - llm-evals', {
-    attributes: {
-      'eval.source_trace_id': traceId,
-      'eval.source_span_id': spanId,
-      'gen_ai.agent.name': agentName,
-      'evaluated.model.name': responseModel,
-      'evaluated.usage.input_tokens': inputTokens,
-      'evaluated.usage.output_tokens': outputTokens,
-      'evaluated.response.ttft': ttftMs,
-      'evaluated.input': input,
-      'evaluated.output': output,
-    },
+    attributes: rootAttrs,
   });
   const evalRootCtx = trace.setSpanContext(context.active(), evalRootSpan.spanContext());
 

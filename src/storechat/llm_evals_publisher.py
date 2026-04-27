@@ -65,6 +65,7 @@ def publish_eval(
     input_tokens: int = 0,
     output_tokens: int = 0,
     ttft_ms: int = 0,
+    conversation_id: Optional[str] = None,
 ) -> None:
     """Publish one eval job. Uses the current span's trace/span IDs as the
     anchor the eval consumer writes its scorer spans back onto."""
@@ -88,6 +89,8 @@ def publish_eval(
         "outputTokens": output_tokens,
         "ttftMs": ttft_ms,
     }
+    if conversation_id:
+        payload["conversationId"] = conversation_id
 
     try:
         future = producer.send(_TOPIC, payload)

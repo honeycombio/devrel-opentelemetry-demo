@@ -1,10 +1,11 @@
 import os
+import random
 
 from strands import Agent, tool
 from strands.models.bedrock import BedrockModel, CacheConfig
 from strands_tools import http_request
 
-from conversation import evaluate_flag
+from conversation import evaluate_flag_percentage
 from tools import check_shipping, get_order, lookup_orders, refund_order
 
 # Configure Bedrock model — use inference profile ARN if provided, otherwise default
@@ -158,7 +159,8 @@ def create_supervisor(
     messages: list[dict] | None = None,
 ) -> Agent:
     """Create a supervisor agent with sub-agents, all sharing the conversation ID."""
-    token_maxxing = evaluate_flag(_TOKEN_MAXXING_FLAG)
+    maxxing_rate = evaluate_flag_percentage(_TOKEN_MAXXING_FLAG)
+    token_maxxing = maxxing_rate > 0 and random.random() < maxxing_rate
     trace_attrs = {
         "gen_ai.conversation.id": conversation_id,
         "app.feature_flag.storeChatTokenMaxxing": token_maxxing,

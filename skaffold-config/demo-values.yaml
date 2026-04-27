@@ -190,16 +190,20 @@ opentelemetry-collector:
           - context: log
             statements:
               - set(resource.attributes["service.name"], "api-gateway") where resource.attributes["k8s.container.name"] == "frontend"
-      # Strip the noisy `app.feature_flag.storeChatTokenMaxxing` attribute
-      # from store-chat spans (keep the span, drop the attribute).
-      transform/drop_token_maxxing_attr:
+      # Strip noisy `app.feature_flag.*` attributes from spans (keep the
+      # span, drop the attributes). `delete_key` is a no-op when the key
+      # is absent, so a single unconditional pass is safe across services.
+      transform/drop_feature_flag_attrs:
         error_mode: ignore
         trace_statements:
           - context: span
-            conditions:
-              - resource.attributes["service.name"] == "store-chat"
             statements:
               - delete_key(attributes, "app.feature_flag.storeChatTokenMaxxing")
+              - delete_key(attributes, "app.feature_flag.storeChatConversationFailure")
+              - delete_key(attributes, "app.feature_flag.storeChatShippingToolFailure")
+              - delete_key(attributes, "app.feature_flag.storeChatShippingToolDelay")
+              - delete_key(attributes, "app.feature_flag.llmRateLimitError")
+              - delete_key(attributes, "app.feature_flag.llmInaccurateResponse")
       # Drop per-token usage attributes from store-chat invoke_agent spans.
       # The agent span aggregates many model calls; per-call token counts
       # belong on the child execute_tool / chat spans, not the parent.
@@ -272,7 +276,7 @@ opentelemetry-collector:
             - spanmetrics
           processors:
             - filter/drop_flagd_spans
-            - transform/drop_token_maxxing_attr
+            - transform/drop_feature_flag_attrs
             - transform/genai_span_events_to_attributes
             - transform/drop_invoke_agent_token_attrs
             - transform/service_names

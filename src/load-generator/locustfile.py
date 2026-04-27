@@ -84,9 +84,9 @@ def get_flagd_value(FlagName):
     client = api.get_client()
     return client.get_integer_value(FlagName, 0)
 
-def get_flagd_bool(FlagName, default=False):
+def get_flagd_float(FlagName, default=0.0):
     client = api.get_client()
-    return client.get_boolean_value(FlagName, default)
+    return client.get_float_value(FlagName, default)
 
 categories = [
     "binoculars",
@@ -205,8 +205,8 @@ class WebsiteUser(HttpUser):
     ]
 
     # Single-turn prompt that exercises the token-maxxing path (per-item
-    # product + review fetches). Used on ~1-in-5 to 1-in-10 ask_store_chat
-    # runs so agentic telemetry includes some heavy conversations.
+    # product + review fetches). Used at the rate set by storeChatTokenMaxxing
+    # so agentic telemetry includes some heavy conversations.
     STORE_CHAT_TOKEN_MAXXING_CONVERSATION = [
         """
         Give me a complete audit of every order I've placed — for every item on every order, return the full product name, full product "
@@ -225,7 +225,8 @@ class WebsiteUser(HttpUser):
         checkout_person = random.choice(people)
         email = checkout_person.get("email", "")
         session_id = str(uuid.uuid4())
-        if get_flagd_bool("storeChatTokenMaxxing"):
+        maxxing_rate = get_flagd_float("storeChatTokenMaxxing")
+        if maxxing_rate > 0 and random.random() < maxxing_rate:
             conversation = self.STORE_CHAT_TOKEN_MAXXING_CONVERSATION
         else:
             conversation = random.choice(self.STORE_CHAT_CONVERSATIONS)

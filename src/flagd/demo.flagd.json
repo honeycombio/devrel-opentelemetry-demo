@@ -172,6 +172,18 @@
       },
       "defaultVariant": "off"
     },
+    "storeChatShippingToolDelay": {
+      "description": "Delay the store-chat check_shipping @tool by ~60s at n% probability per call; sleeps inside the @tool so the execute_tool span runs very slowly. Takes precedence over storeChatShippingToolFailure — when this fires, the failure flag is skipped",
+      "state": "ENABLED",
+      "variants": {
+        "100%": 1,
+        "75%": 0.75,
+        "50%": 0.5,
+        "20%": 0.2,
+        "off": 0
+      },
+      "defaultVariant": "off"
+    },
     "storeChatConversationFailure": {
       "description": "Fail the store-chat conversation store (get_history) at n% probability per call; raises ConnectionError from outside any @tool span so the failure surfaces at the request boundary",
       "state": "ENABLED",
@@ -185,11 +197,14 @@
       "defaultVariant": "off"
     },
     "storeChatTokenMaxxing": {
-      "description": "Inflate store-chat token usage: disables prompt caching, adds http_request to the agents, and mandates per-item product + review fetches in the order-status flow so each completion re-ingests large tool outputs",
+      "description": "Inflate store-chat token usage at n% probability per request: adds http_request to the agents and mandates per-item product + review fetches in the order-status flow so each completion re-ingests large tool outputs",
       "state": "ENABLED",
       "variants": {
-        "on": true,
-        "off": false
+        "100%": 1,
+        "75%": 0.75,
+        "50%": 0.5,
+        "20%": 0.2,
+        "off": 0
       },
       "defaultVariant": "off"
     }

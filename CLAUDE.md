@@ -19,7 +19,7 @@ Service names match the `image:` entries in `skaffold.yaml` (e.g. `accounting`, 
 The `./run` script blocks on `skaffold run --port-forward`. Look for this line in the output to confirm deployment is complete:
 
 ```
-Port forwarding service/frontend-proxy in namespace martin-local, remote port 8080 -> http://127.0.0.1:9191
+Port forwarding service/frontend-proxy in namespace ${USER}-local, remote port 8080 -> http://127.0.0.1:9191
 Press Ctrl+C to exit
 ```
 
@@ -36,5 +36,7 @@ The port number (9191, 9192, etc.) increments if a previous port-forward is stil
 When deploying this branch, include all services with code changes:
 
 ```bash
-AWS_PROFILE=devrel-sandbox ./run accounting checkout frontend frontendproxy payment postgresql shipping storechat
+AWS_PROFILE=devrel-sandbox ./run accounting checkout frontend frontendproxy llm-evals payment postgresql product-reviews shipping storechat
 ```
+
+`llm-evals` and `product-reviews` are repo-local services with no upstream image — omitting them deploys an empty/stale image and silently breaks the eval pipeline.
