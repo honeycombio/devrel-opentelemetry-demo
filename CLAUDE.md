@@ -38,3 +38,15 @@ When deploying this branch, include all services with code changes:
 ```bash
 AWS_PROFILE=devrel-sandbox ./run accounting checkout frontend frontendproxy payment postgresql shipping storechat
 ```
+
+## Querying telemetry from the local cluster
+
+The local cluster (namespace `martin-local`) ships directly to Honeycomb using `HONEYCOMB_API_KEY` from `.skaffold.env`. The key determines the destination team + environment — **don't guess which env to query**. Resolve it from the key with the Honeycomb auth API before running any MCP query:
+
+```bash
+curl -s https://api.honeycomb.io/1/auth \
+  -H "X-Honeycomb-Team: $(grep HONEYCOMB_API_KEY .skaffold.env | cut -d= -f2)" \
+  | jq '{team: .team.slug, environment: .environment.slug}'
+```
+
+The returned `environment.slug` is what to pass to the matching honeycomb MCP server's `environment_slug` argument (the team determines which MCP server — `martindotnet-pro`, `devrel-demo`, etc.).
