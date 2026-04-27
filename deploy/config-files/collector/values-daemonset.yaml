@@ -51,6 +51,25 @@ config:
     filelog:
       include:
         - /var/log/pods/${env:NAMESPACE}_*/*/*.log
+      operators:
+        # The helm logsCollection preset injects the container parser; we
+        # need to redeclare it here because providing operators replaces
+        # the preset's chain, then add recombine for accounting.
+        - id: container-parser
+          type: container
+          max_log_size: 102400
+        # Microsoft.Extensions.Logging.Console writes the category prefix
+        # (`info: ...`) and each line of the message as separate stdout
+        # lines, which the container parser turns into separate records.
+        # Stitch them back together for the accounting container only —
+        # cuts accounting log volume ~6-8x on the console-scrape path.
+        - type: recombine
+          if: 'attributes["k8s.container.name"] == "accounting"'
+          combine_field: body
+          combine_with: "\n"
+          is_first_entry: 'body matches "^(trce|dbug|info|warn|fail|crit):"'
+          source_identifier: attributes["log.file.path"]
+          max_log_size: 102400
   processors:
     transform/service_names:
       error_mode: ignore
