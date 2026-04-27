@@ -172,10 +172,13 @@ def check_shipping(tracking_id: str) -> str:
     # and skip the failure flag entirely. Otherwise fall through to the failure
     # flag (off=0, 20%, 50%, 75%, 100%) which raises so the span is marked
     # error=true.
+    span = trace.get_current_span()
     delay_rate = evaluate_flag_percentage("storeChatShippingToolDelay")
     if delay_rate > 0 and random.random() < delay_rate:
+        span.set_attribute("app.check_shipping.api.version", "2.0")
         time.sleep(_SHIPPING_TOOL_DELAY_SECONDS)
     else:
+        span.set_attribute("app.check_shipping.api.version", "1.67")
         failure_rate = evaluate_flag_percentage("storeChatShippingToolFailure")
         if failure_rate > 0 and random.random() < failure_rate:
             raise ConnectionError("shipping service unreachable")
