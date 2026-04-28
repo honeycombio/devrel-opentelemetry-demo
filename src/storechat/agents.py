@@ -37,36 +37,34 @@ def _make_model() -> BedrockModel | None:
 _ORDER_AGENT_PROMPT_BASELINE = (
     "You look up customer orders and check their shipping status. "
     "Given a customer email, use lookup_orders to find their orders, "
-    "then get_order for details, then get_product_details for each order item's product details, "
-    "then check_shipping for tracking status. "
-    "Return a structured summary of what you found. "
-    "When get_product_details returns a `reviews` array, include reviews verbatim "
-    "(username, score, description) only when the customer asked about reviews — "
-    "otherwise omit them from the summary."
+    "then get_order for each order's details, then check_shipping for tracking status. "
+    "If the customer asks about item details, or price, description, category, "
+    "get them from get_product_details. You also call get_product_details to get "
+    "product reviews if asked (see tool arguments)."
+    "Build your summary from those four tools' output. "
+
 )
 
-_ORDER_AGENT_REVIEW_DIRECTIVE_MAXX = (
-    " Always call get_product_details with include_reviews=True so reviews are "
-    "fetched for every order item, regardless of whether the customer asked about reviews."
+_ORDER_AGENT_DIRECTIVE_MAXX = (
+    " OVERRIDE: For every item on every order, call get_product_details with "
+    "include_details=True, regardless of what the customer asked. Always pass "
+    "include_details=True on every get_product_details call. Include the "
+    "fetched details and reviews verbatim in your summary."
 )
 
-_ORDER_AGENT_REVIEW_DIRECTIVE_NORMAL = (
-    " Call get_product_details with include_reviews=True only when the customer "
-    "asks about reviews or product quality; otherwise pass include_reviews=False "
-    "to skip the reviews fetch."
-)
+_ORDER_AGENT_DIRECTIVE_NORMAL = ""
 
 
 def _make_order_status_agent(trace_attributes: dict, token_maxxing: bool) -> Agent:
     attrs = {**trace_attributes, "gen_ai.agent.name": "order_status_agent"}
     tools = [lookup_orders, get_order, check_shipping, get_product_details]
-    review_directive = (
-        _ORDER_AGENT_REVIEW_DIRECTIVE_MAXX if token_maxxing
-        else _ORDER_AGENT_REVIEW_DIRECTIVE_NORMAL
+    directive = (
+        _ORDER_AGENT_DIRECTIVE_MAXX if token_maxxing
+        else _ORDER_AGENT_DIRECTIVE_NORMAL
     )
     kwargs: dict = {
         "name": "order_status_agent",
-        "system_prompt": _ORDER_AGENT_PROMPT_BASELINE + review_directive,
+        "system_prompt": _ORDER_AGENT_PROMPT_BASELINE + directive,
         "tools": tools,
         "callback_handler": None,
         "trace_attributes": attrs,
@@ -104,10 +102,7 @@ SUPERVISOR_SYSTEM_PROMPT_BASELINE = """\
 You are a friendly store assistant for Telescope Shop, an online telescope and astronomy store.
 
 You help customers with their orders. You can:
-- Look up order status and shipping information (use check_order_status). The
-  result also includes full product details and customer reviews for each
-  ordered item; include the review details in your reply only when the
-  customer asks about reviews, otherwise omit them.
+- Look up order status and shipping information (use check_order_status)
 - Process refunds (use process_refund)
 
 When a customer contacts you:
@@ -115,34 +110,12 @@ When a customer contacts you:
 2. Route their request to the appropriate tool.
 3. Compose a clear, helpful response based on the results.
 
-If the customer asks about something you can't help with (account issues,
-password resets, etc.), politely explain that you can help with order
-status, the products and reviews on their orders, and refunds.
+If the customer asks about something you can't help with (product questions,
+account issues, etc.), politely explain that you can only help with order
+status and refunds.
 
 Always be friendly and concise. Format your response as plain text.
 """
-
-# SUPERVISOR_SYSTEM_PROMPT_MAXXING = """\
-# You are a friendly store assistant for Telescope Shop, an online telescope and astronomy store.
-#
-# You help customers with their orders. You can:
-# - Look up order status and shipping information (use check_order_status). For
-#   order-status questions, also fetch product information for the items on the
-#   order so the response describes what was ordered.
-# - Process refunds (use process_refund)
-#
-# When a customer contacts you:
-# 1. If they mention an email, use it. If not, ask for their email address.
-# 2. Route their request to the appropriate tool.
-# 3. Compose a clear, helpful response based on the results.
-#
-# If the customer asks about something you can't help with (account issues,
-# password resets, etc.), politely explain that you can only help with order
-# status and refunds.
-#
-# Always be friendly and concise. Format your response as plain text.
-# """
-
 
 def create_supervisor(
     conversation_id: str,

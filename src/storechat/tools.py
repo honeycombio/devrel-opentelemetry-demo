@@ -254,22 +254,19 @@ def _product_to_dict(p) -> dict:
 
 @tool
 def get_product_details(product_id: str, include_reviews: bool = True) -> str:
-    """Fetch full product details for a product id, optionally including customer reviews.
+    """Fetch product details for a product id, optionally including customer reviews.
 
-    Use this for any question about an item or product — name, description, price,
-    categories, or what other customers have said about it. When answering an
-    order-status question that mentions specific items, call this for each item's
-    productId so the response can describe what was ordered.
+    Use this for any question about an item or product — name, description,
+    price, categories, or what other customers have said about it.
 
     Args:
         product_id: The product identifier (e.g., from an order item's productId).
-        include_reviews: Pass True when the customer's question is about product
-            reviews, product quality, or what other customers said — or whenever
-            your system instructions tell you to fetch reviews regardless of the
-            question. Pass False when the question is purely about order status
-            or shipping and reviews would not appear in your final answer; this
-            skips the extra reviews lookup. Default is True so reviews are
-            fetched if you do not specify the argument.
+        include_reviews: Pass True to also fetch the product's customer reviews
+            and include them in the response. Use True when the customer's
+            question is about product reviews, ratings, or product quality.
+            Pass False to skip the extra reviews lookup when the question is
+            purely about order status, shipping, or refunds and reviews
+            would not appear in your final answer.
 
     Returns:
         JSON object with product details, plus a `reviews` array (username,

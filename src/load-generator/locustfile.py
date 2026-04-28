@@ -194,6 +194,22 @@ class WebsiteUser(HttpUser):
             "Refund the telescope, it's the wrong model.",
         ],
         [
+            "Can you look up my recent orders, including product details and review details?",
+            "Cancel the most recent order.",
+        ],
+        [
+            "Can you look up my recent orders, including product details and review details?",
+            "Cancel the most recent order.",
+        ],
+        [
+            "Can you look up my recent orders, including product details and review details?",
+            "Refund the telescope, it's the wrong model.",
+        ],
+        [
+            "Can you look up my recent orders, including product details and review details?",
+            "Refund the telescope, it's the wrong model.",
+        ],
+        [
             "My order hasn't arrived yet and it's been a week.",
             "Can you check the shipping status?",
             "If it's lost, please refund it.",
