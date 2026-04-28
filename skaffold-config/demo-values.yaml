@@ -217,6 +217,15 @@ opentelemetry-collector:
           span:
             - attributes["rpc.service"] == "flagd.evaluation.v1.Service"
             - resource.attributes["service.name"] == "flagd"
+
+      # Keep only spans worth evaluating: store-chat's per-turn supervisor
+      # invocation, and product-reviews' Bedrock chat spans (the consumer
+      # filters out tool-use rounds; we keep all chat * here for simplicity).
+      filter/keep_eval_anchors:
+        error_mode: ignore
+        traces:
+          span:
+            - 'not ((resource.attributes["service.name"] == "store-chat" and name == "invoke_agent supervisor") or (resource.attributes["service.name"] == "product-reviews" and IsMatch(name, "^chat ")))'
     exporters:
       debug/detailed:
         verbosity: detailed
@@ -224,6 +233,18 @@ opentelemetry-collector:
         endpoint: api.honeycomb.io:443
         headers:
           x-honeycomb-team: ${env:HONEYCOMB_API_KEY}
+
+      # Ships chat-completion spans (in OTLP JSON) to the llm-evals consumer.
+      # The consumer parses the spans, runs Bias/Hallucination/Relevance
+      # scorers, and emits a `gen_ai.evaluation.result` log on the original
+      # chat span plus a separate eval-trace span tree.
+      kafka/llm-evals:
+        brokers:
+          - kafka:9092
+        topic: llm-evals-spans
+        encoding: otlp_json
+        producer:
+          max_message_bytes: 10000000
 
     service:
       telemetry:
@@ -269,6 +290,24 @@ opentelemetry-collector:
             - transform/genai_span_events_to_attributes
             - transform/service_names
             - transform/attribution
+
+        # Isolated pipeline that ships eval-anchor spans (one per chatbot
+        # turn) to the llm-evals service via Kafka. Consumer parses OTLP
+        # JSON, extracts gen_ai.input.messages / gen_ai.output.messages,
+        # and runs scorers — no producer-side publish_eval calls needed.
+        #
+        # genai_span_events_to_attributes promotes Strands-style event
+        # attributes onto the span first; without it, invoke_agent spans
+        # arrive at the consumer with gen_ai.input.messages still on
+        # span events and the consumer skips them.
+        traces/evals:
+          receivers:
+            - otlp
+          processors:
+            - transform/genai_span_events_to_attributes
+            - filter/keep_eval_anchors
+          exporters:
+            - kafka/llm-evals
   ports:
     otlp:
       hostPort: 0
