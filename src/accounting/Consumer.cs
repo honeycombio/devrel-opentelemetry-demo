@@ -74,6 +74,14 @@ internal class Consumer : BackgroundService
                     {
                         _logger.LogError(e, "Consume error: {0}", e.Error.Reason);
                     }
+                    catch (Exception ex) when (ex is not OperationCanceledException)
+                    {
+                        // Keep the BackgroundService alive on unexpected errors
+                        // (e.g. KafkaException from Seek/Commit during a broker
+                        // blip) instead of silently terminating the thread.
+                        _logger.LogError(ex, "Unexpected error in consumer loop; will retry");
+                        Thread.Sleep(TimeSpan.FromSeconds(1));
+                    }
                 }
             }
             catch (OperationCanceledException)

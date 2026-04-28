@@ -209,9 +209,7 @@ class WebsiteUser(HttpUser):
     # so agentic telemetry includes some heavy conversations.
     STORE_CHAT_TOKEN_MAXXING_CONVERSATION = [
         """
-        Give me a complete audit of every order I've placed — for every item on every order, return the full product name, full product "
-        description, price, quantity, shipping status, AND every single product review verbatim (reviewer, rating, title, and full body text word-for-word — do
-        not summarize, do not truncate, do not skip any reviews). Format as markdown with a section per order and a subsection per item. 
+        Please show me all of my orders including shipping and product information.
         """
     ]
 

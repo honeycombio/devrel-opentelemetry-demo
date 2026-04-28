@@ -18,6 +18,7 @@ from genproto import demo_pb2, demo_pb2_grpc
 ACCOUNTING_ADDR = os.environ.get("ACCOUNTING_ADDR", "accounting:5060")
 SHIPPING_ADDR = os.environ.get("SHIPPING_ADDR", "http://shipping:8080")
 PRODUCT_CATALOG_ADDR = os.environ.get("PRODUCT_CATALOG_ADDR", "product-catalog:8080")
+PRODUCT_REVIEWS_ADDR = os.environ.get("PRODUCT_REVIEWS_ADDR", "product-reviews:3551")
 
 _SHIPPING_TOOL_DELAY_SECONDS = 60
 
@@ -26,6 +27,8 @@ _accounting_channel: grpc.Channel | None = None
 _order_stub: demo_pb2_grpc.OrderServiceStub | None = None
 _product_channel: grpc.Channel | None = None
 _product_stub: demo_pb2_grpc.ProductCatalogServiceStub | None = None
+_review_channel: grpc.Channel | None = None
+_review_stub: demo_pb2_grpc.ProductReviewServiceStub | None = None
 
 
 def _mark_tool_error(exc: Exception, message: str) -> None:
@@ -49,6 +52,24 @@ def _get_stub() -> demo_pb2_grpc.OrderServiceStub:
         return _order_stub
 
 
+def _get_product_stub() -> demo_pb2_grpc.ProductCatalogServiceStub:
+    global _product_channel, _product_stub
+    with _channel_lock:
+        if _product_stub is None:
+            _product_channel = grpc.insecure_channel(PRODUCT_CATALOG_ADDR)
+            _product_stub = demo_pb2_grpc.ProductCatalogServiceStub(_product_channel)
+        return _product_stub
+
+
+def _get_review_stub() -> demo_pb2_grpc.ProductReviewServiceStub:
+    global _review_channel, _review_stub
+    with _channel_lock:
+        if _review_stub is None:
+            _review_channel = grpc.insecure_channel(PRODUCT_REVIEWS_ADDR)
+            _review_stub = demo_pb2_grpc.ProductReviewServiceStub(_review_channel)
+        return _review_stub
+
+
 def _invalidate_channel() -> None:
     global _accounting_channel, _order_stub
     with _channel_lock:
@@ -61,12 +82,36 @@ def _invalidate_channel() -> None:
         _order_stub = None
 
 
+def _invalidate_product_channel() -> None:
+    global _product_channel, _product_stub
+    with _channel_lock:
+        if _product_channel is not None:
+            try:
+                _product_channel.close()
+            except Exception:
+                pass
+        _product_channel = None
+        _product_stub = None
+
+
+def _invalidate_review_channel() -> None:
+    global _review_channel, _review_stub
+    with _channel_lock:
+        if _review_channel is not None:
+            try:
+                _review_channel.close()
+            except Exception:
+                pass
+        _review_channel = None
+        _review_stub = None
+
+
 def _is_retriable(exc: grpc.RpcError) -> bool:
     code = exc.code() if callable(getattr(exc, "code", None)) else None
     return code in (grpc.StatusCode.UNAVAILABLE, grpc.StatusCode.UNKNOWN)
 
 
-def _grpc_retry(error_message: str):
+def _grpc_retry(error_message: str, invalidator=_invalidate_channel):
     def deco(fn):
         @functools.wraps(fn)
         def wrapper(*args, **kwargs):
@@ -75,7 +120,7 @@ def _grpc_retry(error_message: str):
                     return fn(*args, **kwargs)
                 except grpc.RpcError as e:
                     if attempt == 1 and _is_retriable(e):
-                        _invalidate_channel()
+                        invalidator()
                         continue
                     _mark_tool_error(e, error_message)
                     raise
@@ -190,6 +235,69 @@ def check_shipping(tracking_id: str) -> str:
     except httpx.HTTPError as e:
         _mark_tool_error(e, "shipping lookup failed")
         raise
+
+
+def _product_to_dict(p) -> dict:
+    return {
+        "id": p.id,
+        "name": p.name,
+        "description": p.description,
+        "picture": p.picture,
+        "priceUsd": {
+            "currencyCode": p.price_usd.currency_code,
+            "units": p.price_usd.units,
+            "nanos": p.price_usd.nanos,
+        },
+        "categories": list(p.categories),
+    }
+
+
+@tool
+def get_product_details(product_id: str, include_reviews: bool = True) -> str:
+    """Fetch full product details for a product id, optionally including customer reviews.
+
+    Use this for any question about an item or product — name, description, price,
+    categories, or what other customers have said about it. When answering an
+    order-status question that mentions specific items, call this for each item's
+    productId so the response can describe what was ordered.
+
+    Args:
+        product_id: The product identifier (e.g., from an order item's productId).
+        include_reviews: Pass True when the customer's question is about product
+            reviews, product quality, or what other customers said — or whenever
+            your system instructions tell you to fetch reviews regardless of the
+            question. Pass False when the question is purely about order status
+            or shipping and reviews would not appear in your final answer; this
+            skips the extra reviews lookup. Default is True so reviews are
+            fetched if you do not specify the argument.
+
+    Returns:
+        JSON object with product details, plus a `reviews` array (username,
+        score, description) when include_reviews=True.
+    """
+    @_grpc_retry("product lookup failed", invalidator=_invalidate_product_channel)
+    def _fetch_product() -> dict:
+        product = _get_product_stub().GetProduct(
+            demo_pb2.GetProductRequest(id=product_id),
+            timeout=5,
+        )
+        return _product_to_dict(product)
+
+    @_grpc_retry("product reviews lookup failed", invalidator=_invalidate_review_channel)
+    def _fetch_reviews() -> list:
+        response = _get_review_stub().GetProductReviews(
+            demo_pb2.GetProductReviewsRequest(product_id=product_id),
+            timeout=5,
+        )
+        return [
+            {"username": r.username, "score": r.score, "description": r.description}
+            for r in response.product_reviews
+        ]
+
+    result = _fetch_product()
+    if include_reviews:
+        result["reviews"] = _fetch_reviews()
+    return json.dumps(result, indent=2)
 
 
 @tool

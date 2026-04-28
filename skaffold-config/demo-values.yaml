@@ -23,6 +23,27 @@ components:
         value: "5060"
       - name: ASPNETCORE_URLS
         value: "http://*:5060"
+    # The chart's default wait-for-kafka init only TCP-port-checks. That races
+    # broker startup: the port opens before kafka can assign partitions, so the
+    # consumer joins the group with zero partitions and silently drops orders.
+    # This second init container forces a real metadata fetch before the main
+    # container starts.
+    initContainers:
+      - name: wait-for-kafka-metadata
+        image: edenhill/kcat:1.7.1
+        command:
+          - sh
+          - -c
+          - |
+            until kcat -b kafka:9092 -L -m 5 >/dev/null 2>&1; do
+              echo "waiting for kafka metadata..."
+              sleep 2
+            done
+            echo "kafka metadata ready"
+  kafka:
+    resources:
+      limits:
+        memory: 1200Mi
   load-generator:
     replicas: 1
   frontend:

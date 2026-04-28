@@ -66,6 +66,8 @@ def chat(req: ChatRequest):
     # Set conversation ID on the current span
     current_span = trace.get_current_span()
     current_span.set_attribute("gen_ai.conversation.id", req.sessionId)
+    if req.email:
+        current_span.set_attribute("app.chat.request.email", req.email)
 
     # Load conversation history from Valkey
     history = conversation.get_history(req.sessionId)

@@ -1,5 +1,4 @@
 strands-agents[otel]
-strands-agents-tools
 fastapi
 uvicorn[standard]
 httpx
