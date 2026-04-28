@@ -12,7 +12,9 @@ AWS_PROFILE=devrel-sandbox ./run <service1> <service2> ...
 
 Service names match the `image:` entries in `skaffold.yaml` (e.g. `accounting`, `frontend`, `frontendproxy`, `storechat`).
 
-**Important:** Every `./run` invocation deploys the full Helm chart. Services not listed in the arguments revert to their default upstream images. Always include ALL services that need custom-built images.
+**Which services to pass as args:** only the ones whose source has changed between your branch and the last release. Every `./run` invocation deploys the full Helm chart, but services not listed in the args fall back to the chart's default image — which is the registry's released `latest-*` tag (already has the most recent merged code), not the OTel-upstream image. They don't need rebuilding.
+
+In practice: diff against the last release (typically `main`), pick only the services with source changes under `src/<service>` (or `deploy/config-files/custom-collector` for the `otelcollector` image), and pass those. Config-only changes (Helm values, collector YAML *referenced by* skaffold-config/) ride along on the chart deploy and don't need any image rebuild.
 
 ### How to know when it's done
 
@@ -30,14 +32,6 @@ The port number (9191, 9192, etc.) increments if a previous port-forward is stil
 - **Multiple skaffold processes**: If previous runs are still alive (holding port-forwards), kill them before starting a new run. Check with `ps aux | grep skaffold`.
 - **AWS credentials**: The script sources `.skaffold.env` which sets `AWS_PROFILE=devrel-sandbox`. If running in a context where env vars aren't inherited, pass `AWS_PROFILE=devrel-sandbox` explicitly.
 - **Docker must be running**: Skaffold uses Docker to build images. Start Docker before running.
-
-### Changed services on this branch
-
-When deploying this branch, include all services with code changes:
-
-```bash
-AWS_PROFILE=devrel-sandbox ./run accounting checkout frontend frontendproxy payment postgresql shipping storechat
-```
 
 ## Querying telemetry from the local cluster
 

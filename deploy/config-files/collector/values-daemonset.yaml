@@ -189,6 +189,28 @@ config:
             span:
                 - 'not ((resource.attributes["service.name"] == "store-chat" and name == "invoke_agent supervisor") or (resource.attributes["service.name"] == "product-reviews" and IsMatch(name, "^chat ")))'
 
+    # Keep only flagd-ui's "Flag changed:" log records for the markers
+    # pipeline. flagd-ui's Storage GenServer logs that string via
+    # Logger.info on each flag change; filelog scrapes container stdout.
+    filter/keep_flag_changes:
+        error_mode: ignore
+        logs:
+            log_record:
+                - 'not (IsString(body) and IsMatch(body, "Flag changed: "))'
+
+    # Extract just the "Flag changed: <key> (<old> → <new>) [<source>]" line
+    # into marker.message. Phoenix's Logger flushes batched entries as a
+    # single stdout write, so container-parser produces one log record whose
+    # body is multiple newline-separated lines. Without this regex extraction
+    # the marker message becomes a wall of unrelated request/response noise.
+    transform/marker_message:
+        error_mode: ignore
+        log_statements:
+            - context: log
+              conditions:
+                  - 'IsString(body) and IsMatch(body, "Flag changed: ")'
+              statements:
+                  - 'set(attributes["marker.message"], ExtractPatterns(body, "(?P<msg>Flag changed: [^\n]+)")["msg"])'
 
     # Promote Strands-style gen_ai.* span-event attributes onto the parent
     # span so the latest-semconv attribute form (gen_ai.input.messages /
@@ -218,11 +240,11 @@ config:
       tls:
         insecure: true
       headers:
-        x-honeycomb-team: ${HONEYCOMB_API_KEY}
+        x-honeycomb-team: ${HONEYCOMB_INGEST_KEY}
     otlp/honeycomb:
       endpoint: api.honeycomb.io:443
       headers:
-        x-honeycomb-team: ${HONEYCOMB_API_KEY}
+        x-honeycomb-team: ${HONEYCOMB_INGEST_KEY}
     otlp/bindplane:
       endpoint: bindplane-node-agent.bindplane-agent:4317
       tls:
@@ -256,6 +278,18 @@ config:
       producer:
         max_message_bytes: 10000000
 
+    # Posts an environment-level Honeycomb marker per flagd-ui flag-change
+    # log record (the line transform/marker_message extracted into
+    # marker.message). Registered in ocb-config.yaml so otelcol-dev includes
+    # honeycombmarkerexporter.
+    honeycombmarker:
+      api_key: ${HONEYCOMB_MARKERS_KEY}
+      markers:
+        - type: feature-flag-change
+          message_key: marker.message
+          rules:
+            log_conditions:
+              - 'IsString(body) and IsMatch(body, "Flag changed: ")'
 
   service:
     pipelines:
@@ -300,6 +334,18 @@ config:
         receivers: [otlp]
         processors: [transform/genai_span_events_to_attributes, filter/keep_eval_anchors]
         exporters: [kafka/llm-evals]
+
+      # Isolated pipeline that publishes a Honeycomb marker per
+      # flagd-ui flag-change log record. Receives a separate copy of
+      # filelog data so it doesn't interfere with the main logs pipeline.
+      logs/markers:
+        receivers:
+          - filelog
+        processors:
+          - filter/keep_flag_changes
+          - transform/marker_message
+        exporters:
+          - honeycombmarker
 
 clusterRole:
   create: true

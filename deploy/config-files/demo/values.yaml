@@ -51,6 +51,32 @@ components:
       - name: config-ro
         configMap:
           name: flagd-custom-config
+    # Redeclare the chart's flagd-ui sidecar. Required because skaffold's
+    # `--set components.flagd.sidecarContainers[0].imageOverride.*` creates a
+    # sparse array element that *replaces* the chart-default sidecar (Helm's
+    # --set on arrays doesn't merge into chart defaults). Without this redecl
+    # the rendered sidecar has no `name`, and _objects.tpl errors on
+    # `.name | lower`. Service identity intentionally inherits from chart
+    # defaults (OTEL_SERVICE_NAME → fieldRef on component label = "flagd"),
+    # so we don't override env here.
+    sidecarContainers:
+      - name: flagd-ui
+        useDefault:
+          env: true
+        service:
+          port: 4000
+        env:
+          - name: FLAGD_METRICS_EXPORTER
+            value: otel
+          - name: OTEL_EXPORTER_OTLP_ENDPOINT
+            value: http://$(OTEL_COLLECTOR_NAME):4318
+          - name: FLAGD_UI_PORT
+            value: "4000"
+          - name: SECRET_KEY_BASE
+            value: yYrECL4qbNwleYInGJYvVnSkwJuSQJ4ijPTx5tirGUXrbznFIBFVJdPl5t6O9ASw
+        volumeMounts:
+          - name: config-rw
+            mountPath: /app/data
 
 opentelemetry-collector:
   enabled: false

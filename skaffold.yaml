@@ -102,6 +102,10 @@ build:
       context: .
       docker:
         dockerfile: src/shipping/Dockerfile
+    - image: flagd-ui
+      context: .
+      docker:
+        dockerfile: src/flagd-ui/Dockerfile
   platforms:
     - linux/amd64
   local:
@@ -132,7 +136,13 @@ deploy:
               pullPolicy: Always
           opentelemetry-collector:
             extraEnvs:
-              - name: HONEYCOMB_API_KEY
+              # Ingest key (events permission) — used by otlp/honeycomb and
+              # the collector's self-telemetry exporter.
+              - name: HONEYCOMB_INGEST_KEY
+              # Marker key (markers permission) — used by the honeycombmarker
+              # exporter. May be the same value as the ingest key when
+              # HONEYCOMB_API_KEY alone is set; ./run handles the defaulting.
+              - name: HONEYCOMB_MARKERS_KEY
               - name: CLOUD_PROVIDER
               - name: AWS_REGION
               - name: NAMESPACE
@@ -140,8 +150,9 @@ deploy:
                   fieldRef:
                     fieldPath: metadata.namespace
         setValueTemplates:
-          opentelemetry-collector.extraEnvs[0].value: "{{.HONEYCOMB_API_KEY}}"
-          opentelemetry-collector.extraEnvs[1].value: "{{.CLOUD_PROVIDER}}"
+          opentelemetry-collector.extraEnvs[0].value: "{{.HONEYCOMB_INGEST_KEY}}"
+          opentelemetry-collector.extraEnvs[1].value: "{{.HONEYCOMB_MARKERS_KEY}}"
+          opentelemetry-collector.extraEnvs[2].value: "{{.CLOUD_PROVIDER}}"
           opentelemetry-collector.clusterRole.name: "{{.USER}}-otel-collector"
           opentelemetry-collector.clusterRole.clusterRoleBinding.name: "{{.USER}}-otel-collector"
           opentelemetry-collector.image.repository: "{{if .IMAGE_REPO_otelcollector }}{{.IMAGE_REPO_otelcollector}}{{else}}ghcr.io/honeycombio/devrel-opentelemetry-demo{{end}}"
@@ -182,6 +193,14 @@ deploy:
           components.recommendation.imageOverride.tag: "{{if .IMAGE_REPO_recommendation }}{{.IMAGE_TAG_recommendation}}@{{.IMAGE_DIGEST_recommendation}}{{end}}"
           components.shipping.imageOverride.repository: "{{if .IMAGE_REPO_shipping }}{{.IMAGE_REPO_shipping}}{{end}}"
           components.shipping.imageOverride.tag: "{{if .IMAGE_REPO_shipping }}{{.IMAGE_TAG_shipping}}@{{.IMAGE_DIGEST_shipping}}{{end}}"
+          # flagd-ui is a sidecar in the flagd pod. The chart's _objects.tpl
+          # ignores `image:` on sidecar entries — it reads imageOverride.{repository,tag}
+          # and falls back to default.image.{repository,tag}-<sidecarName>. Set the
+          # override fields here only when flagd-ui was built; leave them empty
+          # otherwise so the chart default (latest-flagd-ui from the Honeycomb fork)
+          # kicks in via Helm's `default` filter.
+          components.flagd.sidecarContainers[0].imageOverride.repository: "{{if .IMAGE_REPO_flagd_ui }}{{.IMAGE_REPO_flagd_ui}}{{end}}"
+          components.flagd.sidecarContainers[0].imageOverride.tag: "{{if .IMAGE_REPO_flagd_ui }}{{.IMAGE_TAG_flagd_ui}}@{{.IMAGE_DIGEST_flagd_ui}}{{end}}"
         upgradeOnChange: true
         useHelmSecrets: false
         wait: true

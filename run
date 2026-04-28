@@ -9,6 +9,15 @@ if [[ -f .skaffold.env ]]; then
     set +a
 fi
 
+# Default the per-purpose keys from HONEYCOMB_API_KEY when not explicitly set.
+# The collector pod expects HONEYCOMB_INGEST_KEY (events permission) and
+# HONEYCOMB_MARKERS_KEY (markers permission) — both env vars are referenced by
+# the rendered collector config, so they must be present even if they alias
+# the same secret. Set HONEYCOMB_INGEST_KEY/HONEYCOMB_MARKERS_KEY in
+# .skaffold.env to override.
+export HONEYCOMB_INGEST_KEY="${HONEYCOMB_INGEST_KEY:-$HONEYCOMB_API_KEY}"
+export HONEYCOMB_MARKERS_KEY="${HONEYCOMB_MARKERS_KEY:-$HONEYCOMB_API_KEY}"
+
 # Validate Honeycomb API keys (quiet mode - only outputs on errors)
 scripts/validate-honeycomb-keys.sh --quiet
 

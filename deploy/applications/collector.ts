@@ -28,8 +28,24 @@ export class Collector extends pulumi.ComponentResource {
                 "tag": args.useCustomCollector ? args.config.collectorContainerTag : args.config.versions.defaultCollectorVersion
             },
             "extraEnvs": [
+                // The collector config references HONEYCOMB_INGEST_KEY (events
+                // permission, used by otlp/honeycomb + refinery exporters) and
+                // HONEYCOMB_MARKERS_KEY (markers permission, used by the
+                // honeycombmarker exporter). For now both source the same
+                // honeycomb-api secret — production runs with one key that has
+                // both perms. If the prod key ever loses markers permission,
+                // wire a second secret in here without touching the YAML.
                 {
-                    "name": "HONEYCOMB_API_KEY",
+                    "name": "HONEYCOMB_INGEST_KEY",
+                    "valueFrom": {
+                        "secretKeyRef": {
+                            "name": args.secrets.prodSecret.id.apply(id => id.split("/")[1]),
+                            "key": "honeycomb-api-key"
+                        }
+                    }
+                },
+                {
+                    "name": "HONEYCOMB_MARKERS_KEY",
                     "valueFrom": {
                         "secretKeyRef": {
                             "name": args.secrets.prodSecret.id.apply(id => id.split("/")[1]),

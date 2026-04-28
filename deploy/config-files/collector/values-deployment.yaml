@@ -39,11 +39,11 @@ config:
       tls:
         insecure: true
       headers:
-        x-honeycomb-team: ${HONEYCOMB_API_KEY}
+        x-honeycomb-team: ${HONEYCOMB_INGEST_KEY}
     otlp/honeycomb:
       endpoint: api.honeycomb.io:443
       headers:
-        x-honeycomb-team: ${env:HONEYCOMB_API_KEY}
+        x-honeycomb-team: ${env:HONEYCOMB_INGEST_KEY}
     otlp/logging-dogfood:
       endpoint: api-dogfood.honeycomb.io:443
       headers:
