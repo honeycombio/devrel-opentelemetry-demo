@@ -130,7 +130,10 @@ function emitChatbotTraceLog(
     severityNumber: SeverityNumber.INFO,
     body: 'gen_ai.evaluation.result',
     eventName: 'gen_ai.evaluation.result',
-    attributes: evalResultAttributes(result, evalCtx, ATTR_GEN_AI_CONVERSATION_ID),
+    attributes: {
+      ...evalResultAttributes(result, evalCtx, ATTR_GEN_AI_CONVERSATION_ID),
+      name: 'gen_ai.evaluation.result',
+    },
     context: remoteParentCtx,
   });
 }
