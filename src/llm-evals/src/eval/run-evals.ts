@@ -67,6 +67,7 @@ function applyEvalResultEvent(span: Span, result: EvalResult, evalCtx: Evaluated
 
 function emitEvalResultLog(
   chatbotCtx: ReturnType<typeof context.active>,
+  sourceServiceName: string,
   result: EvalResult,
   evalSpanCtx: { traceId: string; spanId: string },
 ): void {
@@ -82,6 +83,11 @@ function emitEvalResultLog(
       [ATTR_GEN_AI_EVALUATION_EXPLANATION]: result.explanation,
       'eval.trace_id': evalSpanCtx.traceId,
       'eval.span_id': evalSpanCtx.spanId,
+      // Sentinel for the collector's logs pipeline: groupbyattrs promotes
+      // this to the resource, then transform/eval_target_service rewrites
+      // resource.service.name so the log lands in the source service's
+      // dataset (store-chat, product-reviews) instead of llm-evals.
+      '_eval_target_service': sourceServiceName,
     },
   });
 }
@@ -103,6 +109,7 @@ function evalSpanAttrs(evalName: string, agentName: string, evalCtx: EvaluatedCo
 async function runEval(
   evalRootCtx: ReturnType<typeof context.active>,
   chatbotCtx: ReturnType<typeof context.active>,
+  sourceServiceName: string,
   evalName: string,
   agentName: string,
   evalCtx: EvaluatedContext,
@@ -119,7 +126,7 @@ async function runEval(
   try {
     result = await scorerFn();
     applyEvalResultEvent(evalSpan, result, evalCtx);
-    emitEvalResultLog(chatbotCtx, result, evalSpan.spanContext());
+    emitEvalResultLog(chatbotCtx, sourceServiceName, result, evalSpan.spanContext());
   } catch (error) {
     console.error(`Evaluation ${evalName} failed:`, error);
     evalSpan.recordException(error instanceof Error ? error : new Error(String(error)));
@@ -134,6 +141,7 @@ async function runEval(
 export async function evaluateChat(
   traceId: string,
   spanId: string,
+  sourceServiceName: string,
   input: string,
   output: string,
   groundingContext: string,
@@ -175,9 +183,9 @@ export async function evaluateChat(
 
   try {
     await Promise.all([
-      runEval(evalRootCtx, chatbotCtx, 'Bias', agentName, evalCtx, () => runBias(input, output)),
-      runEval(evalRootCtx, chatbotCtx, 'Hallucination', agentName, evalCtx, () => runHallucination(input, output, groundingContext)),
-      runEval(evalRootCtx, chatbotCtx, 'Relevance', agentName, evalCtx, () => runRelevance(input, output)),
+      runEval(evalRootCtx, chatbotCtx, sourceServiceName, 'Bias', agentName, evalCtx, () => runBias(input, output)),
+      runEval(evalRootCtx, chatbotCtx, sourceServiceName, 'Hallucination', agentName, evalCtx, () => runHallucination(input, output, groundingContext)),
+      runEval(evalRootCtx, chatbotCtx, sourceServiceName, 'Relevance', agentName, evalCtx, () => runRelevance(input, output)),
     ]);
     evalRootSpan.setStatus({ code: SpanStatusCode.OK });
   } catch (error) {

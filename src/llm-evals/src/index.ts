@@ -183,6 +183,7 @@ async function processSpan(resourceAttrs: Record<string, unknown>, span: OtlpSpa
   await evaluateChat(
     span.traceId,
     span.spanId,
+    serviceName,
     input,
     output,
     extractGrounding(inputMessages),

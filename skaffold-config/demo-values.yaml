@@ -166,6 +166,28 @@ opentelemetry-collector:
               - set(severity_text, "INFO") where attributes["log.severity"] == "info"
               - set(severity_number, 9) where attributes["log.severity"] == "info"
               - set(attributes["collector.transform.filelog_severity"], "v1")
+      # Eval log records are emitted by the llm-evals service (resource
+      # service.name=llm-evals) but must land in the SOURCE chatbot's
+      # dataset (store-chat, product-reviews) so the eval shows up on
+      # the originating conversation in Honeycomb. The consumer tags
+      # each eval log with `_eval_target_service`. groupbyattrs splits
+      # logs into separate ResourceLogs by that attribute (and promotes
+      # it onto the resource), then transform/eval_target_service
+      # rewrites resource.service.name from it. Without the split,
+      # set(resource...) would clobber the resource for unrelated logs
+      # in the same batch.
+      groupbyattrs/eval_logs:
+        keys:
+          - _eval_target_service
+      transform/eval_target_service:
+        error_mode: ignore
+        log_statements:
+          - context: resource
+            conditions:
+              - attributes["_eval_target_service"] != nil
+            statements:
+              - set(attributes["service.name"], attributes["_eval_target_service"])
+              - delete_key(attributes, "_eval_target_service")
       transform/pino_trace_fields:
         error_mode: ignore
         log_statements:
@@ -329,6 +351,8 @@ opentelemetry-collector:
             - transform/access_log_severity
             - transform/filelog_severity
             - transform/pino_trace_fields
+            - groupbyattrs/eval_logs
+            - transform/eval_target_service
             - transform/attribution
         traces:
           exporters:
