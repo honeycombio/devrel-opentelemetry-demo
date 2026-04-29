@@ -16,7 +16,6 @@ from pydantic import BaseModel
 
 import conversation
 from agents import create_supervisor
-from llm_evals_publisher import publish_eval
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -96,15 +95,6 @@ def chat(req: ChatRequest):
     # Save to conversation history
     conversation.append(req.sessionId, "user", req.question)
     conversation.append(req.sessionId, "assistant", response_text)
-
-    publish_eval(
-        input_text=user_prompt,
-        output_text=response_text,
-        agent_name="supervisor",
-        response_model=os.environ.get("BEDROCK_MODEL_ID")
-        or os.environ.get("BEDROCK_HAIKU_PROFILE_ARN"),
-        conversation_id=req.sessionId,
-    )
 
     return ChatResponse(response=response_text)
 

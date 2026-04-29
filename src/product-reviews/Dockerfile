@@ -24,7 +24,6 @@ COPY ./src/product-reviews/demo_pb2_grpc.py demo_pb2_grpc.py
 COPY ./src/product-reviews/demo_pb2.py demo_pb2.py
 COPY ./src/product-reviews/product_reviews_server.py product_reviews_server.py
 COPY ./src/product-reviews/llm_client.py llm_client.py
-COPY ./src/product-reviews/llm_evals_publisher.py llm_evals_publisher.py
 COPY ./src/product-reviews/database.py database.py
 COPY ./src/product-reviews/metrics.py metrics.py
 

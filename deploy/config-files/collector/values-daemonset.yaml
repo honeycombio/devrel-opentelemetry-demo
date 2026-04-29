@@ -51,6 +51,25 @@ config:
     filelog:
       include:
         - /var/log/pods/${env:NAMESPACE}_*/*/*.log
+      operators:
+        # The helm logsCollection preset injects the container parser; we
+        # need to redeclare it here because providing operators replaces
+        # the preset's chain, then add recombine for accounting.
+        - id: container-parser
+          type: container
+          max_log_size: 102400
+        # Microsoft.Extensions.Logging.Console writes the category prefix
+        # (`info: ...`) and each line of the message as separate stdout
+        # lines, which the container parser turns into separate records.
+        # Stitch them back together for the accounting container only —
+        # cuts accounting log volume ~6-8x on the console-scrape path.
+        - type: recombine
+          if: 'attributes["k8s.container.name"] == "accounting"'
+          combine_field: body
+          combine_with: "\n"
+          is_first_entry: 'body matches "^(trce|dbug|info|warn|fail|crit):"'
+          source_identifier: attributes["log.file.path"]
+          max_log_size: 102400
   processors:
     transform/service_names:
       error_mode: ignore
@@ -161,6 +180,16 @@ config:
                 - attributes["rpc.service"] == "flagd.evaluation.v1.Service"
                 - resource.attributes["service.name"] == "flagd"
 
+    # Keep only spans worth evaluating: store-chat's per-turn supervisor
+    # invocation, and product-reviews' Bedrock chat spans (the consumer
+    # filters out tool-use rounds). Same drop-everything-else pattern.
+    filter/keep_eval_anchors:
+        error_mode: ignore
+        traces:
+            span:
+                - 'not ((resource.attributes["service.name"] == "store-chat" and name == "invoke_agent supervisor") or (resource.attributes["service.name"] == "product-reviews" and IsMatch(name, "^chat ")))'
+
+
     # Promote Strands-style gen_ai.* span-event attributes onto the parent
     # span so the latest-semconv attribute form (gen_ai.input.messages /
     # gen_ai.output.messages / gen_ai.system_instructions / gen_ai.usage.*)
@@ -215,6 +244,19 @@ config:
         x-honeycomb-team: ${HONEYCOMB_API_KEY_DOGFOOD}
         x-honeycomb-dataset: service-logs
 
+    # Ships eval-anchor spans (one per chatbot turn) to the llm-evals
+    # service in OTLP JSON. The consumer parses these spans and runs
+    # Bias/Hallucination/Relevance scorers — no producer-side
+    # publish_eval calls needed.
+    kafka/llm-evals:
+      brokers:
+        - kafka:9092
+      topic: llm-evals-spans
+      encoding: otlp_json
+      producer:
+        max_message_bytes: 10000000
+
+
   service:
     pipelines:
       metrics:
@@ -247,6 +289,17 @@ config:
           - transform/genai_span_events_to_attributes
           - transform/service_names
           - transform/attribution
+
+      # Eval anchor pipeline. Pushes one span per chatbot turn to Kafka;
+      # the llm-evals service consumes and runs Bias/Hallucination/Relevance.
+      # genai_span_events_to_attributes runs first to promote Strands-style
+      # event attributes onto the span — without that, invoke_agent spans
+      # arrive at the consumer with gen_ai.input.messages still on the
+      # span event and the consumer skips them.
+      traces/evals:
+        receivers: [otlp]
+        processors: [transform/genai_span_events_to_attributes, filter/keep_eval_anchors]
+        exporters: [kafka/llm-evals]
 
 clusterRole:
   create: true
