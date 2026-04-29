@@ -281,6 +281,16 @@ config:
     kafka/llm-evals:
       brokers:
         - kafka:9092
+      # Use the trace ID as the kafka message key. The default
+      # `record_partitioner: sticky_key` with no key would keep bursts
+      # from one collector batch on the same partition, so
+      # partitionsConsumedConcurrently in the llm-evals consumer
+      # wouldn't actually parallelise. With trace-id keys, anchor
+      # spans (one per chat turn ⇒ unique trace ID) hash across
+      # partitions evenly while spans of the same trace stay on one
+      # partition — preserving per-message transactional logic.
+      # NOTE: top-level key, not nested under `traces:`.
+      partition_traces_by_id: true
       # As of kafkaexporter v0.151+, topic/encoding live under per-signal
       # subkeys. This pipeline ships traces, so configure under `traces:`.
       traces:

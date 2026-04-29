@@ -283,6 +283,14 @@ opentelemetry-collector:
       kafka/llm-evals:
         brokers:
           - kafka:9092
+        # Use the trace ID as the kafka message key. Default
+        # `record_partitioner: sticky_key` with no key keeps a
+        # collector batch on one partition, defeating the
+        # llm-evals consumer's partitionsConsumedConcurrently.
+        # Trace-id keys spread anchor spans (one per chat turn ⇒
+        # unique trace ID) across partitions evenly.
+        # NOTE: top-level key, not nested under `traces:`.
+        partition_traces_by_id: true
         # As of kafkaexporter v0.151+, topic/encoding live under per-signal
         # subkeys. This pipeline ships traces, so configure under `traces:`.
         traces:

@@ -6,17 +6,32 @@
  * Kafka message is one OTLP `ExportTraceServiceRequest` containing one or
  * more spans that survived the collector's `filter/keep_eval_anchors`.
  *
- * For each eval-anchor span we extract input/output messages, agent name,
- * model, and token usage from the standard gen_ai.* attributes, then call
- * evaluateChat which runs the scorers and writes results back as:
- *   1. A new eval trace (root span + 3 scorer spans), AND
- *   2. A `gen_ai.evaluation.result` log per scorer correlated to the
- *      original chat span via traceId+spanId — i.e. the log lands on the
- *      ACTUAL gen_ai span the eval is about, not a duplicate.
+ * Per message we:
+ *   1. For every eval-anchor span, call `runEvalScorers` — it emits the
+ *      `eval - llm-evals` root span and three child scorer spans in real
+ *      time as scorers complete. These spans CAN duplicate on a kafka
+ *      redelivery; that's accepted as the cost of timely scorer-latency
+ *      observability.
+ *   2. Only after phase 1 has succeeded for *every* span do we call
+ *      `emitEvalLogs`, which writes the `gen_ai.evaluation.result` log
+ *      records back onto the chatbot trace. kafkajs auto-commits the
+ *      offset after `eachMessage` returns, so any phase-1 failure aborts
+ *      before logs land and the message is redelivered. End-to-end the
+ *      chatbot-trace logs are exactly-once-or-zero per chat span.
+ *
+ * A background heartbeat ticker keeps the consumer in the group while
+ * Bedrock calls are in flight: kafkajs only sends heartbeats *between*
+ * eachMessage invocations, and the default 30s sessionTimeout is shorter
+ * than three parallel Bedrock Converse calls under throttling.
  */
 
 import { Kafka } from 'kafkajs';
-import { evaluateChat } from './eval/index.js';
+import {
+  runEvalScorers,
+  emitEvalLogs,
+  type CompletedScorers,
+  type EvaluatedContext,
+} from './eval/index.js';
 
 const KAFKA_ADDR = process.env.KAFKA_ADDR;
 if (!KAFKA_ADDR) {
@@ -25,6 +40,12 @@ if (!KAFKA_ADDR) {
 }
 
 const TOPIC = 'llm-evals-spans';
+const HEARTBEAT_KEEPALIVE_MS = 5_000;
+// Maximum messages we'll process in parallel — one worker per assigned
+// partition. Should match (or exceed) the topic's partition count, set in
+// `src/kafka/Dockerfile` via KAFKA_NUM_PARTITIONS. Setting higher than the
+// partition count is harmless; setting lower caps parallelism.
+const PARTITIONS_CONCURRENCY = 8;
 
 const kafka = new Kafka({ brokers: [KAFKA_ADDR], clientId: 'llm-evals' });
 const consumer = kafka.consumer({ groupId: 'llm-evals' });
@@ -144,21 +165,38 @@ function extractGrounding(messages: any[]): string {
   return groundings.filter(Boolean).join('\n\n');
 }
 
-// --- Core handler -----------------------------------------------------------
+// --- Phase 1: scorers + eval traces (per span) ------------------------------
 
-async function processSpan(resourceAttrs: Record<string, unknown>, span: OtlpSpan): Promise<void> {
+/** A span that has finished phase 1 and is ready for chatbot-trace log emission. */
+interface ReadyForLogs {
+  traceId: string;
+  spanId: string;
+  completed: CompletedScorers;
+}
+
+/**
+ * Phase 1 for a single span: validate, then run all three scorers via
+ * `runEvalScorers`. Eval-trace spans are emitted in real time inside that
+ * call. Returns `null` for spans that should be skipped (tool-use rounds,
+ * missing/invalid attrs); throws if any scorer fails so the caller can
+ * abort the whole message before any chatbot-trace logs are emitted.
+ */
+async function runPhase1(
+  resourceAttrs: Record<string, unknown>,
+  span: OtlpSpan,
+): Promise<ReadyForLogs | null> {
   const spanAttrs = attrMap(span.attributes);
   const serviceName = String(resourceAttrs['service.name'] ?? '');
 
   // Skip tool-use rounds for product-reviews — those are not the final answer
   const finishReasons = spanAttrs['gen_ai.response.finish_reasons'];
-  if (Array.isArray(finishReasons) && finishReasons.includes('tool_use')) return;
+  if (Array.isArray(finishReasons) && finishReasons.includes('tool_use')) return null;
 
   const inputMessagesRaw = spanAttrs['gen_ai.input.messages'];
   const outputMessagesRaw = spanAttrs['gen_ai.output.messages'];
   if (typeof inputMessagesRaw !== 'string' || typeof outputMessagesRaw !== 'string') {
     console.warn(`Skipping span ${span.spanId} (${span.name}) — missing input/output message attrs`);
-    return;
+    return null;
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -170,28 +208,64 @@ async function processSpan(resourceAttrs: Record<string, unknown>, span: OtlpSpa
     outputMessages = JSON.parse(outputMessagesRaw);
   } catch (e) {
     console.warn(`Failed to parse message JSON for span ${span.spanId}:`, e);
-    return;
+    return null;
   }
 
   const input = extractUserText(inputMessages);
   const output = extractAssistantText(outputMessages);
   if (!input || !output) {
     console.warn(`Skipping span ${span.spanId} (${span.name}) — empty user/assistant text`);
-    return;
+    return null;
   }
 
-  await evaluateChat(
-    span.traceId,
-    span.spanId,
+  const evalCtx: EvaluatedContext = {
+    responseModel: String(spanAttrs['gen_ai.request.model'] ?? 'unknown'),
+    inputTokens: Number(spanAttrs['gen_ai.usage.input_tokens'] ?? 0),
+    outputTokens: Number(spanAttrs['gen_ai.usage.output_tokens'] ?? 0),
+    ttftMs: Number(spanAttrs['gen_ai.server.time_to_first_token'] ?? 0),
     input,
     output,
+  };
+
+  const agentName = String(spanAttrs['gen_ai.agent.name'] ?? serviceName);
+  const completed = await runEvalScorers(
+    span.traceId,
+    span.spanId,
+    agentName,
+    evalCtx,
     extractGrounding(inputMessages),
-    String(spanAttrs['gen_ai.agent.name'] ?? serviceName),
-    String(spanAttrs['gen_ai.request.model'] ?? 'unknown'),
-    Number(spanAttrs['gen_ai.usage.input_tokens'] ?? 0),
-    Number(spanAttrs['gen_ai.usage.output_tokens'] ?? 0),
-    Number(spanAttrs['gen_ai.server.time_to_first_token'] ?? 0),
   );
+
+  return { traceId: span.traceId, spanId: span.spanId, completed };
+}
+
+// --- Message-level pipeline -------------------------------------------------
+
+async function processMessage(
+  payload: OtlpExportTraceServiceRequest,
+): Promise<void> {
+  // Collect every span in the message and run phase 1 for all in parallel.
+  // Eval-trace spans emit live inside runEvalScorers; the chatbot-trace
+  // logs are gated on every phase 1 succeeding.
+  const tasks: Array<Promise<ReadyForLogs | null>> = [];
+  for (const rs of payload.resourceSpans ?? []) {
+    const resourceAttrs = attrMap(rs.resource?.attributes);
+    for (const ss of rs.scopeSpans ?? []) {
+      for (const span of ss.spans ?? []) {
+        tasks.push(runPhase1(resourceAttrs, span));
+      }
+    }
+  }
+
+  // Any rejection aborts the whole message before any chatbot-trace log
+  // is emitted. Eval-trace spans for the failed batch may already be in
+  // Honeycomb — accepted trade-off for live scorer observability.
+  const readied = await Promise.all(tasks);
+
+  for (const r of readied) {
+    if (!r) continue;
+    emitEvalLogs(r.traceId, r.spanId, r.completed);
+  }
 }
 
 async function main() {
@@ -200,7 +274,8 @@ async function main() {
   console.log(`LLM Evals consumer connected, waiting for messages on topic "${TOPIC}"`);
 
   await consumer.run({
-    eachMessage: async ({ message }) => {
+    partitionsConsumedConcurrently: PARTITIONS_CONCURRENCY,
+    eachMessage: async ({ message, heartbeat }) => {
       if (!message.value) return;
       let payload: OtlpExportTraceServiceRequest;
       try {
@@ -209,18 +284,24 @@ async function main() {
         console.warn('Skipping non-JSON message');
         return;
       }
-      for (const rs of payload.resourceSpans ?? []) {
-        const resourceAttrs = attrMap(rs.resource?.attributes);
-        for (const ss of rs.scopeSpans ?? []) {
-          for (const span of ss.spans ?? []) {
-            try {
-              await processSpan(resourceAttrs, span);
-            } catch (err) {
-              console.error(`Eval failed for span ${span.spanId}:`, err);
-            }
-          }
-        }
+
+      // Keep the consumer alive in the group while Bedrock calls run.
+      // kafkajs otherwise only heartbeats between messages, and three
+      // parallel Converse calls can exceed the 30s sessionTimeout under
+      // throttling — leading to a rebalance that redelivers the message
+      // and produces duplicate eval outputs.
+      const hb = setInterval(() => {
+        heartbeat().catch(() => undefined);
+      }, HEARTBEAT_KEEPALIVE_MS);
+
+      try {
+        await processMessage(payload);
+      } finally {
+        clearInterval(hb);
       }
+      // Returning normally lets kafkajs auto-commit the offset. Any
+      // failure inside processMessage propagates and skips the commit,
+      // so the message is redelivered and re-evaluated.
     },
   });
 }
