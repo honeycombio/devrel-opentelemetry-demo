@@ -152,14 +152,17 @@ config:
                 - severity_number < SEVERITY_NUMBER_WARN
 
     # Drop low-signal flagd feature-flag evaluation spans from all traces:
-    # client-side `/flagd.evaluation.v1.Service/*` invocations and the
-    # server-side `resolveBoolean` / jsonEvaluator internals inside flagd.
+    # client-side `/flagd.evaluation.v1.Service/*` gRPC invocations, OFREP HTTP
+    # POSTs to flagd, and the server-side `resolveBoolean` / jsonEvaluator
+    # internals inside flagd.
     filter/drop_flagd_spans:
         error_mode: ignore
         traces:
             span:
                 - attributes["rpc.service"] == "flagd.evaluation.v1.Service"
                 - resource.attributes["service.name"] == "flagd"
+                - attributes["url.full"] != nil and IsMatch(attributes["url.full"], "^http://flagd:8016/ofrep/v1/")
+                - attributes["http.url"] != nil and IsMatch(attributes["http.url"], "^http://flagd:8016/ofrep/v1/")
 
     # Promote Strands-style gen_ai.* span-event attributes onto the parent
     # span so the latest-semconv attribute form (gen_ai.input.messages /
