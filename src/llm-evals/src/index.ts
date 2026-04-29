@@ -38,6 +38,8 @@ async function main() {
         payload.outputTokens ?? 0,
         payload.ttftMs ?? 0,
         payload.conversationId,
+        payload.requestedAtMs,
+        payload.sourceService,
       ).catch((err) => {
         console.error('Evaluation failed:', err);
       });

@@ -15,6 +15,7 @@ import json
 import logging
 import os
 import threading
+import time
 from typing import Optional
 
 from opentelemetry import trace
@@ -79,6 +80,8 @@ def publish_eval(
     payload = {
         "traceId": format(ctx.trace_id, "032x"),
         "spanId": format(ctx.span_id, "016x"),
+        "requestedAtMs": time.time_ns() // 1_000_000,
+        "sourceService": os.environ.get("OTEL_SERVICE_NAME", "product-reviews"),
         "input": input_text,
         "output": output_text,
         "groundingContext": grounding_context,

@@ -16,6 +16,7 @@ from pydantic import BaseModel
 
 import conversation
 from agents import create_supervisor
+from eval_anchor import SupervisorAgentAnchorProcessor, take_anchor
 from llm_evals_publisher import publish_eval
 
 logging.basicConfig(level=logging.INFO)
@@ -27,6 +28,7 @@ resource = Resource.create({
 })
 provider = TracerProvider(resource=resource)
 provider.add_span_processor(BatchSpanProcessor(OTLPSpanExporter()))
+provider.add_span_processor(SupervisorAgentAnchorProcessor())
 trace.set_tracer_provider(provider)
 
 app = FastAPI(title="Store Chat")
@@ -97,6 +99,12 @@ def chat(req: ChatRequest):
     conversation.append(req.sessionId, "user", req.question)
     conversation.append(req.sessionId, "assistant", response_text)
 
+    request_ctx = trace.get_current_span().get_span_context()
+    anchor = take_anchor(request_ctx.trace_id) if request_ctx.is_valid else None
+    if anchor:
+        anchor_trace_id, anchor_span_id, anchor_requested_at_ns = anchor
+    else:
+        anchor_trace_id = anchor_span_id = anchor_requested_at_ns = None
     publish_eval(
         input_text=user_prompt,
         output_text=response_text,
@@ -104,6 +112,9 @@ def chat(req: ChatRequest):
         response_model=os.environ.get("BEDROCK_MODEL_ID")
         or os.environ.get("BEDROCK_HAIKU_PROFILE_ARN"),
         conversation_id=req.sessionId,
+        anchor_trace_id=anchor_trace_id,
+        anchor_span_id=anchor_span_id,
+        requested_at_ns=anchor_requested_at_ns,
     )
 
     return ChatResponse(response=response_text)

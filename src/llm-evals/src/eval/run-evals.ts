@@ -1,18 +1,25 @@
 /**
- * Orchestrates eval scorer execution and emits OTel spans in two traces:
+ * Orchestrates eval scorer execution and emits OTel telemetry in two places:
  *
- * 1. Original chatbot trace (via remote parent from traceparent):
- *    3 eval scorer child spans with gen_ai.evaluation.result events
- *    and span links to the eval trace root.
+ * 1. Original chatbot trace (via remote SpanContext from traceId/spanId):
+ *    one OTel LogRecord per eval result, timestamped at the requesting span's
+ *    end so it lands inside that span on the trace timeline. No spans are
+ *    created on the chatbot trace.
  *
  * 2. New eval trace:
- *    1 root span + 3 eval scorer child spans with the same events.
+ *    1 root span + 3 eval scorer child spans. These are the source of truth
+ *    for the eval execution itself.
  *
- * Scorers run once; results are written to both traces.
+ * Scorers run once; results are written to both places.
  */
 
-import { type Span, SpanStatusCode, trace, context, TraceFlags, Link } from '@opentelemetry/api';
+import { type Span, SpanStatusCode, trace, context, TraceFlags } from '@opentelemetry/api';
+import { type Logger, SeverityNumber } from '@opentelemetry/api-logs';
+import { OTLPLogExporter } from '@opentelemetry/exporter-logs-otlp-grpc';
+import { resourceFromAttributes } from '@opentelemetry/resources';
+import { BatchLogRecordProcessor, LoggerProvider } from '@opentelemetry/sdk-logs';
 import {
+  ATTR_EVENT_NAME,
   ATTR_GEN_AI_OPERATION_NAME,
 } from '@opentelemetry/semantic-conventions/incubating';
 import { runBias } from './bias.js';
@@ -21,17 +28,43 @@ import { runRelevance } from './relevance.js';
 import type { EvalResult } from './shared.js';
 
 // gen_ai.evaluation.* attributes (from semconv v1.40.0 spec, not yet in the JS package)
+const ATTR_GEN_AI_EVENT_NAME = 'event.name';
 const ATTR_GEN_AI_EVALUATION_NAME = 'gen_ai.evaluation.name';
 const ATTR_GEN_AI_EVALUATION_SCORE_VALUE = 'gen_ai.evaluation.score.value';
 const ATTR_GEN_AI_EVALUATION_SCORE_LABEL = 'gen_ai.evaluation.score.label';
 const ATTR_GEN_AI_EVALUATION_EXPLANATION = 'gen_ai.evaluation.explanation';
 const ATTR_GEN_AI_CONVERSATION_ID = 'gen_ai.conversation.id';
 // Renamed form used on eval-trace spans so the agentic timeline doesn't pick them up.
-// The real gen_ai.conversation.id is only set on spans written back to the original
+// The real gen_ai.conversation.id is only set on log records written to the original
 // (chatbot) trace, which is what asked for the eval.
 const ATTR_REQUEST_GEN_AI_CONVERSATION_ID = 'request.gen_ai.conversation.id';
 
 const tracer = trace.getTracer('llm-evals');
+
+/**
+ * Cache of per-source-service Loggers backed by their own LoggerProvider so
+ * eval log records carry `service.name` of the service whose trace they
+ * correlate to (e.g., store-chat) rather than llm-evals. This makes
+ * Honeycomb's GenAI panel scope to the same service as the evaluated span.
+ *
+ * Trade-off: the eval log record's resource attrs (host.*, k8s.*) will be
+ * empty rather than describing the llm-evals pod. Acceptable — those attrs
+ * would be misleading anyway since the record claims to be from store-chat.
+ */
+const loggersBySourceService = new Map<string, Logger>();
+
+function loggerForSourceService(sourceService: string): Logger {
+  let logger = loggersBySourceService.get(sourceService);
+  if (!logger) {
+    const provider = new LoggerProvider({
+      resource: resourceFromAttributes({ 'service.name': sourceService }),
+      processors: [new BatchLogRecordProcessor(new OTLPLogExporter())],
+    });
+    logger = provider.getLogger('llm-evals');
+    loggersBySourceService.set(sourceService, logger);
+  }
+  return logger;
+}
 
 interface EvaluatedContext {
   responseModel: string;
@@ -43,25 +76,18 @@ interface EvaluatedContext {
   conversationId?: string;
 }
 
-/**
- * Write eval result attributes and event onto a span.
- *
- * @param conversationIdAttr - Attribute key for the conversation id. Use
- *   ATTR_GEN_AI_CONVERSATION_ID for spans on the original (chatbot) trace,
- *   ATTR_REQUEST_GEN_AI_CONVERSATION_ID for spans on the eval trace.
- */
-function applyEvalResult(
-  span: Span,
-  evalName: string,
+function clampScore(score: number): number {
+  return score <= 0 ? 0.01 : score >= 1 ? 0.99 : score;
+}
+
+function evalResultAttributes(
   result: EvalResult,
   evalCtx: EvaluatedContext,
   conversationIdAttr: string,
-  mirrorEvalAttrsOnSpan = false,
-): void {
-  const score = result.score <= 0 ? 0.01 : result.score >= 1 ? 0.99 : result.score;
-  const eventAttrs: Record<string, string | number> = {
+): Record<string, string | number> {
+  const attrs: Record<string, string | number> = {
     [ATTR_GEN_AI_EVALUATION_NAME]: result.name,
-    [ATTR_GEN_AI_EVALUATION_SCORE_VALUE]: score,
+    [ATTR_GEN_AI_EVALUATION_SCORE_VALUE]: clampScore(result.score),
     [ATTR_GEN_AI_EVALUATION_SCORE_LABEL]: result.label,
     [ATTR_GEN_AI_EVALUATION_EXPLANATION]: result.explanation,
     'evaluated.model.name': evalCtx.responseModel,
@@ -72,36 +98,60 @@ function applyEvalResult(
     'evaluated.output': evalCtx.output,
   };
   if (evalCtx.conversationId) {
-    eventAttrs[conversationIdAttr] = evalCtx.conversationId;
+    attrs[conversationIdAttr] = evalCtx.conversationId;
   }
-  span.addEvent('gen_ai.evaluation.result', eventAttrs);
-
-  // TEMPORARY:  mirror eval name/label/value/explanation onto the span itself
-  // so they show up on the requesting (chatbot) trace. 
-  if (mirrorEvalAttrsOnSpan) {
-    span.setAttribute(ATTR_GEN_AI_EVALUATION_NAME, result.name);
-    span.setAttribute(ATTR_GEN_AI_EVALUATION_SCORE_LABEL, result.label);
-    span.setAttribute(ATTR_GEN_AI_EVALUATION_SCORE_VALUE, score);
-    span.setAttribute(ATTR_GEN_AI_EVALUATION_EXPLANATION, result.explanation);
-  }
-
-  span.setStatus({ code: SpanStatusCode.OK });
+  return attrs;
 }
 
 /**
- * Apply error state to a span.
+ * Emit a LogRecord on the chatbot trace at the requesting span's end time.
+ *
+ * The log record correlates to the chatbot's span via explicit SpanContext on
+ * its associated OTel context, and is positioned on the trace timeline at
+ * `requestedAtMs` so Honeycomb's trace view shows it inside that span.
  */
+function emitChatbotTraceLog(
+  traceId: string,
+  spanId: string,
+  requestedAtMs: number | undefined,
+  sourceService: string,
+  evalName: string,
+  result: EvalResult,
+  evalCtx: EvaluatedContext,
+): void {
+  const remoteParentCtx = trace.setSpanContext(context.active(), {
+    traceId,
+    spanId,
+    traceFlags: TraceFlags.SAMPLED,
+    isRemote: true,
+  });
+  loggerForSourceService(sourceService).emit({
+    timestamp: requestedAtMs ?? Date.now(),
+    severityNumber: SeverityNumber.INFO,
+    body: 'gen_ai.evaluation.result',
+    eventName: 'gen_ai.evaluation.result',
+    attributes: evalResultAttributes(result, evalCtx, ATTR_GEN_AI_CONVERSATION_ID),
+    context: remoteParentCtx,
+  });
+}
+
+function applyEvalResultToSpan(
+  span: Span,
+  result: EvalResult,
+  evalCtx: EvaluatedContext,
+  conversationIdAttr: string,
+): void {
+  const attrs = evalResultAttributes(result, evalCtx, conversationIdAttr);
+  span.addEvent('gen_ai.evaluation.result', attrs);
+  span.setStatus({ code: SpanStatusCode.OK });
+}
+
 function applyEvalError(span: Span, evalName: string, error: unknown): void {
   console.error(`Evaluation ${evalName} failed:`, error);
   span.recordException(error instanceof Error ? error : new Error(String(error)));
   span.setStatus({ code: SpanStatusCode.ERROR, message: String(error) });
 }
 
-/**
- * Base attributes for an eval scorer span.
- *
- * @param conversationIdAttr - Attribute key for the conversation id. See applyEvalResult.
- */
 function evalSpanAttrs(
   evalName: string,
   agentName: string,
@@ -126,53 +176,36 @@ function evalSpanAttrs(
 }
 
 /**
- * Run a single eval scorer once, then write result spans to both traces.
- *
- * @param remoteParentCtx - Context for the original chatbot trace
- * @param evalRootCtx - Context for the new eval trace (under root span)
- * @param evalRootLink - Span link pointing to the eval trace root span
- * @param evalName - Name of the eval (Bias, Hallucination, Relevance)
- * @param agentName - Which agent made the original call
- * @param scorerFn - The scorer function to execute
+ * Run a single eval scorer once, write a span on the eval trace, and emit a
+ * log record on the chatbot trace.
  */
 async function runEvalDual(
-  remoteParentCtx: ReturnType<typeof context.active>,
   evalRootCtx: ReturnType<typeof context.active>,
-  evalRootLink: Link,
+  traceId: string,
+  spanId: string,
+  requestedAtMs: number | undefined,
+  sourceService: string,
   evalName: string,
   agentName: string,
   evalCtx: EvaluatedContext,
   scorerFn: () => Promise<EvalResult>,
 ): Promise<EvalResult | null> {
-  // Start both spans BEFORE the scorer runs so they capture real duration.
-  // Eval-trace spans use request.gen_ai.conversation.id so the agentic timeline
-  // doesn't pull them in; chatbot-trace spans get the real gen_ai.conversation.id.
   const evalTraceSpan = tracer.startSpan(
     `chat - Evaluation - ${evalName}`,
     { attributes: evalSpanAttrs(evalName, agentName, evalCtx, ATTR_REQUEST_GEN_AI_CONVERSATION_ID) },
     evalRootCtx,
-  );
-  const chatbotTraceSpan = tracer.startSpan(
-    `chat - Evaluation - ${evalName}`,
-    {
-      attributes: evalSpanAttrs(evalName, agentName, evalCtx, ATTR_GEN_AI_CONVERSATION_ID),
-      links: [evalRootLink],
-    },
-    remoteParentCtx,
   );
 
   let result: EvalResult | null = null;
 
   try {
     result = await scorerFn();
-    applyEvalResult(evalTraceSpan, evalName, result, evalCtx, ATTR_REQUEST_GEN_AI_CONVERSATION_ID);
-    applyEvalResult(chatbotTraceSpan, evalName, result, evalCtx, ATTR_GEN_AI_CONVERSATION_ID, true);
+    applyEvalResultToSpan(evalTraceSpan, result, evalCtx, ATTR_REQUEST_GEN_AI_CONVERSATION_ID);
+    emitChatbotTraceLog(traceId, spanId, requestedAtMs, sourceService, evalName, result, evalCtx);
   } catch (error) {
     applyEvalError(evalTraceSpan, evalName, error);
-    applyEvalError(chatbotTraceSpan, evalName, error);
   } finally {
     evalTraceSpan.end();
-    chatbotTraceSpan.end();
   }
 
   return result;
@@ -180,14 +213,14 @@ async function runEvalDual(
 
 /**
  * Run bias, hallucination, and relevance evaluations.
- * Results are written to both the original chatbot trace and a new eval trace.
+ * Results are written to a new eval trace (spans) and the original chatbot
+ * trace (one log record per eval, anchored to the requesting span).
  *
- * @param traceId - Trace ID from the chatbot's chat completion span
- * @param spanId - Span ID from the chatbot's chat completion span
- * @param input - The user's input/question
- * @param output - The LLM's response text
- * @param groundingContext - Context for hallucination detection
- * @param agentName - Which agent made the call (e.g. "response_generator")
+ * @param traceId - Trace ID from the chatbot's requesting span
+ * @param spanId - Span ID from the chatbot's requesting span (e.g., supervisor invoke_agent)
+ * @param requestedAtMs - Epoch-ms timestamp captured just before the requesting
+ *   span ended, used as the log record timestamp so it appears inside that
+ *   span on the trace view. If undefined, falls back to `Date.now()`.
  */
 export async function evaluateChat(
   traceId: string,
@@ -201,16 +234,10 @@ export async function evaluateChat(
   outputTokens: number,
   ttftMs: number,
   conversationId?: string,
+  requestedAtMs?: number,
+  sourceService: string = 'llm-evals',
 ): Promise<void> {
   const evalCtx: EvaluatedContext = { responseModel, inputTokens, outputTokens, ttftMs, input, output, conversationId };
-
-  // Remote parent context for the original chatbot trace
-  const remoteParentCtx = trace.setSpanContext(context.active(), {
-    traceId,
-    spanId,
-    traceFlags: TraceFlags.SAMPLED,
-    isRemote: true,
-  });
 
   // New eval trace: create a root span
   const rootAttrs: Record<string, string | number> = {
@@ -233,17 +260,11 @@ export async function evaluateChat(
   });
   const evalRootCtx = trace.setSpanContext(context.active(), evalRootSpan.spanContext());
 
-  // Link from chatbot trace spans to the eval root
-  const evalRootLink: Link = {
-    context: evalRootSpan.spanContext(),
-    attributes: { 'link.description': 'eval trace root' },
-  };
-
   try {
     await Promise.all([
-      runEvalDual(remoteParentCtx, evalRootCtx, evalRootLink, 'Bias', agentName, evalCtx, () => runBias(input, output)),
-      runEvalDual(remoteParentCtx, evalRootCtx, evalRootLink, 'Hallucination', agentName, evalCtx, () => runHallucination(input, output, groundingContext)),
-      runEvalDual(remoteParentCtx, evalRootCtx, evalRootLink, 'Relevance', agentName, evalCtx, () => runRelevance(input, output)),
+      runEvalDual(evalRootCtx, traceId, spanId, requestedAtMs, sourceService, 'Bias', agentName, evalCtx, () => runBias(input, output)),
+      runEvalDual(evalRootCtx, traceId, spanId, requestedAtMs, sourceService, 'Hallucination', agentName, evalCtx, () => runHallucination(input, output, groundingContext)),
+      runEvalDual(evalRootCtx, traceId, spanId, requestedAtMs, sourceService, 'Relevance', agentName, evalCtx, () => runRelevance(input, output)),
     ]);
     evalRootSpan.setStatus({ code: SpanStatusCode.OK });
   } catch (error) {

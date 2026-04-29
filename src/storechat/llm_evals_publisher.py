@@ -15,6 +15,7 @@ import json
 import logging
 import os
 import threading
+import time
 from typing import Optional
 
 from opentelemetry import trace
@@ -66,20 +67,38 @@ def publish_eval(
     output_tokens: int = 0,
     ttft_ms: int = 0,
     conversation_id: Optional[str] = None,
+    anchor_trace_id: Optional[int] = None,
+    anchor_span_id: Optional[int] = None,
+    requested_at_ns: Optional[int] = None,
 ) -> None:
-    """Publish one eval job. Uses the current span's trace/span IDs as the
-    anchor the eval consumer writes its scorer spans back onto."""
+    """Publish one eval job.
+
+    `anchor_trace_id`/`anchor_span_id` identify the span the eval log should
+    correlate to (e.g., the supervisor's invoke_agent span captured at end).
+    `requested_at_ns` is the epoch-ns timestamp the eval consumer should use
+    for the emitted log record so it lands on the trace timeline at the
+    requesting span's end; the payload sends epoch-ms because epoch-ns
+    overflows JS `Number.MAX_SAFE_INTEGER`. If any are unset, falls back to
+    the currently-active span and `time.time_ns()`.
+    """
     producer = _get_producer()
     if producer is None:
         return
 
-    ctx = trace.get_current_span().get_span_context()
-    if not ctx.is_valid:
-        return
+    if anchor_trace_id is None or anchor_span_id is None:
+        ctx = trace.get_current_span().get_span_context()
+        if not ctx.is_valid:
+            return
+        anchor_trace_id = anchor_trace_id if anchor_trace_id is not None else ctx.trace_id
+        anchor_span_id = anchor_span_id if anchor_span_id is not None else ctx.span_id
+    if requested_at_ns is None:
+        requested_at_ns = time.time_ns()
 
     payload = {
-        "traceId": format(ctx.trace_id, "032x"),
-        "spanId": format(ctx.span_id, "016x"),
+        "traceId": format(anchor_trace_id, "032x"),
+        "spanId": format(anchor_span_id, "016x"),
+        "requestedAtMs": requested_at_ns // 1_000_000,
+        "sourceService": os.environ.get("OTEL_SERVICE_NAME", "store-chat"),
         "input": input_text,
         "output": output_text,
         "groundingContext": grounding_context,
