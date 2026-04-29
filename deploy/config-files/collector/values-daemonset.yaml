@@ -157,6 +157,12 @@ config:
           statements:
             - set(resource.attributes["service.name"], "api-gateway") where resource.attributes["k8s.container.name"] == "frontend"
 
+    # Drain log clustering — derives a template (e.g. "user <*> logged in
+    # from <*>") from each log body and writes it to log.record.template.
+    # Defaults are fine for the heterogeneous mix of services here; tune
+    # tree_depth/merge_threshold later if templates collide or fragment.
+    drain: {}
+
     filter/json_body_only:
       error_mode: ignore
       logs:
@@ -273,8 +279,11 @@ config:
     kafka/llm-evals:
       brokers:
         - kafka:9092
-      topic: llm-evals-spans
-      encoding: otlp_json
+      # As of kafkaexporter v0.151+, topic/encoding live under per-signal
+      # subkeys. This pipeline ships traces, so configure under `traces:`.
+      traces:
+        topic: llm-evals-spans
+        encoding: otlp_json
       producer:
         max_message_bytes: 10000000
 
@@ -312,6 +321,7 @@ config:
           - transform/filelog_severity
           - transform/pino_trace_fields
           - transform/attribution
+          - drain
 
       traces:
         exporters:
