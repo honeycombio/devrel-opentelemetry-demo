@@ -82,9 +82,12 @@ opentelemetry-collector:
           # Microsoft.Extensions.Logging.Console writes the category prefix
           # (`info: ...`) and each line of the message as separate stdout
           # lines, which the container parser turns into separate records.
-          # Stitch them back together for the accounting container only.
+          # Stitch them back together for our .NET services. The container
+          # parser writes k8s.container.name to *resource* (not log) attributes,
+          # so this predicate must use resource[...] — using attributes[...]
+          # silently never matches, leaving every line as its own record.
           - type: recombine
-            if: 'attributes["k8s.container.name"] == "accounting"'
+            if: 'resource["k8s.container.name"] == "accounting" or resource["k8s.container.name"] == "cart"'
             combine_field: body
             combine_with: "\n"
             is_first_entry: 'body matches "^(trce|dbug|info|warn|fail|crit):"'
