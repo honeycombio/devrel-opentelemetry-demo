@@ -125,6 +125,25 @@ services:
       - name: FLAGD_PORT
         value: "8013"
 
+  telemetryDocs:
+    enabled: true
+    name: telemetry-docs
+    image:
+      repository: ghcr.io/honeycombio/devrel-opentelemetry-demo
+      tag: latest-telemetry-docs
+      pullPolicy: IfNotPresent
+    imageOverride:
+      {}
+    port: 8000
+    replicas: 1
+    env:
+      - name: TELEMETRY_DOCS_PORT
+        value: "8000"
+      - name: OTEL_COLLECTOR_HOST
+        value: "otel-collector"
+      - name: OTEL_COLLECTOR_PORT_GRPC
+        value: "4317"
+
 otel:
   collectorName: otel-collector
   metricsTemporality: delta

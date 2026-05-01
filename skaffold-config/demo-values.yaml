@@ -46,6 +46,10 @@ components:
         value: "8080"
       - name: LLM_EVALS_PORT
         value: "8088"
+      - name: TELEMETRY_DOCS_HOST
+        value: "telemetry-docs"
+      - name: TELEMETRY_DOCS_PORT
+        value: "8000"
 
 opentelemetry-collector:
   enabled: true

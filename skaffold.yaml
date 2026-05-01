@@ -106,6 +106,10 @@ build:
       context: .
       docker:
         dockerfile: src/flagd-ui/Dockerfile
+    - image: telemetry-docs
+      context: .
+      docker:
+        dockerfile: src/telemetry-docs/Dockerfile
   platforms:
     - linux/amd64
   local:
@@ -228,6 +232,8 @@ deploy:
           services.productReviews.imageOverride.tag: "{{if .IMAGE_REPO_product_reviews }}{{.IMAGE_TAG_product_reviews}}@{{.IMAGE_DIGEST_product_reviews}}{{end}}"
           services.llm.imageOverride.repository: "{{if .IMAGE_REPO_llm }}{{.IMAGE_REPO_llm}}{{end}}"
           services.llm.imageOverride.tag: "{{if .IMAGE_REPO_llm }}{{.IMAGE_TAG_llm}}@{{.IMAGE_DIGEST_llm}}{{end}}"
+          services.telemetryDocs.imageOverride.repository: "{{if .IMAGE_REPO_telemetry_docs }}{{.IMAGE_REPO_telemetry_docs}}{{end}}"
+          services.telemetryDocs.imageOverride.tag: "{{if .IMAGE_REPO_telemetry_docs }}{{.IMAGE_TAG_telemetry_docs}}@{{.IMAGE_DIGEST_telemetry_docs}}{{end}}"
           ingress.domainName: "{{if .DOMAINNAME}}{{.DOMAINNAME}}{{else}}aurelia.honeydemo.io{{end}}"
           ingress.subDomainName: "{{.USER}}-local"
           ingress.enabled: true
