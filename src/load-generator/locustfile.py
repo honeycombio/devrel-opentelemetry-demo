@@ -118,6 +118,14 @@ products = [
 people_file = open('people.json')
 people = json.load(people_file)
 
+
+def random_email() -> str:
+    """Generate a fresh email per call so orders don't accumulate against
+    a small fixed pool of customers. Without this, store-chat's
+    lookup_orders returns an ever-growing list per email, and Strands'
+    auto cache writes a larger prefix to Bedrock every turn."""
+    return f"loadgen-{uuid.uuid4().hex[:12]}@aurelia.honeydemo.io"
+
 class WebsiteUser(HttpUser):
     wait_time = between(1, 10)
 
@@ -223,8 +231,7 @@ class WebsiteUser(HttpUser):
         # dominating traffic.
         if random.random() < 0.5:
             return
-        checkout_person = random.choice(people)
-        email = checkout_person.get("email", "")
+        email = random_email()
         session_id = str(uuid.uuid4())
         conversation = random.choice(self.STORE_CHAT_CONVERSATIONS)
         with self.tracer.start_as_current_span(
@@ -293,8 +300,7 @@ class WebsiteUser(HttpUser):
         user = str(uuid.uuid1())
         with self.tracer.start_as_current_span("user_checkout_single", context=Context(), attributes={"user.id": user}):
             self.add_to_cart(user=user)
-            checkout_person = random.choice(people)
-            checkout_person["userId"] = user
+            checkout_person = {**random.choice(people), "userId": user, "email": random_email()}
             self.client.post("/api/checkout", json=checkout_person)
             logging.info(f"Checkout completed for user {user}")
 
@@ -306,8 +312,7 @@ class WebsiteUser(HttpUser):
                                             attributes={"user.id": user, "item.count": item_count}):
             for i in range(item_count):
                 self.add_to_cart(user=user)
-            checkout_person = random.choice(people)
-            checkout_person["userId"] = user
+            checkout_person = {**random.choice(people), "userId": user, "email": random_email()}
             self.client.post("/api/checkout", json=checkout_person)
             logging.info(f"Multi-item checkout completed for user {user}")
 
