@@ -27,9 +27,14 @@ internal class OrderServiceImpl : OrderService.OrderServiceBase
     {
         using var db = _dbContextFactory.CreateDbContext();
 
+        // Cap at 10 most-recent orders. The store-chat agent injects this list
+        // into conversation history; without a cap, each test customer
+        // accumulates orders indefinitely (loadgen reuses 9 fixed emails) and
+        // every chat turn writes a larger cache prefix to Bedrock.
         var orders = await db.Orders
             .Where(o => o.Email == request.Email)
             .OrderByDescending(o => o.CreatedAt)
+            .Take(10)
             .ToListAsync(context.CancellationToken);
 
         var response = new GetOrdersByEmailResponse();
