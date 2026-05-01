@@ -223,17 +223,17 @@ class WebsiteUser(HttpUser):
     @task(1)
     def ask_store_chat(self):
         # store-chat is the post-purchase customer-service agent (orders,
-        # refunds, shipping status). Pick an email from the people fixture
-        # so order lookup has something plausible to resolve against, and
-        # run a multi-turn conversation sharing a single sessionId so the
-        # agent can carry context across turns. Skip half the time —
-        # multi-turn LLM sessions are expensive and we don't want them
-        # dominating traffic.
-        if random.random() < 0.5:
+        # refunds, shipping status). Skip with a randomized threshold per
+        # call so the load is bursty/natural instead of a uniform 50% skip,
+        # and pick a randomized turn count so some sessions are quick and
+        # some are longer.
+        if random.random() < random.uniform(0.4, 0.85):
             return
         email = random_email()
         session_id = str(uuid.uuid4())
-        conversation = random.choice(self.STORE_CHAT_CONVERSATIONS)
+        full_conversation = random.choice(self.STORE_CHAT_CONVERSATIONS)
+        n_turns = random.randint(1, len(full_conversation))
+        conversation = full_conversation[:n_turns]
         with self.tracer.start_as_current_span(
             "user_ask_store_chat",
             context=Context(),

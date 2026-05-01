@@ -1,7 +1,7 @@
 import os
 
 from strands import Agent, tool
-from strands.models.bedrock import BedrockModel, CacheConfig
+from strands.models.bedrock import BedrockModel
 
 from tools import check_shipping, get_order, lookup_orders, refund_order
 
@@ -15,9 +15,15 @@ _model_id = os.environ.get(
 def _make_model() -> BedrockModel | None:
     if not _model_id:
         return None
+    # Cache the static prefix only (system prompt + tool definitions) — that
+    # block is identical across every chat session and turn, so cache_read
+    # dominates and cache_write happens once per ~5min cache TTL.
+    # Avoid cache_config (which would also cache after the last user message,
+    # causing a fresh cache_write every turn as the conversation grows).
     return BedrockModel(
         model_id=_model_id,
-        cache_config=CacheConfig(strategy="auto"),
+        cache_prompt="default",
+        cache_tools="default",
     )
 
 
