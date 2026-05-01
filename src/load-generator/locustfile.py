@@ -148,7 +148,7 @@ class WebsiteUser(HttpUser):
             }
             self.client.get("/api/recommendations", params=params)
 
-    @task(2)
+    @task(1)
     def get_product_reviews(self):
         product = random.choice(products)
         with self.tracer.start_as_current_span("user_get_product_reviews", context=Context(), attributes={"product.id": product}):
@@ -157,6 +157,10 @@ class WebsiteUser(HttpUser):
 
     @task(1)
     def ask_product_ai_assistant(self):
+        # Half the load on the AI assistant endpoint — it's the most expensive
+        # call against product-reviews and we don't want it dominating traffic.
+        if random.random() < 0.5:
+            return
         product = random.choice(products)
         question = random.choice([
             "Can you summarize the product reviews?",
@@ -214,7 +218,11 @@ class WebsiteUser(HttpUser):
         # refunds, shipping status). Pick an email from the people fixture
         # so order lookup has something plausible to resolve against, and
         # run a multi-turn conversation sharing a single sessionId so the
-        # agent can carry context across turns.
+        # agent can carry context across turns. Skip half the time —
+        # multi-turn LLM sessions are expensive and we don't want them
+        # dominating traffic.
+        if random.random() < 0.5:
+            return
         checkout_person = random.choice(people)
         email = checkout_person.get("email", "")
         session_id = str(uuid.uuid4())
