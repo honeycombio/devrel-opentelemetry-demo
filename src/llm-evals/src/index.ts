@@ -47,6 +47,17 @@ const HEARTBEAT_KEEPALIVE_MS = 5_000;
 // partition count is harmless; setting lower caps parallelism.
 const PARTITIONS_CONCURRENCY = 8;
 
+// Probability that any given anchor span is actually scored. 1.0 = score
+// every span; 0.1 = score one in ten. The dropped 90% still consume the
+// kafka message (offset advances normally), they just skip the three
+// Bedrock scorer calls — i.e. cost reduction without redelivery churn.
+const EVAL_SAMPLE_RATE = (() => {
+  const raw = process.env.EVAL_SAMPLE_RATE;
+  if (!raw) return 0.1;
+  const n = Number(raw);
+  return Number.isFinite(n) && n >= 0 && n <= 1 ? n : 0.1;
+})();
+
 const kafka = new Kafka({ brokers: [KAFKA_ADDR], clientId: 'llm-evals' });
 const consumer = kafka.consumer({ groupId: 'llm-evals' });
 
@@ -185,6 +196,11 @@ async function runPhase1(
   resourceAttrs: Record<string, unknown>,
   span: OtlpSpan,
 ): Promise<ReadyForLogs | null> {
+  // Probabilistic sample BEFORE any work — keeps us from paying for parse,
+  // attribute extraction, or the three scorer Bedrock calls on the 90%
+  // we're not scoring this batch.
+  if (Math.random() >= EVAL_SAMPLE_RATE) return null;
+
   const spanAttrs = attrMap(span.attributes);
   const serviceName = String(resourceAttrs['service.name'] ?? '');
 
