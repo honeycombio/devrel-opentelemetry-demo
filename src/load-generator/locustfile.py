@@ -6,6 +6,7 @@
 import json
 import os
 import random
+import time
 import uuid
 import logging
 
@@ -126,12 +127,17 @@ def random_email() -> str:
     auto cache writes a larger prefix to Bedrock every turn."""
     return f"loadgen-{uuid.uuid4().hex[:12]}@aurelia.honeydemo.io"
 
+AI_TASK_MIN_INTERVAL_SECONDS = 60
+
+
 class WebsiteUser(HttpUser):
     wait_time = between(1, 10)
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.tracer = trace.get_tracer(__name__)
+        self._last_ai_product_run = 0.0
+        self._last_store_chat_run = 0.0
 
     @task(1)
     def index(self):
@@ -165,10 +171,12 @@ class WebsiteUser(HttpUser):
 
     @task(1)
     def ask_product_ai_assistant(self):
-        # Half the load on the AI assistant endpoint — it's the most expensive
-        # call against product-reviews and we don't want it dominating traffic.
-        if random.random() < 0.5:
+        # Rate-limit per user to ~1/min — this is the most expensive call
+        # against product-reviews and we don't want it dominating traffic.
+        now = time.monotonic()
+        if now - self._last_ai_product_run < AI_TASK_MIN_INTERVAL_SECONDS:
             return
+        self._last_ai_product_run = now
         product = random.choice(products)
         question = random.choice([
             "Can you summarize the product reviews?",
@@ -223,12 +231,13 @@ class WebsiteUser(HttpUser):
     @task(1)
     def ask_store_chat(self):
         # store-chat is the post-purchase customer-service agent (orders,
-        # refunds, shipping status). Skip with a randomized threshold per
-        # call so the load is bursty/natural instead of a uniform 50% skip,
-        # and pick a randomized turn count so some sessions are quick and
-        # some are longer.
-        if random.random() < random.uniform(0.4, 0.85):
+        # refunds, shipping status). Rate-limit per user to ~1/min so AI
+        # spend stays bounded; pick a randomized turn count so some
+        # sessions are quick and some are longer.
+        now = time.monotonic()
+        if now - self._last_store_chat_run < AI_TASK_MIN_INTERVAL_SECONDS:
             return
+        self._last_store_chat_run = now
         email = random_email()
         session_id = str(uuid.uuid4())
         full_conversation = random.choice(self.STORE_CHAT_CONVERSATIONS)
