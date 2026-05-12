@@ -238,7 +238,12 @@ class WebsiteUser(HttpUser):
         if now - self._last_store_chat_run < AI_TASK_MIN_INTERVAL_SECONDS:
             return
         self._last_store_chat_run = now
+
+        # Capture the email up front and carry it through both the order
+        # creation and the chat session, so refund/lookup turns reference
+        # an order this same email actually owns.
         email = random_email()
+        user = str(uuid.uuid1())
         session_id = str(uuid.uuid4())
         full_conversation = random.choice(self.STORE_CHAT_CONVERSATIONS)
         n_turns = random.randint(1, len(full_conversation))
@@ -249,9 +254,17 @@ class WebsiteUser(HttpUser):
             attributes={
                 "session.id": session_id,
                 "email": email,
+                "user.id": user,
                 "conversation.length": len(conversation),
             },
         ):
+            self.add_to_cart(user=user)
+            checkout_person = {**random.choice(people), "userId": user, "email": email}
+            checkout_response = self.client.post("/api/checkout", json=checkout_person)
+            if not checkout_response.ok:
+                logging.info(f"Skipping store-chat session {session_id}; checkout failed")
+                return
+
             logging.info(f"Starting store-chat session {session_id} as {email} ({len(conversation)} turns)")
             for turn_index, question in enumerate(conversation):
                 with self.tracer.start_as_current_span(
