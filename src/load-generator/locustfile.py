@@ -9,6 +9,7 @@ import random
 import time
 import uuid
 import logging
+from collections import deque
 
 from locust import HttpUser, task, between
 from locust_plugins.users.playwright import PlaywrightUser, pw, PageWithRetry, event
@@ -127,6 +128,26 @@ def random_email() -> str:
     auto cache writes a larger prefix to Bedrock every turn."""
     return f"loadgen-{uuid.uuid4().hex[:12]}@aurelia.honeydemo.io"
 
+# Bounded cache of emails from successful checkouts, drained by
+# ask_store_chat so chats actually reference real orders.
+RECENT_ORDER_EMAILS_MAX = 400
+recent_order_emails: deque = deque(maxlen=RECENT_ORDER_EMAILS_MAX)
+
+
+def remember_order_email(email: str) -> None:
+    recent_order_emails.append(email)
+
+
+def take_recent_order_email():
+    """Pop a random email from the cache and remove it so no two chat
+    sessions reuse the same order. Returns None if the cache is empty."""
+    if not recent_order_emails:
+        return None
+    idx = random.randrange(len(recent_order_emails))
+    email = recent_order_emails[idx]
+    del recent_order_emails[idx]
+    return email
+
 AI_TASK_MIN_INTERVAL_SECONDS = 60
 
 
@@ -237,8 +258,13 @@ class WebsiteUser(HttpUser):
         now = time.monotonic()
         if now - self._last_store_chat_run < AI_TASK_MIN_INTERVAL_SECONDS:
             return
+        email = take_recent_order_email()
+        if email is None:
+            # No recent checkouts to chat about yet — skip without
+            # consuming the rate-limit slot so we kick in as soon as
+            # orders start landing.
+            return
         self._last_store_chat_run = now
-        email = random_email()
         session_id = str(uuid.uuid4())
         full_conversation = random.choice(self.STORE_CHAT_CONVERSATIONS)
         n_turns = random.randint(1, len(full_conversation))
@@ -310,7 +336,9 @@ class WebsiteUser(HttpUser):
         with self.tracer.start_as_current_span("user_checkout_single", context=Context(), attributes={"user.id": user}):
             self.add_to_cart(user=user)
             checkout_person = {**random.choice(people), "userId": user, "email": random_email()}
-            self.client.post("/api/checkout", json=checkout_person)
+            response = self.client.post("/api/checkout", json=checkout_person)
+            if response.ok:
+                remember_order_email(checkout_person["email"])
             logging.info(f"Checkout completed for user {user}")
 
     @task(1)
@@ -322,7 +350,9 @@ class WebsiteUser(HttpUser):
             for i in range(item_count):
                 self.add_to_cart(user=user)
             checkout_person = {**random.choice(people), "userId": user, "email": random_email()}
-            self.client.post("/api/checkout", json=checkout_person)
+            response = self.client.post("/api/checkout", json=checkout_person)
+            if response.ok:
+                remember_order_email(checkout_person["email"])
             logging.info(f"Multi-item checkout completed for user {user}")
 
     @task(5)
