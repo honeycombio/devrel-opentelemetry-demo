@@ -228,6 +228,21 @@ class WebsiteUser(HttpUser):
         ],
     ]
 
+    def _place_order_for_chat(self, user: str, email: str):
+        # Inline order flow so the store-chat session has something to
+        # look up. Self-contained — no state kept on the user instance.
+        item_count = random.choice([1, 2, 3])
+        for _ in range(item_count):
+            product = random.choice(products)
+            quantity = random.choice([1, 2, 3])
+            self.client.get("/api/products/" + product)
+            self.client.post("/api/cart", json={
+                "item": {"productId": product, "quantity": quantity},
+                "userId": user,
+            })
+        checkout_person = {**random.choice(people), "userId": user, "email": email}
+        self.client.post("/api/checkout", json=checkout_person)
+
     @task(1)
     def ask_store_chat(self):
         # store-chat is the post-purchase customer-service agent (orders,
@@ -239,7 +254,15 @@ class WebsiteUser(HttpUser):
             return
         self._last_store_chat_run = now
         email = random_email()
+        user = str(uuid.uuid1())
         session_id = str(uuid.uuid4())
+        with self.tracer.start_as_current_span(
+            "user_store_chat_place_order",
+            context=Context(),
+            attributes={"user.id": user, "email": email},
+        ):
+            logging.info(f"Placing order for store-chat session as {email}")
+            self._place_order_for_chat(user=user, email=email)
         full_conversation = random.choice(self.STORE_CHAT_CONVERSATIONS)
         n_turns = random.randint(1, len(full_conversation))
         conversation = full_conversation[:n_turns]
