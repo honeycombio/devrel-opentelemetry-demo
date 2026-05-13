@@ -274,6 +274,23 @@ config:
         x-honeycomb-team: ${HONEYCOMB_API_KEY_DOGFOOD}
         x-honeycomb-dataset: service-logs
 
+    otlp/traces-island-of-misfit-toys:
+      endpoint: api.honeycomb.io:443
+      headers:
+        x-honeycomb-team: ${HONEYCOMB_API_KEY_ISLAND_OF_MISFIT_TOYS}
+
+    otlp/metrics-island-of-misfit-toys:
+      endpoint: api.honeycomb.io:443
+      headers:
+        x-honeycomb-team: ${HONEYCOMB_API_KEY_ISLAND_OF_MISFIT_TOYS}
+        x-honeycomb-dataset: service-metrics
+
+    otlp/logging-island-of-misfit-toys:
+      endpoint: api.honeycomb.io:443
+      headers:
+        x-honeycomb-team: ${HONEYCOMB_API_KEY_ISLAND_OF_MISFIT_TOYS}
+        x-honeycomb-dataset: service-logs
+
     # Ships eval-anchor spans (one per chatbot turn) to the llm-evals
     # service in OTLP JSON. The consumer parses these spans and runs
     # Bias/Hallucination/Relevance scorers — no producer-side
@@ -318,6 +335,7 @@ config:
         exporters:
           - otlp/honeycomb
           - otlp/metrics-dogfood
+          - otlp/metrics-island-of-misfit-toys
         processors:
           - transform/service_names
 
@@ -325,6 +343,7 @@ config:
         exporters:
           - otlp/refinery
           - otlp/logging-dogfood
+          - otlp/logging-island-of-misfit-toys
           - otlp/bindplane
         processors:
           - transform/parse_json_body
@@ -339,6 +358,7 @@ config:
         exporters:
           - otlp/refinery
           - otlp/traces-dogfood
+          - otlp/traces-island-of-misfit-toys
           - otlp/bindplane
         processors:
           - filter/drop_flagd_spans

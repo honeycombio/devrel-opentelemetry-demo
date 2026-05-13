@@ -10,6 +10,7 @@ export interface HoneycombSecretsArgs {
 export class HoneycombSecrets extends pulumi.ComponentResource {
     public readonly prodSecret: Secret;
     public readonly dogfoodSecret: Secret;
+    public readonly islandOfMisfitToysSecret: Secret;
 
     constructor(name: string,
         args: HoneycombSecretsArgs,
@@ -33,6 +34,16 @@ export class HoneycombSecrets extends pulumi.ComponentResource {
             },
             stringData: {
                 ["honeycomb-api-key"]: args.config.honeycombDogfoodApiKey
+            }
+        }, { provider: opts.provider!, parent: this });
+
+        this.islandOfMisfitToysSecret = new Secret(`${name}-island-of-misfit-toys`, {
+            metadata: {
+                name: "honeycomb-api-island-of-misfit-toys",
+                namespace: args.namespace
+            },
+            stringData: {
+                ["honeycomb-api-key"]: args.config.honeycombIslandOfMisfitToysApiKey
             }
         }, { provider: opts.provider!, parent: this });
     }

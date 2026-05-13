@@ -63,6 +63,15 @@ export class Collector extends pulumi.ComponentResource {
                     }
                 },
                 {
+                    "name": "HONEYCOMB_API_KEY_ISLAND_OF_MISFIT_TOYS",
+                    "valueFrom": {
+                        "secretKeyRef": {
+                            "name": args.secrets.islandOfMisfitToysSecret.id.apply(id => id.split("/")[1]),
+                            "key": "honeycomb-api-key"
+                        }
+                    }
+                },
+                {
                     "name": "NAMESPACE",
                     "valueFrom": {
                         "fieldRef": {
