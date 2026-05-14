@@ -14,6 +14,7 @@ export class DeploymentConfig {
     public readonly honeycombProdApiKey: string;
     public readonly honeycombDogfoodApiKey: string;
     public readonly honeycombIslandOfMisfitToysApiKey: string;
+    public readonly honeycombDogfoodIslandOfMisfitToysApiKey: string;
     public readonly cloudProvider: string;
     public readonly domainName: string;
     public readonly k8sNamespace: string;
@@ -39,6 +40,7 @@ export class DeploymentConfig {
         this.honeycombProdApiKey = this.config.require("honeycomb-prod-api-key");
         this.honeycombDogfoodApiKey = this.config.require("honeycomb-dogfood-api-key");
         this.honeycombIslandOfMisfitToysApiKey = this.config.require("honeycomb-island-of-misfit-toys");
+        this.honeycombDogfoodIslandOfMisfitToysApiKey = this.config.require("honeycomb-dogfood-island-of-misfit-toys");
         this.domainName = this.config.require("domain-name");
 
         // Optional values with defaults
