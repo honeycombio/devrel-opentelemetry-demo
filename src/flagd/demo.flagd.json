@@ -168,6 +168,15 @@
         "off": false
       },
       "defaultVariant": "off"
+    },
+    "storechatRefundBackupOrders": {
+      "description": "Drive store-chat refund traffic against a small fixed pool of customer emails so orders accumulate. lookup_orders has no pagination, so the tool result fed back to the model grows over time and inflates LLM input tokens per conversation.",
+      "state": "ENABLED",
+      "variants": {
+        "on": 1,
+        "off": 0
+      },
+      "defaultVariant": "off"
     }
   }
 }

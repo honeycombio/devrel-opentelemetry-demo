@@ -290,6 +290,7 @@ class WebsiteUser(HttpUser):
         self._last_ai_product_run = 0.0
         self._last_store_chat_run = 0.0
         self._last_pasted_email_run = 0.0
+        self._last_refund_backup_run = 0.0
 
     @task(1)
     def index(self):
@@ -345,6 +346,17 @@ class WebsiteUser(HttpUser):
         with self.tracer.start_as_current_span("user_ask_product_ai_assistant", context=Context(), attributes={"product.id": product, "question": question}):
             logging.info(f"Asking the AI Assistant a question for: {product} {question}")
             self.client.post(f"/api/product-ask-ai-assistant/{product}", json={"question": question})
+
+    # Small fixed pool of customer emails used by the refund-backup task. Reusing
+    # the same emails (instead of a fresh UUID per session) means orders
+    # accumulate against each one across loadgen runs, so lookup_orders ends up
+    # returning a steadily-growing JSON blob. Used only when the
+    # storechatRefundBackupOrders flag is on.
+    BACKUP_REFUND_EMAILS = [
+        "loyal-vip-1@aurelia.honeydemo.io",
+        "loyal-vip-2@aurelia.honeydemo.io",
+        "loyal-vip-3@aurelia.honeydemo.io",
+    ]
 
     # Multi-turn scripts for store-chat. Each entry is a list of 2-4 user
     # messages that a real customer might send in one session. The agent
@@ -495,6 +507,60 @@ class WebsiteUser(HttpUser):
                     "/store-chat/chat",
                     json={"question": question, "sessionId": session_id, "email": email},
                 )
+
+    @task(1)
+    def ask_store_chat_refund_backup(self):
+        # Flag-gated: when storechatRefundBackupOrders is on, route refund
+        # traffic against a tiny fixed pool of emails so orders pile up against
+        # each one. lookup_orders has no pagination, so the JSON returned to the
+        # refund agent grows over time and the per-conversation LLM input_tokens
+        # climb with it.
+        if get_flagd_value("storechatRefundBackupOrders") <= 0:
+            return
+        now = time.monotonic()
+        if now - self._last_refund_backup_run < AI_TASK_MIN_INTERVAL_SECONDS:
+            return
+        self._last_refund_backup_run = now
+        email = random.choice(self.BACKUP_REFUND_EMAILS)
+        user = str(uuid.uuid1())
+        session_id = str(uuid.uuid4())
+        with self.tracer.start_as_current_span(
+            "user_store_chat_place_order",
+            context=Context(),
+            attributes={"user.id": user, "email": email, "scenario": "refund_backup"},
+        ):
+            logging.info(f"Placing order for refund-backup store-chat session as {email}")
+            self._place_order_for_chat(user=user, email=email)
+        conversation = [
+            "Can you pull up my recent orders? I think I need to return one.",
+            "Yes please refund my most recent order — it arrived damaged.",
+            "Actually one of the earlier ones was the wrong model too, can you refund that one as well?",
+        ]
+        with self.tracer.start_as_current_span(
+            "user_ask_store_chat",
+            context=Context(),
+            attributes={
+                "session.id": session_id,
+                "email": email,
+                "conversation.length": len(conversation),
+                "scenario": "refund_backup",
+            },
+        ):
+            logging.info(f"Starting refund-backup store-chat session {session_id} as {email} ({len(conversation)} turns)")
+            for turn_index, question in enumerate(conversation):
+                with self.tracer.start_as_current_span(
+                    "user_store_chat_turn",
+                    attributes={
+                        "session.id": session_id,
+                        "turn.index": turn_index,
+                        "question": question,
+                    },
+                ):
+                    logging.info(f"[session {session_id}] turn {turn_index}: {question}")
+                    self.client.post(
+                        "/store-chat/chat",
+                        json={"question": question, "sessionId": session_id, "email": email},
+                    )
 
     @task(3)
     def get_ads(self):
