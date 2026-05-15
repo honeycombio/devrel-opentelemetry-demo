@@ -58,9 +58,7 @@ if [[ "$CLOUD_PROVIDER" == "aws" ]]; then
     scripts/login-ecr.sh > /dev/null 2>&1
 
     # Pull Bedrock inference profiles + local-dev IAM role from the shared infra stack.
-    # `bedrockLocalsProfiles` is a JSON map keyed by model alias (claudeHaiku, claudeSonnet, ...).
-    BEDROCK_LOCALS_PROFILES=$(pulumi stack output -s honeycomb-devrel/infra-aws/prod bedrockLocalsProfiles 2>/dev/null)
-    BEDROCK_HAIKU_PROFILE_ARN=$(echo "$BEDROCK_LOCALS_PROFILES" | jq -r '.claudeHaiku')
+    BEDROCK_HAIKU_PROFILE_ARN=$(pulumi stack output -s honeycomb-devrel/infra-aws/prod bedrockClaudeHaikuProfileArn 2>/dev/null)
     BEDROCK_AWS_REGION=$(pulumi stack output -s honeycomb-devrel/infra-aws/prod clusterRegion 2>/dev/null)
 elif [[ "$CLOUD_PROVIDER" == "azure" ]]; then
     echo "Using Azure configuration"
