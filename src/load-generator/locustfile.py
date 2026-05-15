@@ -120,6 +120,156 @@ people_file = open('people.json')
 people = json.load(people_file)
 
 
+# A realistic-looking forwarded email thread a frustrated customer might paste
+# into a chat: multi-level reply chain about a missing delivery, with the boilerplate
+# confidential-disclosure footer repeated on every reply. Repeated 10x to mimic a
+# deeply-escalated support thread (and to make the resulting token spike
+# unmistakable). The store-chat /chat endpoint does not bound `question` size
+# before sending it to the model, so a single turn containing this blob inflates
+# `gen_ai.usage.input_tokens` for that one conversation by an order of magnitude
+# versus a normal session.
+PASTED_EMAIL_THREAD = """\
+---------- Forwarded message ---------
+From: Aurelia Customer Support <support@aurelia.honeydemo.io>
+Date: Wed, May 13, 2026 at 4:32 PM
+Subject: Re: Re: Re: Re: Order ORD-489201 — still no delivery
+To: <me>
+
+Hello,
+
+Thank you for your patience. We have checked with our shipping partner and they
+have confirmed that the package was scanned at the Memphis distribution center
+on May 7. Unfortunately we have not received any further tracking updates since
+then. We have opened an internal ticket (INC-2026-44811) with the carrier and a
+member of our logistics team will follow up within 3-5 business days.
+
+We understand the frustration that comes with a delayed shipment and we want to
+assure you that we are doing everything we can on our end to locate the package.
+If we are unable to confirm delivery within the next 7 business days we will
+reship the order at no cost to you, or process a full refund — whichever you
+prefer.
+
+Kind regards,
+Priya
+Aurelia Customer Support — Tier 2
+
+CONFIDENTIAL: This email and any attachments are confidential and intended
+solely for the use of the individual or entity to whom they are addressed. If
+you have received this email in error please notify the sender by reply email
+and delete the message and any attachments from your system. Aurelia Holdings
+Inc., its subsidiaries, and affiliates accept no liability for any damage
+caused by any virus transmitted by this email. The views expressed in this
+email are those of the sender and do not necessarily reflect those of Aurelia
+Holdings Inc. Aurelia Holdings Inc. is registered in the State of Delaware,
+registration number 7104228, registered office 1209 Orange Street, Wilmington
+DE 19801. This communication may contain information that is proprietary,
+privileged, or otherwise legally protected from disclosure. Any unauthorized
+review, use, disclosure, dissemination, distribution, or copying of this
+communication or its contents is strictly prohibited.
+
+---------- Forwarded message ---------
+From: <me>
+Date: Mon, May 11, 2026 at 9:12 AM
+Subject: Re: Re: Re: Order ORD-489201 — still no delivery
+To: Aurelia Customer Support <support@aurelia.honeydemo.io>
+
+Hi Priya,
+
+It's now been a full week since the last update telling me the package was "in
+transit". The tracking link you sent me hasn't moved since May 4. I've called
+the shipping carrier directly and they told me they have no record of the
+package leaving the Memphis facility. Can you please confirm with your
+warehouse that the package actually shipped, and provide me with a fresh
+tracking number if it didn't?
+
+I bought this telescope as a birthday present for my partner. The birthday is
+on May 22. If it's not going to arrive by then I'd rather just have a refund so
+I can buy something locally — please let me know which option you can offer.
+
+Thanks,
+<me>
+
+---------- Forwarded message ---------
+From: Aurelia Customer Support <support@aurelia.honeydemo.io>
+Date: Mon, May 4, 2026 at 2:48 PM
+Subject: Re: Re: Order ORD-489201 — still no delivery
+To: <me>
+
+Hello,
+
+Thank you for reaching out again. I can see from our records that your order
+shipped on April 28 via our standard ground shipping partner, with an estimated
+delivery window of May 2-6. The tracking number is 1Z999AA10123456784. Our
+records show the package is currently in transit and should arrive within the
+original estimated window.
+
+If you do not receive the package by May 6, please reply to this email and we
+will escalate to our shipping investigations team.
+
+Kind regards,
+Marcus
+Aurelia Customer Support — Tier 1
+
+CONFIDENTIAL: This email and any attachments are confidential and intended
+solely for the use of the individual or entity to whom they are addressed. If
+you have received this email in error please notify the sender by reply email
+and delete the message and any attachments from your system. Aurelia Holdings
+Inc., its subsidiaries, and affiliates accept no liability for any damage
+caused by any virus transmitted by this email.
+
+---------- Forwarded message ---------
+From: <me>
+Date: Mon, May 4, 2026 at 8:15 AM
+Subject: Re: Order ORD-489201 — still no delivery
+To: Aurelia Customer Support <support@aurelia.honeydemo.io>
+
+Hello,
+
+I placed order ORD-489201 on April 24 and have not received any shipping
+confirmation since then. The order confirmation page said it should arrive
+within 5-7 business days. It is now day 9 (excluding the weekend). Could
+someone please look into where my order is?
+
+Thanks,
+<me>
+
+---------- Forwarded message ---------
+From: Aurelia Order Confirmation <noreply@aurelia.honeydemo.io>
+Date: Sat, Apr 24, 2026 at 11:03 AM
+Subject: Your Aurelia order ORD-489201 has been received
+To: <me>
+
+Thank you for your order!
+
+Order number: ORD-489201
+Order date: April 24, 2026
+Estimated delivery: April 30 - May 6, 2026
+
+Items:
+  1 × Roof Prism Binoculars (8x42) ........................... $129.00
+  1 × Lyra-Reflex 8-inch Dobsonian Telescope ................. $749.00
+  1 × Plossl Eyepiece Set (4 piece) ..........................  $89.00
+
+Subtotal: ................................................... $967.00
+Shipping: ................................................... $  0.00 (free)
+Tax: ........................................................ $ 58.02
+Total: ...................................................... $1025.02
+
+We'll send another email when your order ships. You can also check the status
+of your order any time by logging into your account at aurelia.honeydemo.io.
+
+CONFIDENTIAL: This email and any attachments are confidential and intended
+solely for the use of the individual or entity to whom they are addressed. If
+you have received this email in error please notify the sender by reply email
+and delete the message and any attachments from your system. Aurelia Holdings
+Inc., its subsidiaries, and affiliates accept no liability for any damage
+caused by any virus transmitted by this email. The views expressed in this
+email are those of the sender and do not necessarily reflect those of Aurelia
+Holdings Inc. This message is sent from an unmonitored mailbox; replies will
+not be read or answered.
+""" * 10
+
+
 def random_email() -> str:
     """Generate a fresh email per call so orders don't accumulate against
     a small fixed pool of customers. Without this, store-chat's
@@ -128,6 +278,7 @@ def random_email() -> str:
     return f"loadgen-{uuid.uuid4().hex[:12]}@aurelia.honeydemo.io"
 
 AI_TASK_MIN_INTERVAL_SECONDS = 60
+PASTED_EMAIL_TASK_MIN_INTERVAL_SECONDS = 600  # ~10 min/user keeps this rare
 
 
 class WebsiteUser(HttpUser):
@@ -138,6 +289,7 @@ class WebsiteUser(HttpUser):
         self.tracer = trace.get_tracer(__name__)
         self._last_ai_product_run = 0.0
         self._last_store_chat_run = 0.0
+        self._last_pasted_email_run = 0.0
 
     @task(1)
     def index(self):
@@ -290,6 +442,59 @@ class WebsiteUser(HttpUser):
                         "/store-chat/chat",
                         json={"question": question, "sessionId": session_id, "email": email},
                     )
+
+    @task(1)
+    def ask_store_chat_pasted_email(self):
+        # Very rare: simulate a frustrated customer who pastes their entire
+        # forwarded email thread with support into a single chat turn. /chat
+        # doesn't bound the user `question` size before sending it to the model,
+        # so this one conversation balloons LLM input_tokens vs. a normal
+        # session — a clean per-conversation token spike to investigate.
+        now = time.monotonic()
+        if now - self._last_pasted_email_run < PASTED_EMAIL_TASK_MIN_INTERVAL_SECONDS:
+            return
+        self._last_pasted_email_run = now
+        email = random_email()
+        user = str(uuid.uuid1())
+        session_id = str(uuid.uuid4())
+        with self.tracer.start_as_current_span(
+            "user_store_chat_place_order",
+            context=Context(),
+            attributes={"user.id": user, "email": email},
+        ):
+            logging.info(f"Placing order for pasted-email store-chat session as {email}")
+            self._place_order_for_chat(user=user, email=email)
+        question = (
+            "Hi — my telescope order is severely delayed and your support has "
+            "been bouncing me between agents for two weeks. I'm pasting the "
+            "entire email thread below so the next person doesn't have to make "
+            "me re-explain it. Please tell me what is actually going on with "
+            "my order and whether I should expect it before May 22.\n\n"
+            f"{PASTED_EMAIL_THREAD}"
+        )
+        with self.tracer.start_as_current_span(
+            "user_ask_store_chat",
+            context=Context(),
+            attributes={
+                "session.id": session_id,
+                "email": email,
+                "conversation.length": 1,
+                "scenario": "pasted_email_thread",
+            },
+        ):
+            logging.info(f"Starting pasted-email store-chat session {session_id} as {email}")
+            with self.tracer.start_as_current_span(
+                "user_store_chat_turn",
+                attributes={
+                    "session.id": session_id,
+                    "turn.index": 0,
+                    "question.length": len(question),
+                },
+            ):
+                self.client.post(
+                    "/store-chat/chat",
+                    json={"question": question, "sessionId": session_id, "email": email},
+                )
 
     @task(3)
     def get_ads(self):
