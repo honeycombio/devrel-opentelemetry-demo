@@ -1,0 +1,20 @@
+# Copyright The OpenTelemetry Authors
+# SPDX-License-Identifier: Apache-2.0
+
+file_format: definition/2
+attributes:
+  - key: demo.gen_ai.usage.uncached_input_tokens
+    type: int
+    brief: Input tokens billed at the full input rate (i.e. not served from prompt cache).
+    stability: development
+    note: >
+      Computed in the OpenTelemetry Collector as
+      `gen_ai.usage.input_tokens - gen_ai.usage.cache_read_input_tokens`.
+      Per OTel semconv 1.41.0, `gen_ai.usage.input_tokens` SHOULD include all input
+      tokens (cached + uncached); this attribute isolates the uncached portion —
+      i.e. the tokens the provider processed fresh on this call rather than
+      replaying from the prompt cache. Useful for cost heatmaps that should reflect
+      "new work the model did" rather than total tokens seen. If
+      `gen_ai.usage.cache_read_input_tokens` is absent on the source event, this
+      attribute equals `gen_ai.usage.input_tokens`.
+    examples: [150, 967, 16889]
