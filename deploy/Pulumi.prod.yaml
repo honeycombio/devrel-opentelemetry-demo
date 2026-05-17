@@ -1,0 +1,17 @@
+config:
+  devrel-opentelemetry-demo:container-tag: 2.0.12-release
+  devrel-opentelemetry-demo:honeycombApiKey:
+    secure: AAABAMSddAIpKGQQFsPZ1A/OCUr0hl3wGxLPzdj8DkeezD5ve+BCi1CT26Kv5peTxj5cvAt84txYDs/y4vdKxSS4S32eeLZXwbKbmLLTJ2KHnuY00w46DnoezklkvTr5
+  devrel-opentelemetry-demo:honeycombApiKeyDogfood:
+    secure: AAABADZWFFxf2Y/YuT792ME9Wc7XSsvEvpVyEAc/luwUuN9unDiLincDXYRjEA2QqBC5GvFVFQBA08GjZV7auP2HIVUXbC1gIGsVfoOgdJ8DEJxpltG7w0aHQ5XISwlj
+  devrel-opentelemetry-demo:ingressClassName: webapprouting.kubernetes.azure.com
+  devrel-opentelemetry-demo:k8sNamespace: devrel-demo
+  devrel-opentelemetry-demo:pipelineApiKey:
+    secure: AAABAHNtpFuB35EQYZU92PP2ogEo4w6CmJiA+zCBA6b7B8ZSlr0M9RLqxylQBAbhaj9GFdwK1rWuSXmi0OWFLE5t+YekBnYJ7uW6leOQP3DLmRLjitSIyKndkYy2girg
+  devrel-opentelemetry-demo:pipelineManagementApiKey:
+    secure: AAABALmrjEgGMOGJij6x6CZiEfxXUCYbXods0eaMDfj9TLnIntRvUCQtuUb8ufy+SywbiqXraloN0yVkM+NlQg==
+  devrel-opentelemetry-demo:pipelineManagementApiKeyId: hcamk_01jw9bzr6n5131rj3386s7k8tp
+  devrel-opentelemetry-demo:refineryTelemetryApiKey:
+    secure: AAABAPAV9GuhKi0ObrOLy+Wy+7Wt25Ve1sG/stg4tc8x0EqyLIMYH1uGmadXNwBzgXbq+iV9Vu3CddKtMWXczXNFhA1BlwrxZ4LMBAQOFaoUcDWnMx1fGGD38y8bXyqx
+  pulumi:tags:
+    pulumi:template: helm-kubernetes-typescript
