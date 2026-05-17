@@ -277,7 +277,13 @@ def random_email() -> str:
     auto cache writes a larger prefix to Bedrock every turn."""
     return f"loadgen-{uuid.uuid4().hex[:12]}@aurelia.honeydemo.io"
 
-AI_TASK_MIN_INTERVAL_SECONDS = 60
+# Per-user cooldown on the AI tasks (ask_product_ai_assistant and
+# ask_store_chat). With Locust's wait_time=between(1,10) and the current
+# weighted task mix, a weight-1 task is naturally selected once every
+# ~3 minutes per user — so this cooldown only does real work above that
+# threshold. 300s gives us roughly one AI invocation per user every five
+# minutes, which is what dominates Bedrock spend in this demo.
+AI_TASK_MIN_INTERVAL_SECONDS = 300
 PASTED_EMAIL_TASK_MIN_INTERVAL_SECONDS = 600  # ~10 min/user keeps this rare
 
 
