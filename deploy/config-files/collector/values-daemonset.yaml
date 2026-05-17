@@ -239,6 +239,16 @@ config:
                   - set(span.attributes["gen_ai.usage.input_tokens"], attributes["gen_ai.usage.input_tokens"]) where attributes["gen_ai.usage.input_tokens"] != nil
                   - set(span.attributes["gen_ai.usage.output_tokens"], attributes["gen_ai.usage.output_tokens"]) where attributes["gen_ai.usage.output_tokens"] != nil
                   - set(span.attributes["gen_ai.usage.total_tokens"], attributes["gen_ai.usage.total_tokens"]) where attributes["gen_ai.usage.total_tokens"] != nil
+                  - set(span.attributes["gen_ai.usage.cache_read_input_tokens"], attributes["gen_ai.usage.cache_read_input_tokens"]) where attributes["gen_ai.usage.cache_read_input_tokens"] != nil
+                  - set(span.attributes["gen_ai.usage.cache_write_input_tokens"], attributes["gen_ai.usage.cache_write_input_tokens"]) where attributes["gen_ai.usage.cache_write_input_tokens"] != nil
+                  # demo.gen_ai.usage.uncached_input_tokens isolates the
+                  # non-cache-read portion of input. Per OTel semconv 1.41.0,
+                  # `gen_ai.usage.input_tokens` SHOULD include cached tokens,
+                  # so uncached = input_tokens - cache_read_input_tokens. If
+                  # cache_read is absent (caching off / unsupported), fall
+                  # back to the full input_tokens value.
+                  - set(span.attributes["demo.gen_ai.usage.uncached_input_tokens"], attributes["gen_ai.usage.input_tokens"] - attributes["gen_ai.usage.cache_read_input_tokens"]) where attributes["gen_ai.usage.input_tokens"] != nil and attributes["gen_ai.usage.cache_read_input_tokens"] != nil
+                  - set(span.attributes["demo.gen_ai.usage.uncached_input_tokens"], attributes["gen_ai.usage.input_tokens"]) where attributes["gen_ai.usage.input_tokens"] != nil and attributes["gen_ai.usage.cache_read_input_tokens"] == nil
                   - set(span.attributes["gen_ai.response.finish_reasons"], attributes["gen_ai.response.finish_reasons"]) where attributes["gen_ai.response.finish_reasons"] != nil
                   - set(span.attributes["gen_ai.request.model"], attributes["gen_ai.request.model"]) where attributes["gen_ai.request.model"] != nil
                   - set(span.attributes["gen_ai.operation.name"], attributes["gen_ai.operation.name"]) where attributes["gen_ai.operation.name"] != nil
