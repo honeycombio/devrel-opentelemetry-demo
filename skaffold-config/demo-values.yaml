@@ -215,6 +215,13 @@ opentelemetry-collector:
               # gen_ai surfaces (which look up the dotted name) light up.
               - set(attributes["gen_ai.usage.cache_read.input_tokens"], attributes["gen_ai.usage.cache_read_input_tokens"]) where attributes["gen_ai.usage.cache_read_input_tokens"] != nil and attributes["gen_ai.usage.cache_read.input_tokens"] == nil
               - set(attributes["gen_ai.usage.cache_write.input_tokens"], attributes["gen_ai.usage.cache_write_input_tokens"]) where attributes["gen_ai.usage.cache_write_input_tokens"] != nil and attributes["gen_ai.usage.cache_write.input_tokens"] == nil
+              # Re-check the old-shape detection against the dotted form. The
+              # underscore-only check above misses services that emit the
+              # dotted form natively (e.g. product-reviews) — without this
+              # second pass, their input_tokens stays as the uncached-only
+              # portion and the uncached computation below underflows
+              # negative.
+              - set(attributes["gen_ai.usage.input_tokens"], attributes["gen_ai.usage.input_tokens"] + attributes["gen_ai.usage.cache_read.input_tokens"]) where attributes["gen_ai.usage.cache_read.input_tokens"] != nil and attributes["gen_ai.usage.cache_read.input_tokens"] > attributes["gen_ai.usage.input_tokens"]
               # uncached = total input the model processed this turn, minus
               # what came from cache. Strands' input_tokens equals (truly
               # uncached) + cache_read but excludes cache_write, so we
