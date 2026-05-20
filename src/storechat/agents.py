@@ -1,6 +1,7 @@
 import os
 
 from strands import Agent, tool
+from strands.models import CacheConfig
 from strands.models.bedrock import BedrockModel
 
 from tools import check_shipping, get_order, lookup_orders, refund_order
@@ -405,15 +406,24 @@ wrong.
 def _make_model() -> BedrockModel | None:
     if not _model_id:
         return None
-    # Cache the static prefix only (system prompt + tool definitions) — that
-    # block is identical across every chat session and turn, so cache_read
-    # dominates and cache_write happens once per ~5min cache TTL.
-    # Avoid cache_config (which would also cache after the last user message,
-    # causing a fresh cache_write every turn as the conversation grows).
+    # Three cache breakpoints:
+    #   1. cache_prompt — system prompt prefix (stable across all sessions).
+    #   2. cache_tools  — tool definitions (also stable).
+    #   3. cache_config — auto-inject a cachePoint after the last user message.
+    # (3) is what makes the supervisor's second LLM call within a single
+    # request cheap: after the sub-agent's tool round-trip, Strands appends
+    # an assistant(tool_use) + tool_result(user) pair to the messages array.
+    # Without a breakpoint on the message tail, that 11k of tool-exchange
+    # content is reprocessed uncached every call. With cache_config="auto",
+    # call N writes only the delta (last assistant + tool_result) past the
+    # prefix call N-1 already wrote, and call N+1 reads the whole prefix at
+    # 0.1x. The "fresh write every turn" concern is bounded by the delta
+    # size, not the full conversation length.
     return BedrockModel(
         model_id=_model_id,
         cache_prompt="default",
         cache_tools="default",
+        cache_config=CacheConfig(strategy="auto"),
     )
 
 
