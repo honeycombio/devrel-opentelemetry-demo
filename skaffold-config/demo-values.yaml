@@ -182,8 +182,15 @@ opentelemetry-collector:
               # Promote to the dotted form here.
               - set(span.attributes["gen_ai.usage.cache_read.input_tokens"], attributes["gen_ai.usage.cache_read_input_tokens"]) where attributes["gen_ai.usage.cache_read_input_tokens"] != nil
               - set(span.attributes["gen_ai.usage.cache_write.input_tokens"], attributes["gen_ai.usage.cache_write_input_tokens"]) where attributes["gen_ai.usage.cache_write_input_tokens"] != nil
+              # uncached = total input the model processed this turn, minus
+              # what came from cache. Strands' `gen_ai.usage.input_tokens`
+              # equals (truly uncached) + cache_read but excludes cache_write,
+              # so we subtract cache_read and add cache_write back in to get
+              # "everything not served from cache." Content being newly cached
+              # is still being processed this turn — it isn't free.
               - set(span.attributes["demo.gen_ai.usage.uncached_input_tokens"], attributes["gen_ai.usage.input_tokens"] - attributes["gen_ai.usage.cache_read_input_tokens"]) where attributes["gen_ai.usage.input_tokens"] != nil and attributes["gen_ai.usage.cache_read_input_tokens"] != nil
               - set(span.attributes["demo.gen_ai.usage.uncached_input_tokens"], attributes["gen_ai.usage.input_tokens"]) where attributes["gen_ai.usage.input_tokens"] != nil and attributes["gen_ai.usage.cache_read_input_tokens"] == nil
+              - set(span.attributes["demo.gen_ai.usage.uncached_input_tokens"], span.attributes["demo.gen_ai.usage.uncached_input_tokens"] + attributes["gen_ai.usage.cache_write_input_tokens"]) where span.attributes["demo.gen_ai.usage.uncached_input_tokens"] != nil and attributes["gen_ai.usage.cache_write_input_tokens"] != nil
               - set(span.attributes["gen_ai.response.finish_reasons"], attributes["gen_ai.response.finish_reasons"]) where attributes["gen_ai.response.finish_reasons"] != nil
               - set(span.attributes["gen_ai.request.model"], attributes["gen_ai.request.model"]) where attributes["gen_ai.request.model"] != nil
               - set(span.attributes["gen_ai.operation.name"], attributes["gen_ai.operation.name"]) where attributes["gen_ai.operation.name"] != nil
@@ -208,11 +215,15 @@ opentelemetry-collector:
               # gen_ai surfaces (which look up the dotted name) light up.
               - set(attributes["gen_ai.usage.cache_read.input_tokens"], attributes["gen_ai.usage.cache_read_input_tokens"]) where attributes["gen_ai.usage.cache_read_input_tokens"] != nil and attributes["gen_ai.usage.cache_read.input_tokens"] == nil
               - set(attributes["gen_ai.usage.cache_write.input_tokens"], attributes["gen_ai.usage.cache_write_input_tokens"]) where attributes["gen_ai.usage.cache_write_input_tokens"] != nil and attributes["gen_ai.usage.cache_write.input_tokens"] == nil
-              # Now compute uncached = input - cache_read (correct under the
-              # normalised input). Fall back to input_tokens when cache_read is
-              # absent (caching off / unsupported).
+              # uncached = total input the model processed this turn, minus
+              # what came from cache. Strands' input_tokens equals (truly
+              # uncached) + cache_read but excludes cache_write, so we
+              # subtract cache_read and add cache_write back in to get
+              # "everything not served from cache." Content being newly
+              # cached is still being processed this turn — it isn't free.
               - set(attributes["demo.gen_ai.usage.uncached_input_tokens"], attributes["gen_ai.usage.input_tokens"] - attributes["gen_ai.usage.cache_read.input_tokens"]) where attributes["gen_ai.usage.cache_read.input_tokens"] != nil
               - set(attributes["demo.gen_ai.usage.uncached_input_tokens"], attributes["gen_ai.usage.input_tokens"]) where attributes["gen_ai.usage.cache_read.input_tokens"] == nil
+              - set(attributes["demo.gen_ai.usage.uncached_input_tokens"], attributes["demo.gen_ai.usage.uncached_input_tokens"] + attributes["gen_ai.usage.cache_write.input_tokens"]) where attributes["demo.gen_ai.usage.uncached_input_tokens"] != nil and attributes["gen_ai.usage.cache_write.input_tokens"] != nil
       transform/service_names:
         error_mode: ignore
         log_statements:
