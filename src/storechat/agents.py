@@ -424,6 +424,7 @@ def _make_model() -> BedrockModel | None:
         cache_prompt="default",
         cache_tools="default",
         cache_config=CacheConfig(strategy="auto"),
+        max_tokens=1024,
     )
 
 

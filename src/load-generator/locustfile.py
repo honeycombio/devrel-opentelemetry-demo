@@ -267,7 +267,7 @@ caused by any virus transmitted by this email. The views expressed in this
 email are those of the sender and do not necessarily reflect those of Aurelia
 Holdings Inc. This message is sent from an unmonitored mailbox; replies will
 not be read or answered.
-""" * 10
+""" * 8
 
 
 def random_email() -> str:
@@ -281,9 +281,9 @@ def random_email() -> str:
 # ask_store_chat). With Locust's wait_time=between(1,10) and the current
 # weighted task mix, a weight-1 task is naturally selected once every
 # ~3 minutes per user — so this cooldown only does real work above that
-# threshold. 300s gives us roughly one AI invocation per user every five
+# threshold. 600s gives us roughly one AI invocation per user every ten
 # minutes, which is what dominates Bedrock spend in this demo.
-AI_TASK_MIN_INTERVAL_SECONDS = 300
+AI_TASK_MIN_INTERVAL_SECONDS = 600
 PASTED_EMAIL_TASK_MIN_INTERVAL_SECONDS = 600  # ~10 min/user keeps this rare
 
 

@@ -69,21 +69,10 @@ def chat(req: ChatRequest):
     # Load conversation history from Valkey
     history = conversation.get_history(req.sessionId)
 
-    # Convert stored history to Strands message format. Place a one-shot
-    # Bedrock cachePoint on the first assistant message — this fixes the
-    # cache breakpoint after turn 1 so the system+tools+turn1 prefix is
-    # served from cache on every subsequent turn, while the growing tail
-    # stays uncached. Doing it once (not on every assistant message) keeps
-    # cache_write to a single event instead of paying the 1.25x write
-    # premium on every turn as cache_config would.
-    messages = []
-    first_assistant_seen = False
-    for msg in history:
-        content: list[dict] = [{"text": msg["content"]}]
-        if msg["role"] == "assistant" and not first_assistant_seen:
-            content.append({"cachePoint": {"type": "default"}})
-            first_assistant_seen = True
-        messages.append({"role": msg["role"], "content": content})
+    messages = [
+        {"role": msg["role"], "content": [{"text": msg["content"]}]}
+        for msg in history
+    ]
 
     # Build the user prompt, including email context if provided
     user_prompt = req.question
