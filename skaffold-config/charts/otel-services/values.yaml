@@ -85,6 +85,8 @@ services:
       {}
     awsRegion: ""
     bedrockHaikuProfileArn: ""
+    bedrockNovaLiteProfileArn: ""
+    bedrockNovaMicroProfileArn: ""
     port: 8080
     replicas: 1
     kafkaAddr: ""

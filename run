@@ -60,6 +60,9 @@ if [[ "$CLOUD_PROVIDER" == "aws" ]]; then
     # Pull Bedrock inference profiles + local-dev IAM role from the shared infra stack.
     BEDROCK_HAIKU_PROFILE_ARN=$(pulumi stack output -s honeycomb-devrel/infra-aws/prod bedrockClaudeHaikuProfileArn 2>/dev/null)
     BEDROCK_AWS_REGION=$(pulumi stack output -s honeycomb-devrel/infra-aws/prod clusterRegion 2>/dev/null)
+    # TODO: source from infra stack once outputs land. Hardcoded for local testing.
+    BEDROCK_NOVA_LITE_PROFILE_ARN="arn:aws:bedrock:eu-west-1:657166037864:inference-profile/eu.amazon.nova-2-lite-v1:0"
+    BEDROCK_NOVA_MICRO_PROFILE_ARN="arn:aws:bedrock:eu-west-1:657166037864:inference-profile/eu.amazon.nova-micro-v1:0"
 elif [[ "$CLOUD_PROVIDER" == "azure" ]]; then
     echo "Using Azure configuration"
     CONTAINER_REGISTRY=$(pulumi stack output -s honeycomb-devrel/infra-azure/prod acrName 2>/dev/null)
@@ -77,6 +80,8 @@ export CLOUD_PROVIDER
 export DOMAINNAME
 export INGRESS_CLASS
 export BEDROCK_HAIKU_PROFILE_ARN
+export BEDROCK_NOVA_LITE_PROFILE_ARN
+export BEDROCK_NOVA_MICRO_PROFILE_ARN
 export BEDROCK_AWS_REGION
 
 # Build -b flags: one per service (skaffold requires separate -b flags for each image)

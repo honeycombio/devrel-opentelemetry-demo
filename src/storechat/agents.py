@@ -6,11 +6,17 @@ from strands.models.bedrock import BedrockModel
 
 from tools import check_shipping, get_order, lookup_orders, refund_order
 
-# Configure Bedrock model — use inference profile ARN if provided, otherwise default
-_model_id = os.environ.get(
+# Bedrock inference profile ARNs per agent role. Supervisor stays on Haiku 4.5
+# (it composes the customer-facing reply). The two sub-agents are mechanical
+# tool chains — Nova 2 Lite is competitive with Haiku on multi-step tool use
+# at ~6% of input cost, and the refund path is rare enough that Nova Micro's
+# lower quality is acceptable for the savings.
+_supervisor_model_id = os.environ.get(
     "BEDROCK_MODEL_ID",
     os.environ.get("BEDROCK_HAIKU_PROFILE_ARN", ""),
 )
+_order_status_model_id = os.environ.get("BEDROCK_NOVA_LITE_PROFILE_ARN", "")
+_refund_model_id = os.environ.get("BEDROCK_NOVA_MICRO_PROFILE_ARN", "")
 
 
 # Shared handbook prepended to every agent's system prompt. Two purposes:
@@ -403,8 +409,8 @@ wrong.
 """
 
 
-def _make_model() -> BedrockModel | None:
-    if not _model_id:
+def _make_model(model_id: str, *, enable_caching: bool) -> BedrockModel | None:
+    if not model_id:
         return None
     # Three cache breakpoints:
     #   1. cache_prompt — system prompt prefix (stable across all sessions).
@@ -419,13 +425,16 @@ def _make_model() -> BedrockModel | None:
     # prefix call N-1 already wrote, and call N+1 reads the whole prefix at
     # 0.1x. The "fresh write every turn" concern is bounded by the delta
     # size, not the full conversation length.
-    return BedrockModel(
-        model_id=_model_id,
-        cache_prompt="default",
-        cache_tools="default",
-        cache_config=CacheConfig(strategy="auto"),
-        max_tokens=1024,
-    )
+    #
+    # Nova Micro does not support prompt caching on Bedrock — caller passes
+    # enable_caching=False for that path so we omit the cachePoint markers
+    # (sending them to a non-caching model is a validation error).
+    kwargs: dict = {"model_id": model_id, "max_tokens": 1024}
+    if enable_caching:
+        kwargs["cache_prompt"] = "default"
+        kwargs["cache_tools"] = "default"
+        kwargs["cache_config"] = CacheConfig(strategy="auto")
+    return BedrockModel(**kwargs)
 
 
 # --- Agent factory functions ---
@@ -448,7 +457,13 @@ def _make_order_status_agent(trace_attributes: dict) -> Agent:
         "callback_handler": None,
         "trace_attributes": attrs,
     }
-    model = _make_model()
+    # Only Claude models support Strands' auto cachePoint injection. When
+    # falling back to the supervisor's Haiku ARN (no Nova override), keep
+    # caching on; otherwise disable to silence the SDK warning.
+    model = _make_model(
+        _order_status_model_id or _supervisor_model_id,
+        enable_caching=not _order_status_model_id,
+    )
     if model:
         kwargs["model"] = model
     return Agent(**kwargs)
@@ -471,7 +486,11 @@ def _make_refund_agent(trace_attributes: dict) -> Agent:
         "callback_handler": None,
         "trace_attributes": attrs,
     }
-    model = _make_model()
+    # Nova Micro: no caching, lower-quality model accepted for the rare refund path.
+    model = _make_model(
+        _refund_model_id or _supervisor_model_id,
+        enable_caching=not _refund_model_id,
+    )
     if model:
         kwargs["model"] = model
     return Agent(**kwargs)
@@ -556,7 +575,7 @@ def create_supervisor(
         "callback_handler": None,
         "trace_attributes": supervisor_attrs,
     }
-    model = _make_model()
+    model = _make_model(_supervisor_model_id, enable_caching=True)
     if model:
         kwargs["model"] = model
     if messages:
