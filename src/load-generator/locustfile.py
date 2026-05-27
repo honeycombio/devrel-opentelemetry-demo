@@ -286,6 +286,12 @@ def random_email() -> str:
 AI_TASK_MIN_INTERVAL_SECONDS = 600
 PASTED_EMAIL_TASK_MIN_INTERVAL_SECONDS = 600  # ~10 min/user keeps this rare
 
+# Agent (Bedrock-hitting) loadgen tasks are opt-in. Locals share one AWS
+# account; without this guard every developer's namespace would hammer
+# Bedrock concurrently, making cost and CloudWatch metrics unattributable.
+# Set AGENT_LOAD_ENABLED=true in the deployed environment only.
+agent_load_enabled = os.environ.get("AGENT_LOAD_ENABLED", "").lower() in ("true", "yes", "on", "1")
+
 
 class WebsiteUser(HttpUser):
     wait_time = between(1, 10)
@@ -332,6 +338,8 @@ class WebsiteUser(HttpUser):
     def ask_product_ai_assistant(self):
         # Rate-limit per user to ~1/min — this is the most expensive call
         # against product-reviews and we don't want it dominating traffic.
+        if not agent_load_enabled:
+            return
         now = time.monotonic()
         if now - self._last_ai_product_run < AI_TASK_MIN_INTERVAL_SECONDS:
             return
@@ -419,6 +427,8 @@ class WebsiteUser(HttpUser):
         # refunds, shipping status). Rate-limit per user to ~1/min so AI
         # spend stays bounded; pick a randomized turn count so some
         # sessions are quick and some are longer.
+        if not agent_load_enabled:
+            return
         now = time.monotonic()
         if now - self._last_store_chat_run < AI_TASK_MIN_INTERVAL_SECONDS:
             return
@@ -468,6 +478,8 @@ class WebsiteUser(HttpUser):
         # doesn't bound the user `question` size before sending it to the model,
         # so this one conversation balloons LLM input_tokens vs. a normal
         # session — a clean per-conversation token spike to investigate.
+        if not agent_load_enabled:
+            return
         now = time.monotonic()
         if now - self._last_pasted_email_run < PASTED_EMAIL_TASK_MIN_INTERVAL_SECONDS:
             return
@@ -521,6 +533,8 @@ class WebsiteUser(HttpUser):
         # each one. lookup_orders has no pagination, so the JSON returned to the
         # refund agent grows over time and the per-conversation LLM input_tokens
         # climb with it.
+        if not agent_load_enabled:
+            return
         if get_flagd_value("storechatRefundBackupOrders") <= 0:
             return
         now = time.monotonic()

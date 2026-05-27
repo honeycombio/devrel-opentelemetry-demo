@@ -25,20 +25,30 @@ scripts/validate-honeycomb-keys.sh --quiet
 CLOUD_PROVIDER="aws"
 DOMAINNAME="aurelia.honeydemo.io"
 INGRESS_CLASS="alb"
+# Agent (Bedrock-hitting) loadgen is off by default for local clusters so
+# multiple developer namespaces don't all hammer the shared AWS account.
+# Pass --agent-load / -a to opt in.
+AGENT_LOAD_ENABLED=""
 
-# Parse cloud provider flag if provided
-if [[ "$1" == "--cloud" ]] || [[ "$1" == "-c" ]]; then
-    CLOUD_PROVIDER="$2"
-    # Validate the cloud provider argument
-    if [[ ! "$CLOUD_PROVIDER" =~ ^(aws|azure)$ ]]; then
-        echo "Error: Invalid cloud provider '$CLOUD_PROVIDER'"
-        echo "Usage: $0 [--cloud|-c aws|azure] [SERVICES...]"
-        echo "Default: aws"
-        exit 1
-    fi
-    # Remove the cloud provider flags from the arguments
-    shift 2
-fi
+# Parse flags (cloud and agent-load, any order)
+while [[ "$1" == "--cloud" || "$1" == "-c" || "$1" == "--agent-load" || "$1" == "-a" ]]; do
+    case "$1" in
+        --cloud|-c)
+            CLOUD_PROVIDER="$2"
+            if [[ ! "$CLOUD_PROVIDER" =~ ^(aws|azure)$ ]]; then
+                echo "Error: Invalid cloud provider '$CLOUD_PROVIDER'"
+                echo "Usage: $0 [--cloud|-c aws|azure] [--agent-load|-a] [SERVICES...]"
+                echo "Default: aws"
+                exit 1
+            fi
+            shift 2
+            ;;
+        --agent-load|-a)
+            AGENT_LOAD_ENABLED="true"
+            shift
+            ;;
+    esac
+done
 
 SERVICES=$*
 if [ -z "$SERVICES" ]; then
@@ -83,6 +93,7 @@ export BEDROCK_HAIKU_PROFILE_ARN
 export BEDROCK_NOVA_LITE_PROFILE_ARN
 export BEDROCK_NOVA_MICRO_PROFILE_ARN
 export BEDROCK_AWS_REGION
+export AGENT_LOAD_ENABLED
 
 # Build -b flags: one per service (skaffold requires separate -b flags for each image)
 BUILD_FLAGS=""

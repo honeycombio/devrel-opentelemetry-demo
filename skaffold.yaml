@@ -154,6 +154,7 @@ deploy:
                   fieldRef:
                     fieldPath: metadata.namespace
         setValueTemplates:
+          components.load-generator.envOverrides[0].value: "{{.AGENT_LOAD_ENABLED}}"
           opentelemetry-collector.extraEnvs[0].value: "{{.HONEYCOMB_INGEST_KEY}}"
           opentelemetry-collector.extraEnvs[1].value: "{{.HONEYCOMB_MARKERS_KEY}}"
           opentelemetry-collector.extraEnvs[2].value: "{{.CLOUD_PROVIDER}}"

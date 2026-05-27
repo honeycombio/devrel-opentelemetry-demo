@@ -22,6 +22,12 @@ components:
         value: "http://*:5060"
   load-generator:
     replicas: 2
+    envOverrides:
+      # Opt in agent (Bedrock-hitting) loadgen tasks. Locals leave this
+      # unset so multiple developer namespaces don't all hammer the
+      # shared AWS account's Bedrock concurrently.
+      - name: AGENT_LOAD_ENABLED
+        value: "true"
   frontend:
     replicas: 2
     envOverrides:

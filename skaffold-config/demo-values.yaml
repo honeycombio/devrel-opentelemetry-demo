@@ -25,6 +25,12 @@ components:
         value: "http://*:5060"
   load-generator:
     replicas: 1
+    envOverrides:
+      # Agent (Bedrock-hitting) loadgen is off for locals by default to avoid
+      # multiple developer namespaces hammering the shared AWS account. The
+      # value is templated from ./run's --agent-load flag; empty = off.
+      - name: AGENT_LOAD_ENABLED
+        value: ""
   frontend:
     replicas: 1
     envOverrides:
