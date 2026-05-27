@@ -22,6 +22,12 @@ export class OtelServices extends pulumi.ComponentResource {
 
         const bedrockProfiles = args.config.infraStack.getOutput("bedrockProdProfiles") as pulumi.Output<Record<string, string>>;
         const bedrockHaikuProfileArn = bedrockProfiles.apply(p => p.claudeHaiku);
+        // TODO: source from infra stack outputs once novaLite/novaMicro keys are added
+        // to bedrockProdProfiles. Hardcoded for now so the storechat sub-agent split can
+        // ship without waiting on the infra repo. ARNs are eu-west-1 + account 657166037864
+        // which matches the existing claudeHaiku ARN format.
+        const bedrockNovaLiteProfileArn = "arn:aws:bedrock:eu-west-1:657166037864:inference-profile/eu.amazon.nova-2-lite-v1:0";
+        const bedrockNovaMicroProfileArn = "arn:aws:bedrock:eu-west-1:657166037864:inference-profile/eu.amazon.nova-micro-v1:0";
         const clusterRegion = args.config.infraStack.getOutput("clusterRegion") as pulumi.Output<string>;
 
         const values: Record<string, unknown> = {
@@ -33,6 +39,8 @@ export class OtelServices extends pulumi.ComponentResource {
                     },
                     awsRegion: clusterRegion,
                     bedrockHaikuProfileArn: bedrockHaikuProfileArn,
+                    bedrockNovaLiteProfileArn: bedrockNovaLiteProfileArn,
+                    bedrockNovaMicroProfileArn: bedrockNovaMicroProfileArn,
                     kafkaAddr: 'kafka:9092',
                 },
                 llmEvals: {
