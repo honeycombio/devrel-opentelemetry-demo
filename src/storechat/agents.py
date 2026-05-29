@@ -1,7 +1,6 @@
 import os
 
 from strands import Agent, tool
-from strands.models import CacheConfig
 from strands.models.bedrock import BedrockModel
 
 from tools import check_shipping, get_order, lookup_orders, refund_order
@@ -412,28 +411,20 @@ wrong.
 def _make_model(model_id: str, *, enable_caching: bool) -> BedrockModel | None:
     if not model_id:
         return None
-    # Three cache breakpoints:
+    # Two cache breakpoints:
     #   1. cache_prompt — system prompt prefix (stable across all sessions).
     #   2. cache_tools  — tool definitions (also stable).
-    #   3. cache_config — auto-inject a cachePoint after the last user message.
-    # (3) is what makes the supervisor's second LLM call within a single
-    # request cheap: after the sub-agent's tool round-trip, Strands appends
-    # an assistant(tool_use) + tool_result(user) pair to the messages array.
-    # Without a breakpoint on the message tail, that 11k of tool-exchange
-    # content is reprocessed uncached every call. With cache_config="auto",
-    # call N writes only the delta (last assistant + tool_result) past the
-    # prefix call N-1 already wrote, and call N+1 reads the whole prefix at
-    # 0.1x. The "fresh write every turn" concern is bounded by the delta
-    # size, not the full conversation length.
+    # The handbook + tool defs are ~6k tokens and identical across every call,
+    # so caching them lets the bulk of the prompt read at 0.1x input rate.
     #
-    # Nova Micro does not support prompt caching on Bedrock — caller passes
-    # enable_caching=False for that path so we omit the cachePoint markers
-    # (sending them to a non-caching model is a validation error).
+    # We deliberately do NOT enable cache_config="auto" (the per-turn
+    # message-tail breakpoint). With ~1.5 LLM calls per chat span, the auto
+    # breakpoint writes deltas that are rarely re-read, and the write tax
+    # exceeds the read savings.
     kwargs: dict = {"model_id": model_id, "max_tokens": 1024}
     if enable_caching:
         kwargs["cache_prompt"] = "default"
         kwargs["cache_tools"] = "default"
-        kwargs["cache_config"] = CacheConfig(strategy="auto")
     return BedrockModel(**kwargs)
 
 
@@ -446,23 +437,16 @@ def _make_order_status_agent(trace_attributes: dict) -> Agent:
     kwargs: dict = {
         "name": "order_status_agent",
         "system_prompt": (
-            SHARED_HANDBOOK
-            + "\n\n## This agent's job\n\n"
-            "You look up customer orders and check their shipping status. "
-            "Given a customer email, use lookup_orders to find their orders, "
-            "then get_order for details, then check_shipping for tracking status. "
-            "Return a structured summary of what you found."
+            "You are an order-lookup sub-agent for Telescope Shop. Given a customer email and question, call lookup_orders to find their orders, then get_order for details, then check_shipping for tracking status. Return a concise structured summary with order IDs, statuses, dates, tracking numbers, and ETAs. Never invent data not returned by tools. If lookup_orders returns empty, say so. If a tool fails, report the failure plainly — do not retry more than once."
         ),
         "tools": [lookup_orders, get_order, check_shipping],
         "callback_handler": None,
         "trace_attributes": attrs,
     }
-    # Only Claude models support Strands' auto cachePoint injection. When
-    # falling back to the supervisor's Haiku ARN (no Nova override), keep
-    # caching on; otherwise disable to silence the SDK warning.
+    # Sub-agents don't cache.
     model = _make_model(
         _order_status_model_id or _supervisor_model_id,
-        enable_caching=not _order_status_model_id,
+        enable_caching=False,
     )
     if model:
         kwargs["model"] = model
@@ -474,22 +458,16 @@ def _make_refund_agent(trace_attributes: dict) -> Agent:
     kwargs: dict = {
         "name": "refund_agent",
         "system_prompt": (
-            SHARED_HANDBOOK
-            + "\n\n## This agent's job\n\n"
-            "You process refunds for customer orders. "
-            "Given a customer email, use lookup_orders to find their order, "
-            "then get_order to confirm details and status, "
-            "then refund_order to process the refund. "
-            "Report success or failure clearly including any error messages."
+            "You are a refund sub-agent for Telescope Shop. Given a customer email and refund request, call lookup_orders to find their order, get_order to confirm details, then refund_order to process the refund. Report success with the transaction ID, or failure with the error message. Never claim a refund succeeded if refund_order returned an error. If multiple orders exist and the request is ambiguous, return a list and stop — do not guess."
         ),
         "tools": [lookup_orders, get_order, refund_order],
         "callback_handler": None,
         "trace_attributes": attrs,
     }
-    # Nova Micro: no caching, lower-quality model accepted for the rare refund path.
+    # Sub-agents don't cache.
     model = _make_model(
         _refund_model_id or _supervisor_model_id,
-        enable_caching=not _refund_model_id,
+        enable_caching=False,
     )
     if model:
         kwargs["model"] = model
