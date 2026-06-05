@@ -39,6 +39,15 @@ components:
     resources:
       limits:
         memory: 512Mi
+  kafka:
+    # The chart default of 600Mi OOM-kills the broker: JVM heap (-Xmx400M) plus
+    # off-heap (metaspace, direct buffers) plus log-segment page cache exceeds the
+    # cgroup limit under load. When Kafka crash-loops, the accounting consumer can't
+    # read the "orders" topic and the accounting.order table stays empty. 1Gi gives
+    # the ~600M of non-heap headroom Kafka actually needs. (Heap stays 400M.)
+    resources:
+      limits:
+        memory: 1Gi
   frontend-proxy:
     envOverrides:
       - name: ENVOY_ADDR
