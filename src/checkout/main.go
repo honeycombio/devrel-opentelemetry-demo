@@ -420,8 +420,8 @@ func (cs *checkout) PlaceOrder(ctx context.Context, req *pb.PlaceOrderRequest) (
 		logger.Info(fmt.Sprintf("order confirmation email sent to %q", req.Email))
 	}
 
-	// send to kafka only if kafka broker address is set
-	if cs.kafkaBrokerSvcAddr != "" {
+	// send to kafka only if kafka broker address is set and client initialized successfully
+	if cs.kafkaBrokerSvcAddr != "" && cs.KafkaProducerClient != nil {
 		logger.Info("sending to postProcessor")
 		cs.sendToPostProcessor(ctx, orderResult)
 	}
