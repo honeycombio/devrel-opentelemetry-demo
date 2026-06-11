@@ -220,13 +220,23 @@ config:
               statements:
                   - 'set(attributes["marker.message"], ExtractPatterns(body, "(?P<msg>Flag changed: [^\n]+)")["msg"])'
 
-    # Promote Strands-style gen_ai.* span-event attributes onto the parent
-    # span so the latest-semconv attribute form (gen_ai.input.messages /
-    # gen_ai.output.messages / gen_ai.system_instructions / gen_ai.usage.*)
-    # shows up directly on chat spans. Strands emits these on
-    # `gen_ai.client.inference.operation.details` events — this transform
-    # copies each attribute up to span level when present.
-    transform/genai_span_events_to_attributes:
+    # ── GenAI span shaping ──────────────────────────────────────────────
+    # Strands (storechat) and product-reviews emit GenAI telemetry that needs
+    # shaping before it's useful in Honeycomb. Split into three small
+    # processors so each job is self-contained:
+    #   1. genai_copy_events_to_span      — promote Strands' span-EVENT
+    #      attributes onto the parent span. Pure copy, no math.
+    #   2. genai_canonicalize_token_names — rename cache attributes to the
+    #      semconv 1.41 canonical dotted form (covers both sources).
+    #   3. genai_fix_token_counts         — reconstruct semconv-correct token
+    #      counts (input_tokens must include cached tokens).
+
+    # 1. COPY TO SPAN — Strands emits messages + usage on a
+    #    `gen_ai.client.inference.operation.details` span event; copy each
+    #    attribute up to the span verbatim so downstream reads them as span
+    #    attributes. product-reviews already sets these directly on the span,
+    #    so it skips this step and is handled entirely by (2).
+    transform/genai_copy_events_to_span:
         error_mode: ignore
         trace_statements:
             - context: spanevent
@@ -239,64 +249,62 @@ config:
                   - set(span.attributes["gen_ai.usage.input_tokens"], attributes["gen_ai.usage.input_tokens"]) where attributes["gen_ai.usage.input_tokens"] != nil
                   - set(span.attributes["gen_ai.usage.output_tokens"], attributes["gen_ai.usage.output_tokens"]) where attributes["gen_ai.usage.output_tokens"] != nil
                   - set(span.attributes["gen_ai.usage.total_tokens"], attributes["gen_ai.usage.total_tokens"]) where attributes["gen_ai.usage.total_tokens"] != nil
-                  # Strands emits the older underscore-only attribute shape
-                  # (`gen_ai.usage.cache_read_input_tokens`). Semconv 1.41+
-                  # canonical is `gen_ai.usage.cache_read.input_tokens` — the
-                  # Honeycomb UI gen_ai surfaces look up the dotted form.
-                  # Promote to the dotted form here.
-                  - set(span.attributes["gen_ai.usage.cache_read.input_tokens"], attributes["gen_ai.usage.cache_read_input_tokens"]) where attributes["gen_ai.usage.cache_read_input_tokens"] != nil
-                  - set(span.attributes["gen_ai.usage.cache_write.input_tokens"], attributes["gen_ai.usage.cache_write_input_tokens"]) where attributes["gen_ai.usage.cache_write_input_tokens"] != nil
-                  # uncached = total input the model processed this turn,
-                  # minus what came from cache. Strands' input_tokens equals
-                  # (truly uncached) + cache_read but excludes cache_write,
-                  # so we subtract cache_read and add cache_write back in
-                  # to get "everything not served from cache." Content
-                  # being newly cached is still being processed this turn
-                  # — it isn't free.
-                  - set(span.attributes["demo.gen_ai.usage.uncached_input_tokens"], attributes["gen_ai.usage.input_tokens"] - attributes["gen_ai.usage.cache_read_input_tokens"]) where attributes["gen_ai.usage.input_tokens"] != nil and attributes["gen_ai.usage.cache_read_input_tokens"] != nil
-                  - set(span.attributes["demo.gen_ai.usage.uncached_input_tokens"], attributes["gen_ai.usage.input_tokens"]) where attributes["gen_ai.usage.input_tokens"] != nil and attributes["gen_ai.usage.cache_read_input_tokens"] == nil
-                  - set(span.attributes["demo.gen_ai.usage.uncached_input_tokens"], span.attributes["demo.gen_ai.usage.uncached_input_tokens"] + attributes["gen_ai.usage.cache_write_input_tokens"]) where span.attributes["demo.gen_ai.usage.uncached_input_tokens"] != nil and attributes["gen_ai.usage.cache_write_input_tokens"] != nil
+                  # Strands reports cache tokens in the older underscore shape.
+                  # Copy verbatim — (2) canonicalises the names.
+                  - set(span.attributes["gen_ai.usage.cache_read_input_tokens"], attributes["gen_ai.usage.cache_read_input_tokens"]) where attributes["gen_ai.usage.cache_read_input_tokens"] != nil
+                  - set(span.attributes["gen_ai.usage.cache_write_input_tokens"], attributes["gen_ai.usage.cache_write_input_tokens"]) where attributes["gen_ai.usage.cache_write_input_tokens"] != nil
                   - set(span.attributes["gen_ai.response.finish_reasons"], attributes["gen_ai.response.finish_reasons"]) where attributes["gen_ai.response.finish_reasons"] != nil
                   - set(span.attributes["gen_ai.request.model"], attributes["gen_ai.request.model"]) where attributes["gen_ai.request.model"] != nil
                   - set(span.attributes["gen_ai.operation.name"], attributes["gen_ai.operation.name"]) where attributes["gen_ai.operation.name"] != nil
-            # Also compute demo.gen_ai.usage.uncached_input_tokens at the span
-            # level — many SDKs set gen_ai.usage.* directly as span attributes
-            # rather than as span event attributes, so the spanevent statements
-            # above never fire for that path.
+
+    # 2. CANONICALISE TOKEN NAMES — rename cache attributes to the semconv 1.41
+    #    canonical dotted form. Runs at span level (not in the copy step)
+    #    because product-reviews sets a non-canonical cache_write.input_tokens
+    #    directly on the span and never passes through copy; handling it here in
+    #    one place covers that and Strands' promoted underscore names alike.
+    transform/genai_canonicalize_token_names:
+        error_mode: ignore
+        trace_statements:
             - context: span
               conditions:
                   - attributes["gen_ai.usage.input_tokens"] != nil
               statements:
-                  # Normalize to OTel semconv 1.41+: gen_ai.usage.input_tokens should
-                  # be the *total* prompt size (cached + uncached), with
-                  # cache_read.input_tokens as a subset. Some SDKs (e.g. Strands)
-                  # emit the older shape where input_tokens is the uncached portion
-                  # only and cache_read_input_tokens is reported additively.
-                  # Detect by cache_read > input — only possible under the old shape
-                  # — and rewrite input_tokens in place to be the total.
-                  - set(attributes["gen_ai.usage.input_tokens"], attributes["gen_ai.usage.input_tokens"] + attributes["gen_ai.usage.cache_read_input_tokens"]) where attributes["gen_ai.usage.cache_read_input_tokens"] != nil and attributes["gen_ai.usage.cache_read_input_tokens"] > attributes["gen_ai.usage.input_tokens"]
-                  # Promote Strands' underscore-only attribute shape to the
-                  # semconv 1.41+ canonical dotted form, so the Honeycomb UI
-                  # gen_ai surfaces (which look up the dotted name) light up.
+                  # Strands -> underscore (cache_read_input_tokens /
+                  # cache_write_input_tokens); product-reviews -> non-canonical
+                  # cache_write.input_tokens. Targets: cache_read.input_tokens and
+                  # cache_creation.input_tokens (the registered write attribute).
                   - set(attributes["gen_ai.usage.cache_read.input_tokens"], attributes["gen_ai.usage.cache_read_input_tokens"]) where attributes["gen_ai.usage.cache_read_input_tokens"] != nil and attributes["gen_ai.usage.cache_read.input_tokens"] == nil
-                  - set(attributes["gen_ai.usage.cache_write.input_tokens"], attributes["gen_ai.usage.cache_write_input_tokens"]) where attributes["gen_ai.usage.cache_write_input_tokens"] != nil and attributes["gen_ai.usage.cache_write.input_tokens"] == nil
-                  # Re-check the old-shape detection against the dotted form.
-                  # The underscore-only check above misses services that emit
-                  # the dotted form natively (e.g. product-reviews) — without
-                  # this second pass, their input_tokens stays as the
-                  # uncached-only portion and the uncached computation below
-                  # underflows negative.
-                  - set(attributes["gen_ai.usage.input_tokens"], attributes["gen_ai.usage.input_tokens"] + attributes["gen_ai.usage.cache_read.input_tokens"]) where attributes["gen_ai.usage.cache_read.input_tokens"] != nil and attributes["gen_ai.usage.cache_read.input_tokens"] > attributes["gen_ai.usage.input_tokens"]
-                  # uncached = total input the model processed this turn,
-                  # minus what came from cache. Strands' input_tokens equals
-                  # (truly uncached) + cache_read but excludes cache_write,
-                  # so we subtract cache_read and add cache_write back in
-                  # to get "everything not served from cache." Content
-                  # being newly cached is still being processed this turn
-                  # — it isn't free.
+                  - set(attributes["gen_ai.usage.cache_creation.input_tokens"], attributes["gen_ai.usage.cache_write_input_tokens"]) where attributes["gen_ai.usage.cache_write_input_tokens"] != nil and attributes["gen_ai.usage.cache_creation.input_tokens"] == nil
+                  - set(attributes["gen_ai.usage.cache_creation.input_tokens"], attributes["gen_ai.usage.cache_write.input_tokens"]) where attributes["gen_ai.usage.cache_write.input_tokens"] != nil and attributes["gen_ai.usage.cache_creation.input_tokens"] == nil
+
+    # 3. FIX TOKEN COUNTS — runs on span attributes only, after names are
+    #    canonical. Covers Strands (events) and product-reviews (native span
+    #    attrs) alike in one span-context pass.
+    #
+    #    ASSUMPTION: our SDKs report gen_ai.usage.input_tokens as the UNCACHED
+    #    portion only (raw Bedrock inputTokens), with cache read/creation counted
+    #    separately. Verified for Strands + product-reviews. If an SDK is ever
+    #    upgraded to emit semconv-compliant input_tokens (already inclusive of
+    #    cached tokens), revisit — the additive step below would double-count.
+    transform/genai_fix_token_counts:
+        error_mode: ignore
+        trace_statements:
+            - context: span
+              conditions:
+                  - attributes["gen_ai.usage.input_tokens"] != nil
+              statements:
+                  # Roll both cache components into input_tokens so it reflects the
+                  # full prompt size. Semconv 1.41: cache_read.input_tokens and
+                  # cache_creation.input_tokens SHOULD be included in input_tokens.
+                  - set(attributes["gen_ai.usage.input_tokens"], attributes["gen_ai.usage.input_tokens"] + attributes["gen_ai.usage.cache_read.input_tokens"]) where attributes["gen_ai.usage.cache_read.input_tokens"] != nil
+                  - set(attributes["gen_ai.usage.input_tokens"], attributes["gen_ai.usage.input_tokens"] + attributes["gen_ai.usage.cache_creation.input_tokens"]) where attributes["gen_ai.usage.cache_creation.input_tokens"] != nil
+                  # demo.* convenience metric: input tokens NOT served from cache
+                  # — i.e. processed fresh this turn (uncached + newly cached),
+                  # which is the full input minus what was read from cache. Newly
+                  # cached content still costs (Bedrock bills cache writes), so it
+                  # belongs here, not with the free cache reads.
                   - set(attributes["demo.gen_ai.usage.uncached_input_tokens"], attributes["gen_ai.usage.input_tokens"] - attributes["gen_ai.usage.cache_read.input_tokens"]) where attributes["gen_ai.usage.cache_read.input_tokens"] != nil
                   - set(attributes["demo.gen_ai.usage.uncached_input_tokens"], attributes["gen_ai.usage.input_tokens"]) where attributes["gen_ai.usage.cache_read.input_tokens"] == nil
-                  - set(attributes["demo.gen_ai.usage.uncached_input_tokens"], attributes["demo.gen_ai.usage.uncached_input_tokens"] + attributes["gen_ai.usage.cache_write.input_tokens"]) where attributes["demo.gen_ai.usage.uncached_input_tokens"] != nil and attributes["gen_ai.usage.cache_write.input_tokens"] != nil
 
     # Promote `exception.type` from the OTel `exception` span event onto
     # the span itself as `error.type`, per the gen_ai/general-error
@@ -457,20 +465,23 @@ config:
           - otlp/bindplane
         processors:
           - filter/drop_flagd_spans
-          - transform/genai_span_events_to_attributes
+          - transform/genai_copy_events_to_span
+          - transform/genai_canonicalize_token_names
+          - transform/genai_fix_token_counts
           - transform/exception_type_to_error_type
           - transform/service_names
           - transform/attribution
 
       # Eval anchor pipeline. Pushes one span per chatbot turn to Kafka;
       # the llm-evals service consumes and runs Bias/Hallucination/Relevance.
-      # genai_span_events_to_attributes runs first to promote Strands-style
-      # event attributes onto the span — without that, invoke_agent spans
-      # arrive at the consumer with gen_ai.input.messages still on the
-      # span event and the consumer skips them.
+      # genai_copy_events_to_span runs first to promote Strands-style event
+      # attributes onto the span — without that, invoke_agent spans arrive at
+      # the consumer with gen_ai.input.messages still on the span event and the
+      # consumer skips them. fix_token_counts keeps the eval anchor's token
+      # counts consistent with the main traces pipeline.
       traces/evals:
         receivers: [otlp]
-        processors: [transform/genai_span_events_to_attributes, filter/keep_eval_anchors]
+        processors: [transform/genai_copy_events_to_span, transform/genai_canonicalize_token_names, transform/genai_fix_token_counts, filter/keep_eval_anchors]
         exporters: [kafka/llm-evals]
 
       # Isolated pipeline that publishes a Honeycomb marker per
