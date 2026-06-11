@@ -44,7 +44,10 @@ while [[ "$1" == "--cloud" || "$1" == "-c" || "$1" == "--agent-load" || "$1" == 
             shift 2
             ;;
         --agent-load|-a)
-            AGENT_LOAD_ENABLED="true"
+            # "yes" (not "true"/"1") so skaffold's helm --set keeps it a
+            # string — the chart schema rejects a coerced boolean/number for
+            # envOverrides[].value. The loadgen accepts true/yes/on/1.
+            AGENT_LOAD_ENABLED="yes"
             shift
             ;;
     esac
