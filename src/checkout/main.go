@@ -424,6 +424,8 @@ func (cs *checkout) PlaceOrder(ctx context.Context, req *pb.PlaceOrderRequest) (
 	if cs.kafkaBrokerSvcAddr != "" && cs.KafkaProducerClient != nil {
 		logger.Info("sending to postProcessor")
 		cs.sendToPostProcessor(ctx, orderResult)
+	} else if cs.kafkaBrokerSvcAddr != "" {
+		logger.WarnContext(ctx, "skipping post-processor: KafkaProducerClient not initialized", "kafka.broker", cs.kafkaBrokerSvcAddr)
 	}
 
 	resp := &pb.PlaceOrderResponse{Order: orderResult}
