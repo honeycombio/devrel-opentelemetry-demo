@@ -27,6 +27,13 @@ Press Ctrl+C to exit
 
 The port number (9191, 9192, etc.) increments if a previous port-forward is still bound. Use whatever port is shown.
 
+### Collector configuration: local vs. production
+
+For **local dev deployments** (`{user}-local` via `./run`), the collector
+config is in `skaffold-config/demo-values.yaml` — Skaffold passes it to
+Helm as a values override. The files under `deploy/config-files/collector/`
+are for the **production cluster** (`devrel-demo` namespace on EKS) only.
+
 ### Common issues
 
 - **Multiple skaffold processes**: If previous runs are still alive (holding port-forwards), kill them before starting a new run. Check with `ps aux | grep skaffold`.
