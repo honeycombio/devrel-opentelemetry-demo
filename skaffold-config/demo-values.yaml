@@ -339,6 +339,14 @@ opentelemetry-collector:
     exporters:
       debug/detailed:
         verbosity: detailed
+      awss3:
+        s3uploader:
+          region: us-east-1
+          s3_bucket: takeout-telemetry-samples
+          s3_prefix: captured/some_test_data_is_better_than_none
+          s3_partition_format: '%Y/%m/%d/%H'
+          file_prefix: some_test_data_is_better_than_none_
+        marshaler: otlp_json
       otlp/honeycomb:
         endpoint: api.honeycomb.io:443
         headers:
@@ -396,6 +404,7 @@ opentelemetry-collector:
         metrics:
           exporters:
             - otlp/honeycomb
+            - awss3
           processors:
             - transform/service_names
             - transform/attribution
@@ -405,6 +414,7 @@ opentelemetry-collector:
             - filelog
           exporters:
             - otlp/honeycomb
+            - awss3
           processors:
             - transform/parse_json_body
             - transform/service_names
@@ -417,6 +427,7 @@ opentelemetry-collector:
           exporters:
             - otlp/honeycomb
             - spanmetrics
+            - awss3
           processors:
             - filter/drop_flagd_spans
             - transform/genai_copy_events_to_span
