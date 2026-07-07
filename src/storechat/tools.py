@@ -6,6 +6,7 @@ import httpx
 from strands import tool
 
 from genproto import demo_pb2, demo_pb2_grpc
+from telemetry import record_tool_call
 
 ACCOUNTING_ADDR = os.environ.get("ACCOUNTING_ADDR", "accounting:5060")
 SHIPPING_ADDR = os.environ.get("SHIPPING_ADDR", "http://shipping:8080")
@@ -52,6 +53,7 @@ def _order_detail_to_dict(d) -> dict:
 
 
 @tool
+@record_tool_call
 def lookup_orders(email: str) -> str:
     """Find all orders for a customer by their email address.
 
@@ -69,6 +71,7 @@ def lookup_orders(email: str) -> str:
 
 
 @tool
+@record_tool_call
 def get_order(order_id: str) -> str:
     """Get full details for a specific order including items, shipping, and payment status.
 
@@ -85,6 +88,7 @@ def get_order(order_id: str) -> str:
 
 
 @tool
+@record_tool_call
 def check_shipping(tracking_id: str) -> str:
     """Check the shipping status for a tracking ID.
 
@@ -100,6 +104,7 @@ def check_shipping(tracking_id: str) -> str:
 
 
 @tool
+@record_tool_call
 def refund_order(order_id: str, email: str) -> str:
     """Process a refund for an order. Requires the customer's email for verification.
 

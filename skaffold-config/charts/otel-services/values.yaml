@@ -105,8 +105,12 @@ services:
         value: "8013"
       - name: FLAGD_OFREP_PORT
         value: "8016"
+      # gen_ai_latest_experimental: latest GenAI semconv shape.
+      # gen_ai_tool_definitions: gen_ai.tool.definitions on invoke_agent spans.
+      # gen_ai_use_latest_invocation_tokens: invoke_agent usage tokens scoped
+      #   to the current invocation, not the agent's accumulated totals.
       - name: OTEL_SEMCONV_STABILITY_OPT_IN
-        value: "gen_ai_latest_experimental"
+        value: "gen_ai_latest_experimental,gen_ai_tool_definitions,gen_ai_use_latest_invocation_tokens"
       - name: OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT
         value: "true"
 

@@ -3,6 +3,7 @@ import os
 from strands import Agent, tool
 from strands.models.bedrock import BedrockModel
 
+from telemetry import record_tool_call
 from tools import check_shipping, get_order, lookup_orders, refund_order
 
 # Bedrock inference profile ARNs per agent role. Supervisor stays on Haiku 4.5
@@ -408,6 +409,11 @@ wrong.
 """
 
 
+# Shared between the Bedrock request config and gen_ai.request.max_tokens
+# trace attributes so the reported value can't drift from the actual request.
+MAX_TOKENS = 1024
+
+
 def _make_model(model_id: str, *, enable_caching: bool) -> BedrockModel | None:
     if not model_id:
         return None
@@ -421,7 +427,7 @@ def _make_model(model_id: str, *, enable_caching: bool) -> BedrockModel | None:
     # message-tail breakpoint). With ~1.5 LLM calls per chat span, the auto
     # breakpoint writes deltas that are rarely re-read, and the write tax
     # exceeds the read savings.
-    kwargs: dict = {"model_id": model_id, "max_tokens": 1024}
+    kwargs: dict = {"model_id": model_id, "max_tokens": MAX_TOKENS}
     if enable_caching:
         kwargs["cache_prompt"] = "default"
         kwargs["cache_tools"] = "default"
@@ -430,10 +436,30 @@ def _make_model(model_id: str, *, enable_caching: bool) -> BedrockModel | None:
 
 # --- Agent factory functions ---
 # Created per-request so trace_attributes (conversation ID) can be set.
+#
+# Strands stamps trace_attributes on *every* span the agent creates
+# (invoke_agent, chat, execute_tool, event-loop cycles), but the GenAI
+# semconv allows each attribute only on specific span types (e.g.
+# gen_ai.agent.name belongs on invoke_agent and execute_tool spans, not on
+# chat inference spans). The collector's genai transform deletes the
+# attributes from the span types whose spec tables don't include them.
+
+
+def _agent_trace_attributes(trace_attributes: dict, *, name: str, description: str) -> dict:
+    return {
+        **trace_attributes,
+        "gen_ai.agent.name": name,
+        "gen_ai.agent.description": description,
+        "gen_ai.request.max_tokens": MAX_TOKENS,
+    }
 
 
 def _make_order_status_agent(trace_attributes: dict) -> Agent:
-    attrs = {**trace_attributes, "gen_ai.agent.name": "order_status_agent"}
+    attrs = _agent_trace_attributes(
+        trace_attributes,
+        name="order_status_agent",
+        description="Looks up a customer's orders, order details, and shipping status.",
+    )
     kwargs: dict = {
         "name": "order_status_agent",
         "system_prompt": (
@@ -454,7 +480,11 @@ def _make_order_status_agent(trace_attributes: dict) -> Agent:
 
 
 def _make_refund_agent(trace_attributes: dict) -> Agent:
-    attrs = {**trace_attributes, "gen_ai.agent.name": "refund_agent"}
+    attrs = _agent_trace_attributes(
+        trace_attributes,
+        name="refund_agent",
+        description="Confirms and processes order refunds for customers.",
+    )
     kwargs: dict = {
         "name": "refund_agent",
         "system_prompt": (
@@ -514,6 +544,7 @@ def create_supervisor(
     refund_agent = _make_refund_agent(trace_attrs)
 
     @tool
+    @record_tool_call
     def check_order_status(question: str, email: str) -> str:
         """Look up a customer's orders and check shipping status.
 
@@ -530,6 +561,7 @@ def create_supervisor(
         return str(result)
 
     @tool
+    @record_tool_call
     def process_refund(question: str, email: str) -> str:
         """Process a refund for a customer's order.
 
@@ -545,7 +577,11 @@ def create_supervisor(
         result = refund_agent(f"Customer email: {email}\nRequest: {question}")
         return str(result)
 
-    supervisor_attrs = {**trace_attrs, "gen_ai.agent.name": "supervisor"}
+    supervisor_attrs = _agent_trace_attributes(
+        trace_attrs,
+        name="supervisor",
+        description="Front-line customer support assistant that routes order-status and refund requests to sub-agents.",
+    )
     kwargs: dict = {
         "name": "supervisor",
         "system_prompt": SUPERVISOR_SYSTEM_PROMPT,

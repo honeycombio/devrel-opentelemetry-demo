@@ -170,22 +170,24 @@ opentelemetry-collector:
               - set(attributes["meta.annotation_type"], "span_event")
       # ── GenAI span shaping ──────────────────────────────────────────
       # Strands (storechat) and product-reviews emit GenAI telemetry that
-      # needs shaping before it's useful in Honeycomb. Split into three
-      # small processors so each job is self-contained:
-      #   1. genai_copy_events_to_span      — promote Strands' span-EVENT
-      #      attributes onto the parent span. Pure copy, no math.
-      #   2. genai_canonicalize_token_names — rename cache attributes to the
-      #      semconv 1.41 canonical dotted form (covers both sources).
-      #   3. genai_fix_token_counts         — reconstruct semconv-correct
-      #      token counts (input_tokens must include cached tokens).
-
-      # 1. COPY TO SPAN — Strands emits messages + usage on a
-      #    `gen_ai.client.inference.operation.details` span event; copy each
-      #    attribute up to the span verbatim. product-reviews already sets
-      #    these on the span, so it skips this step (handled by 2 + 3).
-      transform/genai_copy_events_to_span:
+      # needs shaping before it's useful in Honeycomb. One processor,
+      # staged statement groups that run in order:
+      #   1. COPY TO SPAN          — promote Strands' span-EVENT attributes
+      #      onto the parent span. Pure copy, no math.
+      #   2. CANONICALISE NAMES    — rename cache attributes to the semconv
+      #      1.41 canonical dotted form (covers both sources).
+      #   3. FIX TOKEN COUNTS      — reconstruct semconv-correct token
+      #      counts (input_tokens must include cached tokens).
+      #   4. STRANDS SEMCONV SHAPE — per-operation attribute placement for
+      #      Strands spans per the latest GenAI semconv tables.
+      transform/genai_semconv:
         error_mode: ignore
         trace_statements:
+          # 1. COPY TO SPAN — Strands emits messages + usage on a
+          #    `gen_ai.client.inference.operation.details` span event; copy
+          #    each attribute up to the span verbatim. product-reviews
+          #    already sets these on the span, so it skips this step
+          #    (handled by 2 + 3).
           - context: spanevent
             conditions:
               - IsMatch(name, "^gen_ai\\..*")
@@ -204,14 +206,12 @@ opentelemetry-collector:
               - set(span.attributes["gen_ai.request.model"], attributes["gen_ai.request.model"]) where attributes["gen_ai.request.model"] != nil
               - set(span.attributes["gen_ai.operation.name"], attributes["gen_ai.operation.name"]) where attributes["gen_ai.operation.name"] != nil
 
-      # 2. CANONICALISE TOKEN NAMES — rename cache attributes to the semconv
-      #    1.41 canonical dotted form. Runs at span level (not in copy)
-      #    because product-reviews sets a non-canonical
-      #    cache_write.input_tokens directly on the span and never passes
-      #    through copy; handling it here covers both sources alike.
-      transform/genai_canonicalize_token_names:
-        error_mode: ignore
-        trace_statements:
+          # 2. CANONICALISE TOKEN NAMES — rename cache attributes to the
+          #    semconv 1.41 canonical dotted form. Runs at span level (not
+          #    in copy) because product-reviews sets a non-canonical
+          #    cache_write.input_tokens directly on the span and never
+          #    passes through copy; handling it here covers both sources
+          #    alike.
           - context: span
             conditions:
               - attributes["gen_ai.usage.input_tokens"] != nil
@@ -224,19 +224,17 @@ opentelemetry-collector:
               - set(attributes["gen_ai.usage.cache_creation.input_tokens"], attributes["gen_ai.usage.cache_write_input_tokens"]) where attributes["gen_ai.usage.cache_write_input_tokens"] != nil and attributes["gen_ai.usage.cache_creation.input_tokens"] == nil
               - set(attributes["gen_ai.usage.cache_creation.input_tokens"], attributes["gen_ai.usage.cache_write.input_tokens"]) where attributes["gen_ai.usage.cache_write.input_tokens"] != nil and attributes["gen_ai.usage.cache_creation.input_tokens"] == nil
 
-      # 3. FIX TOKEN COUNTS — runs on span attributes only, after names are
-      #    canonical. Covers Strands (events) and product-reviews (native
-      #    span attrs) alike in one span-context pass.
-      #
-      #    ASSUMPTION: our SDKs report gen_ai.usage.input_tokens as the
-      #    UNCACHED portion only (raw Bedrock inputTokens), with cache
-      #    read/creation counted separately. Verified for Strands +
-      #    product-reviews. If an SDK is upgraded to emit semconv-compliant
-      #    input_tokens (already inclusive of cached tokens), revisit — the
-      #    additive step below would double-count.
-      transform/genai_fix_token_counts:
-        error_mode: ignore
-        trace_statements:
+          # 3. FIX TOKEN COUNTS — runs on span attributes only, after names
+          #    are canonical. Covers Strands (events) and product-reviews
+          #    (native span attrs) alike in one span-context pass.
+          #
+          #    ASSUMPTION: our SDKs report gen_ai.usage.input_tokens as the
+          #    UNCACHED portion only (raw Bedrock inputTokens), with cache
+          #    read/creation counted separately. Verified for Strands +
+          #    product-reviews. If an SDK is upgraded to emit
+          #    semconv-compliant input_tokens (already inclusive of cached
+          #    tokens), revisit — the additive step below would
+          #    double-count.
           - context: span
             conditions:
               - attributes["gen_ai.usage.input_tokens"] != nil
@@ -252,6 +250,110 @@ opentelemetry-collector:
               # the full input minus what was read from cache.
               - set(attributes["demo.gen_ai.usage.uncached_input_tokens"], attributes["gen_ai.usage.input_tokens"] - attributes["gen_ai.usage.cache_read.input_tokens"]) where attributes["gen_ai.usage.cache_read.input_tokens"] != nil
               - set(attributes["demo.gen_ai.usage.uncached_input_tokens"], attributes["gen_ai.usage.input_tokens"]) where attributes["gen_ai.usage.cache_read.input_tokens"] == nil
+
+          # 4. STRANDS SEMCONV SHAPING — runs after 1-3 so token
+          #    names/counts are already canonical. Strands 1.45.x stamps
+          #    framework metadata on every span it creates; the latest GenAI
+          #    semconv (open-telemetry/semantic-conventions-genai) allows
+          #    each attribute only on specific span types. Reshape so each
+          #    attribute appears only where its spec table includes it, and
+          #    provider.name is the *model provider* on inference spans
+          #    (aws.bedrock — a well-known value MUST be used when it
+          #    applies) and absent on in-process invoke_agent / execute_tool
+          #    spans, whose spec tables have no provider attribute.
+          #    Conditioned on the hardcoded provider.name=strands-agents
+          #    marker so it self-scopes to Strands telemetry regardless of
+          #    which service emits it.
+          - context: span
+            conditions:
+              - attributes["gen_ai.provider.name"] == "strands-agents" and attributes["gen_ai.operation.name"] == "chat"
+            statements:
+              # Client-observed model timing is not a semconv span attribute
+              # (gen_ai.server.* exist only as metrics); keep the data under
+              # the demo.* namespace.
+              - set(attributes["demo.gen_ai.server.time_to_first_token"], attributes["gen_ai.server.time_to_first_token"]) where attributes["gen_ai.server.time_to_first_token"] != nil
+              - set(attributes["demo.gen_ai.server.request.duration"], attributes["gen_ai.server.request.duration"]) where attributes["gen_ai.server.request.duration"] != nil
+              # Attributes not in the semconv inference-span table.
+              - delete_key(attributes, "gen_ai.server.time_to_first_token")
+              - delete_key(attributes, "gen_ai.server.request.duration")
+              - delete_key(attributes, "gen_ai.usage.prompt_tokens")
+              - delete_key(attributes, "gen_ai.usage.completion_tokens")
+              - delete_key(attributes, "gen_ai.usage.total_tokens")
+              - delete_key(attributes, "gen_ai.usage.cache_read_input_tokens")
+              - delete_key(attributes, "gen_ai.usage.cache_write_input_tokens")
+              - delete_key(attributes, "gen_ai.agent.name")
+              - delete_key(attributes, "gen_ai.agent.description")
+              - delete_key(attributes, "gen_ai.event.start_time")
+              - delete_key(attributes, "gen_ai.event.end_time")
+              # Inference spans: name SHOULD be `{operation} {request.model}`,
+              # kind SHOULD be CLIENT (remote model over HTTP), provider MUST
+              # be aws.bedrock.
+              - set(name, Concat(["chat ", attributes["gen_ai.request.model"]], "")) where attributes["gen_ai.request.model"] != nil
+              - set(kind, SPAN_KIND_CLIENT)
+              - set(attributes["gen_ai.provider.name"], "aws.bedrock")
+          - context: span
+            conditions:
+              - attributes["gen_ai.provider.name"] == "strands-agents" and attributes["gen_ai.operation.name"] == "invoke_agent"
+            statements:
+              - delete_key(attributes, "gen_ai.usage.prompt_tokens")
+              - delete_key(attributes, "gen_ai.usage.completion_tokens")
+              - delete_key(attributes, "gen_ai.usage.total_tokens")
+              - delete_key(attributes, "gen_ai.usage.cache_read_input_tokens")
+              - delete_key(attributes, "gen_ai.usage.cache_write_input_tokens")
+              - delete_key(attributes, "gen_ai.agent.tools")
+              - delete_key(attributes, "system_prompt")
+              - delete_key(attributes, "gen_ai.event.start_time")
+              - delete_key(attributes, "gen_ai.event.end_time")
+              # invoke_agent usage aggregates the child chat spans;
+              # fix_token_counts computes demo.* uncached here too, and
+              # keeping it would double-count in SUMs and skew the SLI.
+              - delete_key(attributes, "demo.gen_ai.usage.uncached_input_tokens")
+              # The in-process invoke_agent span table has no provider.name.
+              - delete_key(attributes, "gen_ai.provider.name")
+          - context: span
+            conditions:
+              - attributes["gen_ai.provider.name"] == "strands-agents" and attributes["gen_ai.operation.name"] == "execute_tool"
+            statements:
+              # execute_tool records content as gen_ai.tool.call.arguments /
+              # gen_ai.tool.call.result (set by the app), not input/output
+              # messages.
+              - delete_key(attributes, "gen_ai.input.messages")
+              - delete_key(attributes, "gen_ai.output.messages")
+              - delete_key(attributes, "gen_ai.tool.status")
+              - delete_key(attributes, "gen_ai.tool.json_schema")
+              - delete_key(attributes, "gen_ai.agent.description")
+              - delete_key(attributes, "gen_ai.request.max_tokens")
+              - delete_key(attributes, "gen_ai.event.start_time")
+              - delete_key(attributes, "gen_ai.event.end_time")
+              - delete_key(attributes, "gen_ai.provider.name")
+          - context: span
+            conditions:
+              - attributes["gen_ai.provider.name"] == "strands-agents" and attributes["gen_ai.operation.name"] == "execute_event_loop_cycle"
+            statements:
+              # Framework-internal span (custom operation, allowed); carries
+              # no model call of its own, so no content or request params.
+              - delete_key(attributes, "gen_ai.input.messages")
+              - delete_key(attributes, "gen_ai.output.messages")
+              - delete_key(attributes, "gen_ai.agent.description")
+              - delete_key(attributes, "gen_ai.request.max_tokens")
+              - delete_key(attributes, "gen_ai.event.start_time")
+              - delete_key(attributes, "gen_ai.event.end_time")
+              - delete_key(attributes, "gen_ai.provider.name")
+
+      # Promote `exception.type` from the OTel `exception` span event onto
+      # the span itself as `error.type`, per the gen_ai/general-error
+      # semconv (Conditionally Required when the operation errored). SDKs
+      # like Strands call record_exception() (which writes the event) but
+      # don't set span-level error.type. Kept to the last `.`-segment so
+      # error.type stays low-cardinality.
+      transform/exception_type_to_error_type:
+        error_mode: ignore
+        trace_statements:
+          - context: spanevent
+            conditions:
+              - name == "exception"
+            statements:
+              - set(span.attributes["error.type"], ExtractPatterns(attributes["exception.type"], "(?P<class>[^.]+)$")["class"]) where attributes["exception.type"] != nil and span.attributes["error.type"] == nil
       transform/service_names:
         error_mode: ignore
         log_statements:
@@ -419,9 +521,8 @@ opentelemetry-collector:
             - spanmetrics
           processors:
             - filter/drop_flagd_spans
-            - transform/genai_copy_events_to_span
-            - transform/genai_canonicalize_token_names
-            - transform/genai_fix_token_counts
+            - transform/genai_semconv
+            - transform/exception_type_to_error_type
             - transform/service_names
             - transform/attribution
 
@@ -430,18 +531,17 @@ opentelemetry-collector:
         # JSON, extracts gen_ai.input.messages / gen_ai.output.messages,
         # and runs scorers — no producer-side publish_eval calls needed.
         #
-        # genai_copy_events_to_span promotes Strands-style event attributes
-        # onto the span first; without it, invoke_agent spans arrive at the
-        # consumer with gen_ai.input.messages still on span events and the
-        # consumer skips them. canonicalize + fix_token_counts keep the eval
-        # anchor's token counts consistent with the main traces pipeline.
+        # genai_semconv promotes Strands-style event attributes onto the
+        # span and normalises token names/counts first; without it,
+        # invoke_agent spans arrive at the consumer with
+        # gen_ai.input.messages still on span events and the consumer skips
+        # them, and token counts would diverge from the main traces
+        # pipeline.
         traces/evals:
           receivers:
             - otlp
           processors:
-            - transform/genai_copy_events_to_span
-            - transform/genai_canonicalize_token_names
-            - transform/genai_fix_token_counts
+            - transform/genai_semconv
             - filter/keep_eval_anchors
           exporters:
             - kafka/llm-evals

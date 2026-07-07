@@ -1,5 +1,5 @@
-strands-agents[otel]
-strands-agents-tools
+strands-agents[otel]==1.45.0
+strands-agents-tools==0.8.2
 fastapi
 uvicorn[standard]
 httpx
