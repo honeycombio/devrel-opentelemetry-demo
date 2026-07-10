@@ -66,3 +66,10 @@ tf/
 deploy/Pulumi.*.bak*
 .claude/settings.local.json
 .claude/worktrees
+
+
+# Superpowers-generated planning docs (kept branch-local, never committed)
+docs/superpowers/
+
+# Generated S3-export values overlay (created by scripts/create-s3-export-values.sh)
+skaffold-config/s3-export-values.yaml
