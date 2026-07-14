@@ -48,6 +48,14 @@ config:
               - source_labels: [__meta_kubernetes_pod_name]
                 target_label: k8s.pod.name
   processors:
+    # Stamps the OTel semconv resource attribute k8s.cluster.name (from the
+    # Pulumi stack name via CLUSTER_NAME) onto every metric, so triggers and
+    # queries can break down/filter by cluster once more instances exist.
+    resource/cluster_name:
+      attributes:
+        - key: k8s.cluster.name
+          value: ${env:CLUSTER_NAME}
+          action: upsert
     transform/events:
       error_mode: ignore
       log_statements:
@@ -123,6 +131,14 @@ config:
           - otlp/metrics-dogfood
           - otlp/metrics-island-of-misfit-toys
           - otlp/metrics-dogfood-island-of-misfit-toys
+        # clusterMetrics preset's base metrics pipeline already has
+        # processors: [memory_limiter, batch] (confirmed via the deployed
+        # collector's rendered config) — this chart's merge replaces lists
+        # wholesale, so both must be repeated here alongside the new one.
+        processors:
+          - memory_limiter
+          - resource/cluster_name
+          - batch
       logs:
         processors:
           - memory_limiter

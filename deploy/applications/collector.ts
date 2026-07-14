@@ -92,6 +92,15 @@ export class Collector extends pulumi.ComponentResource {
                     "name": "REFINERY_ENDPOINT",
                     "value": pulumi.interpolate `${args.refineryHostname}:4317`
                 },
+                {
+                    // Pulumi stack name (e.g. "prod-aws", "prod") uniquely
+                    // identifies this deployment instance/cluster. Used to
+                    // populate the k8s.cluster.name resource attribute so
+                    // metrics/traces can be broken down or filtered by
+                    // cluster once more instances exist.
+                    "name": "CLUSTER_NAME",
+                    "value": pulumi.getStack()
+                },
             ]
         }
 
