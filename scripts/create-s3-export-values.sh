@@ -11,10 +11,17 @@
 # Invoked as a skaffold `before` deploy hook; safe to run standalone.
 #
 # NOTE (Helm list semantics): later values files REPLACE lists, so the
-# pipeline exporter lists below must restate the full lists from
-# skaffold-config/demo-values.yaml plus awss3. If you add an exporter to a
-# pipeline there, mirror it here. Receivers are deliberately NOT declared
-# so chart-default metrics receivers keep deep-merging in.
+# pipeline exporter/processor lists below must restate the full lists from
+# skaffold-config/demo-values.yaml plus awss3/batch. If you add an exporter
+# or processor to a pipeline there, mirror it here. Receivers are
+# deliberately NOT declared so chart-default metrics receivers keep
+# deep-merging in.
+#
+# NOTE (batch processor required): awss3exporter v0.151.0 unconditionally
+# indexes ResourceMetrics/ResourceLogs/ResourceSpans .At(0) with no length
+# check, so an empty batch (e.g. a kubeletstats scrape with nothing new)
+# panics and crash-loops the collector. `batch` never forwards an empty
+# batch downstream, so it must run last in every pipeline that feeds awss3.
 
 set -e
 
@@ -35,6 +42,8 @@ opentelemetry-collector:
     kubeletMetrics:
       enabled: true
   config:
+    processors:
+      batch: {}
     exporters:
       awss3:
         s3uploader:
@@ -50,14 +59,33 @@ opentelemetry-collector:
             - otlp/honeycomb
             - spanmetrics
             - awss3
+          processors:
+            - filter/drop_flagd_spans
+            - transform/genai_span_events_to_attributes
+            - transform/service_names
+            - transform/attribution
+            - batch
         logs:
           exporters:
             - otlp/honeycomb
             - awss3
+          processors:
+            - transform/parse_json_body
+            - transform/service_names
+            - transform/access_log_severity
+            - transform/filelog_severity
+            - transform/pino_trace_fields
+            - transform/attribution
+            - drain
+            - batch
         metrics:
           exporters:
             - otlp/honeycomb
             - awss3
+          processors:
+            - transform/service_names
+            - transform/attribution
+            - batch
 EOF
 
 echo "s3-export: capture ON -> s3://${TELEMETRY_S3_BUCKET}/${USER}/ (${TELEMETRY_S3_REGION}), overlay $OUT"

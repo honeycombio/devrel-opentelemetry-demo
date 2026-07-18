@@ -26,11 +26,12 @@ components:
   load-generator:
     replicas: 1
     envOverrides:
-      # Agent (Bedrock-hitting) loadgen is off for locals by default to avoid
-      # multiple developer namespaces hammering the shared AWS account. The
-      # value is templated from ./run's --agent-load flag; empty = off.
-      - name: AGENT_LOAD_ENABLED
-        value: ""
+      # LOAD_PROFILE picks which loadgen task families run. Locals default to
+      # non-agentic so multiple developer namespaces don't hammer the shared
+      # AWS account's Bedrock. Value is templated from ./run's --load-profile
+      # flag (must stay envOverrides[0] — skaffold sets it by index).
+      - name: LOAD_PROFILE
+        value: "non-agentic"
   frontend:
     replicas: 1
     envOverrides:

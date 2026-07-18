@@ -295,11 +295,19 @@ def random_email() -> str:
 AI_TASK_MIN_INTERVAL_SECONDS = 600
 PASTED_EMAIL_TASK_MIN_INTERVAL_SECONDS = 600  # ~10 min/user keeps this rare
 
-# Agent (Bedrock-hitting) loadgen tasks are opt-in. Locals share one AWS
-# account; without this guard every developer's namespace would hammer
+# LOAD_PROFILE selects which task families run:
+#   "non-agentic" (default) — the standard browsing/checkout traffic only.
+#   "agentic"               — only the Bedrock-hitting AI tasks.
+#   "all"                   — both.
+# Agent (Bedrock-hitting) tasks are opt-in because locals share one AWS
+# account; without this gate every developer's namespace would hammer
 # Bedrock concurrently, making cost and CloudWatch metrics unattributable.
-# Set AGENT_LOAD_ENABLED=true in the deployed environment only.
-agent_load_enabled = os.environ.get("AGENT_LOAD_ENABLED", "").lower() in ("true", "yes", "on", "1")
+# Set LOAD_PROFILE=agentic (or all) in the deployed environment only.
+load_profile = os.environ.get("LOAD_PROFILE", "non-agentic").strip().lower()
+if load_profile not in ("agentic", "non-agentic", "all"):
+    load_profile = "non-agentic"
+agentic_enabled = load_profile in ("agentic", "all")
+non_agentic_enabled = load_profile in ("non-agentic", "all")
 
 
 class WebsiteUser(HttpUser):
@@ -315,12 +323,16 @@ class WebsiteUser(HttpUser):
 
     @task(1)
     def index(self):
+        if not non_agentic_enabled:
+            return
         with self.tracer.start_as_current_span("user_index", context=Context()):
             logging.info("User accessing index page")
             self.client.get("/")
 
     @task(10)
     def browse_product(self):
+        if not non_agentic_enabled:
+            return
         product = random.choice(products)
         with self.tracer.start_as_current_span("user_browse_product", context=Context(), attributes={"product.id": product}):
             logging.info(f"User browsing product: {product}")
@@ -328,6 +340,8 @@ class WebsiteUser(HttpUser):
 
     @task(3)
     def get_recommendations(self):
+        if not non_agentic_enabled:
+            return
         product = random.choice(products)
         with self.tracer.start_as_current_span("user_get_recommendations", context=Context(), attributes={"product.id": product}):
             logging.info(f"User getting recommendations for product: {product}")
@@ -338,6 +352,8 @@ class WebsiteUser(HttpUser):
 
     @task(1)
     def get_product_reviews(self):
+        if not non_agentic_enabled:
+            return
         product = random.choice(products)
         with self.tracer.start_as_current_span("user_get_product_reviews", context=Context(), attributes={"product.id": product}):
             logging.info(f"User getting product reviews for product: {product}")
@@ -347,7 +363,7 @@ class WebsiteUser(HttpUser):
     def ask_product_ai_assistant(self):
         # Rate-limit per user to ~1/min — this is the most expensive call
         # against product-reviews and we don't want it dominating traffic.
-        if not agent_load_enabled:
+        if not agentic_enabled:
             return
         now = time.monotonic()
         if now - self._last_ai_product_run < AI_TASK_MIN_INTERVAL_SECONDS:
@@ -436,7 +452,7 @@ class WebsiteUser(HttpUser):
         # refunds, shipping status). Rate-limit per user to ~1/min so AI
         # spend stays bounded; pick a randomized turn count so some
         # sessions are quick and some are longer.
-        if not agent_load_enabled:
+        if not agentic_enabled:
             return
         now = time.monotonic()
         if now - self._last_store_chat_run < AI_TASK_MIN_INTERVAL_SECONDS:
@@ -487,7 +503,7 @@ class WebsiteUser(HttpUser):
         # doesn't bound the user `question` size before sending it to the model,
         # so this one conversation balloons LLM input_tokens vs. a normal
         # session — a clean per-conversation token spike to investigate.
-        if not agent_load_enabled:
+        if not agentic_enabled:
             return
         now = time.monotonic()
         if now - self._last_pasted_email_run < PASTED_EMAIL_TASK_MIN_INTERVAL_SECONDS:
@@ -542,7 +558,7 @@ class WebsiteUser(HttpUser):
         # each one. lookup_orders has no pagination, so the JSON returned to the
         # refund agent grows over time and the per-conversation LLM input_tokens
         # climb with it.
-        if not agent_load_enabled:
+        if not agentic_enabled:
             return
         if get_flagd_value("storechatRefundBackupOrders") <= 0:
             return
@@ -593,6 +609,8 @@ class WebsiteUser(HttpUser):
 
     @task(3)
     def get_ads(self):
+        if not non_agentic_enabled:
+            return
         category = random.choice(categories)
         with self.tracer.start_as_current_span("user_get_ads", context=Context(), attributes={"category": str(category)}):
             logging.info(f"User getting ads for category: {category}")
@@ -603,12 +621,16 @@ class WebsiteUser(HttpUser):
 
     @task(3)
     def view_cart(self):
+        if not non_agentic_enabled:
+            return
         with self.tracer.start_as_current_span("user_view_cart", context=Context()):
             logging.info("User viewing cart")
             self.client.get("/api/cart")
 
     @task(2)
     def add_to_cart(self, user=""):
+        if not non_agentic_enabled:
+            return
         iterations = random.choice([1, 2, 3, 4, 5])
         for _ in range(iterations):
             if user == "":
@@ -629,6 +651,8 @@ class WebsiteUser(HttpUser):
 
     @task(1)
     def checkout(self):
+        if not non_agentic_enabled:
+            return
         user = str(uuid.uuid1())
         with self.tracer.start_as_current_span("user_checkout_single", context=Context(), attributes={"user.id": user}):
             self.add_to_cart(user=user)
@@ -638,6 +662,8 @@ class WebsiteUser(HttpUser):
 
     @task(1)
     def checkout_multi(self):
+        if not non_agentic_enabled:
+            return
         user = str(uuid.uuid1())
         item_count = random.choice([2, 3, 4])
         with self.tracer.start_as_current_span("user_checkout_multi", context=Context(),
@@ -675,6 +701,8 @@ class WebsiteUser(HttpUser):
 
     @task(5)
     def flood_home(self):
+        if not non_agentic_enabled:
+            return
         flood_count = get_flagd_value("loadGeneratorFloodHomepage")
         if flood_count > 0:
             with self.tracer.start_as_current_span("user_flood_home",  context=Context(), attributes={"flood.count": flood_count}):
