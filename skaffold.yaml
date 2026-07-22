@@ -98,10 +98,6 @@ build:
       context: .
       docker:
         dockerfile: src/product-catalog/Dockerfile
-    - image: product-reviews
-      context: .
-      docker:
-        dockerfile: src/product-reviews/Dockerfile
     - image: quote
       context: .
       docker:
@@ -230,7 +226,6 @@ deploy:
         setValues:
           services.llmEvals.enabled: "true"
           services.storechat.kafkaAddr: "kafka:9092"
-          services.productReviews.kafkaAddr: "kafka:9092"
         setValueTemplates:
           services.storechat.awsRegion: "{{.BEDROCK_AWS_REGION}}"
           services.storechat.bedrockHaikuProfileArn: "{{.BEDROCK_HAIKU_PROFILE_ARN}}"
@@ -251,8 +246,6 @@ deploy:
           services.llmEvals.kafkaAddr: "kafka:9092"
           services.llmEvals.imageOverride.repository: "{{if .IMAGE_REPO_llm_evals }}{{.IMAGE_REPO_llm_evals}}{{end}}"
           services.llmEvals.imageOverride.tag: "{{if .IMAGE_REPO_llm_evals }}{{.IMAGE_TAG_llm_evals}}@{{.IMAGE_DIGEST_llm_evals}}{{end}}"
-          services.productReviews.imageOverride.repository: "{{if .IMAGE_REPO_product_reviews }}{{.IMAGE_REPO_product_reviews}}{{end}}"
-          services.productReviews.imageOverride.tag: "{{if .IMAGE_REPO_product_reviews }}{{.IMAGE_TAG_product_reviews}}@{{.IMAGE_DIGEST_product_reviews}}{{end}}"
           services.llm.imageOverride.repository: "{{if .IMAGE_REPO_llm }}{{.IMAGE_REPO_llm}}{{end}}"
           services.llm.imageOverride.tag: "{{if .IMAGE_REPO_llm }}{{.IMAGE_TAG_llm}}@{{.IMAGE_DIGEST_llm}}{{end}}"
           services.telemetryDocs.imageOverride.repository: "{{if .IMAGE_REPO_telemetry_docs }}{{.IMAGE_REPO_telemetry_docs}}{{end}}"

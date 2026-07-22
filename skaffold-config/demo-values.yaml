@@ -34,9 +34,6 @@ components:
   frontend:
     replicas: 1
     envOverrides:
-      # Needed until the demo helm chart updates to include it.
-      - name: PRODUCT_REVIEWS_ADDR
-        value: product-reviews:3551
       - name: ACCOUNTING_ADDR
         value: accounting:5060
       - name: ENV_PLATFORM
