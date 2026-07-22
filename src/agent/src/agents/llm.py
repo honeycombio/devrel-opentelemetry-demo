@@ -16,6 +16,11 @@ def ChatLLM(**kwargs):
     kwargs.setdefault("model", model_id)
     kwargs.setdefault("region_name", region_name)
     kwargs.setdefault("max_tokens", 1024)
+    # ChatBedrockConverse requires an explicit provider when model_id is an
+    # inference-profile ARN rather than a bare model id (unlike Strands'
+    # BedrockModel, which storechat uses and infers this itself).
+    if ":inference-profile/" in model_id or model_id.startswith("arn:"):
+        kwargs.setdefault("provider", os.getenv("BEDROCK_MODEL_PROVIDER", "anthropic"))
 
     # Credentials come from the pod's identity (EKS Pod Identity
     # Association) — no API key handling needed here.
