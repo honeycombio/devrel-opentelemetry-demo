@@ -69,6 +69,15 @@ static_resources:
                           route: { cluster: store-chat, prefix_rewrite: "/", timeout: 0s }
                         - match: { path: "/store-chat" }
                           redirect: { path_redirect: "/store-chat/" }
+                        - match: { path: "/chatbot" }
+                          redirect: { path_redirect: "/chatbot/" }
+                        - match: { prefix: "/chatbot/" }
+                          route:
+                            cluster: chatbot
+                            prefix_rewrite: "/"
+                            timeout: 0s
+                            upgrade_configs:
+                              - upgrade_type: websocket
                         - match: { prefix: "/" }  # Default/catch-all route - keep last since prefix:"/" matches everything
                           route: { cluster: api-gateway }
                 http_filters:
@@ -193,6 +202,18 @@ static_resources:
                     socket_address:
                       address: ${STORE_CHAT_HOST}
                       port_value: ${STORE_CHAT_PORT}
+    - name: chatbot
+      type: STRICT_DNS
+      lb_policy: ROUND_ROBIN
+      load_assignment:
+        cluster_name: chatbot
+        endpoints:
+          - lb_endpoints:
+              - endpoint:
+                  address:
+                    socket_address:
+                      address: ${CHATBOT_HOST}
+                      port_value: ${CHATBOT_PORT}
     - name: image-provider
       type: STRICT_DNS
       lb_policy: ROUND_ROBIN

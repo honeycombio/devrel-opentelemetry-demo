@@ -127,6 +127,75 @@ services:
       - name: FLAGD_PORT
         value: "8013"
 
+  agent:
+    enabled: true
+    name: agent
+    image:
+      repository: ghcr.io/honeycombio/devrel-opentelemetry-demo
+      tag: latest-agent
+      pullPolicy: IfNotPresent
+    imageOverride:
+      {}
+    awsRegion: ""
+    bedrockHaikuProfileArn: ""
+    port: 8010
+    replicas: 1
+    env:
+      - name: AGENT_PORT
+        value: "8010"
+      - name: AGENT_ENDPOINT
+        value: "agent"
+      - name: GRAPH_RECURSION_LIMIT
+        value: "25"
+      - name: APPLICATION_ENDPOINT
+        value: "frontend:8080"
+      - name: MCP_ENABLED
+        value: "True"
+      - name: MCP_ENDPOINT
+        value: "mcp"
+      - name: MCP_PORT
+        value: "8011"
+
+  mcp:
+    enabled: true
+    name: mcp
+    image:
+      repository: ghcr.io/honeycombio/devrel-opentelemetry-demo
+      tag: latest-mcp
+      pullPolicy: IfNotPresent
+    imageOverride:
+      {}
+    port: 8011
+    replicas: 1
+    env:
+      - name: MCP_PORT
+        value: "8011"
+      - name: MCP_ENDPOINT
+        value: "mcp"
+      - name: APPLICATION_ENDPOINT
+        value: "frontend:8080"
+
+  chatbot:
+    enabled: true
+    name: chatbot
+    image:
+      repository: ghcr.io/honeycombio/devrel-opentelemetry-demo
+      tag: latest-chatbot
+      pullPolicy: IfNotPresent
+    imageOverride:
+      {}
+    port: 7860
+    replicas: 1
+    env:
+      - name: CHATBOT_PORT
+        value: "7860"
+      - name: CHATBOT_ROOT_PATH
+        value: "/chatbot"
+      - name: AGENT_ENDPOINT
+        value: "agent"
+      - name: AGENT_PORT
+        value: "8010"
+
   telemetryDocs:
     enabled: true
     name: telemetry-docs

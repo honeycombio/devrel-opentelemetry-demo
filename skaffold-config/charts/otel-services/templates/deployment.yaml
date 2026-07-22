@@ -270,4 +270,160 @@ spec:
             - name: OTEL_EXPORTER_OTLP_ENDPOINT
               value: http://$(OTEL_COLLECTOR_NAME):4317
 {{- end }}
+{{- if .Values.services.agent.enabled }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.services.agent.name }}
+  labels:
+    opentelemetry.io/name: {{ .Values.services.agent.name }}
+    app.kubernetes.io/component: {{ .Values.services.agent.name }}
+    app.kubernetes.io/name: {{ .Values.services.agent.name }}
+    app.kubernetes.io/version: "2.1.3"
+    app.kubernetes.io/part-of: opentelemetry-demo
+spec:
+  replicas: {{ .Values.services.agent.replicas }}
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      opentelemetry.io/name: {{ .Values.services.agent.name }}
+  template:
+    metadata:
+      labels:
+        opentelemetry.io/name: {{ .Values.services.agent.name }}
+        app.kubernetes.io/component: {{ .Values.services.agent.name }}
+        app.kubernetes.io/name: {{ .Values.services.agent.name }}
+    spec:
+      serviceAccountName: {{ .Release.Name }}
+      containers:
+        - name: {{ .Values.services.agent.name }}
+          image: "{{ if .Values.services.agent.imageOverride.repository }}{{ .Values.services.agent.imageOverride.repository }}{{ else }}{{ .Values.services.agent.image.repository }}{{ end }}:{{ if .Values.services.agent.imageOverride.tag }}{{ .Values.services.agent.imageOverride.tag }}{{ else }}{{ .Values.services.agent.image.tag }}{{ end }}"
+          imagePullPolicy: {{ .Values.services.agent.image.pullPolicy }}
+          ports:
+            - containerPort: {{ .Values.services.agent.port }}
+              name: service
+          env:
+            - name: OTEL_SERVICE_NAME
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: metadata.labels['app.kubernetes.io/component']
+            - name: OTEL_COLLECTOR_NAME
+              value: {{ .Values.otel.collectorName }}
+            - name: OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE
+              value: {{ .Values.otel.metricsTemporality }}
+            {{- range .Values.services.agent.env }}
+            - name: {{ .name }}
+              value: {{ .value | quote }}
+            {{- end }}
+            {{- if .Values.services.agent.awsRegion }}
+            - name: BEDROCK_AWS_REGION
+              value: {{ .Values.services.agent.awsRegion | quote }}
+            - name: BEDROCK_HAIKU_PROFILE_ARN
+              value: {{ .Values.services.agent.bedrockHaikuProfileArn | quote }}
+            {{- end }}
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: http://$(OTEL_COLLECTOR_NAME):4317
+{{- end }}
+{{- if .Values.services.mcp.enabled }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.services.mcp.name }}
+  labels:
+    opentelemetry.io/name: {{ .Values.services.mcp.name }}
+    app.kubernetes.io/component: {{ .Values.services.mcp.name }}
+    app.kubernetes.io/name: {{ .Values.services.mcp.name }}
+    app.kubernetes.io/version: "2.1.3"
+    app.kubernetes.io/part-of: opentelemetry-demo
+spec:
+  replicas: {{ .Values.services.mcp.replicas }}
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      opentelemetry.io/name: {{ .Values.services.mcp.name }}
+  template:
+    metadata:
+      labels:
+        opentelemetry.io/name: {{ .Values.services.mcp.name }}
+        app.kubernetes.io/component: {{ .Values.services.mcp.name }}
+        app.kubernetes.io/name: {{ .Values.services.mcp.name }}
+    spec:
+      serviceAccountName: {{ .Release.Name }}
+      containers:
+        - name: {{ .Values.services.mcp.name }}
+          image: "{{ if .Values.services.mcp.imageOverride.repository }}{{ .Values.services.mcp.imageOverride.repository }}{{ else }}{{ .Values.services.mcp.image.repository }}{{ end }}:{{ if .Values.services.mcp.imageOverride.tag }}{{ .Values.services.mcp.imageOverride.tag }}{{ else }}{{ .Values.services.mcp.image.tag }}{{ end }}"
+          imagePullPolicy: {{ .Values.services.mcp.image.pullPolicy }}
+          ports:
+            - containerPort: {{ .Values.services.mcp.port }}
+              name: service
+          env:
+            - name: OTEL_SERVICE_NAME
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: metadata.labels['app.kubernetes.io/component']
+            - name: OTEL_COLLECTOR_NAME
+              value: {{ .Values.otel.collectorName }}
+            - name: OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE
+              value: {{ .Values.otel.metricsTemporality }}
+            {{- range .Values.services.mcp.env }}
+            - name: {{ .name }}
+              value: {{ .value | quote }}
+            {{- end }}
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: http://$(OTEL_COLLECTOR_NAME):4317
+{{- end }}
+{{- if .Values.services.chatbot.enabled }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.services.chatbot.name }}
+  labels:
+    opentelemetry.io/name: {{ .Values.services.chatbot.name }}
+    app.kubernetes.io/component: {{ .Values.services.chatbot.name }}
+    app.kubernetes.io/name: {{ .Values.services.chatbot.name }}
+    app.kubernetes.io/version: "2.1.3"
+    app.kubernetes.io/part-of: opentelemetry-demo
+spec:
+  replicas: {{ .Values.services.chatbot.replicas }}
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      opentelemetry.io/name: {{ .Values.services.chatbot.name }}
+  template:
+    metadata:
+      labels:
+        opentelemetry.io/name: {{ .Values.services.chatbot.name }}
+        app.kubernetes.io/component: {{ .Values.services.chatbot.name }}
+        app.kubernetes.io/name: {{ .Values.services.chatbot.name }}
+    spec:
+      serviceAccountName: {{ .Release.Name }}
+      containers:
+        - name: {{ .Values.services.chatbot.name }}
+          image: "{{ if .Values.services.chatbot.imageOverride.repository }}{{ .Values.services.chatbot.imageOverride.repository }}{{ else }}{{ .Values.services.chatbot.image.repository }}{{ end }}:{{ if .Values.services.chatbot.imageOverride.tag }}{{ .Values.services.chatbot.imageOverride.tag }}{{ else }}{{ .Values.services.chatbot.image.tag }}{{ end }}"
+          imagePullPolicy: {{ .Values.services.chatbot.image.pullPolicy }}
+          ports:
+            - containerPort: {{ .Values.services.chatbot.port }}
+              name: service
+          env:
+            - name: OTEL_SERVICE_NAME
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: metadata.labels['app.kubernetes.io/component']
+            - name: OTEL_COLLECTOR_NAME
+              value: {{ .Values.otel.collectorName }}
+            - name: OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE
+              value: {{ .Values.otel.metricsTemporality }}
+            {{- range .Values.services.chatbot.env }}
+            - name: {{ .name }}
+              value: {{ .value | quote }}
+            {{- end }}
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: http://$(OTEL_COLLECTOR_NAME):4317
+{{- end }}
 

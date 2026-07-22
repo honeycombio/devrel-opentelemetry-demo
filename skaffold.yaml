@@ -24,6 +24,18 @@ build:
       context: .
       docker:
         dockerfile: src/storechat/Dockerfile
+    - image: agent
+      context: .
+      docker:
+        dockerfile: src/agent/Dockerfile
+    - image: mcp
+      context: .
+      docker:
+        dockerfile: src/mcp/Dockerfile
+    - image: chatbot
+      context: .
+      docker:
+        dockerfile: src/chatbot/Dockerfile
     - image: llm-evals
       context: .
       docker:
@@ -226,6 +238,14 @@ deploy:
           services.storechat.bedrockNovaMicroProfileArn: "{{.BEDROCK_NOVA_MICRO_PROFILE_ARN}}"
           services.storechat.imageOverride.repository: "{{if .IMAGE_REPO_storechat }}{{.IMAGE_REPO_storechat}}{{end}}"
           services.storechat.imageOverride.tag: "{{if .IMAGE_REPO_storechat }}{{.IMAGE_TAG_storechat}}@{{.IMAGE_DIGEST_storechat}}{{end}}"
+          services.agent.awsRegion: "{{.BEDROCK_AWS_REGION}}"
+          services.agent.bedrockHaikuProfileArn: "{{.BEDROCK_HAIKU_PROFILE_ARN}}"
+          services.agent.imageOverride.repository: "{{if .IMAGE_REPO_agent }}{{.IMAGE_REPO_agent}}{{end}}"
+          services.agent.imageOverride.tag: "{{if .IMAGE_REPO_agent }}{{.IMAGE_TAG_agent}}@{{.IMAGE_DIGEST_agent}}{{end}}"
+          services.mcp.imageOverride.repository: "{{if .IMAGE_REPO_mcp }}{{.IMAGE_REPO_mcp}}{{end}}"
+          services.mcp.imageOverride.tag: "{{if .IMAGE_REPO_mcp }}{{.IMAGE_TAG_mcp}}@{{.IMAGE_DIGEST_mcp}}{{end}}"
+          services.chatbot.imageOverride.repository: "{{if .IMAGE_REPO_chatbot }}{{.IMAGE_REPO_chatbot}}{{end}}"
+          services.chatbot.imageOverride.tag: "{{if .IMAGE_REPO_chatbot }}{{.IMAGE_TAG_chatbot}}@{{.IMAGE_DIGEST_chatbot}}{{end}}"
           services.llmEvals.awsRegion: "{{.BEDROCK_AWS_REGION}}"
           services.llmEvals.bedrockHaikuProfileArn: "{{.BEDROCK_HAIKU_PROFILE_ARN}}"
           services.llmEvals.kafkaAddr: "kafka:9092"

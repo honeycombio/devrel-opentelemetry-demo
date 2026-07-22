@@ -50,6 +50,10 @@ components:
         value: "store-chat"
       - name: STORE_CHAT_PORT
         value: "8080"
+      - name: CHATBOT_HOST
+        value: "chatbot"
+      - name: CHATBOT_PORT
+        value: "7860"
       - name: LLM_EVALS_PORT
         value: "8088"
       - name: TELEMETRY_DOCS_HOST
