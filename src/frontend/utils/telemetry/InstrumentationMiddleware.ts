@@ -58,7 +58,6 @@ const InstrumentationMiddleware = (handler: NextApiHandler): NextApiHandler => {
       
       throw error;
     } finally {
-      requestCounter.add(1, { method, target, status: httpStatus });
       span.setAttribute(SemanticAttributes.HTTP_STATUS_CODE, httpStatus);
     }
   };
