@@ -8,6 +8,11 @@
     <SelfContained>true</SelfContained>
     <PublishTrimmed>false</PublishTrimmed>
     <ProtosDir>$(ProjectDir)..\pb</ProtosDir>
+    <!-- CartService.cs predates the LoggerMessage source-generator migration used
+         elsewhere in the repo (see Log.cs); most of its ILogger calls trip CA1873
+         under Release's TreatWarningsAsErrors. Suppressing here rather than doing
+         a full logging-call migration as part of an unrelated merge. -->
+    <NoWarn>$(NoWarn);CA1873</NoWarn>
   </PropertyGroup>
 
   <PropertyGroup Condition="!Exists('$(ProtosDir)')">
