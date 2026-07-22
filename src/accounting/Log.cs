@@ -43,5 +43,23 @@ namespace Accounting
             EventName = "accounting.order.parsing_failed",
             Message = "Order parsing failed:")]
         public static partial void OrderParsingFailed(ILogger logger, Exception exception);
+
+        [LoggerMessage(
+            Level = LogLevel.Warning,
+            EventName = "accounting.order.duplicate_id_skipped",
+            Message = "Duplicate order {OrderId}; treating as processed")]
+        public static partial void DuplicateOrderIdSkipped(ILogger logger, Exception exception, string orderId);
+
+        [LoggerMessage(
+            Level = LogLevel.Error,
+            EventName = "accounting.order.persist_failed",
+            Message = "Failed to persist order {OrderId}; rewinding for retry")]
+        public static partial void OrderPersistFailed(ILogger logger, Exception exception, string orderId);
+
+        [LoggerMessage(
+            Level = LogLevel.Warning,
+            EventName = "accounting.payment_status.failed",
+            Message = "Failed to get payment status for transaction {TransactionId}")]
+        public static partial void PaymentStatusFailed(ILogger logger, Exception exception, string transactionId);
     }
 }

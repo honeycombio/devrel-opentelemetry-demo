@@ -38,12 +38,12 @@ internal class Consumer : BackgroundService
         _dbContextFactory = dbContextFactory;
 
         var servers = Environment.GetEnvironmentVariable("KAFKA_ADDR")
-            ?? throw new ArgumentNullException("KAFKA_ADDR");
+            ?? throw new InvalidOperationException("KAFKA_ADDR environment variable is required");
 
         _consumer = BuildConsumer(servers);
         _consumer.Subscribe(TopicName);
 
-        _logger.LogInformation($"Connecting to Kafka: {servers}");
+        Log.KafkaConnecting(_logger, servers);
     }
 
     protected override Task ExecuteAsync(CancellationToken stoppingToken)
@@ -72,13 +72,13 @@ internal class Consumer : BackgroundService
                     }
                     catch (ConsumeException e)
                     {
-                        _logger.LogError(e, "Consume error: {0}", e.Error.Reason);
+                        Log.ConsumeError(_logger, e, e.Error.Reason);
                     }
                 }
             }
             catch (OperationCanceledException)
             {
-                _logger.LogInformation("Closing consumer");
+                Log.ConsumerClosing(_logger);
             }
             finally
             {
@@ -173,17 +173,17 @@ internal class Consumer : BackgroundService
         {
             // Racy idempotent check — row appeared between Any() and SaveChanges().
             // Data is persisted; safe to commit.
-            _logger.LogWarning(ex, "Duplicate order {OrderId}; treating as processed", order.OrderId);
+            Log.DuplicateOrderIdSkipped(_logger, ex, order.OrderId);
             return ProcessResult.Processed;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to persist order {OrderId}; rewinding for retry", order.OrderId);
+            Log.OrderPersistFailed(_logger, ex, order.OrderId);
             return ProcessResult.Retry;
         }
     }
 
-    private IConsumer<string, byte[]> BuildConsumer(string servers)
+    private static IConsumer<string, byte[]> BuildConsumer(string servers)
     {
         var conf = new ConsumerConfig
         {

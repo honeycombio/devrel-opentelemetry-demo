@@ -89,7 +89,7 @@ internal class OrderServiceImpl : OrderService.OrderServiceBase
             }
             catch (RpcException ex)
             {
-                _logger.LogWarning(ex, "Failed to get payment status for transaction {TransactionId}", order.TransactionId);
+                Log.PaymentStatusFailed(_logger, ex, order.TransactionId);
             }
         }
 
