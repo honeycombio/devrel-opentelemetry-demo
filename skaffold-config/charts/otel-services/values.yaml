@@ -52,23 +52,6 @@ services:
       - name: OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT
         value: "true"
 
-  llm:
-    enabled: true
-    name: llm
-    image:
-      repository: ghcr.io/honeycombio/devrel-opentelemetry-demo
-      tag: latest-llm
-      pullPolicy: IfNotPresent
-    imageOverride:
-      {}
-    port: 8000
-    replicas: 1
-    env:
-      - name: FLAGD_HOST
-        value: "flagd"
-      - name: FLAGD_PORT
-        value: "8013"
-
   agent:
     enabled: true
     name: agent

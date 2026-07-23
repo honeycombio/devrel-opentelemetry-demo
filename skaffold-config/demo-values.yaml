@@ -23,6 +23,17 @@ components:
         value: "5060"
       - name: ASPNETCORE_URLS
         value: "http://*:5060"
+  product-catalog:
+    envOverrides:
+      # Upstream's product-catalog now requires a Postgres-backed catalog
+      # (main.go errors out at startup without this); the chart default
+      # doesn't set it yet. Points at the same postgresql/otel database
+      # accounting uses -- src/postgres/init.sql provisions the `catalog`
+      # schema alongside `accounting`, so this is one Postgres instance,
+      # not two. lib/pq (Go) wants libpq keyword=value syntax, not the
+      # semicolon-delimited form accounting's .NET/Npgsql uses.
+      - name: DB_CONNECTION_STRING
+        value: "host=postgresql user=otelu password=otelp dbname=otel sslmode=disable"
   load-generator:
     replicas: 1
     envOverrides:

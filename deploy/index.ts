@@ -78,9 +78,13 @@ if (deployConfig.isAws) {
     }, { dependsOn: [clusterTelemetryCollector] });
 
     // Associate Bedrock role with the demo service accounts when Bedrock is enabled.
-    // `otel-services` runs storechat/llm-evals (our chart); `otel-demo` runs
-    // product-reviews (the upstream chart) — both need Bedrock when we point
-    // product-reviews at `LLM_PROVIDER=bedrock`.
+    // `otel-services` runs storechat/llm-evals (our chart). `otel-demo`'s
+    // association was added for product-reviews, which has since been
+    // removed (see oteldemo.ts) -- nothing on the otel-demo service account
+    // currently needs Bedrock. Upstream's new `agent` service would (it's
+    // been switched to Bedrock in our fork, see src/agent/src/agents/llm.py),
+    // but it isn't deployed to production yet. Revisit whether this PIA is
+    // still needed once agent/mcp/chatbot are added here, or drop it if not.
     if (deployConfig.enableBedrock) {
         new BedrockPodIdentityAssociation("demo-bedrock", {
             config: deployConfig,

@@ -163,9 +163,8 @@ Run the service locally:
 cd src/agent
 AGENT_PORT=8010 \
 APPLICATION_ENDPOINT=localhost:8080 \
-LLM_BASE_URL=<llm-base-url> \
-LLM_MODEL=<model-name> \
-API_KEY=<api-key> \
+BEDROCK_HAIKU_PROFILE_ARN=<bedrock-inference-profile-arn> \
+BEDROCK_AWS_REGION=<aws-region> \
 python run.py
 ```
 
@@ -200,15 +199,6 @@ If running through Docker Compose and the `8080` port is not published to the
 host, call it from another container or adjust Compose port publishing for local
  testing.
 
-## VCR Fixtures
-
-The `fixtures/vcr_cassettes` directory is used when `USE_VCR=True`. Cassette
- names are derived from the configured model name by replacing `/` with `_` and
- appending `_cassette.yaml`.
-
-This mode is useful for deterministic development and tests that should not
-call the live LLM API.
-
 ## File Layout
 
 ```text
@@ -218,20 +208,17 @@ src/agent/
 |-- requirements.txt
 |-- requirements.in
 |-- run.py
-|-- fixtures/
-|   `-- vcr_cassettes/*_cassette.yaml
 `-- src/
     `-- agents/
         |-- agents.py       # FastAPI app and LangChain agent orchestration
-        |-- llm.py          # OpenAI-compatible LLM wrapper and VCR integration
-        |-- mcp_client.py   # MCP streamable HTTP client
-        `--patch_vcr.py    # VCR helper integration
+        |-- llm.py          # Bedrock (ChatBedrockConverse) LLM wrapper
+        `-- mcp_client.py   # MCP streamable HTTP client
 ```
 
 ## Troubleshooting
 
-- **`/prompt` returns HTTP 500**: Check LLM configuration
-(`LLM_BASE_URL`, `LLM_MODEL`, `API_KEY`) and MCP availability if MCP is enabled.
+- **`/prompt` returns HTTP 500**: Check Bedrock configuration
+(`BEDROCK_MODEL_ID`/`BEDROCK_HAIKU_PROFILE_ARN`, `BEDROCK_AWS_REGION`) and MCP availability if MCP is enabled.
 - **MCP connection fails**: Verify `MCP_ENDPOINT`, `MCP_PORT`,
 and that the `mcp` service is running.
 - **Built-in tools cannot reach the shop API**: Verify `APPLICATION_ENDPOINT`.

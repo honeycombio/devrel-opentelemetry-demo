@@ -78,10 +78,6 @@ build:
         dockerfile: src/kafka/Dockerfile
         buildArgs:
           OTEL_JAVA_AGENT_VERSION: 2.21.0
-    - image: llm
-      context: .
-      docker:
-        dockerfile: src/llm/Dockerfile
     - image: load-generator
       context: .
       docker:
@@ -246,8 +242,6 @@ deploy:
           services.llmEvals.kafkaAddr: "kafka:9092"
           services.llmEvals.imageOverride.repository: "{{if .IMAGE_REPO_llm_evals }}{{.IMAGE_REPO_llm_evals}}{{end}}"
           services.llmEvals.imageOverride.tag: "{{if .IMAGE_REPO_llm_evals }}{{.IMAGE_TAG_llm_evals}}@{{.IMAGE_DIGEST_llm_evals}}{{end}}"
-          services.llm.imageOverride.repository: "{{if .IMAGE_REPO_llm }}{{.IMAGE_REPO_llm}}{{end}}"
-          services.llm.imageOverride.tag: "{{if .IMAGE_REPO_llm }}{{.IMAGE_TAG_llm}}@{{.IMAGE_DIGEST_llm}}{{end}}"
           services.telemetryDocs.imageOverride.repository: "{{if .IMAGE_REPO_telemetry_docs }}{{.IMAGE_REPO_telemetry_docs}}{{end}}"
           services.telemetryDocs.imageOverride.tag: "{{if .IMAGE_REPO_telemetry_docs }}{{.IMAGE_TAG_telemetry_docs}}@{{.IMAGE_DIGEST_telemetry_docs}}{{end}}"
           ingress.domainName: "{{if .DOMAINNAME}}{{.DOMAINNAME}}{{else}}aurelia.honeydemo.io{{end}}"
