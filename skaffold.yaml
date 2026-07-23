@@ -89,7 +89,7 @@ build:
     - image: postgresql
       context: .
       docker:
-        dockerfile: src/postgres/Dockerfile
+        dockerfile: src/postgresql/Dockerfile
     - image: product-catalog
       context: .
       docker:

@@ -13,7 +13,7 @@
 #   NAMESPACE  k8s namespace        (default: devrel-demo  <- the shared "production" deploy)
 #   PGUSER     postgres superuser   (default: root)
 #   PGPASS     postgres password    (default: otel)
-#   PGDB       database name        (default: otel)
+#   PGDB       database name        (default: astronomy_db)
 
 set -euo pipefail
 
@@ -21,7 +21,7 @@ CONTEXT="${CONTEXT:-devrel-demo-aws}"
 NAMESPACE="${NAMESPACE:-devrel-demo}"
 PGUSER="${PGUSER:-root}"
 PGPASS="${PGPASS:-otel}"
-PGDB="${PGDB:-otel}"
+PGDB="${PGDB:-astronomy_db}"
 
 if [[ -z "${AWS_PROFILE:-}" ]]; then
   echo "Defaulting AWS_PROFILE=really-devrel-sandbox (prod cluster account)" >&2

@@ -1,28 +1,33 @@
 -- Copyright The OpenTelemetry Authors
 -- SPDX-License-Identifier: Apache-2.0
 
+-- Enable pg_stat_statements in the default postgres database
 CREATE EXTENSION IF NOT EXISTS pg_stat_statements;
 
-CREATE USER otelu WITH PASSWORD 'otelp';
+-- Create application user
+CREATE USER astronomy_user WITH PASSWORD 'astronomy_password';
+
+-- Create application database
+CREATE DATABASE astronomy_db OWNER astronomy_user;
+
+-- Create monitoring user with pg_monitor role (visibility on all databases and schemas)
+CREATE USER monitoring_user WITH PASSWORD 'monitoring_password';
+GRANT pg_monitor TO monitoring_user;
+
+-- Switch to the application database
+\connect astronomy_db
+
+-- Enable pg_stat_statements in the application database
+CREATE EXTENSION IF NOT EXISTS pg_stat_statements;
 
 -- Accounting Service: create a schema
 CREATE SCHEMA accounting;
-GRANT USAGE ON SCHEMA accounting TO otelu;
+GRANT USAGE ON SCHEMA accounting TO astronomy_user;
 
 -- Accounting Service: create tables
 CREATE TABLE accounting."order" (
-    order_id TEXT PRIMARY KEY,
-    email TEXT,                              -- optional, from checkout
-    user_id TEXT,                            -- session UUID
-    transaction_id TEXT,                     -- from payment service
-    total_cost_currency_code TEXT,
-    total_cost_units BIGINT,
-    total_cost_nanos INT,
-    order_status TEXT NOT NULL DEFAULT 'completed',  -- completed | refunded
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    refunded_at TIMESTAMPTZ
+    order_id TEXT PRIMARY KEY
 );
-CREATE INDEX idx_order_email ON accounting."order"(email);
 
 CREATE TABLE accounting.shipping (
     shipping_tracking_id TEXT PRIMARY KEY,
@@ -50,11 +55,11 @@ CREATE TABLE accounting.orderitem (
 );
 
 -- Accounting Service: grant permission to schema
-GRANT SELECT, INSERT, UPDATE ON ALL TABLES IN SCHEMA accounting TO otelu;
+GRANT SELECT, INSERT, UPDATE ON ALL TABLES IN SCHEMA accounting TO astronomy_user;
 
 -- Product Catalog Service: create a schema
 CREATE SCHEMA catalog;
-GRANT USAGE ON SCHEMA catalog TO otelu;
+GRANT USAGE ON SCHEMA catalog TO astronomy_user;
 
 -- Product Catalog Service: create tables
 CREATE TABLE catalog.products (
@@ -69,7 +74,7 @@ CREATE TABLE catalog.products (
 );
 
 -- Product Catalog Service: grant permission to schema
-GRANT SELECT ON ALL TABLES IN SCHEMA catalog TO otelu;
+GRANT SELECT ON ALL TABLES IN SCHEMA catalog TO astronomy_user;
 
 -- Product Catalog Service: add product data
 INSERT INTO catalog.products (id, name, description, picture, price_currency_code, price_units, price_nanos, categories)
@@ -84,8 +89,3 @@ VALUES
     ('9SIQT8TOJO', 'Optical Tube Assembly', 'Capturing impressive deep-sky astroimages is easier than ever with Rowe-Ackermann Schmidt Astrograph (RASA) V2, the perfect companion to today''s top DSLR or astronomical CCD cameras. This fast, wide-field f/2.2 system allows for shorter exposure times compared to traditional f/10 astroimaging, without sacrificing resolution. Because shorter sub-exposure times are possible, your equatorial mount won''t need to accurately track over extended periods. The short focal length also lessens equatorial tracking demands. In many cases, autoguiding will not be required.', 'OpticalTubeAssembly.jpg', 'USD', 3599, 0, 'accessories,telescopes,assembly'),
     ('6E92ZMYYFZ', 'Solar Filter', 'Enhance your viewing experience with EclipSmart Solar Filter for 8" telescopes. With two Velcro straps and four self-adhesive Velcro pads for added safety, you can be assured that the solar filter cannot be accidentally knocked off and will provide Solar Safe, ISO compliant viewing.', 'SolarFilter.jpg', 'USD', 69, 950000000, 'accessories,telescopes'),
     ('HQTGWGPNH4', 'The Comet Book', 'A 16th-century treatise on comets, created anonymously in Flanders (now northern France) and now held at the Universitätsbibliothek Kassel. Commonly known as The Comet Book (or Kometenbuch in German), its full title translates as "Comets and their General and Particular Meanings, According to Ptolomeé, Albumasar, Haly, Aliquind and other Astrologers". The image is from https://publicdomainreview.org/collection/the-comet-book, made available by the Universitätsbibliothek Kassel under a CC-BY SA 4.0 license (https://creativecommons.org/licenses/by-sa/4.0/)', 'TheCometBook.jpg', 'USD', 0, 990000000, 'books');
-
--- pg_cron: expire orders older than 48 hours (runs every hour)
-CREATE EXTENSION IF NOT EXISTS pg_cron;
-SELECT cron.schedule('expire-orders', '0 * * * *',
-    $$DELETE FROM accounting."order" WHERE created_at < NOW() - INTERVAL '48 hours'$$);

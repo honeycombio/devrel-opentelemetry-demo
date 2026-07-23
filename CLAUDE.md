@@ -59,7 +59,7 @@ AWS_PROFILE=really-devrel-sandbox kubectl --context devrel-demo-aws -n devrel-de
 
 Orders flow: **checkout → Kafka `orders` topic → accounting service → Postgres**. The system of record is the Postgres table `accounting."order"` (schema `accounting`; note `order` is reserved so it must be quoted). Columns include `order_id`, `email`, `user_id`, `transaction_id`, `total_cost_*`, `order_status`, `created_at`. Sibling tables: `accounting.orderitem`, `accounting.shipping`. Defined in `src/accounting/Entities.cs`; persisted in `src/accounting/Consumer.cs`.
 
-Postgres lives in the `postgresql` pod (label `app.kubernetes.io/name=postgresql`): database `otel`, superuser `root`/`otel` (the app connects as `otelu`/`otelp` — both reach the same DB). Pod name has a generated suffix, so resolve it by label.
+Postgres lives in the `postgresql` pod (label `app.kubernetes.io/name=postgresql`): superuser `root`/`otel` (bootstraps the default `otel` db, unused by our schema), app database `astronomy_db` owned by `astronomy_user`/`astronomy_password` (the app connects as this user; the superuser can also reach `astronomy_db` directly). Schema comes from `src/postgresql/init.sql` (an unmodified copy of upstream's, so it merges cleanly) plus our extensions in `src/postgresql/zz_fork_amendments.sql`. Pod name has a generated suffix, so resolve it by label.
 
 `scripts/query-production-order-emails.sh` does this end-to-end (finds the pod, prints order totals + emails). It's all demo/synthetic data, no real PII.
 
