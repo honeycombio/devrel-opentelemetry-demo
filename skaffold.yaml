@@ -82,6 +82,12 @@ build:
       context: .
       docker:
         dockerfile: src/load-generator/Dockerfile
+    - image: opamp-server
+      context: .
+      docker:
+        dockerfile: src/opamp-server/Dockerfile
+        buildArgs:
+          OPAMP_GO_REF: fc016b0599ee6cb5ba479452055a3370e7238aaa
     - image: payment
       context: .
       docker:
@@ -237,6 +243,8 @@ deploy:
           services.mcp.imageOverride.tag: "{{if .IMAGE_REPO_mcp }}{{.IMAGE_TAG_mcp}}@{{.IMAGE_DIGEST_mcp}}{{end}}"
           services.chatbot.imageOverride.repository: "{{if .IMAGE_REPO_chatbot }}{{.IMAGE_REPO_chatbot}}{{end}}"
           services.chatbot.imageOverride.tag: "{{if .IMAGE_REPO_chatbot }}{{.IMAGE_TAG_chatbot}}@{{.IMAGE_DIGEST_chatbot}}{{end}}"
+          services.opampServer.imageOverride.repository: "{{if .IMAGE_REPO_opamp_server }}{{.IMAGE_REPO_opamp_server}}{{end}}"
+          services.opampServer.imageOverride.tag: "{{if .IMAGE_REPO_opamp_server }}{{.IMAGE_TAG_opamp_server}}@{{.IMAGE_DIGEST_opamp_server}}{{end}}"
           services.llmEvals.awsRegion: "{{.BEDROCK_AWS_REGION}}"
           services.llmEvals.bedrockHaikuProfileArn: "{{.BEDROCK_HAIKU_PROFILE_ARN}}"
           services.llmEvals.kafkaAddr: "kafka:9092"

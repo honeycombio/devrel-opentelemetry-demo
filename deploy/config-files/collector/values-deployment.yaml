@@ -123,7 +123,32 @@ config:
         "x-honeycomb-team": "${env:HONEYCOMB_API_KEY_DOGFOOD_ISLAND_OF_MISFIT_TOYS}"
         "x-honeycomb-dataset": "k8s-metrics"
 
+  extensions:
+    # Reports this collector's health/effective config/available components
+    # to opamp-server (see src/opamp-server), viewable at /opamp/ through the
+    # frontend proxy. Wired to the cluster-collector (one per release) rather
+    # than the daemonset agents, so the OpAMP UI shows one entry per
+    # developer namespace instead of one per node.
+    opamp:
+      server:
+        ws:
+          endpoint: ws://opamp-server:4320/v1/opamp
+      instance_uid: 00000000-0000-7000-8000-000000000001
+      capabilities:
+        reports_effective_config: true
+        reports_health: true
+        reports_available_components: true
+      agent_description:
+        include_resource_attributes: true
+        non_identifying_attributes:
+          demo.collector.role: gateway
+
   service:
+    # Chart default is [health_check]; this list replaces wholesale rather
+    # than merging, so health_check must be repeated alongside opamp.
+    extensions:
+      - health_check
+      - opamp
     pipelines:
       metrics:
         exporters:

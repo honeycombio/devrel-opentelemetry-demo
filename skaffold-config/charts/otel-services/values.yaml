@@ -121,6 +121,20 @@ services:
       - name: AGENT_PORT
         value: "8010"
 
+  opampServer:
+    enabled: true
+    name: opamp-server
+    image:
+      repository: ghcr.io/honeycombio/devrel-opentelemetry-demo
+      tag: latest-opamp-server
+      pullPolicy: IfNotPresent
+    imageOverride:
+      {}
+    port: 4320
+    uiPort: 4321
+    replicas: 1
+    env: []
+
   telemetryDocs:
     enabled: true
     name: telemetry-docs

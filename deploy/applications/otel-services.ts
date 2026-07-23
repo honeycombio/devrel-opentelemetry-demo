@@ -58,6 +58,12 @@ export class OtelServices extends pulumi.ComponentResource {
                         tag: `${args.config.containerTag}-telemetry-docs`,
                     },
                 },
+                opampServer: {
+                    enabled: true,
+                    image: {
+                        tag: `${args.config.containerTag}-opamp-server`,
+                    },
+                },
             },
             otel: {
                 collectorName: args.collectorName,

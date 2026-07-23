@@ -76,6 +76,19 @@ components:
         value: "telemetry-docs"
       - name: TELEMETRY_DOCS_PORT
         value: "8000"
+      - name: OPAMP_SERVER_HOST
+        value: "opamp-server"
+      - name: OPAMP_SERVER_UI_PORT
+        value: "4321"
+      # /profiles/ (firepit) has no backing service deployed -- these are
+      # upstream's own placeholder defaults, kept non-empty so envoy's
+      # bootstrap validation doesn't crash-loop the whole proxy over one
+      # dormant route (an empty socket_address fails hard at parse time; an
+      # unresolvable-but-non-empty one just 503s if anyone actually hits it).
+      - name: FIREPIT_HOST
+        value: "firepit"
+      - name: FIREPIT_PORT
+        value: "8080"
   flagd:
     # Rebind the chart's `config-ro` volume to our flagd-custom-config ConfigMap
     # (a superset of the chart's default flags). flagd and the flagd-ui sidecar
