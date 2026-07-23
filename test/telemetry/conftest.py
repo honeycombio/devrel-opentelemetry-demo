@@ -134,7 +134,7 @@ def _opensearch_service_log_counts(services):
 WARMUP_MIN_SERVICES = 3
 WARMUP_MIN_LOGS = 1
 
-# Static product IDs from the demo catalog, mirroring src/load-generator/locustfile.py.
+# Static product IDs from the demo catalog, mirroring src/load-generator/script.js.
 # These are stable demo data; any one is fine for a checkout.
 PROBE_PRODUCTS = [
     "0PUK6V6EV0",

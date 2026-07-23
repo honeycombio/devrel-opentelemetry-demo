@@ -1,6 +1,6 @@
 apiVersion: v2
 name: otel-services
-description: A Helm chart for deploying product-reviews and llm services
+description: A Helm chart for services not in the upstream opentelemetry-demo chart (storechat, llm-evals, telemetry-docs, agent, mcp, chatbot, opamp-server)
 type: application
 version: 0.1.0
 appVersion: "2.1.3"

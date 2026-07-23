@@ -305,45 +305,6 @@ paths:
                 items:
                   $ref: '#/components/schemas/Ad'
 
-  /api/product-reviews/{productId}:
-    get:
-      operationId: getProductReviews
-      summary: Get reviews for a product
-      tags: [Reviews]
-      parameters:
-        - name: productId
-          in: path
-          required: true
-          schema: { type: string }
-      responses:
-        '200':
-          description: Array of product reviews
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/ProductReview'
-
-  /api/product-reviews-avg-score/{productId}:
-    get:
-      operationId: getProductReviewAvgScore
-      summary: Get the average review score for a product
-      tags: [Reviews]
-      parameters:
-        - name: productId
-          in: path
-          required: true
-          schema: { type: string }
-      responses:
-        '200':
-          description: Average score as a string
-          content:
-            application/json:
-              schema:
-                type: string
-                example: "4.2"
-
 components:
   schemas:
     Money:
@@ -541,13 +502,3 @@ components:
         text:
           type: string
 
-    ProductReview:
-      type: object
-      properties:
-        username:
-          type: string
-        description:
-          type: string
-        score:
-          type: string
-          example: "4.5"

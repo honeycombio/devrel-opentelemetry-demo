@@ -204,7 +204,7 @@ async function runPhase1(
   const spanAttrs = attrMap(span.attributes);
   const serviceName = String(resourceAttrs['service.name'] ?? '');
 
-  // Skip tool-use rounds for product-reviews — those are not the final answer
+  // Skip tool-use rounds (e.g. agent's LangChain tool calls) — those are not the final answer
   const finishReasons = spanAttrs['gen_ai.response.finish_reasons'];
   if (Array.isArray(finishReasons) && finishReasons.includes('tool_use')) return null;
 
