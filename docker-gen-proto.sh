@@ -51,6 +51,7 @@ if [ -z "$1" ]; then
   gen_proto_cpp currency
   #gen_proto_ruby email
   gen_proto_ts frontend
+  gen_proto_ts react-native-app
   #gen_proto_js payment
   gen_proto_go product-catalog
   #gen_proto_php quote
