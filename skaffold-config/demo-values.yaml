@@ -170,20 +170,24 @@ opentelemetry-collector:
               - set(attributes["trace.parent_id"], attributes["span_id"])
               - set(attributes["meta.annotation_type"], "span_event")
       # ── GenAI span shaping ──────────────────────────────────────────
-      # Strands (storechat) and product-reviews emit GenAI telemetry that
-      # needs shaping before it's useful in Honeycomb. Split into three
-      # small processors so each job is self-contained:
+      # Strands (storechat) emits GenAI telemetry that needs shaping before
+      # it's useful in Honeycomb. agent (opentelemetry-instrumentation-
+      # langchain) already sets these directly on the span using canonical
+      # semconv 1.41 names, so steps 1-2 are no-ops for it -- it's only here
+      # because the conditions below match on attribute shape, not
+      # service.name. Split into three small processors so each job is
+      # self-contained:
       #   1. genai_copy_events_to_span      — promote Strands' span-EVENT
       #      attributes onto the parent span. Pure copy, no math.
       #   2. genai_canonicalize_token_names — rename cache attributes to the
-      #      semconv 1.41 canonical dotted form (covers both sources).
+      #      semconv 1.41 canonical dotted form.
       #   3. genai_fix_token_counts         — reconstruct semconv-correct
       #      token counts (input_tokens must include cached tokens).
 
       # 1. COPY TO SPAN — Strands emits messages + usage on a
       #    `gen_ai.client.inference.operation.details` span event; copy each
-      #    attribute up to the span verbatim. product-reviews already sets
-      #    these on the span, so it skips this step (handled by 2 + 3).
+      #    attribute up to the span verbatim. agent already sets these on
+      #    the span, so it skips this step (handled by 2 + 3).
       transform/genai_copy_events_to_span:
         error_mode: ignore
         trace_statements:
@@ -207,9 +211,11 @@ opentelemetry-collector:
 
       # 2. CANONICALISE TOKEN NAMES — rename cache attributes to the semconv
       #    1.41 canonical dotted form. Runs at span level (not in copy)
-      #    because product-reviews sets a non-canonical
-      #    cache_write.input_tokens directly on the span and never passes
-      #    through copy; handling it here covers both sources alike.
+      #    because it needs to handle any source that sets a non-canonical
+      #    name directly on the span without passing through copy. agent
+      #    already uses the canonical dotted names natively, so this is a
+      #    no-op for it; Strands' promoted underscore names are what
+      #    actually get renamed here.
       transform/genai_canonicalize_token_names:
         error_mode: ignore
         trace_statements:
@@ -218,21 +224,25 @@ opentelemetry-collector:
               - attributes["gen_ai.usage.input_tokens"] != nil
             statements:
               # Strands -> underscore (cache_read_input_tokens /
-              # cache_write_input_tokens); product-reviews -> non-canonical
-              # cache_write.input_tokens. Targets: cache_read.input_tokens and
+              # cache_write_input_tokens). Targets: cache_read.input_tokens and
               # cache_creation.input_tokens (the registered write attribute).
               - set(attributes["gen_ai.usage.cache_read.input_tokens"], attributes["gen_ai.usage.cache_read_input_tokens"]) where attributes["gen_ai.usage.cache_read_input_tokens"] != nil and attributes["gen_ai.usage.cache_read.input_tokens"] == nil
               - set(attributes["gen_ai.usage.cache_creation.input_tokens"], attributes["gen_ai.usage.cache_write_input_tokens"]) where attributes["gen_ai.usage.cache_write_input_tokens"] != nil and attributes["gen_ai.usage.cache_creation.input_tokens"] == nil
               - set(attributes["gen_ai.usage.cache_creation.input_tokens"], attributes["gen_ai.usage.cache_write.input_tokens"]) where attributes["gen_ai.usage.cache_write.input_tokens"] != nil and attributes["gen_ai.usage.cache_creation.input_tokens"] == nil
 
       # 3. FIX TOKEN COUNTS — runs on span attributes only, after names are
-      #    canonical. Covers Strands (events) and product-reviews (native
-      #    span attrs) alike in one span-context pass.
+      #    canonical. Covers Strands (events) and agent (native span attrs)
+      #    alike in one span-context pass.
       #
       #    ASSUMPTION: our SDKs report gen_ai.usage.input_tokens as the
       #    UNCACHED portion only (raw Bedrock inputTokens), with cache
-      #    read/creation counted separately. Verified for Strands +
-      #    product-reviews. If an SDK is upgraded to emit semconv-compliant
+      #    read/creation counted separately. Verified for Strands. agent goes
+      #    through a different SDK path (langchain_aws -> boto3 Bedrock
+      #    Converse) hitting the same underlying Bedrock API, so this very
+      #    likely holds, but it hasn't been directly confirmed with a live
+      #    cache-hit trace -- check this against a real multi-turn agent
+      #    conversation before trusting input_tokens/cost figures for the
+      #    agent service. If an SDK is upgraded to emit semconv-compliant
       #    input_tokens (already inclusive of cached tokens), revisit — the
       #    additive step below would double-count.
       transform/genai_fix_token_counts:
@@ -306,13 +316,15 @@ opentelemetry-collector:
             - resource.attributes["service.name"] == "flagd"
 
       # Keep only spans worth evaluating: store-chat's per-turn supervisor
-      # invocation, and product-reviews' Bedrock chat spans (the consumer
-      # filters out tool-use rounds; we keep all chat * here for simplicity).
+      # invocation, and agent's LLM-call spans (opentelemetry-instrumentation-
+      # langchain names these "<ModelClassName>.chat", e.g. "ChatBedrockConverse.chat" --
+      # match on the ".chat" suffix rather than the exact model class name so this
+      # doesn't silently break if the underlying LangChain class changes).
       filter/keep_eval_anchors:
         error_mode: ignore
         traces:
           span:
-            - 'not ((resource.attributes["service.name"] == "store-chat" and name == "invoke_agent supervisor") or (resource.attributes["service.name"] == "product-reviews" and IsMatch(name, "^chat ")))'
+            - 'not ((resource.attributes["service.name"] == "store-chat" and name == "invoke_agent supervisor") or (resource.attributes["service.name"] == "agent" and IsMatch(name, "\\.chat$")))'
 
       # Keep only flagd-ui's "Flag changed:" log records for the markers
       # pipeline. flagd-ui's Storage GenServer logs that string via
