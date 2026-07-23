@@ -270,7 +270,7 @@ spec:
               value: {{ .Values.services.agent.bedrockHaikuProfileArn | quote }}
             {{- end }}
             - name: OTEL_EXPORTER_OTLP_ENDPOINT
-              value: http://$(OTEL_COLLECTOR_NAME):4317
+              value: http://$(OTEL_COLLECTOR_NAME):4318
 {{- end }}
 {{- if .Values.services.mcp.enabled }}
 ---
@@ -320,7 +320,7 @@ spec:
               value: {{ .value | quote }}
             {{- end }}
             - name: OTEL_EXPORTER_OTLP_ENDPOINT
-              value: http://$(OTEL_COLLECTOR_NAME):4317
+              value: http://$(OTEL_COLLECTOR_NAME):4318
 {{- end }}
 {{- if .Values.services.chatbot.enabled }}
 ---
