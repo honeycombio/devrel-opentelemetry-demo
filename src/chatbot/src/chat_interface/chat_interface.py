@@ -27,9 +27,9 @@ class ChatAgentUI:
 
     def chat_with_agent(self, message, history, request: gr.Request):
         try:
-            # session_id = request.session_hash or self.config.sessionId
+            session_id = request.session_hash or self.config.sessionId
             payload = {
-                # "session_id": session_id,
+                "session_id": session_id,
                 "message": message,
                 "history": history,
             }

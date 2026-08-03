@@ -39,6 +39,16 @@ components:
       # syntax, not the semicolon-delimited form accounting's .NET/Npgsql uses.
       - name: DB_CONNECTION_STRING
         value: "host=postgresql user=astronomy_user password=astronomy_password dbname=astronomy_db sslmode=disable"
+  shipping:
+    envOverrides:
+      # Upstream's shipping now uses open-feature-flagd to read feature flags
+      # (panics at startup without a reachable provider); the pinned chart
+      # (0.39.0) doesn't set these for shipping yet, so it defaults to
+      # localhost, which isn't the flagd service.
+      - name: FLAGD_HOST
+        value: "flagd"
+      - name: FLAGD_PORT
+        value: "8013"
   load-generator:
     replicas: 1
     envOverrides:
@@ -47,6 +57,20 @@ components:
       # value is templated from ./run's --agent-load flag; empty = off.
       - name: AGENT_LOAD_ENABLED
         value: ""
+      # xk6-otel's own SDK (Go runtime metrics, and the Tracer used by
+      # script.js) uses the http OTLP exporters, so it needs the collector's
+      # HTTP receiver (4318), not the chart-wide default of 4317 (grpc-only).
+      - name: OTEL_EXPORTER_OTLP_ENDPOINT
+        value: "http://otel-collector:4318"
+      # k6's own built-in `--out opentelemetry` (test-run metrics) is a
+      # separate exporter from xk6-otel and ignores OTEL_EXPORTER_OTLP_*;
+      # it needs its own K6_OTEL_* vars or it falls back to localhost:4317.
+      - name: K6_OTEL_EXPORTER_PROTOCOL
+        value: "grpc"
+      - name: K6_OTEL_GRPC_EXPORTER_ENDPOINT
+        value: "otel-collector:4317"
+      - name: K6_OTEL_GRPC_EXPORTER_INSECURE
+        value: "true"
   frontend:
     replicas: 1
     envOverrides:
@@ -238,26 +262,21 @@ opentelemetry-collector:
               - set(span.attributes["gen_ai.request.model"], attributes["gen_ai.request.model"]) where attributes["gen_ai.request.model"] != nil
               - set(span.attributes["gen_ai.operation.name"], attributes["gen_ai.operation.name"]) where attributes["gen_ai.operation.name"] != nil
 
-      # 2. CANONICALISE TOKEN NAMES — rename cache attributes to the semconv
-      #    1.41 canonical dotted form. Runs at span level (not in copy)
-      #    because it needs to handle any source that sets a non-canonical
-      #    name directly on the span without passing through copy. agent
-      #    already uses the canonical dotted names natively, so this is a
-      #    no-op for it; Strands' promoted underscore names are what
-      #    actually get renamed here.
-      transform/genai_canonicalize_token_names:
-        error_mode: ignore
-        trace_statements:
-          - context: span
-            conditions:
-              - attributes["gen_ai.usage.input_tokens"] != nil
-            statements:
-              # Strands -> underscore (cache_read_input_tokens /
-              # cache_write_input_tokens). Targets: cache_read.input_tokens and
-              # cache_creation.input_tokens (the registered write attribute).
-              - set(attributes["gen_ai.usage.cache_read.input_tokens"], attributes["gen_ai.usage.cache_read_input_tokens"]) where attributes["gen_ai.usage.cache_read_input_tokens"] != nil and attributes["gen_ai.usage.cache_read.input_tokens"] == nil
-              - set(attributes["gen_ai.usage.cache_creation.input_tokens"], attributes["gen_ai.usage.cache_write_input_tokens"]) where attributes["gen_ai.usage.cache_write_input_tokens"] != nil and attributes["gen_ai.usage.cache_creation.input_tokens"] == nil
-              - set(attributes["gen_ai.usage.cache_creation.input_tokens"], attributes["gen_ai.usage.cache_write.input_tokens"]) where attributes["gen_ai.usage.cache_write.input_tokens"] != nil and attributes["gen_ai.usage.cache_creation.input_tokens"] == nil
+      # 2. CANONICALISE TOKEN NAMES — EXPERIMENTAL: replaced the hand-rolled
+      #    transform/genai_canonicalize_token_names with the upstream
+      #    gen_ai_normalizer processor's user-defined-source rename table.
+      #    Neither Strands nor agent's attribute names match the processor's
+      #    *built-in* openinference/openllmetry sources (both already emit
+      #    gen_ai.* names), so this only exercises the user-defined-source
+      #    path, not the built-in normalization. remove_originals mirrors
+      #    the old processor's rename-not-copy behavior.
+      gen_ai_normalizer:
+        sources:
+          - name: demo_cache_token_names
+            remove_originals: true
+            mappings:
+              gen_ai.usage.cache_read_input_tokens: gen_ai.usage.cache_read.input_tokens
+              gen_ai.usage.cache_write_input_tokens: gen_ai.usage.cache_creation.input_tokens
 
       # 3. FIX TOKEN COUNTS — runs on span attributes only, after names are
       #    canonical. Covers Strands (events) and agent (native span attrs)
@@ -462,7 +481,7 @@ opentelemetry-collector:
           processors:
             - filter/drop_flagd_spans
             - transform/genai_copy_events_to_span
-            - transform/genai_canonicalize_token_names
+            - gen_ai_normalizer
             - transform/genai_fix_token_counts
             - transform/service_names
             - transform/attribution
@@ -482,7 +501,7 @@ opentelemetry-collector:
             - otlp
           processors:
             - transform/genai_copy_events_to_span
-            - transform/genai_canonicalize_token_names
+            - gen_ai_normalizer
             - transform/genai_fix_token_counts
             - filter/keep_eval_anchors
           exporters:

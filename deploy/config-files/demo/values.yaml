@@ -44,11 +44,35 @@ components:
       # shared AWS account's Bedrock concurrently.
       - name: AGENT_LOAD_ENABLED
         value: "true"
+      # xk6-otel's own SDK (Go runtime metrics, and the Tracer used by
+      # script.js) uses the http OTLP exporters, so it needs the collector's
+      # HTTP receiver (4318), not the chart-wide default of 4317 (grpc-only).
+      - name: OTEL_EXPORTER_OTLP_ENDPOINT
+        value: "http://otel-collector:4318"
+      # k6's own built-in `--out opentelemetry` (test-run metrics) is a
+      # separate exporter from xk6-otel and ignores OTEL_EXPORTER_OTLP_*;
+      # it needs its own K6_OTEL_* vars or it falls back to localhost:4317.
+      - name: K6_OTEL_EXPORTER_PROTOCOL
+        value: "grpc"
+      - name: K6_OTEL_GRPC_EXPORTER_ENDPOINT
+        value: "otel-collector:4317"
+      - name: K6_OTEL_GRPC_EXPORTER_INSECURE
+        value: "true"
   frontend:
     replicas: 2
     envOverrides:
       - name: ACCOUNTING_ADDR
         value: accounting:5060
+  shipping:
+    envOverrides:
+      # Upstream's shipping now uses open-feature-flagd to read feature flags
+      # (panics at startup without a reachable provider); the pinned chart
+      # (0.39.0) doesn't set these for shipping yet, so it defaults to
+      # localhost, which isn't the flagd service.
+      - name: FLAGD_HOST
+        value: "flagd"
+      - name: FLAGD_PORT
+        value: "8013"
   postgresql:
     resources:
       limits:

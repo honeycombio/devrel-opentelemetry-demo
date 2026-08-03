@@ -6,7 +6,7 @@
 import logging
 import os
 from contextlib import asynccontextmanager
-from typing import Dict, List
+from typing import Any, Dict, List
 
 import uvicorn
 from fastapi import FastAPI, HTTPException
@@ -34,6 +34,7 @@ from traceloop.sdk.decorators import workflow
 class ChatRequest(BaseModel):
     message: str
     history: List[Dict] | None = None
+    session_id: str | None = None
 
 
 class Agent:
@@ -57,7 +58,9 @@ class Agent:
             await self.mcp_server.cleanup()
 
     async def handle_prompt(self, request: ChatRequest):
-        return await self.run_agent(request.message, request.history)
+        return await self.run_agent(
+            request.message, request.history, request.session_id
+        )
 
     async def get_tool_list(self):
         mcp_enabled = os.getenv("MCP_ENABLED", "False") == "True"
@@ -79,7 +82,12 @@ class Agent:
             return [tool(t) for t in tool_list]
 
     @workflow(name="astronomy_shop_agent_workflow")
-    async def run_agent(self, input_prompt, history: List[Dict] | None = None):
+    async def run_agent(
+        self,
+        input_prompt,
+        history: List[Dict] | None = None,
+        session_id: str | None = None,
+    ):
         model = ChatLLM()
         tools = await self.get_tool_list()
         agent = create_agent(
@@ -90,10 +98,13 @@ class Agent:
         try:
             messages = list(history) if history is not None else []
             messages.append({"role": "user", "content": input_prompt})
-            result = await agent.ainvoke(
-                {"messages": messages},
-                config={"recursion_limit": self.agentRecursionLimit},
-            )
+            config: dict[str, Any] = {"recursion_limit": self.agentRecursionLimit}
+            if session_id:
+                # LangGraph's own thread_id convention -- OpenLLMetry's
+                # LangChain instrumentation reads this and sets
+                # gen_ai.conversation.id on the chain span automatically.
+                config["configurable"] = {"thread_id": session_id}
+            result = await agent.ainvoke({"messages": messages}, config=config)
             return {"response": result}
         except Exception as e:
             raise HTTPException(status_code=500, detail=str(e)) from e
