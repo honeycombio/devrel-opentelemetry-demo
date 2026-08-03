@@ -10,6 +10,21 @@ the release.
 * [telemetry-docs] Add a new service to provide telemetry documentation based
   on Weaver
   ([#2794](https://github.com/open-telemetry/opentelemetry-demo/pull/2794))
+* [react-native-app] Render missing `City` and `State` input fields in `CheckoutForm`
+  ([#3754](https://github.com/open-telemetry/opentelemetry-demo/issues/3754))
+* [react-native-app] Fix `ProductCard` price calculation where `nanos` was
+  divided by `100_000_000` (1e8) instead of `1_000_000_000` (1e9), inflating
+  the displayed price
+  ([#3751](https://github.com/open-telemetry/opentelemetry-demo/issues/3751))
+* [agentic] Move agent, chatbot and mcp to OTLP http exporter
+  ([#3745](https://github.com/open-telemetry/opentelemetry-demo/pull/3745))
+* [payment] Fix `demo.payment.amount` telemetry attribute throwing a TypeError
+  at runtime. `Money.units` is an `int64` proto field decoded by
+  `@grpc/proto-loader` as a `Long` object, not a JS number. Adding a `Long` to
+  a float still returns a `Long`, which has no `.toFixed()` method. Wrap
+  `amount.units` in `Number()` before the arithmetic so `.toFixed(2)` works
+  correctly
+  ([#3747](https://github.com/open-telemetry/opentelemetry-demo/issues/3747))
 * [currency] Guard the `VERSION` environment variable lookup against `nullptr`:
   constructing a `std::string` directly from `std::getenv("VERSION")` crashes
   when the variable is unset, so fall back to `"unknown"` instead

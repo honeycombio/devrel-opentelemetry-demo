@@ -20,7 +20,21 @@ defmodule FlagdUi.Storage do
 
   @impl true
   def init(_) do
-    state = @file_path |> File.read!() |> Jason.decode!()
+    state =
+      case File.read(@file_path) do
+        {:ok, ""} ->
+          %{}
+
+        {:ok, content} ->
+          case Jason.decode(content) do
+            {:ok, parsed} -> parsed
+            {:error, _} -> %{}
+          end
+
+        {:error, _} ->
+          %{}
+      end
+
     Logger.info("Read new state from file")
 
     {:ok, state}
@@ -33,13 +47,18 @@ defmodule FlagdUi.Storage do
 
   @impl true
   def handle_cast({:replace, json_string}, state) do
-    new_state = Jason.decode!(json_string)
+    case Jason.decode(json_string) do
+      {:ok, new_state} ->
+        emit_diff_change_events(state, new_state, "ui-advanced")
 
-    emit_diff_change_events(state, new_state, "ui-advanced")
+        write_state(json_string)
 
-    write_state(json_string)
+        {:noreply, new_state}
 
-    {:noreply, new_state}
+      {:error, _} ->
+        Logger.warning("Ignoring replace with invalid JSON")
+        {:noreply, state}
+    end
   end
 
   @impl true
@@ -83,7 +102,12 @@ defmodule FlagdUi.Storage do
   end
 
   defp write_state(json_string) do
-    File.write!(@file_path, json_string)
+    # Write-then-rename so concurrent readers (e.g. flagd, or another Storage
+    # process in tests) never observe a truncated/empty file mid-write:
+    # rename/2 is atomic on the same filesystem, plain File.write!/2 is not.
+    tmp_path = @file_path <> ".tmp"
+    File.write!(tmp_path, json_string)
+    File.rename!(tmp_path, @file_path)
 
     Logger.info("Wrote new state to file")
   end
