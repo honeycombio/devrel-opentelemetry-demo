@@ -1,6 +1,6 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
-const { context, propagation, trace, metrics } = require('@opentelemetry/api');
+const { context, propagation, trace, metrics, SpanStatusCode } = require('@opentelemetry/api');
 const cardValidator = require('simple-card-validator');
 const { v4: uuidv4 } = require('uuid');
 
@@ -16,6 +16,14 @@ const transactionsCounter = meter.createCounter('app.payment.transactions');
 
 const LOYALTY_LEVEL = ['platinum', 'gold', 'silver', 'bronze'];
 
+// Decline reasons a card issuer's authorization network can return.
+const ISSUER_DECLINE_REASONS = [
+  'do_not_honor',
+  'issuer_unavailable',
+  'suspected_fraud',
+  'insufficient_funds',
+];
+
 /** Return random element from given array */
 function random(arr) {
   const index = Math.floor(Math.random() * arr.length);
@@ -30,12 +38,17 @@ module.exports.charge = async request => {
   const numberVariant =  await OpenFeature.getClient().getNumberValue("paymentFailure", 0);
 
   if (numberVariant > 0) {
-    // n% chance to fail with app.loyalty.level=gold
+    // n% chance the issuer's authorization network declines the charge
     if (Math.random() < numberVariant) {
-      span.setAttributes({'app.loyalty.level': 'gold' });
+      const declineReason = random(ISSUER_DECLINE_REASONS);
+      const err = new Error(`Payment declined by card issuer: ${declineReason}`);
+
+      span.setAttributes({ 'app.payment.declined': true, 'app.payment.decline_reason': declineReason });
+      span.recordException(err);
+      span.setStatus({ code: SpanStatusCode.ERROR, message: err.message });
       span.end();
 
-      throw new Error('Payment request failed. Invalid token. app.loyalty.level=gold');
+      throw err;
     }
   }
 
