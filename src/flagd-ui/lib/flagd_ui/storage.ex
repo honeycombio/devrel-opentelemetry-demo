@@ -47,6 +47,7 @@ defmodule FlagdUi.Storage do
     previous_variant = get_in(state, ["flags", flag_name, "defaultVariant"]) || ""
 
     emit_change_event(flag_name, previous_variant, flag_value, "ui-dashboard")
+    emit_flag_metric(Map.get(state, "flags", %{}), flag_name, flag_value)
 
     new_state =
       Map.update(state, "flags", %{}, fn flags ->
@@ -91,8 +92,17 @@ defmodule FlagdUi.Storage do
 
       if old_variant != new_variant do
         emit_change_event(flag_name, old_variant, new_variant, source)
+        emit_flag_metric(new_flags, flag_name, new_variant)
       end
     end)
+  end
+
+  # Looks up the numeric value behind `variant_name` and emits it as a gauge
+  # metric, separate from any trace data. See FlagdUi.FlagMetric for why.
+  defp emit_flag_metric(flags, flag_name, variant_name) do
+    value = get_in(flags, [flag_name, "variants", variant_name])
+
+    FlagdUi.FlagMetric.emit(flag_name, variant_name, value)
   end
 
   # Plain Logger.info — flagd-ui's stdout is scraped by the cluster's filelog
