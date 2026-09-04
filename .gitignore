@@ -64,3 +64,5 @@ tf/
 
 # Pulumi stack-config backups created by `pulumi config refresh`
 deploy/Pulumi.*.bak*
+.claude/settings.local.json
+.claude/worktrees
