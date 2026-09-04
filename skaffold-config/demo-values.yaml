@@ -404,7 +404,11 @@ opentelemetry-collector:
         metrics:
           exporters:
             - otlp/honeycomb
-            - awss3
+            # awss3 deliberately excluded here: its exporter panics
+            # (index out of range) on a metrics batch with zero
+            # ResourceMetrics, which spanmetricsconnector periodically
+            # produces — that was crash-looping the collector daemonset.
+            # awss3 still gets traces and logs below.
           processors:
             - transform/service_names
             - transform/attribution
