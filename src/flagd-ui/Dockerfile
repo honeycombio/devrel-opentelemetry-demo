@@ -23,6 +23,13 @@ ARG RUNNER_IMAGE="docker.io/debian:${DEBIAN_VERSION}"
 
 FROM ${BUILDER_IMAGE} AS builder
 
+# Cross-building linux/amd64 under QEMU (e.g. on Apple Silicon) makes the
+# BEAM's JIT double-mapping crash intermittently (kernel's `user` process
+# fails to start, or a NIF load panics) partway through the build. Forcing
+# a single JIT mapping avoids the QEMU incompatibility; it only affects
+# this build-time BEAM invocation, not the released app.
+ENV ERL_FLAGS="+JMsingle true"
+
 # install build dependencies
 RUN apt-get update \
   && apt-get install -y --no-install-recommends build-essential git \
