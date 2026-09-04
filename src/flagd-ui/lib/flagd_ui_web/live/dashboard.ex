@@ -61,6 +61,11 @@ defmodule FlagdUiWeb.Dashboard do
     {:noreply, new_socket}
   end
 
-  defp get_variants(%{"variants" => variants}), do: Enum.map(variants, fn {key, _} -> key end)
+  defp get_variants(%{"variants" => variants}) do
+    variants
+    |> Enum.sort_by(fn {_key, value} -> value end)
+    |> Enum.map(fn {key, _value} -> key end)
+  end
+
   defp get_variants(_), do: []
 end
