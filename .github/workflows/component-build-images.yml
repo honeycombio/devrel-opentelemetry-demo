@@ -295,27 +295,27 @@ jobs:
           tags: |
             type=raw,value=${{ inputs.version }}-${{matrix.file_tag.tag_suffix }}
             type=raw,value=latest-${{matrix.file_tag.tag_suffix }}
-      - name: Log in to the Github Container registry
-        uses: docker/login-action@abd2ef45e78c5afb21d64d4ca52ee8550d9572c7  # v4.5.1
+      - name: Log in to container registry
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f  # v4.6.0
         with:
           registry: ghcr.io
           username: ${{ github.repository_owner }}
           password: ${{ github.token }}
         if: ${{ steps.check_changes.outputs.skip == 'false' && inputs.push && !github.event.repository.fork }}
       - name: Log in to Docker Hub
-        uses: docker/login-action@abd2ef45e78c5afb21d64d4ca52ee8550d9572c7  # v4.5.1
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f  # v4.6.0
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
         if: ${{ inputs.push_dockerhub }}
       - name: Set up QEMU
         if: ${{ steps.check_changes.outputs.skip == 'false' && matrix.file_tag.setup-qemu }}
-        uses: docker/setup-qemu-action@96fe6ef7f33517b61c61be40b68a1882f3264fb8  # v4.2.0
+        uses: docker/setup-qemu-action@1f40c72289eff860ee54a304f1438e3cff362e0a  # v4.3.0
         with:
           image: tonistiigi/binfmt:master
       - name: Set up Docker Buildx
         if: steps.check_changes.outputs.skip == 'false'
-        uses: docker/setup-buildx-action@bb05f3f5519dd87d3ba754cc423b652a5edd6d2c  # v4.2.0
+        uses: docker/setup-buildx-action@37fe631027851001ddb9b187196cc803df7f5f0e  # v4.3.0
         with:
           buildkitd-config-inline: |
             [worker.oci]

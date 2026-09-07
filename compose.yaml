@@ -156,7 +156,8 @@ services:
       - GOMEMLIMIT=16MiB
       - OTEL_EXPORTER_OTLP_ENDPOINT
       - OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE
-      - OTEL_RESOURCE_ATTRIBUTES
+      - OTEL_GO_X_OBSERVABILITY=true
+      - OTEL_RESOURCE_ATTRIBUTES=${OTEL_RESOURCE_ATTRIBUTES},service.criticality=critical
       - OTEL_SERVICE_NAME=checkout
     depends_on:
       cart:
@@ -384,7 +385,7 @@ services:
       - TELEMETRY_DOCS_PORT
     depends_on:
       frontend:
-        condition: service_started
+        condition: service_healthy
       load-generator:
         condition: service_started
       jaeger:
@@ -449,7 +450,7 @@ services:
       - LOCUST_BROWSER_TRAFFIC_ENABLED=true
       - OTEL_EXPORTER_OTLP_ENDPOINT
       - OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE
-      - OTEL_RESOURCE_ATTRIBUTES
+      - OTEL_RESOURCE_ATTRIBUTES=${OTEL_RESOURCE_ATTRIBUTES},service.criticality=low
       - OTEL_SERVICE_NAME=load-generator
       - PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION=python
       - LOCUST_WEB_HOST=0.0.0.0
@@ -458,7 +459,7 @@ services:
       - FLAGD_OFREP_PORT
     depends_on:
       frontend:
-        condition: service_started
+        condition: service_healthy
       flagd:
         condition: service_started
     logging: *logging
@@ -519,7 +520,8 @@ services:
       - GOMEMLIMIT=16MiB
       - OTEL_EXPORTER_OTLP_ENDPOINT
       - OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE
-      - OTEL_RESOURCE_ATTRIBUTES
+      - OTEL_GO_X_OBSERVABILITY=true
+      - OTEL_RESOURCE_ATTRIBUTES=${OTEL_RESOURCE_ATTRIBUTES},service.criticality=high
       - OTEL_SERVICE_NAME=product-catalog
     volumes:
       - ./src/product-catalog/products:/usr/src/app/products

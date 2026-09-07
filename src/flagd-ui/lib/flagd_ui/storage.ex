@@ -12,11 +12,16 @@ defmodule FlagdUi.Storage do
 
   @file_path Application.compile_env!(:flagd_ui, :storage_file_path)
 
+  @topic "flags"
+
   def start_link(opts) do
     name = Keyword.get(opts, :name, Storage)
 
     GenServer.start_link(__MODULE__, %{}, name: name)
   end
+
+  @doc "PubSub topic carrying the configuration after every write."
+  def topic, do: @topic
 
   @impl true
   def init(_) do
@@ -52,7 +57,7 @@ defmodule FlagdUi.Storage do
         emit_diff_change_events(state, new_state, "ui-advanced")
 
         write_state(json_string)
-
+        broadcast(new_state)
         {:noreply, new_state}
 
       {:error, _} ->
@@ -75,6 +80,7 @@ defmodule FlagdUi.Storage do
     json_state = Jason.encode!(new_state, pretty: true)
 
     write_state(json_state)
+    broadcast(new_state)
 
     {:noreply, new_state}
   end
@@ -140,5 +146,9 @@ defmodule FlagdUi.Storage do
     Logger.info(
       "Flag changed: #{flag_name} (#{previous_variant} → #{new_variant}) [#{source}]"
     )
+  end
+
+  defp broadcast(state) do
+    Phoenix.PubSub.broadcast(FlagdUi.PubSub, @topic, {:flags_changed, state})
   end
 end

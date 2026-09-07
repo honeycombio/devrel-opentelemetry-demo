@@ -1,11 +1,16 @@
 # Changelog
 
-Please update changelog as part of any significant pull request. Place short
-description of your change into "Unreleased" section. As part of release
-process content of "Unreleased" section content will generate release notes for
-the release.
+Changelog entries are managed with individual fragment files under
+[`.chloggen`](./.chloggen), one per pull request. The unreleased changes are
+the set of fragment files currently in that directory. Do not edit released
+sections by hand; add a fragment instead (see the
+[contributing guide](./CONTRIBUTING.md#adding-a-changelog-entry)). At release
+time, `make chlog-update VERSION=x.x.x` folds those fragments into a new
+version section directly below the marker and deletes them.
 
-## Unreleased
+<!-- next version -->
+
+## 3.0.0
 
 * [telemetry-docs] Add a new service to provide telemetry documentation based
   on Weaver
