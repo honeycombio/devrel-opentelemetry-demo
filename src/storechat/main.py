@@ -15,6 +15,7 @@ from opentelemetry.sdk.trace.export import BatchSpanProcessor
 from pydantic import BaseModel
 
 import conversation
+import telemetry
 from agents import create_supervisor
 
 logging.basicConfig(level=logging.INFO)
@@ -27,6 +28,10 @@ resource = Resource.create({
 provider = TracerProvider(resource=resource)
 provider.add_span_processor(BatchSpanProcessor(OTLPSpanExporter()))
 trace.set_tracer_provider(provider)
+
+# Reshape Strands GenAI telemetry to the latest semconv (content as span
+# attributes instead of span events). Must run before any agent executes.
+telemetry.patch_strands_tracer()
 
 app = FastAPI(title="Store Chat")
 
