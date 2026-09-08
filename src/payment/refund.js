@@ -22,6 +22,8 @@ module.exports.refund = async request => {
 
   if (numberVariant > 0) {
     if (Math.random() < numberVariant) {
+      await span.setStatus({ code: SpanStatusCode.ERROR, message: 'Payment processor declined refund' });
+      span.recordException(new Error('Payment processor declined the refund request.'));
       span.end();
       throw new Error('Refund request failed.');
     }
@@ -29,7 +31,8 @@ module.exports.refund = async request => {
     // Deterministic failure for demo: emails ending in "125"
     const email = request.email || '';
     if (email.match(/125@/)) {
-      span.setStatus({ code: 2, message: 'Payment processor declined refund' });
+      await span.setStatus({ code: SpanStatusCode.ERROR, message: 'Payment processor declined refund' });
+      span.recordException(new Error('Payment processor declined the refund request.'));
       span.end();
       throw new Error('Payment processor declined the refund request.');
     }
