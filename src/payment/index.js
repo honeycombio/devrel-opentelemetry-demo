@@ -8,6 +8,7 @@ const opentelemetry = require('@opentelemetry/api')
 const charge = require('./charge')
 const refund = require('./refund')
 const paymentStatus = require('./paymentStatus')
+const flags = require('./featureFlags')
 const logger = require('./logger')
 
 async function chargeServiceHandler(call, callback) {
@@ -70,6 +71,7 @@ async function getPaymentStatusHandler(call, callback) {
 
 async function closeGracefully(signal) {
   server.forceShutdown()
+  await flags.shutdown()
   process.kill(process.pid, signal)
 }
 
@@ -97,6 +99,10 @@ if (ipv6_enabled == "true") {
 }
 
 const address = ip + `:${process.env['PAYMENT_PORT']}`;
+
+// Connect to flagd in the background. Payments are served on flag defaults
+// until it is reachable, so startup must not wait on it.
+flags.start()
 
 server.bindAsync(address, grpc.ServerCredentials.createInsecure(), (err, port) => {
   if (err) {

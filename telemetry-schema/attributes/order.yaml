@@ -49,6 +49,19 @@ attributes:
     brief: Whether payment was successfully charged
     stability: stable
     note: Indicates whether the payment transaction was successfully charged to the customer's payment method (true) or not charged (false). For synthetic requests, this is set to false.
+  - key: app.payment.declined
+    type: boolean
+    brief: Whether the card issuer declined the charge
+    stability: stable
+    note: >
+      Set when the issuer's authorization network refuses the charge. In the demo this is driven by the
+      paymentFailure feature flag rather than by a real issuer.
+  - key: app.payment.decline_reason
+    type: string
+    brief: Why the card issuer declined the charge
+    stability: stable
+    note: The decline code returned by the issuer's authorization network. Only present when app.payment.declined is true.
+    examples: ["do_not_honor", "issuer_unavailable", "suspected_fraud", "insufficient_funds"]
   - key: app.payment.transaction.id
     type: string
     brief: Payment transaction identifier

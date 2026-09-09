@@ -21,3 +21,10 @@ metrics:
     attributes:
       - ref: app.payment.currency
         requirement_level: required
+  - name: app.payment.refunds
+    brief: Payment refund counter
+    instrument: counter
+    unit: "{refund}"
+    stability: stable
+    annotations:
+      service: payment
