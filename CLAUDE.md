@@ -40,6 +40,10 @@ are for the **production cluster** (`devrel-demo` namespace on EKS) only.
 - **AWS credentials**: The script sources `.skaffold.env` which sets `AWS_PROFILE=devrel-sandbox`. If running in a context where env vars aren't inherited, pass `AWS_PROFILE=devrel-sandbox` explicitly.
 - **Docker must be running**: Skaffold uses Docker to build images. Start Docker before running.
 
+## Cutting a release (deploying to devrel-demo/prod)
+
+See `devrel-README.md` → "Deploy to devrel-demo" for the full writeup. Short version: `./scripts/bump-release.sh patch` tags and pushes, which triggers `.github/workflows/release-devrel.yml` to build images *and* deploy to the `prod-aws` Pulumi stack automatically — no manual `pulumi up` needed. To redeploy an existing version without rebuilding, use the `deploy-with-version.yml` workflow instead.
+
 ## Querying telemetry from the local cluster
 
 The local cluster (namespace `martin-local`) ships directly to Honeycomb using `HONEYCOMB_API_KEY` from `.skaffold.env`. The key determines the destination team + environment — **don't guess which env to query**. Resolve it from the key with the Honeycomb auth API before running any MCP query:

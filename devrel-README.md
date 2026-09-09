@@ -237,39 +237,25 @@ Exclusions are in `kubernetes/helm-obi.yml` under `discovery.exclude_instrument`
 
 ## Deploy to devrel-demo
 
-What is the next release number?
+Releasing is tag-driven and fully automated — pushing a release tag builds the images *and* deploys them to prod. There is no manual `pulumi up` step anymore.
 
 ```shell
-git fetch -a
-git tag --list
+git fetch --tags
+./scripts/bump-release.sh patch   # or: minor / major
 ```
 
-(replace 1.0.7 with something later)
+This reads the latest `*.*.*-release` tag, bumps it, then creates and pushes the new tag (add `--yes` to skip the confirmation prompts).
 
-```shell
-git tag 1.0.7-release
-git push origin 1.0.7-release
-```
+Pushing a tag matching `*.*.*-**` triggers the `[DevRel] Build and Publish` workflow (`.github/workflows/release-devrel.yml`):
+[https://github.com/honeycombio/devrel-opentelemetry-demo/actions]()
 
-Wait for it to build <- this is forever
-Visit [https://github.com/honeycombio/devrel-opentelemetry-demo/actions]() to wait for it
+- builds and pushes the changed component images tagged with the new version
+- builds and pushes the custom collector image tagged `<version>-collector`
+- runs `pulumi up` against stack `prod-aws` itself, with `container-tag=<version>` and `collector-container-tag=<version>-collector`
 
-Edit `./deploy/config-files/demo/values.yaml` to have the new version
+Wait for that workflow to go green — that's the whole release, no local pulumi commands needed.
 
-```shell
-cd deploy
-
-pulumi stack select honeycomb-devrel/prod # once
-
-pulumi config refresh
-
-# then maybe you can skip these?
-pulumi config set devrel-opentelemetry-demo:ingressClassName <valu???> # once
-pulumi config set devrel-opentelemetry-demo:honeycombApiKeyDogfood <value> # once
-pulumi config set devrel-opentelemetry-demo:honeycombApiKey <value> # once
-
-pulumi up
-```
+To redeploy an already-built version (e.g. rollback) without rebuilding anything, run the `[DevRel] Deploy Specific Version` workflow (`deploy-with-version.yml`) manually from the Actions tab, passing the version and collector version tags.
 
 ### Troubleshooting
 
