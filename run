@@ -2,6 +2,10 @@
 
 set -e
 
+# Captured before flag parsing consumes "$@", so the deploy marker can report
+# exactly what was passed to ./run.
+ORIGINAL_ARGS="$*"
+
 # Source .skaffold.env file if it exists
 if [[ -f .skaffold.env ]]; then
     set -a
@@ -106,6 +110,11 @@ done
 
 # maybe someday the container registry name will change, but this is what it is now
 skaffold run -d "$CONTAINER_REGISTRY" $BUILD_FLAGS --port-forward=user -l skaffold.dev/run-id=static --cache-artifacts=false
+
+# Post a Honeycomb marker for this local deploy, including exactly what was
+# passed to ./run. Best-effort: a marker failure shouldn't fail the deploy.
+scripts/create-local-deploy-marker.sh "./run $ORIGINAL_ARGS -> ${USER}-local" \
+  || echo "Warning: failed to post Honeycomb deploy marker" >&2
 
 # note: if the output ends with
 #   Error: UPGRADE FAILED: another operation (install/upgrade/rollback) is in progress
