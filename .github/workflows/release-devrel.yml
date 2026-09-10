@@ -90,4 +90,7 @@ jobs:
           IS_IN_PIPELINE: true
           AWS_REGION: ${{ env.AWS_REGION }}
 
-
+      - name: Create Honeycomb deploy marker
+        run: scripts/create-deploy-marker.sh "${{ github.ref_name }}" "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+        env:
+          HONEYCOMB_MARKERS_API_KEY: ${{ secrets.HONEYCOMB_MARKERS_API_KEY }}
