@@ -42,23 +42,33 @@ are for the **production cluster** (`devrel-demo` namespace on EKS) only.
 
 ## Expected gaps in traces (don't go hunting)
 
-**Orphaned `POST` spans in the `cart` dataset are intentional.** The daemonset
-collector has a `filter/drop_flagd_spans` processor
-(`deploy/config-files/collector/values-daemonset.yaml`) that drops every span
-with `rpc.service == "flagd.evaluation.v1.Service"` plus everything from
-`service.name == "flagd"`. Cart's gRPC-client span for a flag lookup matches
-and is dropped; its *child* — the `System.Net.Http` span named `POST` with
-`url.full: http://flagd:8013/flagd.evaluation.v1.Service/ResolveBoolean` — does
-not match, so it survives with a `trace.parent_id` that never arrives. That's
-~119k orphans/day in `cart`. The cart service is instrumented correctly
-(`AddGrpcClientInstrumentation()` in `src/cart/src/Program.cs`); verified with a
-standalone repro on the same package versions. To close the gap, add a
-condition matching the HTTP child too, e.g.
-`attributes["server.address"] == "flagd"`.
+**flagd feature-flag spans are dropped at the collector, deliberately.**
+`filter/drop_flagd_spans` removes anything with
+`rpc.service == "flagd.evaluation.v1.Service"`, anything from
+`service.name == "flagd"`, and anything with `server.address == "flagd"`. The
+rule is duplicated in two places, so change both:
+`deploy/config-files/collector/values-daemonset.yaml` (production) and
+`skaffold-config/demo-values.yaml` (local `*-local` deploys).
 
-Related: the `feature_flag.evaluation` span event stays on the *calling* span
+That third condition exists because **cart is .NET, where `Grpc.Net.Client`
+rides on `HttpClient`, so one flagd lookup produces two nested spans**: the
+gRPC-client span (`flagd.evaluation.v1.Service/ResolveBoolean`) and a
+`System.Net.Http` child named `POST`. Only the parent carries `rpc.*`, so the
+original rule dropped the parent and left the child orphaned — a `POST` span
+whose `trace.parent_id` never arrives, ~119k/day. You can't turn the double
+span off in-app: `SuppressDownstreamInstrumentation` stopped working at
+`OpenTelemetry.Instrumentation.Http` 1.6.0 and we're on 1.14.0.
+
+Cart's instrumentation is correct (`AddHttpClientInstrumentation()` and
+`AddGrpcClientInstrumentation()` in `src/cart/src/Program.cs`) — verified with a
+standalone repro on the same package versions, which emits both spans. We filter
+in the collector rather than removing instrumentation from cart, to avoid fork
+drift in a file we sync from upstream and to avoid silently blinding any future
+HTTP call cart makes.
+
+Note the `feature_flag.evaluation` span event stays on the *calling* span
 (OpenFeature's `TraceEnricherHook` writes to `Activity.Current`), so flag data
-is not lost — only the RPC span is.
+is never lost — only the RPC spans are.
 
 **`meta.span_count` on the root won't match what you count.** Refinery stamps it
 at decision time; spans that arrive afterwards show up with
