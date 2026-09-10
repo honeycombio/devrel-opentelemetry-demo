@@ -154,6 +154,110 @@ Suggested order:
 - **Prefer adding files over modifying them** where the demo allows. We're already
   good at this (156 adds vs 97 mods); it's why this is tractable at all.
 
+## Case study: does the payment service make it hard?
+
+Asked separately, worth its own answer, because it generalizes.
+
+**Payment's *conflicts* are the easy part. Payment's *clean merges* are the danger.**
+
+### Our payment footprint
+
+```
+M  pb/demo.proto              A  src/payment/featureFlags.js
+M  src/payment/Dockerfile     A  src/payment/paymentStatus.js
+M  src/payment/charge.js      A  src/payment/refund.js
+M  src/payment/index.js       A  src/payment/transactionStore.js
+M  src/payment/logger.js      A  src/payment/test/featureFlags.test.js
+M  src/payment/package.json
+```
+
+Five of our eleven changes are *new files*. None of them conflict. `pb/demo.proto`
+merges cleanly and our Refund RPC survives intact.
+
+### The conflicts are small and legible
+
+Only three payment files conflict, seven hunks total:
+
+- `charge.js` — 5 hunks, each a short "ours vs theirs" block (the failure-injection
+  logic, the attribute names, the synthetic-request handling). Maybe 20 minutes.
+- `Dockerfile` — 1 hunk: we `COPY` `opentelemetry.js` + our new files, upstream copies
+  neither. Keep ours minus `opentelemetry.js`.
+- `package.json` — 1 hunk: our `start` uses `--require ./opentelemetry.js` and we added
+  a `test` script; upstream switched to
+  `--require @opentelemetry/auto-instrumentations-node/register`.
+
+`index.js` does **not** conflict, even though both sides changed it.
+
+### …and that's the problem
+
+Three payment things change **with no conflict marker, no test failure, and no
+compile error**:
+
+1. **`src/payment/index.js` silently renames a span attribute.**
+
+   | rev | name |
+   |---|---|
+   | merge-base | `app.payment.amount` |
+   | ours | `app.payment.amount` (untouched) |
+   | upstream | `demo.payment.amount` |
+   | **merged** | **`demo.payment.amount`** |
+
+   We never touched the line, so git takes upstream's. Any Honeycomb query, board,
+   SLO, or trigger on `app.payment.amount` just goes blank.
+
+2. **`charge.js`'s metric renames itself inside a conflicted file, outside the
+   markers.** Same shape: merge-base and ours say
+   `createCounter('app.payment.transactions')`, upstream says
+   `createCounter('demo.payment.transactions', { unit: '{transaction}' })`. The merged
+   line is upstream's, and it sits *between* conflict hunks — so resolving the five
+   marked hunks in favour of `app.*` leaves one file emitting a `demo.*` metric with
+   `app.*` span attributes. Inconsistent, and it looks resolved.
+
+3. **`src/payment/opentelemetry.js` is deleted outright.** Upstream removed it (moved
+   to the auto-instrumentation register); we kept it unmodified, so the merge drops it
+   with no conflict — while our `Dockerfile` and `package.json` still reference it.
+   Those two do conflict, so a careful resolver catches it; a "keep ours" resolution
+   ships a payment service that cannot start.
+
+### The general lesson
+
+That third case is a whole class. Upstream deleted 159 files; **we never touched 150
+of them, so the merge deletes them silently**:
+
+```
+ 74  src/react-native-app/*     (upstream dropped the RN app)
+ 46  test/*                     (our test/ goes 47 files -> 13)
+ 10  src/frontend/*
+  6  src/llm/*                  <-- skaffold.yaml still builds image: llm from src/llm/Dockerfile
+  3  src/product-reviews/*
+  1  src/payment/opentelemetry.js
+```
+
+Most of those deletions are *correct* and welcome. `src/llm/*` is not: our
+`skaffold.yaml` and `docker-compose.yml` still reference it, so that one breaks the
+build. (Loudly, at least — unlike the renames.)
+
+And the rename class is broader than payment. `scripts/find-silent-renames.sh`
+enumerates it: **8 files merge cleanly while losing every `app.*` name**:
+
+```
+src/ad/src/main/java/oteldemo/AdService.java      src/payment/index.js
+src/currency/src/server.cpp                       src/product-catalog/main.go
+src/email/email_server.rb                         src/quote/app/routes.php
+src/frontend/utils/telemetry/FrontendTracer.ts    src/shipping/.../quote.rs
+```
+
+**So: payment doesn't make the merge hard. It makes it deceptive.** The conflict
+count understates the work, because the files git resolves for us are the ones that
+quietly change what telemetry we emit — and our dashboards live outside this repo
+where no diff can see them.
+
+**Do this before merging:** snapshot the full set of emitted attribute and metric
+names on `main`, and diff it against the merged tree. Run
+`scripts/find-silent-renames.sh` and treat its output as a required review list, not
+an FYI. Then decide the `app.*` vs `demo.*` question once, globally, and apply it
+deliberately rather than letting git's three-way merge vote on it file by file.
+
 ## Reproducing these numbers
 
 ```bash
