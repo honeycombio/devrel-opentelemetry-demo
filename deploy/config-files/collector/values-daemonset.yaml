@@ -187,6 +187,11 @@ config:
             span:
                 - attributes["rpc.service"] == "flagd.evaluation.v1.Service"
                 - resource.attributes["service.name"] == "flagd"
+                # cart is .NET: Grpc.Net.Client rides on HttpClient, so each
+                # flagd call also emits a System.Net.Http child span carrying
+                # no rpc.* attributes. Without this it survives its dropped
+                # parent and shows up as an orphan. See CLAUDE.md.
+                - attributes["server.address"] == "flagd"
 
     # Keep only spans worth evaluating: store-chat's per-turn supervisor
     # invocation, and product-reviews' Bedrock chat spans (the consumer
