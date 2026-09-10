@@ -40,6 +40,30 @@ are for the **production cluster** (`devrel-demo` namespace on EKS) only.
 - **AWS credentials**: The script sources `.skaffold.env` which sets `AWS_PROFILE=devrel-sandbox`. If running in a context where env vars aren't inherited, pass `AWS_PROFILE=devrel-sandbox` explicitly.
 - **Docker must be running**: Skaffold uses Docker to build images. Start Docker before running.
 
+## Expected gaps in traces (don't go hunting)
+
+**Orphaned `POST` spans in the `cart` dataset are intentional.** The daemonset
+collector has a `filter/drop_flagd_spans` processor
+(`deploy/config-files/collector/values-daemonset.yaml`) that drops every span
+with `rpc.service == "flagd.evaluation.v1.Service"` plus everything from
+`service.name == "flagd"`. Cart's gRPC-client span for a flag lookup matches
+and is dropped; its *child* — the `System.Net.Http` span named `POST` with
+`url.full: http://flagd:8013/flagd.evaluation.v1.Service/ResolveBoolean` — does
+not match, so it survives with a `trace.parent_id` that never arrives. That's
+~119k orphans/day in `cart`. The cart service is instrumented correctly
+(`AddGrpcClientInstrumentation()` in `src/cart/src/Program.cs`); verified with a
+standalone repro on the same package versions. To close the gap, add a
+condition matching the HTTP child too, e.g.
+`attributes["server.address"] == "flagd"`.
+
+Related: the `feature_flag.evaluation` span event stays on the *calling* span
+(OpenFeature's `TraceEnricherHook` writes to `Activity.Current`), so flag data
+is not lost — only the RPC span is.
+
+**`meta.span_count` on the root won't match what you count.** Refinery stamps it
+at decision time; spans that arrive afterwards show up with
+`meta.refinery.send_reason: trace_send_late_span` and are *not* in that count.
+
 ## Cutting a release (deploying to devrel-demo/prod)
 
 See `devrel-README.md` → "Deploy to devrel-demo" for the full writeup. Short version: `./scripts/bump-release.sh patch` tags and pushes, which triggers `.github/workflows/release-devrel.yml` to build images *and* deploy to the `prod-aws` Pulumi stack automatically — no manual `pulumi up` needed. To redeploy an existing version without rebuilding, use the `deploy-with-version.yml` workflow instead.
