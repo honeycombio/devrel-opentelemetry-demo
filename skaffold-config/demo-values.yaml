@@ -359,7 +359,7 @@ opentelemetry-collector:
       # Posts a Honeycomb marker per flagd-ui flag-change log record. Reads
       # marker.message off the log attribute set by transform/marker_message.
       honeycombmarker:
-        api_key: ${env:HONEYCOMB_MARKERS_KEY}
+        api_key: ${env:HONEYCOMB_MARKERS_API_KEY}
         markers:
           - type: feature-flag-change
             message_key: marker.message

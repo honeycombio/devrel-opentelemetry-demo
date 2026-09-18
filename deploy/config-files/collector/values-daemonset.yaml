@@ -409,7 +409,7 @@ config:
     # marker.message). Registered in ocb-config.yaml so otelcol-dev includes
     # honeycombmarkerexporter.
     honeycombmarker:
-      api_key: ${HONEYCOMB_MARKERS_KEY}
+      api_key: ${HONEYCOMB_MARKERS_API_KEY}
       markers:
         - type: feature-flag-change
           message_key: marker.message

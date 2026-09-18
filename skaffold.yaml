@@ -146,7 +146,7 @@ deploy:
               # Marker key (markers permission) — used by the honeycombmarker
               # exporter. May be the same value as the ingest key when
               # HONEYCOMB_API_KEY alone is set; ./run handles the defaulting.
-              - name: HONEYCOMB_MARKERS_KEY
+              - name: HONEYCOMB_MARKERS_API_KEY
               - name: CLOUD_PROVIDER
               - name: AWS_REGION
               - name: NAMESPACE
@@ -156,7 +156,7 @@ deploy:
         setValueTemplates:
           components.load-generator.envOverrides[0].value: "{{.AGENT_LOAD_ENABLED}}"
           opentelemetry-collector.extraEnvs[0].value: "{{.HONEYCOMB_INGEST_KEY}}"
-          opentelemetry-collector.extraEnvs[1].value: "{{.HONEYCOMB_MARKERS_KEY}}"
+          opentelemetry-collector.extraEnvs[1].value: "{{.HONEYCOMB_MARKERS_API_KEY}}"
           opentelemetry-collector.extraEnvs[2].value: "{{.CLOUD_PROVIDER}}"
           opentelemetry-collector.clusterRole.name: "{{.USER}}-otel-collector"
           opentelemetry-collector.clusterRole.clusterRoleBinding.name: "{{.USER}}-otel-collector"

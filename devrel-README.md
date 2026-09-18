@@ -62,10 +62,10 @@ PIPELINE_ID=
 PIPELINE_MANAGEMENT_API_SECRET=
 PIPELINE_MANAGEMENT_API_KEY_ID=
 PIPELINE_TELEMETRY_INGEST_KEY=
-export HONEYCOMB_MARKERS_KEY=
+export HONEYCOMB_MARKERS_API_KEY=
 ```
 
-`HONEYCOMB_MARKERS_KEY` is what `./run` uses to post a Honeycomb deploy marker
+`HONEYCOMB_MARKERS_API_KEY` is what `./run` uses to post a Honeycomb deploy marker
 after each local skaffold run (via `scripts/create-local-deploy-marker.sh`).
 It needs `markers` permission on whichever team/environment your telemetry
 lands in — if it's missing, `./run` still deploys, it just logs a warning and

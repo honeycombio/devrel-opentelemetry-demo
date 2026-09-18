@@ -6,7 +6,7 @@
 # api_key_access permissions:
 #   - the ingest key (HONEYCOMB_INGEST_KEY, falling back to HONEYCOMB_API_KEY)
 #     must have `events`
-#   - the marker key (HONEYCOMB_MARKERS_KEY, falling back to HONEYCOMB_API_KEY)
+#   - the marker key (HONEYCOMB_MARKERS_API_KEY, falling back to HONEYCOMB_API_KEY)
 #     must have `markers`
 # When both resolve to the same key, it's checked once and both perms are
 # asserted on a single response.
@@ -77,7 +77,7 @@ fi
 # HONEYCOMB_API_KEY. Mirror the same defaulting that ./run does so the
 # validation matches what the collector will actually see.
 INGEST_KEY="${HONEYCOMB_INGEST_KEY:-$HONEYCOMB_API_KEY}"
-MARKER_KEY="${HONEYCOMB_MARKERS_KEY:-$HONEYCOMB_API_KEY}"
+MARKER_KEY="${HONEYCOMB_MARKERS_API_KEY:-$HONEYCOMB_API_KEY}"
 
 errors=0
 
@@ -145,7 +145,7 @@ auth_identity() {
 }
 
 if [ -z "$INGEST_KEY" ] && [ -z "$MARKER_KEY" ]; then
-  log_error "   ${RED}✗ No Honeycomb keys set. Set HONEYCOMB_API_KEY (or HONEYCOMB_INGEST_KEY + HONEYCOMB_MARKERS_KEY) in .skaffold.env${NC}"
+  log_error "   ${RED}✗ No Honeycomb keys set. Set HONEYCOMB_API_KEY (or HONEYCOMB_INGEST_KEY + HONEYCOMB_MARKERS_API_KEY) in .skaffold.env${NC}"
   errors=$((errors + 1))
 elif [ "$INGEST_KEY" = "$MARKER_KEY" ]; then
   # Same key serves both purposes — one HTTP call, both perms asserted.
