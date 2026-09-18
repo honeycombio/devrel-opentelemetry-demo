@@ -62,7 +62,16 @@ PIPELINE_ID=
 PIPELINE_MANAGEMENT_API_SECRET=
 PIPELINE_MANAGEMENT_API_KEY_ID=
 PIPELINE_TELEMETRY_INGEST_KEY=
+export HONEYCOMB_MARKERS_KEY=
 ```
+
+`HONEYCOMB_MARKERS_KEY` is what `./run` uses to post a Honeycomb deploy marker
+after each local skaffold run (via `scripts/create-local-deploy-marker.sh`).
+It needs `markers` permission on whichever team/environment your telemetry
+lands in — if it's missing, `./run` still deploys, it just logs a warning and
+skips the marker. If unset, it falls back to `HONEYCOMB_API_KEY`.
+`scripts/validate-honeycomb-keys.sh` checks both keys have the right
+permissions and point at the same environment.
 
 ## AWS Setup
 
@@ -256,6 +265,14 @@ Pushing a tag matching `*.*.*-**` triggers the `[DevRel] Build and Publish` work
 Wait for that workflow to go green — that's the whole release, no local pulumi commands needed.
 
 To redeploy an already-built version (e.g. rollback) without rebuilding anything, run the `[DevRel] Deploy Specific Version` workflow (`deploy-with-version.yml`) manually from the Actions tab, passing the version and collector version tags.
+
+Both workflows post a Honeycomb deploy marker (`/1/markers/__all__`, tagged
+with the version and a link back to the Actions run) via
+`scripts/create-deploy-marker.sh`, using the `HONEYCOMB_MARKERS_API_KEY`
+repo secret (Settings → Secrets and variables → Actions). That key needs
+`markers` permission on the environment `devrel-demo` ships to — it's a
+separate secret from whatever key the production collector uses to ingest
+telemetry.
 
 ### Troubleshooting
 
