@@ -6,6 +6,17 @@ set -e
 # exactly what was passed to ./run.
 ORIGINAL_ARGS="$*"
 
+# Run a setup step without its chatter, but if it fails, show what it said and stop.
+# (Plain `> /dev/null 2>&1` under set -e made ./run exit silently, e.g. on an expired AWS SSO token.)
+quietly() {
+    local output
+    if ! output=$("$@" 2>&1); then
+        echo "$output" >&2
+        echo "Error: '$*' failed. (Expired AWS SSO token? Try: aws sso login --profile ${AWS_PROFILE:-devrel-sandbox})" >&2
+        exit 1
+    fi
+}
+
 # Source .skaffold.env file if it exists
 if [[ -f .skaffold.env ]]; then
     set -a
@@ -72,7 +83,7 @@ if [[ "$CLOUD_PROVIDER" == "aws" ]]; then
     echo "Using AWS configuration"
     CONTAINER_REGISTRY=$(pulumi stack output -s honeycomb-devrel/infra-aws/prod ecrRepositoryUrlPrefix 2>/dev/null)
     echo "Logging in to ECR, because it's so annoying when we forget."
-    scripts/login-ecr.sh > /dev/null 2>&1
+    quietly scripts/login-ecr.sh
 
     # Pull Bedrock inference profiles + local-dev IAM role from the shared infra stack.
     BEDROCK_HAIKU_PROFILE_ARN=$(pulumi stack output -s honeycomb-devrel/infra-aws/prod bedrockClaudeHaikuProfileArn 2>/dev/null)
@@ -84,14 +95,14 @@ elif [[ "$CLOUD_PROVIDER" == "azure" ]]; then
     echo "Using Azure configuration"
     CONTAINER_REGISTRY=$(pulumi stack output -s honeycomb-devrel/infra-azure/prod acrName 2>/dev/null)
     echo "Logging in to ACR, because it's so annoying when we forget."
-    scripts/login-acr.sh > /dev/null 2>&1
+    quietly scripts/login-acr.sh
     DOMAINNAME="zurelia.honeydemo.io"
     INGRESS_CLASS="webapprouting.kubernetes.azure.com"
 fi
 
 # Set kubectl context for the appropriate cloud provider
 echo "Setting kubectl context for $CLOUD_PROVIDER..."
-scripts/set-kubecontext.sh "$CLOUD_PROVIDER" > /dev/null 2>&1
+quietly scripts/set-kubecontext.sh "$CLOUD_PROVIDER"
 
 export CLOUD_PROVIDER
 export DOMAINNAME
