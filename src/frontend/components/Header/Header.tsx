@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { useEffect, useState } from 'react';
-import { useBooleanFlagValue } from '@openfeature/react-sdk';
 import CartIcon from '../CartIcon';
 import CurrencySwitcher from '../CurrencySwitcher';
 import SessionGateway from '../../gateways/Session.gateway';
@@ -11,7 +10,6 @@ import * as S from './Header.styled';
 const Header = () => {
   // sessionStorage only exists in the browser, so read it after mount.
   const [account, setAccount] = useState<{ companyName: string; displayName: string } | null>(null);
-  const showLoginLink = useBooleanFlagValue('frontend.login-link', false);
 
   useEffect(() => {
     const { companyName, displayName } = SessionGateway.getSession();
@@ -36,7 +34,7 @@ const Header = () => {
                 <span>{account.companyName} · {account.displayName}</span>
                 <S.AccountButton type="button" onClick={logOut}>Log out</S.AccountButton>
               </S.Account>
-            ) : showLoginLink && (
+            ) : (
               <S.Account>
                 <S.AccountLink href="/login">Log in</S.AccountLink>
               </S.Account>

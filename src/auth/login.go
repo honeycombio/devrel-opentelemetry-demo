@@ -8,7 +8,6 @@ import (
 	"log/slog"
 	"strings"
 
-	"github.com/open-feature/go-sdk/openfeature"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/baggage"
 	otelcodes "go.opentelemetry.io/otel/codes"
@@ -116,15 +115,12 @@ func (a *auth) authenticate(ctx context.Context, req *pb.LoginRequest, method st
 			logger.WarnContext(ctx, "sso verification failed", slog.String("company", user.CompanyID), slog.String("error", err.Error()))
 			return user, resultIdpError, status.Error(codes.Unavailable, "single sign-on is unavailable")
 		}
-		evalCtx := openfeature.NewEvaluationContext(user.ID, map[string]any{"company": user.CompanyID})
-		if check, _ := a.flags.BooleanValue(ctx, "auth.user-status-check", false, evalCtx); check {
-			if err := a.checkUserStatus(ctx, user); err != nil {
-				result := resultStatusCheckFailed
-				if errors.Is(err, errUserNotCurrent) {
-					result = resultUserNotCurrent
-				}
-				return user, result, status.Error(codes.PermissionDenied, "your account is not active at your company")
+		if err := a.checkUserStatus(ctx, user); err != nil {
+			result := resultStatusCheckFailed
+			if errors.Is(err, errUserNotCurrent) {
+				result = resultUserNotCurrent
 			}
+			return user, result, status.Error(codes.PermissionDenied, "your account is not active at your company")
 		}
 	default:
 		return user, resultMethodMismatch, status.Errorf(codes.InvalidArgument, "unknown login method %q", method)
