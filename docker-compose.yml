@@ -152,11 +152,28 @@ services:
       - OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE
       - OTEL_RESOURCE_ATTRIBUTES
       - OTEL_SERVICE_NAME=auth
+      - SSL_CERT_DIR=/etc/ssl/certs:/etc/sso-mocks-ca
+    extra_hosts:
+      - "sso.keystone-id.example:127.0.0.1"
+      - "sso-status.globex.example:127.0.0.1"
+    volumes:
+      - ./src/sso-mocks/certs/ca.pem:/etc/sso-mocks-ca/ca.pem:ro
     depends_on:
       postgresql:
         condition: service_started
       otel-collector:
         condition: service_started
+    logging: *logging
+
+  # Third-party stand-ins for auth; shares auth's network namespace, like the k8s sidecar.
+  sso-mocks:
+    image: ${IMAGE_NAME}:${DEMO_VERSION}-sso-mocks
+    container_name: sso-mocks
+    build:
+      context: ./
+      dockerfile: ./src/sso-mocks/Dockerfile
+    network_mode: "service:auth"
+    restart: unless-stopped
     logging: *logging
 
   checkout:

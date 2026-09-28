@@ -32,6 +32,10 @@ build:
       context: .
       docker:
         dockerfile: src/auth/Dockerfile
+    - image: sso-mocks
+      context: .
+      docker:
+        dockerfile: src/sso-mocks/Dockerfile
     - image: checkout
       context: .
       docker:
@@ -243,6 +247,8 @@ deploy:
           services.telemetryDocs.imageOverride.tag: "{{if .IMAGE_REPO_telemetry_docs }}{{.IMAGE_TAG_telemetry_docs}}@{{.IMAGE_DIGEST_telemetry_docs}}{{end}}"
           services.auth.imageOverride.repository: "{{if .IMAGE_REPO_auth }}{{.IMAGE_REPO_auth}}{{end}}"
           services.auth.imageOverride.tag: "{{if .IMAGE_REPO_auth }}{{.IMAGE_TAG_auth}}@{{.IMAGE_DIGEST_auth}}{{end}}"
+          services.auth.sidecar.imageOverride.repository: "{{if .IMAGE_REPO_sso_mocks }}{{.IMAGE_REPO_sso_mocks}}{{end}}"
+          services.auth.sidecar.imageOverride.tag: "{{if .IMAGE_REPO_sso_mocks }}{{.IMAGE_TAG_sso_mocks}}@{{.IMAGE_DIGEST_sso_mocks}}{{end}}"
           ingress.domainName: "{{if .DOMAINNAME}}{{.DOMAINNAME}}{{else}}aurelia.honeydemo.io{{end}}"
           ingress.subDomainName: "{{.USER}}-local"
           ingress.enabled: true

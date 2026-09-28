@@ -27,7 +27,7 @@ BCRYPT_COST = 10
 
 IDP_HOST = "sso.keystone-id.example"
 MOCK_ADDR = "127.0.0.1"
-UNREACHABLE_ADDR = "192.0.2.1"
+UNREACHABLE_NET = "192.0.2"  # TEST-NET-1, never routed
 
 ROOT = Path(__file__).resolve().parent.parent
 
@@ -173,9 +173,10 @@ def main():
         f"    - {IDP_HOST}",
         f"    - sso-status.{GLOBEX[0]}.example",
         "# tenant-hosted endpoints; not reachable from the demo cluster",
-        "- ip: " + UNREACHABLE_ADDR,
-        "  hostnames:",
-        *[f"    - {h}" for h in tenant_status_hosts],
+        # One address per tenant. Kubernetes keys hostAliases by ip, and one long /etc/hosts
+        # line would be ignored by musl resolvers (512-byte limit).
+        *[line for i, h in enumerate(tenant_status_hosts)
+          for line in (f"- ip: {UNREACHABLE_NET}.{i + 1}", "  hostnames:", f"    - {h}")],
         "",
     ]
     out = ROOT / "skaffold-config/charts/otel-services/files/auth-host-aliases.yaml"

@@ -63,6 +63,11 @@ export class OtelServices extends pulumi.ComponentResource {
                     image: {
                         tag: `${args.config.containerTag}-auth`,
                     },
+                    sidecar: {
+                        image: {
+                            tag: `${args.config.containerTag}-sso-mocks`,
+                        },
+                    },
                 },
                 // product-reviews and llm are deployed directly by Pulumi in oteldemo.ts
                 productReviews: { enabled: false },

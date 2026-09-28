@@ -88,6 +88,10 @@ jobs:
             tag_suffix: auth
             context: ./
             setup-qemu: true
+          - file: ./src/sso-mocks/Dockerfile
+            tag_suffix: sso-mocks
+            context: ./
+            setup-qemu: true
           - file: ./src/checkout/Dockerfile
             tag_suffix: checkout
             context: ./

@@ -297,6 +297,17 @@ spec:
         app.kubernetes.io/name: {{ .Values.services.auth.name }}
     spec:
       serviceAccountName: {{ .Release.Name }}
+      hostAliases:
+        {{- .Files.Get "files/auth-host-aliases.yaml" | nindent 8 }}
+      securityContext:
+        sysctls:
+          # lets the non-root sidecar listen on 443
+          - name: net.ipv4.ip_unprivileged_port_start
+            value: "0"
+      volumes:
+        - name: sso-mocks-ca
+          configMap:
+            name: {{ .Values.services.auth.name }}-sso-mocks-ca
       containers:
         - name: {{ .Values.services.auth.name }}
           image: "{{ if .Values.services.auth.imageOverride.repository }}{{ .Values.services.auth.imageOverride.repository }}{{ else }}{{ .Values.services.auth.image.repository }}{{ end }}:{{ if .Values.services.auth.imageOverride.tag }}{{ .Values.services.auth.imageOverride.tag }}{{ else }}{{ .Values.services.auth.image.tag }}{{ end }}"
@@ -320,4 +331,21 @@ spec:
             {{- end }}
             - name: OTEL_EXPORTER_OTLP_ENDPOINT
               value: http://$(OTEL_COLLECTOR_NAME):4317
+          volumeMounts:
+            - name: sso-mocks-ca
+              mountPath: /etc/sso-mocks-ca
+              readOnly: true
+        {{- with .Values.services.auth.sidecar }}
+        - name: {{ .name }}
+          image: "{{ if .imageOverride.repository }}{{ .imageOverride.repository }}{{ else }}{{ .image.repository }}{{ end }}:{{ if .imageOverride.tag }}{{ .imageOverride.tag }}{{ else }}{{ .image.tag }}{{ end }}"
+          imagePullPolicy: {{ .image.pullPolicy }}
+        {{- end }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Values.services.auth.name }}-sso-mocks-ca
+data:
+  ca.pem: |
+    {{- .Files.Get "files/sso-mocks-ca.pem" | nindent 4 }}
 {{- end }}
