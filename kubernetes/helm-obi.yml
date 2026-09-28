@@ -10,8 +10,8 @@ config:
       instrument:
         - k8s_namespace: devrel-demo
       exclude_instrument:
-        - k8s_deployment_name: htp-builder-refinery
-        - k8s_deployment_name: htp-builder-refinery-redis
+        - k8s_deployment_name: refinery
+        - k8s_deployment_name: refinery-redis
 
     # Send traces and metrics to the daemonset OTel Collector in devrel-demo
     # (this is the same collector the application services use)
