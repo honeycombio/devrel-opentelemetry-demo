@@ -104,6 +104,13 @@ https://github.com/honeycombio/devrel-opentelemetry-demo/actions/runs/3642345076
   status and Kafka restarts weren't checked. Honeycomb shows auth, SSO mocks and postgres (logins find users) all
   working.
 
+- Prod 13:05–13:16 UTC (sampled 3.5x): 134 Logins, p50 65ms, **p95 127ms**. Globex 33 (25%; small sample)
+  p95 128ms with 2 `user_not_current`; other SSO 62, p95 63ms; password 39 (39% of non-Globex), p95 66ms; 1 `bad_password`.
+  Only Globex has `CheckUserStatus`. Example blocked-Globex trace: `50452aa77814529444ecf3656e25edd4`.
+- Note: rejected logins (403/401) mark the api-gateway, frontend-proxy and gRPC-client spans `error=true` (the auth server span
+  isn't). That's a small steady frontend error rate, not a problem for the Login-p95 trigger.
+- **DVR-121 closed** at 13:20 UTC with "Shipped behind `auth.user-status-check`, rolled out."
+
 ### To finish Release A in the morning (superseded by the follow-up above)
 1. Fix the accounting build. The likely fix: add a direct `PackageReference` to a patched `OpenTelemetry.Resources.Host`
    in `src/accounting/Accounting.csproj` (check the advisory for the fixed version), then confirm with
