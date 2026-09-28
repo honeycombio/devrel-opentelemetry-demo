@@ -83,7 +83,28 @@ Run: https://github.com/honeycombio/devrel-opentelemetry-demo/actions/runs/36385
 - **So there's no baseline in `devrel-demos`/`demo` yet, and DVR-121 is still open** (In Progress). I didn't close it,
   because nothing shipped.
 
-### To finish Release A in the morning
+**Morning follow-up (with Jess, 2026-09-28):** Jess said to let accounting build through warnings ("it's a
+demo app"). The permission classifier blocked the subagent ("Security Weaken"). Once Jess confirmed, I made the
+edit directly: `f2c354f1` sets `TreatWarningsAsErrors=false` in `src/accounting/Directory.Build.props`. Verified with
+`dotnet build` in an amd64 SDK container (`Build succeeded`, NU1903 reported as a warning). A local
+`docker build` on the Mac fails, because Grpc.Tools' arm64 `protoc` segfaults (exit 139); CI builds on amd64,
+so that's local-only. Pushed to main and tagged **`2.9.2-release`** (12:41 UTC):
+https://github.com/honeycombio/devrel-opentelemetry-demo/actions/runs/36423450765
+- The first attempt failed on **telemetry-docs**: PyPI read timeouts made pip backtrack to `mkdocs 0.12.2` /
+  `mkdocs-material 1.5.1`, which crash with PyYAML 6 (`yaml.load() missing Loader`). A local build resolved to
+  mkdocs 1.6.1 / material 9.7.7 and passed. I reran the failed jobs (`gh run rerun --failed`), which got
+  **success, including deploy**. Suggestion: pin `mkdocs==1.6.1 mkdocs-material==9.7.7` in
+  `src/telemetry-docs/Dockerfile` so a flaky PyPI can't cause this again.
+- **Release A went live at 13:04:19 UTC** (deploy marker "Deployed 2.9.2-release to devrel-demo"). **This is the
+  baseline start.**
+- First prod look (Honeycomb `devrel-demos`/`demo`, 13:04–13:06): Login spans arriving; SSO and password both `success`;
+  Login p95 128ms. Globex: `auth.user-status-check`=`on` and `CheckUserStatus` (`active`). Other tenants: `off`, no check,
+  so flagd did restart and load the new flags. `auth.login-audit-log`=`on`.
+- `kubectl` against prod failed because the SSO token had expired (`Token has expired and refresh failed`), so pod
+  status and Kafka restarts weren't checked. Honeycomb shows auth, SSO mocks and postgres (logins find users) all
+  working.
+
+### To finish Release A in the morning (superseded by the follow-up above)
 1. Fix the accounting build. The likely fix: add a direct `PackageReference` to a patched `OpenTelemetry.Resources.Host`
    in `src/accounting/Accounting.csproj` (check the advisory for the fixed version), then confirm with
    `docker build -f src/accounting/Dockerfile .`. The quick alternative is to suppress NU1903 for that package.
