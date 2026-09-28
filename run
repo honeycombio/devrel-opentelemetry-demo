@@ -134,13 +134,13 @@ for svc in $SERVICES; do
   BUILD_FLAGS="$BUILD_FLAGS -b $svc"
 done
 
+# The Honeycomb deploy marker is posted by a skaffold deploy "after" hook
+# (scripts/deploy-marker-hook.sh), so it lands when the pods are ready — not
+# when --port-forward finally exits. This message says exactly what was passed to ./run.
+export DEPLOY_MARKER_MESSAGE="./run $ORIGINAL_ARGS -> ${USER}-local"
+
 # maybe someday the container registry name will change, but this is what it is now
 skaffold run -d "$CONTAINER_REGISTRY" $BUILD_FLAGS --port-forward=user -l skaffold.dev/run-id=static --cache-artifacts=false
-
-# Post a Honeycomb marker for this local deploy, including exactly what was
-# passed to ./run. Best-effort: a marker failure shouldn't fail the deploy.
-scripts/create-local-deploy-marker.sh "./run $ORIGINAL_ARGS -> ${USER}-local" \
-  || echo "Warning: failed to post Honeycomb deploy marker" >&2
 
 # note: if the output ends with
 #   Error: UPGRADE FAILED: another operation (install/upgrade/rollback) is in progress
