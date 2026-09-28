@@ -57,6 +57,7 @@ func (a *auth) Login(ctx context.Context, req *pb.LoginRequest) (*pb.LoginRespon
 		company = user.CompanyID
 	}
 	span.SetAttributes(attribute.String("app.auth.result", result))
+	a.auditLogin(ctx, user, method, result)
 	a.logins.Add(ctx, 1, metric.WithAttributes(
 		attribute.String("app.company", company),
 		attribute.String("app.auth.method", method),

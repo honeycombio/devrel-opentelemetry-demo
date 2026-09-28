@@ -124,6 +124,10 @@ services:
     env:
       - name: AUTH_PORT
         value: "8080"
+      - name: FLAGD_HOST
+        value: "flagd"
+      - name: FLAGD_PORT
+        value: "8013"
       - name: DB_CONNECTION_STRING
         value: "host=postgresql user=otelu password=otelp dbname=otel"
 

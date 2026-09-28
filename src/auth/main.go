@@ -14,6 +14,9 @@ import (
 	"syscall"
 	"time"
 
+	otelhooks "github.com/open-feature/go-sdk-contrib/hooks/open-telemetry/pkg"
+	flagd "github.com/open-feature/go-sdk-contrib/providers/flagd/pkg"
+	"github.com/open-feature/go-sdk/openfeature"
 	"go.opentelemetry.io/contrib/bridges/otelslog"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
@@ -104,6 +107,7 @@ func initLoggerProvider() *sdklog.LoggerProvider {
 type auth struct {
 	pb.UnimplementedAuthServiceServer
 	store      *store
+	flags      *openfeature.Client
 	httpClient *http.Client
 	logins     metric.Int64Counter
 }
@@ -132,6 +136,13 @@ func main() {
 		logger.Error(err.Error())
 	}
 
+	provider, err := flagd.NewProvider()
+	if err != nil {
+		logger.Error(fmt.Sprintf("Error creating flagd provider: %v", err))
+	}
+	openfeature.SetProvider(provider)
+	openfeature.AddHooks(otelhooks.NewTracesHook())
+
 	tracer = tp.Tracer("auth")
 
 	st, err := newStore(context.Background(), dbConn)
@@ -149,6 +160,7 @@ func main() {
 
 	svc := &auth{
 		store: st,
+		flags: openfeature.NewClient("auth"),
 		httpClient: &http.Client{
 			Timeout: 10 * time.Second,
 			Transport: otelhttp.NewTransport(http.DefaultTransport,

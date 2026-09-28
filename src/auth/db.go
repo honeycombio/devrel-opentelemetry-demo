@@ -74,6 +74,13 @@ func (s *store) recordLogin(ctx context.Context, userID string) error {
 	return err
 }
 
+func (s *store) recordLoginEvent(ctx context.Context, userID, companyID *string, method, result string) error {
+	_, err := s.pool.Exec(ctx,
+		`INSERT INTO auth.login_event (corporate_user_id, company_id, method, result) VALUES ($1, $2, $3, $4)`,
+		userID, companyID, method, result)
+	return err
+}
+
 // spanName follows the database semconv shape "{operation} {database}.{table}",
 // e.g. "SELECT otel.auth.corporate_user".
 func spanName(stmt string) string {
