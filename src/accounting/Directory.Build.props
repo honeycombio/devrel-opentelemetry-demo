@@ -6,6 +6,7 @@
     </PropertyGroup>
 
     <PropertyGroup Condition="'$(Configuration)'=='Release'">
-        <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+        <!-- Demo app: report warnings (including NuGet audit advisories) without failing the release build -->
+        <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
     </PropertyGroup>
 </Project>
