@@ -1,5 +1,10 @@
 # Slow login story — plan
 
+> **Status (2026-09-28):** **Release A is live in prod** as `2.9.2-release` since **13:04:19 UTC**, which is where the
+> baseline starts. PR #42 and PR #43 are merged, the plumbing is on main, and Linear DVR-121 is closed. Next: let the
+> baseline build for a few days, then the Honeycomb trigger + incident.io setup (§8), then Release B (§7).
+> The build record is in §6 "Release A: what shipped", and the overnight log is in `notes.md`.
+
 Agreed in a grilling session on 2026-09-27. Goal: show off Canvas Connectors with a
 real incident caused by real code (not a pathology flag).
 
@@ -152,6 +157,36 @@ this section is how we build it. Decisions made in that Q&A:
   but no reason and no context. So set `app.company` on the span ourselves, and evaluate
   with the Login span's ctx.
 
+### Learned while building Release A (2026-09-28)
+
+- **hostAliases are keyed by `ip`.** Kubernetes rejects two entries with the same IP ("duplicate entries for key").
+  Putting every hostname under one IP makes a single long `/etc/hosts` line, which musl resolvers (curl images)
+  silently ignore past 512 bytes. So each non-Globex tenant gets its own TEST-NET-1 address, `192.0.2.1`–`.23`.
+  I verified that `.20` hangs the full 15s timeout.
+- **The timeout error doesn't show the IP.** The real text is `Get "https://sso-status.<tenant>.example/v1/users/usr_…":
+  net/http: request canceled while waiting for connection (Client.Timeout exceeded while awaiting headers)`, sometimes
+  `context deadline exceeded (…)`. That settles the old worry about `192.0.2.x` looking fake.
+- **The Go flagd provider's cache outlives a flagd restart.** Untargeted (`STATIC`) results are cached in the auth
+  service. After the rehearsal (default `on`, no targeting), restarting flagd didn't restore the targeting, and only
+  `kubectl rollout restart deploy/auth` did. Targeted results aren't cached. This doesn't matter for Release B (the code stops
+  asking), but it does for anyone "fixing" things by editing flagd.
+- **flagd rejects a live file that has a trailing comma** and keeps the old config (`transposing evaluators: unmarshal…`).
+- **Prod flagd restarts on every release**, because the flagd-ui sidecar image tag is `<release>-flagd-ui`, so a new
+  flag file does take effect in prod.
+- **otelpgx v0.9.3** ignores `WithSpanNameFunc` unless `WithTrimSQLInSpanName()` is also set, and it prefixes `query `
+  unless `WithDisableQuerySpanNamePrefix()` is set. With all three, spans read `SELECT otel.auth.corporate_user`. The first query on a
+  fresh connection also emits a same-named prepare span.
+- **Rejected logins (401/403/409) mark the api-gateway, frontend-proxy and gRPC-client spans `error=true`**, while the
+  auth `Login` server span isn't marked. That's a small, steady frontend error rate (about 2% of logins).
+- **The currency C++ protobuf stubs are checked in** (`src/currency/build/generated/proto/`), and the release's
+  `protobufcheck` job diffs them. After any proto change, run the full `./docker-gen-proto.sh`, not per-language targets.
+- **Local builds on Apple Silicon:** `docker build` of accounting fails natively, because Grpc.Tools' arm64 `protoc`
+  segfaults (exit 139). CI builds on amd64 and is fine.
+- **ECR:** new services need a `localdemo/<image>` repo before `./run` can push. I created `localdemo/auth` and
+  `localdemo/sso-mocks`.
+- **`./run` sources `.skaffold.env` after your environment**, so `AWS_PROFILE=devrel-sandbox ./run` still uses the
+  profile named in that file.
+
 ## Naming
 
 | Thing | Value |
@@ -266,7 +301,8 @@ oteldemo.AuthService/Login               (otelgrpc server span)
 ```
 - **Attributes on the Login span:**
   - `app.company`, `app.corporate_user.id`, `app.auth.method` (`password|sso`).
-  - `app.auth.result` (`success|bad_password|unknown_user|method_mismatch|user_not_current`).
+  - `app.auth.result` (`success|bad_password|unknown_user|method_mismatch|user_not_current`, plus `idp_error`
+    (gRPC `Unavailable`) and `status_check_failed` (enforced check that errored), added in the build).
   - `app.auth.email_domain`: the domain only, not the full email.
   - `app.user.id` and `session.id` are copied from baggage if present. That's the same
     session UUID, unchanged.
@@ -305,16 +341,21 @@ Keep the naming bland. The blackhole list lives in values as
 `services.auth.hostAliases`, with a one-line comment: "tenant-hosted endpoints; not
 reachable from the demo cluster". Don't mention hanging, timeouts, or the story.
 
+**As built:** the hostAliases aren't in `values.yaml`. `scripts/generate-auth-tenants.py` writes them to
+`skaffold-config/charts/otel-services/files/auth-host-aliases.yaml` (with that bland comment), and the auth Deployment
+reads them with `.Files.Get`. There's one `192.0.2.<n>` per tenant; see "Learned while building Release A". The
+CA ConfigMap comes from `files/sso-mocks-ca.pem`. The pod sets the sysctl `net.ipv4.ip_unprivileged_port_start=0`, and the
+sidecar binds 127.0.0.1:443 as nonroot. The certs come from `scripts/generate-sso-mock-certs.sh`.
+
 **Keeping it out of the PR trail:** all of this simulation plumbing is **pushed directly
 to `main`, with no PR** (see §6, "How things land"). The Canvas agent follows Linear → PRs,
 so it never sees a diff containing `192.0.2.1 sso-status.<tenant>`. The entries are still
 in the repo for anyone who greps deploy config. That's acceptable, since this is a demo
 app.
 
-The one visible trace of the trick is Go's timeout error text, which includes the IP:
-`dial tcp 192.0.2.1:443: i/o timeout (Client.Timeout exceeded …)`. If that reads too fake,
-`203.0.113.x` (TEST-NET-3) looks a bit less like a documentation address and hangs the
-same way.
+~~The one visible trace of the trick is Go's timeout error text, which includes the IP.~~ It doesn't. In practice
+the client timeout fires first, and the error reads `…: net/http: request canceled while waiting for connection
+(Client.Timeout exceeded while awaiting headers)`, with no IP (seen in the 2026-09-28 rehearsal).
 
 ## 3. The flag `auth.user-status-check` (PR 2)
 
@@ -507,6 +548,33 @@ hotfix prod; write it up for Jess.
 - Let it run long enough (at least a few days) for a clear baseline.
 - Close Linear ticket 1.
 
+### Release A: what shipped (2026-09-28)
+
+All rows were built and verified locally in order. SHAs, results and trace IDs are in `notes.md`.
+
+| What | Where |
+|---|---|
+| PR 1 "Corporate login" (A1–A5) | https://github.com/honeycombio/devrel-opentelemetry-demo/pull/42 → merge `1da6eecc` |
+| PR 2 "Globex: verify employee still active after SSO" (A6) | https://github.com/honeycombio/devrel-opentelemetry-demo/pull/43 → merge `7e4b4eda`, body says `Ref DVR-121` (not `Closes`, which would auto-close the ticket) |
+| Pushed straight to main | M0 (`35ec801d`), M1–M3 (`ac7577f2`, `215ba27c`, `50c079d5`), M4 `37ddfe0b`; then fixes `78f2a5a1` (currency C++ stubs), `f2c354f1` (accounting `TreatWarningsAsErrors=false`, for a NU1903 advisory on OpenTelemetry.Resources.Host) |
+| Tags | `2.9.0-release` ✗ (protobufcheck: currency stubs), `2.9.1-release` ✗ (accounting NU1903), **`2.9.2-release` ✓** (the telemetry-docs build flaked on PyPI; I reran the failed jobs). Deploy marker "Deployed 2.9.2-release to devrel-demo" at 13:04:19 UTC. |
+| Linear | Project **Astronomy Shop** (P-DVR-1749). **DVR-121** linked to PR #43; closed 2026-09-28 13:20 UTC with "Shipped behind `auth.user-status-check`, rolled out." |
+
+**Local dress rehearsal** (flag default `on`, no targeting, 15 minutes each):
+
+| | Before | After |
+|---|---|---|
+| Non-Globex SSO Login p95 | 65ms | **10.07s** |
+| Overall Login p50 | 64ms | 124ms |
+| Overall Login p95 | 117ms | **10.06s** |
+| Globex / password p95 | 130 / 66ms | 124 / 66ms |
+
+The login still succeeds (`fail_open=true`). Login volume fell from 92 to 50 per 15 minutes, because Locust users block
+on the slow logins.
+
+**First prod numbers** (13:05–13:16 UTC): Login p50 65ms / **p95 127ms**; Globex 25% of logins (small sample), p95 128ms, with
+2 `user_not_current`; non-Globex password share 39%; only Globex runs `CheckUserStatus`.
+
 ## 7. Release B: "Remove stale feature flags" (PR 3)
 
 The diff is three small, boring edits plus the JSON. PR description:
@@ -530,6 +598,10 @@ The diff is three small, boring edits plus the JSON. PR description:
   start. It doesn't matter here, because the *code* no longer asks. The incident starts as
   soon as the new auth pod is live, whether or not flagd restarts.
 
+From the rehearsal: non-Globex SSO p95 goes to about 10.07s, and overall p50 roughly doubles (64 → 124ms locally,
+where 48% of the sample was non-Globex SSO). Login volume drops, because loadgen users block. Remember that `CheckUserStatus`
+errors are `fail_open=true`; logins succeed.
+
 Expected after B: about 40% of logins (non-Globex SSO) take about 10s. The Login P95 jumps
 from about 200ms to about 10s, and the trigger fires within one to two 5-minute
 evaluations. Password and Globex logins are unchanged.
@@ -539,7 +611,9 @@ evaluations. Password and Globex logins are unchanged.
 **Linear** (Honeycomb workspace, **DevRel** team). First create the project **Astronomy
 Shop** (none existed as of 2026-09-27). Both tickets go in it, and Canvas is told to look
 there:
-- [ ] Ticket 1: **"Globex: verify employee still active after SSO"**
+- [x] Project **Astronomy Shop** created (P-DVR-1749), 2026-09-28.
+- [x] Ticket 1: **"Globex: verify employee still active after SSO"**: **DVR-121**, linked to PR #43, closed
+  2026-09-28 13:20 UTC with the comment below.
   - Body: "Globex (our largest account) wants us to call their employee-status endpoint
     after SSO and block logins for anyone who's no longer current. Spec: GET
     `https://sso-status.<domain>/v1/users/<id>` → `{status: active|terminated}`. Should be
@@ -550,7 +624,8 @@ there:
   - Body: "These are fully rolled out and can go: `frontend.login-link`,
     `auth.login-audit-log`, `auth.user-status-check`."
   - Assign to Jess, link PR 3, close at Release B.
-- [ ] Space the dates realistically. Ticket 1 closes days to weeks before ticket 2.
+- [ ] Space the dates realistically. Ticket 1 closes days to weeks before ticket 2. (Ticket 1 closed 2026-09-28,
+  so schedule Release B / ticket 2 for days after that.)
 
 **incident.io** (Jess, planned for 2026-09-28):
 - [ ] Get **owner** permission on our incident.io team. Creating alert sources needs it.
