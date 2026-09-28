@@ -80,7 +80,8 @@ the incident in **incident.io**.
 ## External setup
 
 - **GitHub**: real PRs merged in this repo (honeycombio/devrel-opentelemetry-demo).
-- **Linear** (Honeycomb's real workspace):
+- **Linear** (Honeycomb's real workspace, **DevRel** team, in a new project **Astronomy
+  Shop**, which is where Canvas is told to look):
   1. "Globex: verify employee still active after SSO", closed around release A with a note like
      "shipped behind `auth.user-status-check`, rolled out."
   2. "Remove stale feature flags", closed by Jess at release B, and lists that flag
@@ -481,9 +482,14 @@ in M2:
 ### Landing order
 Claude opens and merges both PRs (as Jess, via `gh`). Use `gh pr merge --merge`, not
 squash, so the individual commits stay readable.
+0. **Push to main**: M0, Jess's local `main` commits that weren't pushed yet (as of
+   2026-09-27: `60daf0b5` README trim, `a74b25fa` local Honeycomb destination script,
+   `8d97faab` HTP cleanup, `35ec801d` OBI/Refinery). This branch is built on top of them.
+   If `git log origin/main..main` isn't empty, push local `main` first (`git push origin
+   main`, a fast-forward), so PR 1's diff is only story code. Jess may have done it already.
 1. **PR 1 "Corporate login"**: A1, A2, A3, A4, A5. Merge it.
 2. **Push to main**: M1, M2, M3, cherry-picked onto the merged PR 1.
-3. **Linear ticket 1** in the DevRel team (the body is in §8).
+3. **Linear ticket 1** in the DevRel team, project **Astronomy Shop** (the body is in §8).
 4. **PR 2 "Globex: verify employee still active after SSO"** (links Linear ticket 1): A6.
    Merge it.
 5. **Push to main**: M4.
@@ -496,7 +502,8 @@ prod until the tag.
 Then tag once: `./scripts/bump-release.sh minor --yes`. That builds images, runs `pulumi up`
 on `prod-aws`, and posts a deploy marker. Watch it with `gh run watch`. If it fails, don't
 hotfix prod; write it up for Jess.
-- In prod, check the M3 and M4 numbers again against `devrel-demo`.
+- In prod, check the M3 and M4 numbers again in Honeycomb team `devrel-demos`, env `demo`
+  (the k8s namespace is `devrel-demo`, but the Honeycomb env slug is `demo`).
 - Let it run long enough (at least a few days) for a clear baseline.
 - Close Linear ticket 1.
 
@@ -529,8 +536,9 @@ evaluations. Password and Globex logins are unchanged.
 
 ## 8. External setup checklist
 
-**Linear** (Honeycomb workspace; pick a real-looking team, e.g. whichever team owns demo
-work):
+**Linear** (Honeycomb workspace, **DevRel** team). First create the project **Astronomy
+Shop** (none existed as of 2026-09-27). Both tickets go in it, and Canvas is told to look
+there:
 - [ ] Ticket 1: **"Globex: verify employee still active after SSO"**
   - Body: "Globex (our largest account) wants us to call their employee-status endpoint
     after SSO and block logins for anyone who's no longer current. Spec: GET
@@ -550,7 +558,7 @@ work):
 - [ ] Route it with an alert route that creates an incident (or a paging workflow) with a
       sensible severity.
 
-**Honeycomb (devrel-demos team, `devrel-demo` env):**
+**Honeycomb (devrel-demos team, `demo` env):**
 - [ ] Create a **webhook recipient** pointing at the incident.io alert-source URL, with the
       incident.io auth header or secret. (None exists yet; the team only has Slack and
       email.)

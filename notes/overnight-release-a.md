@@ -2,31 +2,46 @@
 
 Agreed with Jess on 2026-09-27 before she went to sleep. The design, the commit table and
 the landing order live in `notes/user-login-story.md` (§6) on this branch. That copy is
-current, and the one on `jessitron/slow-login-story` is stale. This file covers only
-running it unattended: permissions, phases, and the morning report.
+authoritative. This file covers only running it unattended: permissions, phases, and the
+morning report.
+
+## Two environments, in this order
+
+| | 1. Local (every commit) | 2. Prod (once, after M4 + rehearsal) |
+|---|---|---|
+| How it deploys | `AWS_PROFILE=devrel-sandbox ./run <services>` | push `main`, then `./scripts/bump-release.sh minor --yes`; CI (`release-devrel.yml`) builds and runs Pulumi. Wait for it with `gh run watch`. |
+| k8s namespace | `jessitron-local` | `devrel-demo` (context `devrel-demo-aws`) |
+| Honeycomb | team **`modernity`**, env `devrel-demo--local-` (confirm with `scripts/local-honeycomb-destination.sh`) | team **`devrel-demos`**, env **`demo`** (not `devrel-demo`) |
+| MCP server | `honeycomb-devrel-demo`, `team: "modernity"` | `honeycomb-devrel-demo`, `team: "devrel-demos"` |
+
+Never verify a local change by looking in `devrel-demos`, and never judge prod by looking in
+`modernity`.
 
 ## End state by morning
 
-- Release A is **live in prod** (`devrel-demo`), and Login telemetry is **accumulating** as
-  baseline.
+- Release A is **live in prod**, and Login telemetry is **accumulating** in
+  `devrel-demos`/`demo` as baseline.
 - PR 1 "Corporate login" and PR 2 "Globex: verify employee still active after SSO" are
   **opened and merged** by Claude (as jessitron via `gh`).
-- M1–M4 are pushed straight to `main`, in the landing order.
+- M0–M4 are pushed straight to `main`, in the landing order.
 - There is one release tag, a minor bump.
-- Linear ticket 1 exists in the DevRel team, is linked to PR 2, and is closed.
+- There's a Linear project **Astronomy Shop** in the DevRel team. Ticket 1 is in it, links
+  PR 2, and is closed. PR 2's body links ticket 1.
 - `notes.md` holds the log (see "Morning report").
 
 ## What Jess authorized (and what she didn't)
 
-Authorized:
-- Push to `main` (only the M* commits, and only in the landing order).
+Authorized, without asking:
+- **Every deploy to `jessitron-local`** via `./run`, as often as needed, including kubectl
+  writes there (restarting flagd, `kubectl debug`, port-forwards).
+- **Deploying to prod** by pushing `main` and pushing the tag (`bump-release.sh`).
+- Pushing to `main`: M0 (local `main`'s unpushed commits) and the M* commits, in the landing
+  order.
 - `gh pr create` / `gh pr merge` for PR 1 and PR 2.
-- `./scripts/bump-release.sh minor --yes`, which pushes the tag. CI builds the images and
-  runs Pulumi against `prod-aws`.
-- The Linear MCP: anything in the **DevRel** team.
-- **Read-only** looks at prod: Honeycomb queries on the devrel-demos team / `devrel-demo`
-  env, and `kubectl get`/`logs` in `devrel-demo`
-  (`AWS_PROFILE=really-devrel-sandbox kubectl --context devrel-demo-aws`).
+- The Linear MCP: anything in the **DevRel** team, including creating the **Astronomy
+  Shop** project and its tickets.
+- **Read-only** looks at prod: Honeycomb `devrel-demos`/`demo`, and `kubectl get`/`logs` in
+  `devrel-demo` (`AWS_PROFILE=really-devrel-sandbox kubectl --context devrel-demo-aws`).
 
 Still off limits:
 - Anything from Release B: PR 3, removing flags, and Linear ticket 2.
@@ -46,7 +61,9 @@ Jess looks at it in the morning. Don't hotfix prod or re-tag blind.
       657166037864. Always pass `AWS_PROFILE=devrel-sandbox` to `./run`, because
       `.skaffold.env` names Martin's profile.
 - [ ] Run `scripts/local-honeycomb-destination.sh`. Expect `modernity` /
-      `devrel-demo--local-`, via the `honeycomb-devrel-demo` MCP.
+      `devrel-demo--local-`.
+- [ ] `get_workspace_context` works on both teams (`modernity` and `devrel-demos`) through
+      the `honeycomb-devrel-demo` MCP.
 - [ ] Linear MCP answers (list teams and find DevRel). If it isn't authorized, skip every
       Linear step, note it, and keep going. Linear isn't on the critical path.
 - [ ] Suggested to Jess: run `caffeinate -dims` so the Mac doesn't sleep mid-run.
@@ -61,8 +78,8 @@ Go row by row through `user-login-story.md` §6: A1, A2, M1, A3, M2, A4, A5, M3,
   1. Run `AWS_PROFILE=devrel-sandbox ./run <services from the table>` in the background.
      Wait for `Port forwarding service/frontend-proxy … Press Ctrl+C to exit`, then kill the
      run before the next one.
-  2. Do that row's **Verify** in Honeycomb (local env). Record the SHA, the result, and one
-     trace ID.
+  2. Do that row's **Verify** in Honeycomb team `modernity`, env `devrel-demo--local-`.
+     Record the SHA, the result, and one trace ID.
   3. Push the branch (`git push -u origin jessitron/corporate-login`) so the work survives
      a crash.
 - If a row fails, fix it before moving on. If a row is truly blocked, continue only with
@@ -95,6 +112,8 @@ would still get a working release, but the story wouldn't work.
 ## Phase 3: land on main, in order
 
 Build landing branches from the verified commits. Don't rebase the work branch itself.
+0. **M0:** if `git log origin/main..main` shows commits, `git push origin main`. The work
+   branch is built on them, so the PR diffs don't pick them up.
 1. **PR 1:**
    - Make branch `jessitron/corporate-login-pr1` from `origin/main` and cherry-pick
      A1–A5.
@@ -104,8 +123,11 @@ Build landing branches from the verified commits. Don't rebase the work branch i
      the story).
 2. **Plumbing:** fast-forward local `main` to `origin/main`, cherry-pick M1, M2, M3, and
    `git push origin main`.
-3. **Linear ticket 1** in DevRel: "Globex: verify employee still active after SSO". Use the
-   body from `user-login-story.md` §8.
+3. **Linear:**
+   - In the DevRel team, create the project **Astronomy Shop** if it doesn't exist (it
+     didn't on 2026-09-27). Jess will point Canvas at this project.
+   - In that project, create ticket 1, "Globex: verify employee still active after SSO",
+     with the body from `user-login-story.md` §8.
 4. **PR 2:**
    - Make branch `jessitron/globex-status-check` from `origin/main` and cherry-pick A6.
    - `gh pr create` with the title "Globex: verify employee still active after SSO". The
@@ -123,13 +145,15 @@ deploys until the tag.
 
 ## Phase 4: deploy to prod
 
-1. `./scripts/bump-release.sh minor --yes`.
+1. Confirm `origin/main` has everything (`git log main..origin/main` and
+   `git log origin/main..main` are both empty). Then run
+   `./scripts/bump-release.sh minor --yes`, which pushes the tag.
 2. Watch `release-devrel.yml` (`gh run watch`) through the image builds and the Pulumi
    deploy.
 3. Read-only check of `devrel-demo`: the `auth` pod (with the `sso-mocks` sidecar) is
    Running, and postgres restarted with the new schema. Also check Kafka's restart count,
    since a restart empties the order table.
-4. After ~15–30 minutes, in Honeycomb (devrel-demos team / `devrel-demo` env), repeat the
+4. After ~15–30 minutes, in Honeycomb team **`devrel-demos`**, env **`demo`**, repeat the
    M3/M4 checks:
    - Login count by `app.company`: Globex is about 35%.
    - Non-Globex logins by method: about 40% password.
