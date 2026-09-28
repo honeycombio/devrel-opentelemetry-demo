@@ -4,6 +4,8 @@
 > baseline starts). **Still to do:** let the baseline build for a few days → Honeycomb trigger + incident.io
 > (§7) → Release B (§6) → open the incident and start the Canvas.
 > The overnight build log (per-commit SHAs, verifications, trace IDs) is in `notes.md` on this branch.
+> **Release B is built and rehearsed locally** (branch `jessitron/remove-stale-flags`, Linear DVR-122). The prod
+> runbook is `notes/release-b-plan.md`.
 
 Designed in a grilling session on 2026-09-27. Goal: show off Canvas Connectors with a real incident caused by real
 code, not a pathology flag.
@@ -40,7 +42,7 @@ incident in **incident.io**.
 | Release A: auth service, frontend login, flag targeted at Globex | ✅ **Live since 2026-09-28 13:04 UTC** (`2.9.2-release`) |
 | Baseline in `devrel-demos`/`demo` | ⏳ accumulating; give it at least a few days |
 | Honeycomb trigger + incident.io recipient (§7) | ☐ |
-| Release B, PR 3 "Remove stale feature flags" (§6) | ☐. It's **left broken** on purpose, so there's always a live incident to demo. Fixing it is a later decision. |
+| Release B, PR 3 "Remove stale feature flags" (§6) | Code ✅ on `jessitron/remove-stale-flags` (unpushed), rehearsed locally 2026-09-28. Prod ☐, see `notes/release-b-plan.md`. It's **left broken** on purpose, so there's always a live incident to demo. Fixing it is a later decision. |
 | Open the incident, start the Canvas, check the connectors | ☐ |
 
 ---
@@ -174,12 +176,13 @@ It's evaluated only for SSO, after the assertion verifies, with
 - **Log in from the cluster:** `scripts/auth-login.sh <email> [password|--sso]` (grpcurl in a temp pod).
 - **Look at tenants:** `scripts/query-auth-tenants.sh` (`NAMESPACE=devrel-demo CONTEXT=devrel-demo-aws` for prod).
 - **Regenerate tenants:** `scripts/generate-auth-tenants.py`. **Regenerate certs:** `scripts/generate-sso-mock-certs.sh`.
-- **Rehearse the break** (local only):
-  1. Edit the live flag file in the flagd pod, or use flagd-ui: `auth.user-status-check` default `on`, targeting
-     removed. Watch for trailing commas.
-  2. Non-Globex SSO logins take 10s.
-  3. To restore, **restart flagd *and* auth**. The auth service caches the untargeted result, so restarting flagd
-     alone isn't enough.
+- **Switch local between healthy and broken:** `scripts/login-story-local.sh broken` deploys Release B's real code
+  (`jessitron/remove-stale-flags`); `healthy` deploys `main`; `status` says which one auth is running. Each takes about
+  5 minutes: it builds auth and frontend from a detached worktree, restarts flagd and auth, and posts a deploy marker
+  when the deploy lands. Like `./run`, it blocks on the port-forward.
+- **Quick-and-dirty rehearsal without a rebuild:** edit the live flag file with flagd-ui (`auth.user-status-check`
+  default `on`, targeting removed; watch for trailing commas). To restore, restart flagd *and* auth: auth caches the
+  untargeted result, so restarting flagd alone isn't enough.
 
 ## Facts and gotchas
 
@@ -290,10 +293,9 @@ small, boring edits plus the JSON. PR description:
 **Linear** (Honeycomb workspace, **DevRel** team, project **Astronomy Shop**, which is where Canvas is told to look):
 - [x] Project **Astronomy Shop** created (P-DVR-1749).
 - [x] Ticket 1 **DVR-121** "Globex: verify employee still active after SSO": linked to PR #43, closed 2026-09-28.
-- [ ] Ticket 2: **"Remove stale feature flags"**
-  - Body: "These are fully rolled out and can go: `frontend.login-link`, `auth.login-audit-log`,
-    `auth.user-status-check`."
-  - Assign to Jess, link PR 3, close at Release B.
+- [x] Ticket 2 **DVR-122** "Remove stale feature flags": created 2026-09-28, Todo, assigned to Jess.
+  https://linear.app/honeycombio/issue/DVR-122/remove-stale-feature-flags
+  - [ ] Link PR 3, close at Release B.
 - [ ] Space the dates realistically: Release B / ticket 2 should come days to weeks after 2026-09-28.
 
 **incident.io:**
