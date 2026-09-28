@@ -6,15 +6,11 @@ import (
 	"context"
 	"log/slog"
 
-	"github.com/open-feature/go-sdk/openfeature"
 	"go.opentelemetry.io/otel/trace"
 )
 
-// auditLogin records the login attempt in auth.login_event, when audit logging is on.
+// auditLogin records the login attempt in auth.login_event.
 func (a *auth) auditLogin(ctx context.Context, user *corporateUser, method, result string) {
-	if on, _ := a.flags.BooleanValue(ctx, "auth.login-audit-log", false, openfeature.EvaluationContext{}); !on {
-		return
-	}
 	var userID, companyID *string
 	if user != nil {
 		userID, companyID = &user.ID, &user.CompanyID
