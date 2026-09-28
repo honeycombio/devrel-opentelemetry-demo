@@ -44,26 +44,25 @@ You'll also need access to our Pulumi Cloud.
 
 ## Honeycomb Setup
 
-You'll need to setup to setup Honeycomb Telemetry Pipeline in the Honeycomb UI.
-
-- Team enabled for HTP https://honeycomb.quip.com/251MArM9xlaO/HTP-Pipeline-Builder-Enablement-Guide
-- Management Key created for Pipeline
-- Pipeline created and configured
-- Ingest Key created for the `Pipeline Telemetry` environment
-
-**\*Note:** since all telemetry funnels through HTP, there is no need to create a Honeycomb API Key.\*
+Local deploys export telemetry straight to Honeycomb (the old Telemetry Pipeline / HTP
+setup was removed in `8ff8e529`). You need a Honeycomb API key with `events` and
+`markers` permission for whichever team/environment you want your `{user}-local`
+data to land in.
 
 ## .skaffold.env setup
 
-You'll need to create this file with the following information:
+`./run` sources `.skaffold.env` if it exists, then reads `HONEYCOMB_API_KEY` from the
+environment. You can put the key in `.skaffold.env` or export it in your shell; either works.
 
 ```bash
-PIPELINE_ID=
-PIPELINE_MANAGEMENT_API_SECRET=
-PIPELINE_MANAGEMENT_API_KEY_ID=
-PIPELINE_TELEMETRY_INGEST_KEY=
-export HONEYCOMB_MARKERS_API_KEY=
+export HONEYCOMB_API_KEY=
+# optional per-purpose overrides; both default to HONEYCOMB_API_KEY
+# export HONEYCOMB_INGEST_KEY=
+# export HONEYCOMB_MARKERS_API_KEY=
 ```
+
+To see where your local telemetry will land, run `scripts/local-honeycomb-destination.sh`.
+It resolves the key the same way `./run` does and prints the team + environment.
 
 `HONEYCOMB_MARKERS_API_KEY` is what `./run` uses to post a Honeycomb deploy marker
 after each local skaffold run (via `scripts/create-local-deploy-marker.sh`).

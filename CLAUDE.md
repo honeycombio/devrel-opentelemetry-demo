@@ -84,15 +84,17 @@ See `devrel-README.md` → "Deploy to devrel-demo" for the full writeup. Short v
 
 ## Querying telemetry from the local cluster
 
-The local cluster (namespace `martin-local`) ships directly to Honeycomb using `HONEYCOMB_API_KEY` from `.skaffold.env`. The key determines the destination team + environment — **don't guess which env to query**. Resolve it from the key with the Honeycomb auth API before running any MCP query:
+The local cluster (namespace `{user}-local`) ships directly to Honeycomb. The key determines the destination team + environment — **don't guess which env to query**. Resolve it before running any MCP query:
 
 ```bash
-curl -s https://api.honeycomb.io/1/auth \
-  -H "X-Honeycomb-Team: $(grep HONEYCOMB_API_KEY .skaffold.env | cut -d= -f2)" \
-  | jq '{team: .team.slug, environment: .environment.slug}'
+scripts/local-honeycomb-destination.sh
 ```
 
-The returned `environment.slug` is what to pass to the matching honeycomb MCP server's `environment_slug` argument (the team determines which MCP server — `martindotnet-pro`, `devrel-demo`, etc.).
+It resolves the key the way `./run` does: source `.skaffold.env`, then `HONEYCOMB_INGEST_KEY`, falling back to `HONEYCOMB_API_KEY`. **Don't grep `.skaffold.env` for the key** — it's often exported in the developer's shell instead (Jess keeps it in a personal, git-excluded `.be` file), so the file may not contain it at all.
+
+The returned `environment.slug` is what to pass as `environment_slug`; the team determines which MCP server. For Jess, it's team `modernity`, env `devrel-demo--local-`, via the `honeycomb-devrel-demo` MCP server with `team: "modernity"`. (Martin's goes to `martindotnet-pro`.)
+
+`.skaffold.env` may still hold `PIPELINE_*` vars from the old Telemetry Pipeline (HTP) setup; those have been unused since HTP was removed in `8ff8e529`.
 
 ## Production cluster access
 
