@@ -144,6 +144,9 @@ def main():
             for u in all_users
         ) + ";",
         "",
+        "-- Globex runs its own employee-status endpoint at the default URL and enforces the check.",
+        f"INSERT INTO auth.sso_status_check (company_id, url_override, enforce) VALUES ({sql_str(GLOBEX[0])}, NULL, true);",
+        "",
     ]
     (ROOT / "src/postgres/auth-seed.sql").write_text("\n".join(lines))
 

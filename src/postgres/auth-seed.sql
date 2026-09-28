@@ -1078,3 +1078,6 @@ INSERT INTO auth.corporate_user (corporate_user_id, company_id, email, display_n
     ('usr_xygvqsqxzgylxjfn', 'aperture-science', 'dennis.dijkstra@aperture-science.example', 'Dennis Dijkstra', '$2b$10$fUbz6QjjyrzsxUbCybbBfOmQYE0iK2yXh0sAGSbK0QCOTqsd3EVZC'),
     ('usr_ptypxml5zilmcsz7', 'aperture-science', 'lena.petrov@aperture-science.example', 'Lena Petrov', '$2b$10$bDwR.HH8ZA19G0vzzcQG3.eqWGyX3KPfzk3qqa1vL8kR.66658zfC'),
     ('usr_qcymiv7nnfy7quhq', 'aperture-science', 'alan.hamilton@aperture-science.example', 'Alan Hamilton', '$2b$10$GtY8bOhYSKF8Y6CXTTywgeqv5CTMJNEd/d6JkOwvsmvkXtjQuPGKu');
+
+-- Globex runs its own employee-status endpoint at the default URL and enforces the check.
+INSERT INTO auth.sso_status_check (company_id, url_override, enforce) VALUES ('globex', NULL, true);
