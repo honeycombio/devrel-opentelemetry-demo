@@ -19,6 +19,16 @@
       },
       "defaultVariant": "on"
     },
+    "auth.user-status-check": {
+      "description": "Post-SSO employee status check (Globex)",
+      "state": "ENABLED",
+      "variants": {
+        "on": true,
+        "off": false
+      },
+      "defaultVariant": "off",
+      "targeting": { "if": [ { "==": [ { "var": "company" }, "globex" ] }, "on", "off" ] }
+    },
     "llmInaccurateResponse": {
       "defaultVariant": "off",
       "description": "LLM returns an inaccurate product summary for product ID L9ECAV7KIM",

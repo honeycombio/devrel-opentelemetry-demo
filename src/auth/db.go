@@ -24,6 +24,9 @@ type corporateUser struct {
 	Domain       string
 	LoginMethod  string
 	IdpTenant    *string
+
+	StatusCheckURL     *string // tenant's own status endpoint, if configured
+	EnforceStatusCheck bool
 }
 
 type store struct {
@@ -53,12 +56,15 @@ func (s *store) findUserByEmail(ctx context.Context, email string) (*corporateUs
 	var u corporateUser
 	err := s.pool.QueryRow(ctx, `
 		SELECT u.corporate_user_id, u.email, u.display_name, u.password_hash,
-		       c.company_id, c.name, c.domain, c.login_method, c.idp_tenant
+		       c.company_id, c.name, c.domain, c.login_method, c.idp_tenant,
+		       s.url_override, COALESCE(s.enforce, false)
 		  FROM auth.corporate_user u
 		  JOIN auth.company c ON c.company_id = u.company_id
+		  LEFT JOIN auth.sso_status_check s ON s.company_id = c.company_id
 		 WHERE u.email = $1`, strings.ToLower(email)).Scan(
 		&u.ID, &u.Email, &u.DisplayName, &u.PasswordHash,
-		&u.CompanyID, &u.CompanyName, &u.Domain, &u.LoginMethod, &u.IdpTenant)
+		&u.CompanyID, &u.CompanyName, &u.Domain, &u.LoginMethod, &u.IdpTenant,
+		&u.StatusCheckURL, &u.EnforceStatusCheck)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, errUserNotFound
 	}

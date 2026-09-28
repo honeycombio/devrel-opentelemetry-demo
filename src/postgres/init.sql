@@ -164,6 +164,13 @@ CREATE TABLE auth.login_event (
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+-- Per-tenant post-SSO employee status check. No row: default URL on the tenant's domain, not enforced.
+CREATE TABLE auth.sso_status_check (
+    company_id TEXT PRIMARY KEY REFERENCES auth.company(company_id),
+    url_override TEXT,
+    enforce BOOLEAN NOT NULL DEFAULT false
+);
+
 -- Auth Service: grant permission to schema
 GRANT SELECT, INSERT, UPDATE ON ALL TABLES IN SCHEMA auth TO otelu;
 GRANT USAGE ON ALL SEQUENCES IN SCHEMA auth TO otelu;
