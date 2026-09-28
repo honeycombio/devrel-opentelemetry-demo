@@ -19,4 +19,5 @@ ENV PLAYWRIGHT_BROWSERS_PATH=/opt/pw-browsers
 RUN playwright install --with-deps chromium
 COPY ./src/load-generator/locustfile.py .
 COPY ./src/load-generator/people.json .
+COPY ./src/load-generator/corporate_users.json .
 ENTRYPOINT ["locust", "--skip-log-setup"]
