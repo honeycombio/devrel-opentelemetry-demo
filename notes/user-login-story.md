@@ -438,8 +438,8 @@ Workflow:
      commit and the grilling skill.
 2. When it works end to end, land it in the order under "Landing order" below. Reorder with
    `git rebase` so each group is a contiguous run of commits.
-3. **Check first:** does `main` on GitHub have branch protection that requires PRs? If so,
-   direct pushes need an admin bypass, or a temporary rule change.
+3. Direct pushes to `main` work. Jess has done it before, so no branch-protection bypass is
+   needed.
 
 `./run`: `AWS_PROFILE=devrel-sandbox ./run <services>`. Note that `.skaffold.env` currently
 says `martin-devrel-sandbox`.
@@ -534,7 +534,8 @@ work):
   - Assign to Jess, link PR 3, close at Release B.
 - [ ] Space the dates realistically. Ticket 1 closes days to weeks before ticket 2.
 
-**incident.io:**
+**incident.io** (Jess, planned for 2026-09-28):
+- [ ] Get **owner** permission on our incident.io team. Creating alert sources needs it.
 - [ ] Create an **HTTP alert source**. Copy its URL and the bearer token or secret.
 - [ ] Route it with an alert route that creates an incident (or a paging workflow) with a
       sensible severity.
