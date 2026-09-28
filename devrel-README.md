@@ -14,8 +14,8 @@ All instances include:
     > This is for filelogs, kubeletstats and OTLP ingest from the services
   - Deployment
     > This is for k8s events, and cluster metrics
-- Honeycomb Telemetry Pipeline (HTP)
-  > This is the where all telemetry from the collectors is sent.
+- Refinery / Honeycomb
+  > The collectors export straight to Refinery and `api.honeycomb.io`.
 
 For all instances, OTLP ingest comes through the use of a k8s service rather than a NodeIP. This enables multiple instances of the demo to run in the same cluster, each with their own collector instances.
 
@@ -44,8 +44,7 @@ You'll also need access to our Pulumi Cloud.
 
 ## Honeycomb Setup
 
-Local deploys export telemetry straight to Honeycomb (the old Telemetry Pipeline / HTP
-setup was removed in `8ff8e529`). You need a Honeycomb API key with `events` and
+Local deploys export telemetry straight to Honeycomb. You need a Honeycomb API key with `events` and
 `markers` permission for whichever team/environment you want your `{user}-local`
 data to land in.
 

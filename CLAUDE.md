@@ -93,9 +93,6 @@ scripts/local-honeycomb-destination.sh
 It resolves the key the way `./run` does: source `.skaffold.env`, then `HONEYCOMB_INGEST_KEY`, falling back to `HONEYCOMB_API_KEY`. **Don't grep `.skaffold.env` for the key** — it's often exported in the developer's shell instead (Jess keeps it in a personal, git-excluded `.be` file), so the file may not contain it at all.
 
 The returned `environment.slug` is what to pass as `environment_slug`; the team determines which MCP server. For Jess, it's team `modernity`, env `devrel-demo--local-`, via the `honeycomb-devrel-demo` MCP server with `team: "modernity"`. (Martin's goes to `martindotnet-pro`.)
-
-`.skaffold.env` may still hold `PIPELINE_*` vars from the old Telemetry Pipeline (HTP) setup; those have been unused since HTP was removed in `8ff8e529`.
-
 ## Production cluster access
 
 The shared/"production" demo runs on the **`devrel-demo-aws`** kubectl context (EKS, account `657166037864`, eu-west-1; pulumi stack `infra-aws/prod`). Authenticate with `AWS_PROFILE=really-devrel-sandbox` — that profile maps to account `657166037864`. (The plain `devrel-sandbox` profile may have no creds locally; `set-kubecontext.sh` defaults to it but the _prod_ account is `really-devrel-sandbox`.)
