@@ -432,12 +432,16 @@ The rule for every commit: **it's either story or plumbing, never both.** Each c
 is tagged **PR 1**, **PR 2** or **main**.
 
 Workflow:
-1. Develop on one local branch off `main` (e.g. `jessitron/corporate-login`), in the order
+1. Develop on one branch off `main`, `jessitron/corporate-login` (pushed), in the order
    below, so every commit is testable with `./run` as it's written.
    - Keep it off `jessitron/slow-login-story`, which carries the temporary CLAUDE.md focus
      commit and the grilling skill.
-2. When it works end to end, land it in the order under "Landing order" below. Reorder with
-   `git rebase` so each group is a contiguous run of commits.
+2. When it works end to end, *including the local dress rehearsal*, land it in the order
+   under "Landing order" below. Build each landing group by cherry-picking onto a fresh
+   branch from `origin/main`. Don't rebase the work branch; it also carries the notes.
+   - These notes (`notes/` is gitignored and force-added) stay off `main` until the demo
+     is recorded, because they describe the whole trick and the GitHub connector searches
+     `main`.
 3. Direct pushes to `main` work. Jess has done it before, so no branch-protection bypass is
    needed.
 
@@ -475,17 +479,23 @@ in M2:
   uses `extra_hosts` where k8s uses hostAliases. Wire it for completeness; don't test it.
 
 ### Landing order
+Claude opens and merges both PRs (as Jess, via `gh`). Use `gh pr merge --merge`, not
+squash, so the individual commits stay readable.
 1. **PR 1 "Corporate login"**: A1, A2, A3, A4, A5. Merge it.
-2. **Push to main**: M1, M2, M3, rebased onto the merged PR 1.
-3. **PR 2 "Globex: verify employee still active after SSO"** (links Linear ticket 1): A6.
+2. **Push to main**: M1, M2, M3, cherry-picked onto the merged PR 1.
+3. **Linear ticket 1** in the DevRel team (the body is in §8).
+4. **PR 2 "Globex: verify employee still active after SSO"** (links Linear ticket 1): A6.
    Merge it.
-4. **Push to main**: M4.
+5. **Push to main**: M4.
+6. Check: `git diff origin/main jessitron/corporate-login -- . ':!notes' ':!notes.md'` is
+   empty.
 
 Between steps, `main` may briefly have SSO without mocks. That's harmless: nothing reaches
 prod until the tag.
 
-Then tag: `./scripts/bump-release.sh minor`. That builds images, runs `pulumi up` on
-`prod-aws`, and posts a deploy marker.
+Then tag once: `./scripts/bump-release.sh minor --yes`. That builds images, runs `pulumi up`
+on `prod-aws`, and posts a deploy marker. Watch it with `gh run watch`. If it fails, don't
+hotfix prod; write it up for Jess.
 - In prod, check the M3 and M4 numbers again against `devrel-demo`.
 - Let it run long enough (at least a few days) for a clear baseline.
 - Close Linear ticket 1.

@@ -1,8 +1,9 @@
 # Overnight run: Release A, from local to prod
 
-Agreed with Jess on 2026-09-27 before she went to sleep. This file **overrides** the
-"Do NOT" list in the original overnight goal where the two conflict. The design and the
-commit table live in `notes/user-login-story.md` (§6). Don't re-open decisions there.
+Agreed with Jess on 2026-09-27 before she went to sleep. The design, the commit table and
+the landing order live in `notes/user-login-story.md` (§6) on this branch. That copy is
+current, and the one on `jessitron/slow-login-story` is stale. This file covers only
+running it unattended: permissions, phases, and the morning report.
 
 ## End state by morning
 
