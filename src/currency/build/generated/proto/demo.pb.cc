@@ -1053,6 +1053,68 @@ struct AdDefaultTypeInternal {
 PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT
     PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 AdDefaultTypeInternal _Ad_default_instance_;
         template <typename>
+PROTOBUF_CONSTEXPR LoginRequest::LoginRequest(::_pbi::ConstantInitialized)
+    : _impl_{
+      /*decltype(_impl_.email_)*/ {
+          &::_pbi::fixed_address_empty_string,
+          ::_pbi::ConstantInitialized{},
+      },
+      /*decltype(_impl_.password_)*/ {
+          &::_pbi::fixed_address_empty_string,
+          ::_pbi::ConstantInitialized{},
+      },
+      /*decltype(_impl_.method_)*/ {
+          &::_pbi::fixed_address_empty_string,
+          ::_pbi::ConstantInitialized{},
+      },
+      /*decltype(_impl_._cached_size_)*/ {},
+    } {}
+struct LoginRequestDefaultTypeInternal {
+  PROTOBUF_CONSTEXPR LoginRequestDefaultTypeInternal() : _instance(::_pbi::ConstantInitialized{}) {}
+  ~LoginRequestDefaultTypeInternal() {}
+  union {
+    LoginRequest _instance;
+  };
+};
+
+PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT
+    PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 LoginRequestDefaultTypeInternal _LoginRequest_default_instance_;
+        template <typename>
+PROTOBUF_CONSTEXPR LoginResponse::LoginResponse(::_pbi::ConstantInitialized)
+    : _impl_{
+      /*decltype(_impl_.corporate_user_id_)*/ {
+          &::_pbi::fixed_address_empty_string,
+          ::_pbi::ConstantInitialized{},
+      },
+      /*decltype(_impl_.company_)*/ {
+          &::_pbi::fixed_address_empty_string,
+          ::_pbi::ConstantInitialized{},
+      },
+      /*decltype(_impl_.company_name_)*/ {
+          &::_pbi::fixed_address_empty_string,
+          ::_pbi::ConstantInitialized{},
+      },
+      /*decltype(_impl_.email_)*/ {
+          &::_pbi::fixed_address_empty_string,
+          ::_pbi::ConstantInitialized{},
+      },
+      /*decltype(_impl_.display_name_)*/ {
+          &::_pbi::fixed_address_empty_string,
+          ::_pbi::ConstantInitialized{},
+      },
+      /*decltype(_impl_._cached_size_)*/ {},
+    } {}
+struct LoginResponseDefaultTypeInternal {
+  PROTOBUF_CONSTEXPR LoginResponseDefaultTypeInternal() : _instance(::_pbi::ConstantInitialized{}) {}
+  ~LoginResponseDefaultTypeInternal() {}
+  union {
+    LoginResponse _instance;
+  };
+};
+
+PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT
+    PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 LoginResponseDefaultTypeInternal _LoginResponse_default_instance_;
+        template <typename>
 PROTOBUF_CONSTEXPR Flag::Flag(::_pbi::ConstantInitialized)
     : _impl_{
       /*decltype(_impl_.name_)*/ {
@@ -1245,7 +1307,7 @@ struct DeleteFlagResponseDefaultTypeInternal {
 PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT
     PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 DeleteFlagResponseDefaultTypeInternal _DeleteFlagResponse_default_instance_;
 }  // namespace oteldemo
-static ::_pb::Metadata file_level_metadata_demo_2eproto[60];
+static ::_pb::Metadata file_level_metadata_demo_2eproto[62];
 static constexpr const ::_pb::EnumDescriptor**
     file_level_enum_descriptors_demo_2eproto = nullptr;
 static constexpr const ::_pb::ServiceDescriptor**
@@ -1800,6 +1862,30 @@ const ::uint32_t TableStruct_demo_2eproto::offsets[] PROTOBUF_SECTION_VARIABLE(
     PROTOBUF_FIELD_OFFSET(::oteldemo::Ad, _impl_.redirect_url_),
     PROTOBUF_FIELD_OFFSET(::oteldemo::Ad, _impl_.text_),
     ~0u,  // no _has_bits_
+    PROTOBUF_FIELD_OFFSET(::oteldemo::LoginRequest, _internal_metadata_),
+    ~0u,  // no _extensions_
+    ~0u,  // no _oneof_case_
+    ~0u,  // no _weak_field_map_
+    ~0u,  // no _inlined_string_donated_
+    ~0u,  // no _split_
+    ~0u,  // no sizeof(Split)
+    PROTOBUF_FIELD_OFFSET(::oteldemo::LoginRequest, _impl_.email_),
+    PROTOBUF_FIELD_OFFSET(::oteldemo::LoginRequest, _impl_.password_),
+    PROTOBUF_FIELD_OFFSET(::oteldemo::LoginRequest, _impl_.method_),
+    ~0u,  // no _has_bits_
+    PROTOBUF_FIELD_OFFSET(::oteldemo::LoginResponse, _internal_metadata_),
+    ~0u,  // no _extensions_
+    ~0u,  // no _oneof_case_
+    ~0u,  // no _weak_field_map_
+    ~0u,  // no _inlined_string_donated_
+    ~0u,  // no _split_
+    ~0u,  // no sizeof(Split)
+    PROTOBUF_FIELD_OFFSET(::oteldemo::LoginResponse, _impl_.corporate_user_id_),
+    PROTOBUF_FIELD_OFFSET(::oteldemo::LoginResponse, _impl_.company_),
+    PROTOBUF_FIELD_OFFSET(::oteldemo::LoginResponse, _impl_.company_name_),
+    PROTOBUF_FIELD_OFFSET(::oteldemo::LoginResponse, _impl_.email_),
+    PROTOBUF_FIELD_OFFSET(::oteldemo::LoginResponse, _impl_.display_name_),
+    ~0u,  // no _has_bits_
     PROTOBUF_FIELD_OFFSET(::oteldemo::Flag, _internal_metadata_),
     ~0u,  // no _extensions_
     ~0u,  // no _oneof_case_
@@ -1955,17 +2041,19 @@ static const ::_pbi::MigrationSchema
         {519, -1, -1, sizeof(::oteldemo::AdRequest)},
         {528, -1, -1, sizeof(::oteldemo::AdResponse)},
         {537, -1, -1, sizeof(::oteldemo::Ad)},
-        {547, -1, -1, sizeof(::oteldemo::Flag)},
-        {558, -1, -1, sizeof(::oteldemo::GetFlagRequest)},
-        {567, 576, -1, sizeof(::oteldemo::GetFlagResponse)},
-        {577, -1, -1, sizeof(::oteldemo::CreateFlagRequest)},
-        {588, 597, -1, sizeof(::oteldemo::CreateFlagResponse)},
-        {598, -1, -1, sizeof(::oteldemo::UpdateFlagRequest)},
-        {608, -1, -1, sizeof(::oteldemo::UpdateFlagResponse)},
-        {616, -1, -1, sizeof(::oteldemo::ListFlagsRequest)},
-        {624, -1, -1, sizeof(::oteldemo::ListFlagsResponse)},
-        {633, -1, -1, sizeof(::oteldemo::DeleteFlagRequest)},
-        {642, -1, -1, sizeof(::oteldemo::DeleteFlagResponse)},
+        {547, -1, -1, sizeof(::oteldemo::LoginRequest)},
+        {558, -1, -1, sizeof(::oteldemo::LoginResponse)},
+        {571, -1, -1, sizeof(::oteldemo::Flag)},
+        {582, -1, -1, sizeof(::oteldemo::GetFlagRequest)},
+        {591, 600, -1, sizeof(::oteldemo::GetFlagResponse)},
+        {601, -1, -1, sizeof(::oteldemo::CreateFlagRequest)},
+        {612, 621, -1, sizeof(::oteldemo::CreateFlagResponse)},
+        {622, -1, -1, sizeof(::oteldemo::UpdateFlagRequest)},
+        {632, -1, -1, sizeof(::oteldemo::UpdateFlagResponse)},
+        {640, -1, -1, sizeof(::oteldemo::ListFlagsRequest)},
+        {648, -1, -1, sizeof(::oteldemo::ListFlagsResponse)},
+        {657, -1, -1, sizeof(::oteldemo::DeleteFlagRequest)},
+        {666, -1, -1, sizeof(::oteldemo::DeleteFlagResponse)},
 };
 
 static const ::_pb::Message* const file_default_instances[] = {
@@ -2018,6 +2106,8 @@ static const ::_pb::Message* const file_default_instances[] = {
     &::oteldemo::_AdRequest_default_instance_._instance,
     &::oteldemo::_AdResponse_default_instance_._instance,
     &::oteldemo::_Ad_default_instance_._instance,
+    &::oteldemo::_LoginRequest_default_instance_._instance,
+    &::oteldemo::_LoginResponse_default_instance_._instance,
     &::oteldemo::_Flag_default_instance_._instance,
     &::oteldemo::_GetFlagRequest_default_instance_._instance,
     &::oteldemo::_GetFlagResponse_default_instance_._instance,
@@ -2122,91 +2212,97 @@ const char descriptor_table_protodef_demo_2eproto[] PROTOBUF_SECTION_VARIABLE(pr
     "tion_id\030\003 \001(\t\"!\n\tAdRequest\022\024\n\014context_ke"
     "ys\030\001 \003(\t\"\'\n\nAdResponse\022\031\n\003ads\030\001 \003(\0132\014.ot"
     "eldemo.Ad\"(\n\002Ad\022\024\n\014redirect_url\030\001 \001(\t\022\014\n"
-    "\004text\030\002 \001(\t\":\n\004Flag\022\014\n\004name\030\001 \001(\t\022\023\n\013des"
-    "cription\030\002 \001(\t\022\017\n\007enabled\030\003 \001(\010\"\036\n\016GetFl"
-    "agRequest\022\014\n\004name\030\001 \001(\t\"/\n\017GetFlagRespon"
-    "se\022\034\n\004flag\030\001 \001(\0132\016.oteldemo.Flag\"G\n\021Crea"
-    "teFlagRequest\022\014\n\004name\030\001 \001(\t\022\023\n\013descripti"
-    "on\030\002 \001(\t\022\017\n\007enabled\030\003 \001(\010\"2\n\022CreateFlagR"
-    "esponse\022\034\n\004flag\030\001 \001(\0132\016.oteldemo.Flag\"2\n"
-    "\021UpdateFlagRequest\022\014\n\004name\030\001 \001(\t\022\017\n\007enab"
-    "led\030\002 \001(\010\"\024\n\022UpdateFlagResponse\"\022\n\020ListF"
-    "lagsRequest\"1\n\021ListFlagsResponse\022\034\n\004flag"
-    "\030\001 \003(\0132\016.oteldemo.Flag\"!\n\021DeleteFlagRequ"
-    "est\022\014\n\004name\030\001 \001(\t\"\024\n\022DeleteFlagResponse2"
-    "\270\001\n\013CartService\0226\n\007AddItem\022\030.oteldemo.Ad"
-    "dItemRequest\032\017.oteldemo.Empty\"\000\0225\n\007GetCa"
-    "rt\022\030.oteldemo.GetCartRequest\032\016.oteldemo."
-    "Cart\"\000\022:\n\tEmptyCart\022\032.oteldemo.EmptyCart"
-    "Request\032\017.oteldemo.Empty\"\0002}\n\025Recommenda"
-    "tionService\022d\n\023ListRecommendations\022$.ote"
-    "ldemo.ListRecommendationsRequest\032%.oteld"
-    "emo.ListRecommendationsResponse\"\0002\361\001\n\025Pr"
-    "oductCatalogService\022A\n\014ListProducts\022\017.ot"
-    "eldemo.Empty\032\036.oteldemo.ListProductsResp"
-    "onse\"\000\022>\n\nGetProduct\022\033.oteldemo.GetProdu"
-    "ctRequest\032\021.oteldemo.Product\"\000\022U\n\016Search"
-    "Products\022\037.oteldemo.SearchProductsReques"
-    "t\032 .oteldemo.SearchProductsResponse\"\0002\343\002"
-    "\n\024ProductReviewService\022^\n\021GetProductRevi"
-    "ews\022\".oteldemo.GetProductReviewsRequest\032"
-    "#.oteldemo.GetProductReviewsResponse\"\000\022\177"
-    "\n\034GetAverageProductReviewScore\022-.oteldem"
-    "o.GetAverageProductReviewScoreRequest\032.."
-    "oteldemo.GetAverageProductReviewScoreRes"
-    "ponse\"\000\022j\n\025AskProductAIAssistant\022&.oteld"
-    "emo.AskProductAIAssistantRequest\032\'.oteld"
-    "emo.AskProductAIAssistantResponse\"\0002\236\001\n\017"
-    "ShippingService\022C\n\010GetQuote\022\031.oteldemo.G"
-    "etQuoteRequest\032\032.oteldemo.GetQuoteRespon"
-    "se\"\000\022F\n\tShipOrder\022\032.oteldemo.ShipOrderRe"
-    "quest\032\033.oteldemo.ShipOrderResponse\"\0002\253\001\n"
-    "\017CurrencyService\022U\n\026GetSupportedCurrenci"
-    "es\022\017.oteldemo.Empty\032(.oteldemo.GetSuppor"
-    "tedCurrenciesResponse\"\000\022A\n\007Convert\022#.ote"
-    "ldemo.CurrencyConversionRequest\032\017.otelde"
-    "mo.Money\"\0002\340\001\n\016PaymentService\022=\n\006Charge\022"
-    "\027.oteldemo.ChargeRequest\032\030.oteldemo.Char"
-    "geResponse\"\000\022=\n\006Refund\022\027.oteldemo.Refund"
-    "Request\032\030.oteldemo.RefundResponse\"\000\022P\n\020G"
-    "etPaymentStatus\022!.oteldemo.GetPaymentSta"
-    "tusRequest\032\027.oteldemo.PaymentStatus\"\0002b\n"
-    "\014EmailService\022R\n\025SendOrderConfirmation\022&"
-    ".oteldemo.SendOrderConfirmationRequest\032\017"
-    ".oteldemo.Empty\"\0002\\\n\017CheckoutService\022I\n\n"
-    "PlaceOrder\022\033.oteldemo.PlaceOrderRequest\032"
-    "\034.oteldemo.PlaceOrderResponse\"\0002\371\001\n\014Orde"
-    "rService\022[\n\020GetOrdersByEmail\022!.oteldemo."
-    "GetOrdersByEmailRequest\032\".oteldemo.GetOr"
-    "dersByEmailResponse\"\000\022>\n\010GetOrder\022\031.otel"
-    "demo.GetOrderRequest\032\025.oteldemo.OrderDet"
-    "ail\"\000\022L\n\013RefundOrder\022\034.oteldemo.RefundOr"
-    "derRequest\032\035.oteldemo.RefundOrderRespons"
-    "e\"\0002B\n\tAdService\0225\n\006GetAds\022\023.oteldemo.Ad"
-    "Request\032\024.oteldemo.AdResponse\"\0002\377\002\n\022Feat"
-    "ureFlagService\022@\n\007GetFlag\022\030.oteldemo.Get"
-    "FlagRequest\032\031.oteldemo.GetFlagResponse\"\000"
-    "\022I\n\nCreateFlag\022\033.oteldemo.CreateFlagRequ"
-    "est\032\034.oteldemo.CreateFlagResponse\"\000\022I\n\nU"
-    "pdateFlag\022\033.oteldemo.UpdateFlagRequest\032\034"
-    ".oteldemo.UpdateFlagResponse\"\000\022F\n\tListFl"
-    "ags\022\032.oteldemo.ListFlagsRequest\032\033.otelde"
-    "mo.ListFlagsResponse\"\000\022I\n\nDeleteFlag\022\033.o"
-    "teldemo.DeleteFlagRequest\032\034.oteldemo.Del"
-    "eteFlagResponse\"\000B\023Z\021genproto/oteldemob\006"
-    "proto3"
+    "\004text\030\002 \001(\t\"\?\n\014LoginRequest\022\r\n\005email\030\001 \001"
+    "(\t\022\020\n\010password\030\002 \001(\t\022\016\n\006method\030\003 \001(\t\"v\n\r"
+    "LoginResponse\022\031\n\021corporate_user_id\030\001 \001(\t"
+    "\022\017\n\007company\030\002 \001(\t\022\024\n\014company_name\030\003 \001(\t\022"
+    "\r\n\005email\030\004 \001(\t\022\024\n\014display_name\030\005 \001(\t\":\n\004"
+    "Flag\022\014\n\004name\030\001 \001(\t\022\023\n\013description\030\002 \001(\t\022"
+    "\017\n\007enabled\030\003 \001(\010\"\036\n\016GetFlagRequest\022\014\n\004na"
+    "me\030\001 \001(\t\"/\n\017GetFlagResponse\022\034\n\004flag\030\001 \001("
+    "\0132\016.oteldemo.Flag\"G\n\021CreateFlagRequest\022\014"
+    "\n\004name\030\001 \001(\t\022\023\n\013description\030\002 \001(\t\022\017\n\007ena"
+    "bled\030\003 \001(\010\"2\n\022CreateFlagResponse\022\034\n\004flag"
+    "\030\001 \001(\0132\016.oteldemo.Flag\"2\n\021UpdateFlagRequ"
+    "est\022\014\n\004name\030\001 \001(\t\022\017\n\007enabled\030\002 \001(\010\"\024\n\022Up"
+    "dateFlagResponse\"\022\n\020ListFlagsRequest\"1\n\021"
+    "ListFlagsResponse\022\034\n\004flag\030\001 \003(\0132\016.otelde"
+    "mo.Flag\"!\n\021DeleteFlagRequest\022\014\n\004name\030\001 \001"
+    "(\t\"\024\n\022DeleteFlagResponse2\270\001\n\013CartService"
+    "\0226\n\007AddItem\022\030.oteldemo.AddItemRequest\032\017."
+    "oteldemo.Empty\"\000\0225\n\007GetCart\022\030.oteldemo.G"
+    "etCartRequest\032\016.oteldemo.Cart\"\000\022:\n\tEmpty"
+    "Cart\022\032.oteldemo.EmptyCartRequest\032\017.oteld"
+    "emo.Empty\"\0002}\n\025RecommendationService\022d\n\023"
+    "ListRecommendations\022$.oteldemo.ListRecom"
+    "mendationsRequest\032%.oteldemo.ListRecomme"
+    "ndationsResponse\"\0002\361\001\n\025ProductCatalogSer"
+    "vice\022A\n\014ListProducts\022\017.oteldemo.Empty\032\036."
+    "oteldemo.ListProductsResponse\"\000\022>\n\nGetPr"
+    "oduct\022\033.oteldemo.GetProductRequest\032\021.ote"
+    "ldemo.Product\"\000\022U\n\016SearchProducts\022\037.otel"
+    "demo.SearchProductsRequest\032 .oteldemo.Se"
+    "archProductsResponse\"\0002\343\002\n\024ProductReview"
+    "Service\022^\n\021GetProductReviews\022\".oteldemo."
+    "GetProductReviewsRequest\032#.oteldemo.GetP"
+    "roductReviewsResponse\"\000\022\177\n\034GetAveragePro"
+    "ductReviewScore\022-.oteldemo.GetAveragePro"
+    "ductReviewScoreRequest\032..oteldemo.GetAve"
+    "rageProductReviewScoreResponse\"\000\022j\n\025AskP"
+    "roductAIAssistant\022&.oteldemo.AskProductA"
+    "IAssistantRequest\032\'.oteldemo.AskProductA"
+    "IAssistantResponse\"\0002\236\001\n\017ShippingService"
+    "\022C\n\010GetQuote\022\031.oteldemo.GetQuoteRequest\032"
+    "\032.oteldemo.GetQuoteResponse\"\000\022F\n\tShipOrd"
+    "er\022\032.oteldemo.ShipOrderRequest\032\033.oteldem"
+    "o.ShipOrderResponse\"\0002\253\001\n\017CurrencyServic"
+    "e\022U\n\026GetSupportedCurrencies\022\017.oteldemo.E"
+    "mpty\032(.oteldemo.GetSupportedCurrenciesRe"
+    "sponse\"\000\022A\n\007Convert\022#.oteldemo.CurrencyC"
+    "onversionRequest\032\017.oteldemo.Money\"\0002\340\001\n\016"
+    "PaymentService\022=\n\006Charge\022\027.oteldemo.Char"
+    "geRequest\032\030.oteldemo.ChargeResponse\"\000\022=\n"
+    "\006Refund\022\027.oteldemo.RefundRequest\032\030.oteld"
+    "emo.RefundResponse\"\000\022P\n\020GetPaymentStatus"
+    "\022!.oteldemo.GetPaymentStatusRequest\032\027.ot"
+    "eldemo.PaymentStatus\"\0002b\n\014EmailService\022R"
+    "\n\025SendOrderConfirmation\022&.oteldemo.SendO"
+    "rderConfirmationRequest\032\017.oteldemo.Empty"
+    "\"\0002\\\n\017CheckoutService\022I\n\nPlaceOrder\022\033.ot"
+    "eldemo.PlaceOrderRequest\032\034.oteldemo.Plac"
+    "eOrderResponse\"\0002\371\001\n\014OrderService\022[\n\020Get"
+    "OrdersByEmail\022!.oteldemo.GetOrdersByEmai"
+    "lRequest\032\".oteldemo.GetOrdersByEmailResp"
+    "onse\"\000\022>\n\010GetOrder\022\031.oteldemo.GetOrderRe"
+    "quest\032\025.oteldemo.OrderDetail\"\000\022L\n\013Refund"
+    "Order\022\034.oteldemo.RefundOrderRequest\032\035.ot"
+    "eldemo.RefundOrderResponse\"\0002B\n\tAdServic"
+    "e\0225\n\006GetAds\022\023.oteldemo.AdRequest\032\024.oteld"
+    "emo.AdResponse\"\0002I\n\013AuthService\022:\n\005Login"
+    "\022\026.oteldemo.LoginRequest\032\027.oteldemo.Logi"
+    "nResponse\"\0002\377\002\n\022FeatureFlagService\022@\n\007Ge"
+    "tFlag\022\030.oteldemo.GetFlagRequest\032\031.otelde"
+    "mo.GetFlagResponse\"\000\022I\n\nCreateFlag\022\033.ote"
+    "ldemo.CreateFlagRequest\032\034.oteldemo.Creat"
+    "eFlagResponse\"\000\022I\n\nUpdateFlag\022\033.oteldemo"
+    ".UpdateFlagRequest\032\034.oteldemo.UpdateFlag"
+    "Response\"\000\022F\n\tListFlags\022\032.oteldemo.ListF"
+    "lagsRequest\032\033.oteldemo.ListFlagsResponse"
+    "\"\000\022I\n\nDeleteFlag\022\033.oteldemo.DeleteFlagRe"
+    "quest\032\034.oteldemo.DeleteFlagResponse\"\000B\023Z"
+    "\021genproto/oteldemob\006proto3"
 };
 static ::absl::once_flag descriptor_table_demo_2eproto_once;
 const ::_pbi::DescriptorTable descriptor_table_demo_2eproto = {
     false,
     false,
-    6526,
+    6786,
     descriptor_table_protodef_demo_2eproto,
     "demo.proto",
     &descriptor_table_demo_2eproto_once,
     nullptr,
     0,
-    60,
+    62,
     schemas,
     file_default_instances,
     TableStruct_demo_2eproto::offsets,
@@ -13625,6 +13721,638 @@ void Ad::InternalSwap(Ad* other) {
 }
 // ===================================================================
 
+class LoginRequest::_Internal {
+ public:
+};
+
+LoginRequest::LoginRequest(::google::protobuf::Arena* arena)
+    : ::google::protobuf::Message(arena) {
+  SharedCtor(arena);
+  // @@protoc_insertion_point(arena_constructor:oteldemo.LoginRequest)
+}
+LoginRequest::LoginRequest(const LoginRequest& from) : ::google::protobuf::Message() {
+  LoginRequest* const _this = this;
+  (void)_this;
+  new (&_impl_) Impl_{
+      decltype(_impl_.email_){},
+      decltype(_impl_.password_){},
+      decltype(_impl_.method_){},
+      /*decltype(_impl_._cached_size_)*/ {},
+  };
+  _internal_metadata_.MergeFrom<::google::protobuf::UnknownFieldSet>(
+      from._internal_metadata_);
+  _impl_.email_.InitDefault();
+  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+        _impl_.email_.Set("", GetArenaForAllocation());
+  #endif  // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  if (!from._internal_email().empty()) {
+    _this->_impl_.email_.Set(from._internal_email(), _this->GetArenaForAllocation());
+  }
+  _impl_.password_.InitDefault();
+  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+        _impl_.password_.Set("", GetArenaForAllocation());
+  #endif  // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  if (!from._internal_password().empty()) {
+    _this->_impl_.password_.Set(from._internal_password(), _this->GetArenaForAllocation());
+  }
+  _impl_.method_.InitDefault();
+  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+        _impl_.method_.Set("", GetArenaForAllocation());
+  #endif  // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  if (!from._internal_method().empty()) {
+    _this->_impl_.method_.Set(from._internal_method(), _this->GetArenaForAllocation());
+  }
+
+  // @@protoc_insertion_point(copy_constructor:oteldemo.LoginRequest)
+}
+inline void LoginRequest::SharedCtor(::_pb::Arena* arena) {
+  (void)arena;
+  new (&_impl_) Impl_{
+      decltype(_impl_.email_){},
+      decltype(_impl_.password_){},
+      decltype(_impl_.method_){},
+      /*decltype(_impl_._cached_size_)*/ {},
+  };
+  _impl_.email_.InitDefault();
+  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+        _impl_.email_.Set("", GetArenaForAllocation());
+  #endif  // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  _impl_.password_.InitDefault();
+  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+        _impl_.password_.Set("", GetArenaForAllocation());
+  #endif  // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  _impl_.method_.InitDefault();
+  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+        _impl_.method_.Set("", GetArenaForAllocation());
+  #endif  // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+}
+LoginRequest::~LoginRequest() {
+  // @@protoc_insertion_point(destructor:oteldemo.LoginRequest)
+  _internal_metadata_.Delete<::google::protobuf::UnknownFieldSet>();
+  SharedDtor();
+}
+inline void LoginRequest::SharedDtor() {
+  ABSL_DCHECK(GetArenaForAllocation() == nullptr);
+  _impl_.email_.Destroy();
+  _impl_.password_.Destroy();
+  _impl_.method_.Destroy();
+}
+void LoginRequest::SetCachedSize(int size) const {
+  _impl_._cached_size_.Set(size);
+}
+
+PROTOBUF_NOINLINE void LoginRequest::Clear() {
+// @@protoc_insertion_point(message_clear_start:oteldemo.LoginRequest)
+  ::uint32_t cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  _impl_.email_.ClearToEmpty();
+  _impl_.password_.ClearToEmpty();
+  _impl_.method_.ClearToEmpty();
+  _internal_metadata_.Clear<::google::protobuf::UnknownFieldSet>();
+}
+
+const char* LoginRequest::_InternalParse(
+    const char* ptr, ::_pbi::ParseContext* ctx) {
+  ptr = ::_pbi::TcParser::ParseLoop(this, ptr, ctx, &_table_.header);
+  return ptr;
+}
+
+
+PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1
+const ::_pbi::TcParseTable<2, 3, 0, 49, 2> LoginRequest::_table_ = {
+  {
+    0,  // no _has_bits_
+    0, // no _extensions_
+    3, 24,  // max_field_number, fast_idx_mask
+    offsetof(decltype(_table_), field_lookup_table),
+    4294967288,  // skipmap
+    offsetof(decltype(_table_), field_entries),
+    3,  // num_field_entries
+    0,  // num_aux_entries
+    offsetof(decltype(_table_), field_names),  // no aux_entries
+    &_LoginRequest_default_instance_._instance,
+    ::_pbi::TcParser::GenericFallback,  // fallback
+  }, {{
+    {::_pbi::TcParser::MiniParse, {}},
+    // string email = 1;
+    {::_pbi::TcParser::FastUS1,
+     {10, 63, 0, PROTOBUF_FIELD_OFFSET(LoginRequest, _impl_.email_)}},
+    // string password = 2;
+    {::_pbi::TcParser::FastUS1,
+     {18, 63, 0, PROTOBUF_FIELD_OFFSET(LoginRequest, _impl_.password_)}},
+    // string method = 3;
+    {::_pbi::TcParser::FastUS1,
+     {26, 63, 0, PROTOBUF_FIELD_OFFSET(LoginRequest, _impl_.method_)}},
+  }}, {{
+    65535, 65535
+  }}, {{
+    // string email = 1;
+    {PROTOBUF_FIELD_OFFSET(LoginRequest, _impl_.email_), 0, 0,
+    (0 | ::_fl::kFcSingular | ::_fl::kUtf8String | ::_fl::kRepAString)},
+    // string password = 2;
+    {PROTOBUF_FIELD_OFFSET(LoginRequest, _impl_.password_), 0, 0,
+    (0 | ::_fl::kFcSingular | ::_fl::kUtf8String | ::_fl::kRepAString)},
+    // string method = 3;
+    {PROTOBUF_FIELD_OFFSET(LoginRequest, _impl_.method_), 0, 0,
+    (0 | ::_fl::kFcSingular | ::_fl::kUtf8String | ::_fl::kRepAString)},
+  }},
+  // no aux_entries
+  {{
+    "\25\5\10\6\0\0\0\0"
+    "oteldemo.LoginRequest"
+    "email"
+    "password"
+    "method"
+  }},
+};
+
+::uint8_t* LoginRequest::_InternalSerialize(
+    ::uint8_t* target,
+    ::google::protobuf::io::EpsCopyOutputStream* stream) const {
+  // @@protoc_insertion_point(serialize_to_array_start:oteldemo.LoginRequest)
+  ::uint32_t cached_has_bits = 0;
+  (void)cached_has_bits;
+
+  // string email = 1;
+  if (!this->_internal_email().empty()) {
+    const std::string& _s = this->_internal_email();
+    ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+        _s.data(), static_cast<int>(_s.length()), ::google::protobuf::internal::WireFormatLite::SERIALIZE, "oteldemo.LoginRequest.email");
+    target = stream->WriteStringMaybeAliased(1, _s, target);
+  }
+
+  // string password = 2;
+  if (!this->_internal_password().empty()) {
+    const std::string& _s = this->_internal_password();
+    ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+        _s.data(), static_cast<int>(_s.length()), ::google::protobuf::internal::WireFormatLite::SERIALIZE, "oteldemo.LoginRequest.password");
+    target = stream->WriteStringMaybeAliased(2, _s, target);
+  }
+
+  // string method = 3;
+  if (!this->_internal_method().empty()) {
+    const std::string& _s = this->_internal_method();
+    ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+        _s.data(), static_cast<int>(_s.length()), ::google::protobuf::internal::WireFormatLite::SERIALIZE, "oteldemo.LoginRequest.method");
+    target = stream->WriteStringMaybeAliased(3, _s, target);
+  }
+
+  if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
+    target =
+        ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
+            _internal_metadata_.unknown_fields<::google::protobuf::UnknownFieldSet>(::google::protobuf::UnknownFieldSet::default_instance), target, stream);
+  }
+  // @@protoc_insertion_point(serialize_to_array_end:oteldemo.LoginRequest)
+  return target;
+}
+
+::size_t LoginRequest::ByteSizeLong() const {
+// @@protoc_insertion_point(message_byte_size_start:oteldemo.LoginRequest)
+  ::size_t total_size = 0;
+
+  ::uint32_t cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  // string email = 1;
+  if (!this->_internal_email().empty()) {
+    total_size += 1 + ::google::protobuf::internal::WireFormatLite::StringSize(
+                                    this->_internal_email());
+  }
+
+  // string password = 2;
+  if (!this->_internal_password().empty()) {
+    total_size += 1 + ::google::protobuf::internal::WireFormatLite::StringSize(
+                                    this->_internal_password());
+  }
+
+  // string method = 3;
+  if (!this->_internal_method().empty()) {
+    total_size += 1 + ::google::protobuf::internal::WireFormatLite::StringSize(
+                                    this->_internal_method());
+  }
+
+  return MaybeComputeUnknownFieldsSize(total_size, &_impl_._cached_size_);
+}
+
+const ::google::protobuf::Message::ClassData LoginRequest::_class_data_ = {
+    ::google::protobuf::Message::CopyWithSourceCheck,
+    LoginRequest::MergeImpl
+};
+const ::google::protobuf::Message::ClassData*LoginRequest::GetClassData() const { return &_class_data_; }
+
+
+void LoginRequest::MergeImpl(::google::protobuf::Message& to_msg, const ::google::protobuf::Message& from_msg) {
+  auto* const _this = static_cast<LoginRequest*>(&to_msg);
+  auto& from = static_cast<const LoginRequest&>(from_msg);
+  // @@protoc_insertion_point(class_specific_merge_from_start:oteldemo.LoginRequest)
+  ABSL_DCHECK_NE(&from, _this);
+  ::uint32_t cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  if (!from._internal_email().empty()) {
+    _this->_internal_set_email(from._internal_email());
+  }
+  if (!from._internal_password().empty()) {
+    _this->_internal_set_password(from._internal_password());
+  }
+  if (!from._internal_method().empty()) {
+    _this->_internal_set_method(from._internal_method());
+  }
+  _this->_internal_metadata_.MergeFrom<::google::protobuf::UnknownFieldSet>(from._internal_metadata_);
+}
+
+void LoginRequest::CopyFrom(const LoginRequest& from) {
+// @@protoc_insertion_point(class_specific_copy_from_start:oteldemo.LoginRequest)
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+PROTOBUF_NOINLINE bool LoginRequest::IsInitialized() const {
+  return true;
+}
+
+void LoginRequest::InternalSwap(LoginRequest* other) {
+  using std::swap;
+  auto* lhs_arena = GetArenaForAllocation();
+  auto* rhs_arena = other->GetArenaForAllocation();
+  _internal_metadata_.InternalSwap(&other->_internal_metadata_);
+  ::_pbi::ArenaStringPtr::InternalSwap(&_impl_.email_, lhs_arena,
+                                       &other->_impl_.email_, rhs_arena);
+  ::_pbi::ArenaStringPtr::InternalSwap(&_impl_.password_, lhs_arena,
+                                       &other->_impl_.password_, rhs_arena);
+  ::_pbi::ArenaStringPtr::InternalSwap(&_impl_.method_, lhs_arena,
+                                       &other->_impl_.method_, rhs_arena);
+}
+
+::google::protobuf::Metadata LoginRequest::GetMetadata() const {
+  return ::_pbi::AssignDescriptors(
+      &descriptor_table_demo_2eproto_getter, &descriptor_table_demo_2eproto_once,
+      file_level_metadata_demo_2eproto[49]);
+}
+// ===================================================================
+
+class LoginResponse::_Internal {
+ public:
+};
+
+LoginResponse::LoginResponse(::google::protobuf::Arena* arena)
+    : ::google::protobuf::Message(arena) {
+  SharedCtor(arena);
+  // @@protoc_insertion_point(arena_constructor:oteldemo.LoginResponse)
+}
+LoginResponse::LoginResponse(const LoginResponse& from) : ::google::protobuf::Message() {
+  LoginResponse* const _this = this;
+  (void)_this;
+  new (&_impl_) Impl_{
+      decltype(_impl_.corporate_user_id_){},
+      decltype(_impl_.company_){},
+      decltype(_impl_.company_name_){},
+      decltype(_impl_.email_){},
+      decltype(_impl_.display_name_){},
+      /*decltype(_impl_._cached_size_)*/ {},
+  };
+  _internal_metadata_.MergeFrom<::google::protobuf::UnknownFieldSet>(
+      from._internal_metadata_);
+  _impl_.corporate_user_id_.InitDefault();
+  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+        _impl_.corporate_user_id_.Set("", GetArenaForAllocation());
+  #endif  // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  if (!from._internal_corporate_user_id().empty()) {
+    _this->_impl_.corporate_user_id_.Set(from._internal_corporate_user_id(), _this->GetArenaForAllocation());
+  }
+  _impl_.company_.InitDefault();
+  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+        _impl_.company_.Set("", GetArenaForAllocation());
+  #endif  // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  if (!from._internal_company().empty()) {
+    _this->_impl_.company_.Set(from._internal_company(), _this->GetArenaForAllocation());
+  }
+  _impl_.company_name_.InitDefault();
+  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+        _impl_.company_name_.Set("", GetArenaForAllocation());
+  #endif  // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  if (!from._internal_company_name().empty()) {
+    _this->_impl_.company_name_.Set(from._internal_company_name(), _this->GetArenaForAllocation());
+  }
+  _impl_.email_.InitDefault();
+  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+        _impl_.email_.Set("", GetArenaForAllocation());
+  #endif  // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  if (!from._internal_email().empty()) {
+    _this->_impl_.email_.Set(from._internal_email(), _this->GetArenaForAllocation());
+  }
+  _impl_.display_name_.InitDefault();
+  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+        _impl_.display_name_.Set("", GetArenaForAllocation());
+  #endif  // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  if (!from._internal_display_name().empty()) {
+    _this->_impl_.display_name_.Set(from._internal_display_name(), _this->GetArenaForAllocation());
+  }
+
+  // @@protoc_insertion_point(copy_constructor:oteldemo.LoginResponse)
+}
+inline void LoginResponse::SharedCtor(::_pb::Arena* arena) {
+  (void)arena;
+  new (&_impl_) Impl_{
+      decltype(_impl_.corporate_user_id_){},
+      decltype(_impl_.company_){},
+      decltype(_impl_.company_name_){},
+      decltype(_impl_.email_){},
+      decltype(_impl_.display_name_){},
+      /*decltype(_impl_._cached_size_)*/ {},
+  };
+  _impl_.corporate_user_id_.InitDefault();
+  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+        _impl_.corporate_user_id_.Set("", GetArenaForAllocation());
+  #endif  // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  _impl_.company_.InitDefault();
+  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+        _impl_.company_.Set("", GetArenaForAllocation());
+  #endif  // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  _impl_.company_name_.InitDefault();
+  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+        _impl_.company_name_.Set("", GetArenaForAllocation());
+  #endif  // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  _impl_.email_.InitDefault();
+  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+        _impl_.email_.Set("", GetArenaForAllocation());
+  #endif  // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  _impl_.display_name_.InitDefault();
+  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+        _impl_.display_name_.Set("", GetArenaForAllocation());
+  #endif  // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+}
+LoginResponse::~LoginResponse() {
+  // @@protoc_insertion_point(destructor:oteldemo.LoginResponse)
+  _internal_metadata_.Delete<::google::protobuf::UnknownFieldSet>();
+  SharedDtor();
+}
+inline void LoginResponse::SharedDtor() {
+  ABSL_DCHECK(GetArenaForAllocation() == nullptr);
+  _impl_.corporate_user_id_.Destroy();
+  _impl_.company_.Destroy();
+  _impl_.company_name_.Destroy();
+  _impl_.email_.Destroy();
+  _impl_.display_name_.Destroy();
+}
+void LoginResponse::SetCachedSize(int size) const {
+  _impl_._cached_size_.Set(size);
+}
+
+PROTOBUF_NOINLINE void LoginResponse::Clear() {
+// @@protoc_insertion_point(message_clear_start:oteldemo.LoginResponse)
+  ::uint32_t cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  _impl_.corporate_user_id_.ClearToEmpty();
+  _impl_.company_.ClearToEmpty();
+  _impl_.company_name_.ClearToEmpty();
+  _impl_.email_.ClearToEmpty();
+  _impl_.display_name_.ClearToEmpty();
+  _internal_metadata_.Clear<::google::protobuf::UnknownFieldSet>();
+}
+
+const char* LoginResponse::_InternalParse(
+    const char* ptr, ::_pbi::ParseContext* ctx) {
+  ptr = ::_pbi::TcParser::ParseLoop(this, ptr, ctx, &_table_.header);
+  return ptr;
+}
+
+
+PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1
+const ::_pbi::TcParseTable<3, 5, 0, 84, 2> LoginResponse::_table_ = {
+  {
+    0,  // no _has_bits_
+    0, // no _extensions_
+    5, 56,  // max_field_number, fast_idx_mask
+    offsetof(decltype(_table_), field_lookup_table),
+    4294967264,  // skipmap
+    offsetof(decltype(_table_), field_entries),
+    5,  // num_field_entries
+    0,  // num_aux_entries
+    offsetof(decltype(_table_), field_names),  // no aux_entries
+    &_LoginResponse_default_instance_._instance,
+    ::_pbi::TcParser::GenericFallback,  // fallback
+  }, {{
+    {::_pbi::TcParser::MiniParse, {}},
+    // string corporate_user_id = 1;
+    {::_pbi::TcParser::FastUS1,
+     {10, 63, 0, PROTOBUF_FIELD_OFFSET(LoginResponse, _impl_.corporate_user_id_)}},
+    // string company = 2;
+    {::_pbi::TcParser::FastUS1,
+     {18, 63, 0, PROTOBUF_FIELD_OFFSET(LoginResponse, _impl_.company_)}},
+    // string company_name = 3;
+    {::_pbi::TcParser::FastUS1,
+     {26, 63, 0, PROTOBUF_FIELD_OFFSET(LoginResponse, _impl_.company_name_)}},
+    // string email = 4;
+    {::_pbi::TcParser::FastUS1,
+     {34, 63, 0, PROTOBUF_FIELD_OFFSET(LoginResponse, _impl_.email_)}},
+    // string display_name = 5;
+    {::_pbi::TcParser::FastUS1,
+     {42, 63, 0, PROTOBUF_FIELD_OFFSET(LoginResponse, _impl_.display_name_)}},
+    {::_pbi::TcParser::MiniParse, {}},
+    {::_pbi::TcParser::MiniParse, {}},
+  }}, {{
+    65535, 65535
+  }}, {{
+    // string corporate_user_id = 1;
+    {PROTOBUF_FIELD_OFFSET(LoginResponse, _impl_.corporate_user_id_), 0, 0,
+    (0 | ::_fl::kFcSingular | ::_fl::kUtf8String | ::_fl::kRepAString)},
+    // string company = 2;
+    {PROTOBUF_FIELD_OFFSET(LoginResponse, _impl_.company_), 0, 0,
+    (0 | ::_fl::kFcSingular | ::_fl::kUtf8String | ::_fl::kRepAString)},
+    // string company_name = 3;
+    {PROTOBUF_FIELD_OFFSET(LoginResponse, _impl_.company_name_), 0, 0,
+    (0 | ::_fl::kFcSingular | ::_fl::kUtf8String | ::_fl::kRepAString)},
+    // string email = 4;
+    {PROTOBUF_FIELD_OFFSET(LoginResponse, _impl_.email_), 0, 0,
+    (0 | ::_fl::kFcSingular | ::_fl::kUtf8String | ::_fl::kRepAString)},
+    // string display_name = 5;
+    {PROTOBUF_FIELD_OFFSET(LoginResponse, _impl_.display_name_), 0, 0,
+    (0 | ::_fl::kFcSingular | ::_fl::kUtf8String | ::_fl::kRepAString)},
+  }},
+  // no aux_entries
+  {{
+    "\26\21\7\14\5\14\0\0"
+    "oteldemo.LoginResponse"
+    "corporate_user_id"
+    "company"
+    "company_name"
+    "email"
+    "display_name"
+  }},
+};
+
+::uint8_t* LoginResponse::_InternalSerialize(
+    ::uint8_t* target,
+    ::google::protobuf::io::EpsCopyOutputStream* stream) const {
+  // @@protoc_insertion_point(serialize_to_array_start:oteldemo.LoginResponse)
+  ::uint32_t cached_has_bits = 0;
+  (void)cached_has_bits;
+
+  // string corporate_user_id = 1;
+  if (!this->_internal_corporate_user_id().empty()) {
+    const std::string& _s = this->_internal_corporate_user_id();
+    ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+        _s.data(), static_cast<int>(_s.length()), ::google::protobuf::internal::WireFormatLite::SERIALIZE, "oteldemo.LoginResponse.corporate_user_id");
+    target = stream->WriteStringMaybeAliased(1, _s, target);
+  }
+
+  // string company = 2;
+  if (!this->_internal_company().empty()) {
+    const std::string& _s = this->_internal_company();
+    ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+        _s.data(), static_cast<int>(_s.length()), ::google::protobuf::internal::WireFormatLite::SERIALIZE, "oteldemo.LoginResponse.company");
+    target = stream->WriteStringMaybeAliased(2, _s, target);
+  }
+
+  // string company_name = 3;
+  if (!this->_internal_company_name().empty()) {
+    const std::string& _s = this->_internal_company_name();
+    ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+        _s.data(), static_cast<int>(_s.length()), ::google::protobuf::internal::WireFormatLite::SERIALIZE, "oteldemo.LoginResponse.company_name");
+    target = stream->WriteStringMaybeAliased(3, _s, target);
+  }
+
+  // string email = 4;
+  if (!this->_internal_email().empty()) {
+    const std::string& _s = this->_internal_email();
+    ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+        _s.data(), static_cast<int>(_s.length()), ::google::protobuf::internal::WireFormatLite::SERIALIZE, "oteldemo.LoginResponse.email");
+    target = stream->WriteStringMaybeAliased(4, _s, target);
+  }
+
+  // string display_name = 5;
+  if (!this->_internal_display_name().empty()) {
+    const std::string& _s = this->_internal_display_name();
+    ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+        _s.data(), static_cast<int>(_s.length()), ::google::protobuf::internal::WireFormatLite::SERIALIZE, "oteldemo.LoginResponse.display_name");
+    target = stream->WriteStringMaybeAliased(5, _s, target);
+  }
+
+  if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
+    target =
+        ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
+            _internal_metadata_.unknown_fields<::google::protobuf::UnknownFieldSet>(::google::protobuf::UnknownFieldSet::default_instance), target, stream);
+  }
+  // @@protoc_insertion_point(serialize_to_array_end:oteldemo.LoginResponse)
+  return target;
+}
+
+::size_t LoginResponse::ByteSizeLong() const {
+// @@protoc_insertion_point(message_byte_size_start:oteldemo.LoginResponse)
+  ::size_t total_size = 0;
+
+  ::uint32_t cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  // string corporate_user_id = 1;
+  if (!this->_internal_corporate_user_id().empty()) {
+    total_size += 1 + ::google::protobuf::internal::WireFormatLite::StringSize(
+                                    this->_internal_corporate_user_id());
+  }
+
+  // string company = 2;
+  if (!this->_internal_company().empty()) {
+    total_size += 1 + ::google::protobuf::internal::WireFormatLite::StringSize(
+                                    this->_internal_company());
+  }
+
+  // string company_name = 3;
+  if (!this->_internal_company_name().empty()) {
+    total_size += 1 + ::google::protobuf::internal::WireFormatLite::StringSize(
+                                    this->_internal_company_name());
+  }
+
+  // string email = 4;
+  if (!this->_internal_email().empty()) {
+    total_size += 1 + ::google::protobuf::internal::WireFormatLite::StringSize(
+                                    this->_internal_email());
+  }
+
+  // string display_name = 5;
+  if (!this->_internal_display_name().empty()) {
+    total_size += 1 + ::google::protobuf::internal::WireFormatLite::StringSize(
+                                    this->_internal_display_name());
+  }
+
+  return MaybeComputeUnknownFieldsSize(total_size, &_impl_._cached_size_);
+}
+
+const ::google::protobuf::Message::ClassData LoginResponse::_class_data_ = {
+    ::google::protobuf::Message::CopyWithSourceCheck,
+    LoginResponse::MergeImpl
+};
+const ::google::protobuf::Message::ClassData*LoginResponse::GetClassData() const { return &_class_data_; }
+
+
+void LoginResponse::MergeImpl(::google::protobuf::Message& to_msg, const ::google::protobuf::Message& from_msg) {
+  auto* const _this = static_cast<LoginResponse*>(&to_msg);
+  auto& from = static_cast<const LoginResponse&>(from_msg);
+  // @@protoc_insertion_point(class_specific_merge_from_start:oteldemo.LoginResponse)
+  ABSL_DCHECK_NE(&from, _this);
+  ::uint32_t cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  if (!from._internal_corporate_user_id().empty()) {
+    _this->_internal_set_corporate_user_id(from._internal_corporate_user_id());
+  }
+  if (!from._internal_company().empty()) {
+    _this->_internal_set_company(from._internal_company());
+  }
+  if (!from._internal_company_name().empty()) {
+    _this->_internal_set_company_name(from._internal_company_name());
+  }
+  if (!from._internal_email().empty()) {
+    _this->_internal_set_email(from._internal_email());
+  }
+  if (!from._internal_display_name().empty()) {
+    _this->_internal_set_display_name(from._internal_display_name());
+  }
+  _this->_internal_metadata_.MergeFrom<::google::protobuf::UnknownFieldSet>(from._internal_metadata_);
+}
+
+void LoginResponse::CopyFrom(const LoginResponse& from) {
+// @@protoc_insertion_point(class_specific_copy_from_start:oteldemo.LoginResponse)
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+PROTOBUF_NOINLINE bool LoginResponse::IsInitialized() const {
+  return true;
+}
+
+void LoginResponse::InternalSwap(LoginResponse* other) {
+  using std::swap;
+  auto* lhs_arena = GetArenaForAllocation();
+  auto* rhs_arena = other->GetArenaForAllocation();
+  _internal_metadata_.InternalSwap(&other->_internal_metadata_);
+  ::_pbi::ArenaStringPtr::InternalSwap(&_impl_.corporate_user_id_, lhs_arena,
+                                       &other->_impl_.corporate_user_id_, rhs_arena);
+  ::_pbi::ArenaStringPtr::InternalSwap(&_impl_.company_, lhs_arena,
+                                       &other->_impl_.company_, rhs_arena);
+  ::_pbi::ArenaStringPtr::InternalSwap(&_impl_.company_name_, lhs_arena,
+                                       &other->_impl_.company_name_, rhs_arena);
+  ::_pbi::ArenaStringPtr::InternalSwap(&_impl_.email_, lhs_arena,
+                                       &other->_impl_.email_, rhs_arena);
+  ::_pbi::ArenaStringPtr::InternalSwap(&_impl_.display_name_, lhs_arena,
+                                       &other->_impl_.display_name_, rhs_arena);
+}
+
+::google::protobuf::Metadata LoginResponse::GetMetadata() const {
+  return ::_pbi::AssignDescriptors(
+      &descriptor_table_demo_2eproto_getter, &descriptor_table_demo_2eproto_once,
+      file_level_metadata_demo_2eproto[50]);
+}
+// ===================================================================
+
 class Flag::_Internal {
  public:
 };
@@ -13880,7 +14608,7 @@ void Flag::InternalSwap(Flag* other) {
 ::google::protobuf::Metadata Flag::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_demo_2eproto_getter, &descriptor_table_demo_2eproto_once,
-      file_level_metadata_demo_2eproto[49]);
+      file_level_metadata_demo_2eproto[51]);
 }
 // ===================================================================
 
@@ -14071,7 +14799,7 @@ void GetFlagRequest::InternalSwap(GetFlagRequest* other) {
 ::google::protobuf::Metadata GetFlagRequest::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_demo_2eproto_getter, &descriptor_table_demo_2eproto_once,
-      file_level_metadata_demo_2eproto[50]);
+      file_level_metadata_demo_2eproto[52]);
 }
 // ===================================================================
 
@@ -14269,7 +14997,7 @@ void GetFlagResponse::InternalSwap(GetFlagResponse* other) {
 ::google::protobuf::Metadata GetFlagResponse::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_demo_2eproto_getter, &descriptor_table_demo_2eproto_once,
-      file_level_metadata_demo_2eproto[51]);
+      file_level_metadata_demo_2eproto[53]);
 }
 // ===================================================================
 
@@ -14528,7 +15256,7 @@ void CreateFlagRequest::InternalSwap(CreateFlagRequest* other) {
 ::google::protobuf::Metadata CreateFlagRequest::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_demo_2eproto_getter, &descriptor_table_demo_2eproto_once,
-      file_level_metadata_demo_2eproto[52]);
+      file_level_metadata_demo_2eproto[54]);
 }
 // ===================================================================
 
@@ -14726,7 +15454,7 @@ void CreateFlagResponse::InternalSwap(CreateFlagResponse* other) {
 ::google::protobuf::Metadata CreateFlagResponse::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_demo_2eproto_getter, &descriptor_table_demo_2eproto_once,
-      file_level_metadata_demo_2eproto[53]);
+      file_level_metadata_demo_2eproto[55]);
 }
 // ===================================================================
 
@@ -14943,7 +15671,7 @@ void UpdateFlagRequest::InternalSwap(UpdateFlagRequest* other) {
 ::google::protobuf::Metadata UpdateFlagRequest::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_demo_2eproto_getter, &descriptor_table_demo_2eproto_once,
-      file_level_metadata_demo_2eproto[54]);
+      file_level_metadata_demo_2eproto[56]);
 }
 // ===================================================================
 
@@ -14982,7 +15710,7 @@ const ::google::protobuf::Message::ClassData*UpdateFlagResponse::GetClassData() 
 ::google::protobuf::Metadata UpdateFlagResponse::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_demo_2eproto_getter, &descriptor_table_demo_2eproto_once,
-      file_level_metadata_demo_2eproto[55]);
+      file_level_metadata_demo_2eproto[57]);
 }
 // ===================================================================
 
@@ -15021,7 +15749,7 @@ const ::google::protobuf::Message::ClassData*ListFlagsRequest::GetClassData() co
 ::google::protobuf::Metadata ListFlagsRequest::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_demo_2eproto_getter, &descriptor_table_demo_2eproto_once,
-      file_level_metadata_demo_2eproto[56]);
+      file_level_metadata_demo_2eproto[58]);
 }
 // ===================================================================
 
@@ -15193,7 +15921,7 @@ void ListFlagsResponse::InternalSwap(ListFlagsResponse* other) {
 ::google::protobuf::Metadata ListFlagsResponse::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_demo_2eproto_getter, &descriptor_table_demo_2eproto_once,
-      file_level_metadata_demo_2eproto[57]);
+      file_level_metadata_demo_2eproto[59]);
 }
 // ===================================================================
 
@@ -15384,7 +16112,7 @@ void DeleteFlagRequest::InternalSwap(DeleteFlagRequest* other) {
 ::google::protobuf::Metadata DeleteFlagRequest::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_demo_2eproto_getter, &descriptor_table_demo_2eproto_once,
-      file_level_metadata_demo_2eproto[58]);
+      file_level_metadata_demo_2eproto[60]);
 }
 // ===================================================================
 
@@ -15423,7 +16151,7 @@ const ::google::protobuf::Message::ClassData*DeleteFlagResponse::GetClassData() 
 ::google::protobuf::Metadata DeleteFlagResponse::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_demo_2eproto_getter, &descriptor_table_demo_2eproto_once,
-      file_level_metadata_demo_2eproto[59]);
+      file_level_metadata_demo_2eproto[61]);
 }
 // @@protoc_insertion_point(namespace_scope)
 }  // namespace oteldemo

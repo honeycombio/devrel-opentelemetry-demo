@@ -126,6 +126,13 @@ class MockAdServiceStub : public AdService::StubInterface {
   MOCK_METHOD3(PrepareAsyncGetAdsRaw, ::grpc::ClientAsyncResponseReaderInterface< ::oteldemo::AdResponse>*(::grpc::ClientContext* context, const ::oteldemo::AdRequest& request, ::grpc::CompletionQueue* cq));
 };
 
+class MockAuthServiceStub : public AuthService::StubInterface {
+ public:
+  MOCK_METHOD3(Login, ::grpc::Status(::grpc::ClientContext* context, const ::oteldemo::LoginRequest& request, ::oteldemo::LoginResponse* response));
+  MOCK_METHOD3(AsyncLoginRaw, ::grpc::ClientAsyncResponseReaderInterface< ::oteldemo::LoginResponse>*(::grpc::ClientContext* context, const ::oteldemo::LoginRequest& request, ::grpc::CompletionQueue* cq));
+  MOCK_METHOD3(PrepareAsyncLoginRaw, ::grpc::ClientAsyncResponseReaderInterface< ::oteldemo::LoginResponse>*(::grpc::ClientContext* context, const ::oteldemo::LoginRequest& request, ::grpc::CompletionQueue* cq));
+};
+
 class MockFeatureFlagServiceStub : public FeatureFlagService::StubInterface {
  public:
   MOCK_METHOD3(GetFlag, ::grpc::Status(::grpc::ClientContext* context, const ::oteldemo::GetFlagRequest& request, ::oteldemo::GetFlagResponse* response));

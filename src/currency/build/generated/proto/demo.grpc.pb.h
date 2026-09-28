@@ -4225,6 +4225,215 @@ class AdService final {
   typedef WithStreamedUnaryMethod_GetAds<Service > StreamedService;
 };
 
+// ------------Auth service------------------
+//
+class AuthService final {
+ public:
+  static constexpr char const* service_full_name() {
+    return "oteldemo.AuthService";
+  }
+  class StubInterface {
+   public:
+    virtual ~StubInterface() {}
+    virtual ::grpc::Status Login(::grpc::ClientContext* context, const ::oteldemo::LoginRequest& request, ::oteldemo::LoginResponse* response) = 0;
+    std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::oteldemo::LoginResponse>> AsyncLogin(::grpc::ClientContext* context, const ::oteldemo::LoginRequest& request, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::oteldemo::LoginResponse>>(AsyncLoginRaw(context, request, cq));
+    }
+    std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::oteldemo::LoginResponse>> PrepareAsyncLogin(::grpc::ClientContext* context, const ::oteldemo::LoginRequest& request, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::oteldemo::LoginResponse>>(PrepareAsyncLoginRaw(context, request, cq));
+    }
+    class async_interface {
+     public:
+      virtual ~async_interface() {}
+      virtual void Login(::grpc::ClientContext* context, const ::oteldemo::LoginRequest* request, ::oteldemo::LoginResponse* response, std::function<void(::grpc::Status)>) = 0;
+      virtual void Login(::grpc::ClientContext* context, const ::oteldemo::LoginRequest* request, ::oteldemo::LoginResponse* response, ::grpc::ClientUnaryReactor* reactor) = 0;
+    };
+    typedef class async_interface experimental_async_interface;
+    virtual class async_interface* async() { return nullptr; }
+    class async_interface* experimental_async() { return async(); }
+   private:
+    virtual ::grpc::ClientAsyncResponseReaderInterface< ::oteldemo::LoginResponse>* AsyncLoginRaw(::grpc::ClientContext* context, const ::oteldemo::LoginRequest& request, ::grpc::CompletionQueue* cq) = 0;
+    virtual ::grpc::ClientAsyncResponseReaderInterface< ::oteldemo::LoginResponse>* PrepareAsyncLoginRaw(::grpc::ClientContext* context, const ::oteldemo::LoginRequest& request, ::grpc::CompletionQueue* cq) = 0;
+  };
+  class Stub final : public StubInterface {
+   public:
+    Stub(const std::shared_ptr< ::grpc::ChannelInterface>& channel, const ::grpc::StubOptions& options = ::grpc::StubOptions());
+    ::grpc::Status Login(::grpc::ClientContext* context, const ::oteldemo::LoginRequest& request, ::oteldemo::LoginResponse* response) override;
+    std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::oteldemo::LoginResponse>> AsyncLogin(::grpc::ClientContext* context, const ::oteldemo::LoginRequest& request, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::oteldemo::LoginResponse>>(AsyncLoginRaw(context, request, cq));
+    }
+    std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::oteldemo::LoginResponse>> PrepareAsyncLogin(::grpc::ClientContext* context, const ::oteldemo::LoginRequest& request, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::oteldemo::LoginResponse>>(PrepareAsyncLoginRaw(context, request, cq));
+    }
+    class async final :
+      public StubInterface::async_interface {
+     public:
+      void Login(::grpc::ClientContext* context, const ::oteldemo::LoginRequest* request, ::oteldemo::LoginResponse* response, std::function<void(::grpc::Status)>) override;
+      void Login(::grpc::ClientContext* context, const ::oteldemo::LoginRequest* request, ::oteldemo::LoginResponse* response, ::grpc::ClientUnaryReactor* reactor) override;
+     private:
+      friend class Stub;
+      explicit async(Stub* stub): stub_(stub) { }
+      Stub* stub() { return stub_; }
+      Stub* stub_;
+    };
+    class async* async() override { return &async_stub_; }
+
+   private:
+    std::shared_ptr< ::grpc::ChannelInterface> channel_;
+    class async async_stub_{this};
+    ::grpc::ClientAsyncResponseReader< ::oteldemo::LoginResponse>* AsyncLoginRaw(::grpc::ClientContext* context, const ::oteldemo::LoginRequest& request, ::grpc::CompletionQueue* cq) override;
+    ::grpc::ClientAsyncResponseReader< ::oteldemo::LoginResponse>* PrepareAsyncLoginRaw(::grpc::ClientContext* context, const ::oteldemo::LoginRequest& request, ::grpc::CompletionQueue* cq) override;
+    const ::grpc::internal::RpcMethod rpcmethod_Login_;
+  };
+  static std::unique_ptr<Stub> NewStub(const std::shared_ptr< ::grpc::ChannelInterface>& channel, const ::grpc::StubOptions& options = ::grpc::StubOptions());
+
+  class Service : public ::grpc::Service {
+   public:
+    Service();
+    virtual ~Service();
+    virtual ::grpc::Status Login(::grpc::ServerContext* context, const ::oteldemo::LoginRequest* request, ::oteldemo::LoginResponse* response);
+  };
+  template <class BaseClass>
+  class WithAsyncMethod_Login : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithAsyncMethod_Login() {
+      ::grpc::Service::MarkMethodAsync(0);
+    }
+    ~WithAsyncMethod_Login() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status Login(::grpc::ServerContext* /*context*/, const ::oteldemo::LoginRequest* /*request*/, ::oteldemo::LoginResponse* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    void RequestLogin(::grpc::ServerContext* context, ::oteldemo::LoginRequest* request, ::grpc::ServerAsyncResponseWriter< ::oteldemo::LoginResponse>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
+      ::grpc::Service::RequestAsyncUnary(0, context, request, response, new_call_cq, notification_cq, tag);
+    }
+  };
+  typedef WithAsyncMethod_Login<Service > AsyncService;
+  template <class BaseClass>
+  class WithCallbackMethod_Login : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithCallbackMethod_Login() {
+      ::grpc::Service::MarkMethodCallback(0,
+          new ::grpc::internal::CallbackUnaryHandler< ::oteldemo::LoginRequest, ::oteldemo::LoginResponse>(
+            [this](
+                   ::grpc::CallbackServerContext* context, const ::oteldemo::LoginRequest* request, ::oteldemo::LoginResponse* response) { return this->Login(context, request, response); }));}
+    void SetMessageAllocatorFor_Login(
+        ::grpc::MessageAllocator< ::oteldemo::LoginRequest, ::oteldemo::LoginResponse>* allocator) {
+      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::GetHandler(0);
+      static_cast<::grpc::internal::CallbackUnaryHandler< ::oteldemo::LoginRequest, ::oteldemo::LoginResponse>*>(handler)
+              ->SetMessageAllocator(allocator);
+    }
+    ~WithCallbackMethod_Login() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status Login(::grpc::ServerContext* /*context*/, const ::oteldemo::LoginRequest* /*request*/, ::oteldemo::LoginResponse* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    virtual ::grpc::ServerUnaryReactor* Login(
+      ::grpc::CallbackServerContext* /*context*/, const ::oteldemo::LoginRequest* /*request*/, ::oteldemo::LoginResponse* /*response*/)  { return nullptr; }
+  };
+  typedef WithCallbackMethod_Login<Service > CallbackService;
+  typedef CallbackService ExperimentalCallbackService;
+  template <class BaseClass>
+  class WithGenericMethod_Login : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithGenericMethod_Login() {
+      ::grpc::Service::MarkMethodGeneric(0);
+    }
+    ~WithGenericMethod_Login() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status Login(::grpc::ServerContext* /*context*/, const ::oteldemo::LoginRequest* /*request*/, ::oteldemo::LoginResponse* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+  };
+  template <class BaseClass>
+  class WithRawMethod_Login : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithRawMethod_Login() {
+      ::grpc::Service::MarkMethodRaw(0);
+    }
+    ~WithRawMethod_Login() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status Login(::grpc::ServerContext* /*context*/, const ::oteldemo::LoginRequest* /*request*/, ::oteldemo::LoginResponse* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    void RequestLogin(::grpc::ServerContext* context, ::grpc::ByteBuffer* request, ::grpc::ServerAsyncResponseWriter< ::grpc::ByteBuffer>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
+      ::grpc::Service::RequestAsyncUnary(0, context, request, response, new_call_cq, notification_cq, tag);
+    }
+  };
+  template <class BaseClass>
+  class WithRawCallbackMethod_Login : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithRawCallbackMethod_Login() {
+      ::grpc::Service::MarkMethodRawCallback(0,
+          new ::grpc::internal::CallbackUnaryHandler< ::grpc::ByteBuffer, ::grpc::ByteBuffer>(
+            [this](
+                   ::grpc::CallbackServerContext* context, const ::grpc::ByteBuffer* request, ::grpc::ByteBuffer* response) { return this->Login(context, request, response); }));
+    }
+    ~WithRawCallbackMethod_Login() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status Login(::grpc::ServerContext* /*context*/, const ::oteldemo::LoginRequest* /*request*/, ::oteldemo::LoginResponse* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    virtual ::grpc::ServerUnaryReactor* Login(
+      ::grpc::CallbackServerContext* /*context*/, const ::grpc::ByteBuffer* /*request*/, ::grpc::ByteBuffer* /*response*/)  { return nullptr; }
+  };
+  template <class BaseClass>
+  class WithStreamedUnaryMethod_Login : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithStreamedUnaryMethod_Login() {
+      ::grpc::Service::MarkMethodStreamed(0,
+        new ::grpc::internal::StreamedUnaryHandler<
+          ::oteldemo::LoginRequest, ::oteldemo::LoginResponse>(
+            [this](::grpc::ServerContext* context,
+                   ::grpc::ServerUnaryStreamer<
+                     ::oteldemo::LoginRequest, ::oteldemo::LoginResponse>* streamer) {
+                       return this->StreamedLogin(context,
+                         streamer);
+                  }));
+    }
+    ~WithStreamedUnaryMethod_Login() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable regular version of this method
+    ::grpc::Status Login(::grpc::ServerContext* /*context*/, const ::oteldemo::LoginRequest* /*request*/, ::oteldemo::LoginResponse* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    // replace default version of method with streamed unary
+    virtual ::grpc::Status StreamedLogin(::grpc::ServerContext* context, ::grpc::ServerUnaryStreamer< ::oteldemo::LoginRequest,::oteldemo::LoginResponse>* server_unary_streamer) = 0;
+  };
+  typedef WithStreamedUnaryMethod_Login<Service > StreamedUnaryService;
+  typedef Service SplitStreamedService;
+  typedef WithStreamedUnaryMethod_Login<Service > StreamedService;
+};
+
 // ------------Feature flag service------------------
 //
 class FeatureFlagService final {

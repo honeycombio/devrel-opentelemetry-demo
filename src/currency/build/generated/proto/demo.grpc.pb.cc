@@ -1196,6 +1196,67 @@ AdService::Service::~Service() {
 }
 
 
+static const char* AuthService_method_names[] = {
+  "/oteldemo.AuthService/Login",
+};
+
+std::unique_ptr< AuthService::Stub> AuthService::NewStub(const std::shared_ptr< ::grpc::ChannelInterface>& channel, const ::grpc::StubOptions& options) {
+  (void)options;
+  std::unique_ptr< AuthService::Stub> stub(new AuthService::Stub(channel, options));
+  return stub;
+}
+
+AuthService::Stub::Stub(const std::shared_ptr< ::grpc::ChannelInterface>& channel, const ::grpc::StubOptions& options)
+  : channel_(channel), rpcmethod_Login_(AuthService_method_names[0], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
+  {}
+
+::grpc::Status AuthService::Stub::Login(::grpc::ClientContext* context, const ::oteldemo::LoginRequest& request, ::oteldemo::LoginResponse* response) {
+  return ::grpc::internal::BlockingUnaryCall< ::oteldemo::LoginRequest, ::oteldemo::LoginResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), rpcmethod_Login_, context, request, response);
+}
+
+void AuthService::Stub::async::Login(::grpc::ClientContext* context, const ::oteldemo::LoginRequest* request, ::oteldemo::LoginResponse* response, std::function<void(::grpc::Status)> f) {
+  ::grpc::internal::CallbackUnaryCall< ::oteldemo::LoginRequest, ::oteldemo::LoginResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_Login_, context, request, response, std::move(f));
+}
+
+void AuthService::Stub::async::Login(::grpc::ClientContext* context, const ::oteldemo::LoginRequest* request, ::oteldemo::LoginResponse* response, ::grpc::ClientUnaryReactor* reactor) {
+  ::grpc::internal::ClientCallbackUnaryFactory::Create< ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_Login_, context, request, response, reactor);
+}
+
+::grpc::ClientAsyncResponseReader< ::oteldemo::LoginResponse>* AuthService::Stub::PrepareAsyncLoginRaw(::grpc::ClientContext* context, const ::oteldemo::LoginRequest& request, ::grpc::CompletionQueue* cq) {
+  return ::grpc::internal::ClientAsyncResponseReaderHelper::Create< ::oteldemo::LoginResponse, ::oteldemo::LoginRequest, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), cq, rpcmethod_Login_, context, request);
+}
+
+::grpc::ClientAsyncResponseReader< ::oteldemo::LoginResponse>* AuthService::Stub::AsyncLoginRaw(::grpc::ClientContext* context, const ::oteldemo::LoginRequest& request, ::grpc::CompletionQueue* cq) {
+  auto* result =
+    this->PrepareAsyncLoginRaw(context, request, cq);
+  result->StartCall();
+  return result;
+}
+
+AuthService::Service::Service() {
+  AddMethod(new ::grpc::internal::RpcServiceMethod(
+      AuthService_method_names[0],
+      ::grpc::internal::RpcMethod::NORMAL_RPC,
+      new ::grpc::internal::RpcMethodHandler< AuthService::Service, ::oteldemo::LoginRequest, ::oteldemo::LoginResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(
+          [](AuthService::Service* service,
+             ::grpc::ServerContext* ctx,
+             const ::oteldemo::LoginRequest* req,
+             ::oteldemo::LoginResponse* resp) {
+               return service->Login(ctx, req, resp);
+             }, this)));
+}
+
+AuthService::Service::~Service() {
+}
+
+::grpc::Status AuthService::Service::Login(::grpc::ServerContext* context, const ::oteldemo::LoginRequest* request, ::oteldemo::LoginResponse* response) {
+  (void) context;
+  (void) request;
+  (void) response;
+  return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+}
+
+
 static const char* FeatureFlagService_method_names[] = {
   "/oteldemo.FeatureFlagService/GetFlag",
   "/oteldemo.FeatureFlagService/CreateFlag",

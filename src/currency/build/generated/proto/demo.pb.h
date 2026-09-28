@@ -175,6 +175,12 @@ extern ListRecommendationsRequestDefaultTypeInternal _ListRecommendationsRequest
 class ListRecommendationsResponse;
 struct ListRecommendationsResponseDefaultTypeInternal;
 extern ListRecommendationsResponseDefaultTypeInternal _ListRecommendationsResponse_default_instance_;
+class LoginRequest;
+struct LoginRequestDefaultTypeInternal;
+extern LoginRequestDefaultTypeInternal _LoginRequest_default_instance_;
+class LoginResponse;
+struct LoginResponseDefaultTypeInternal;
+extern LoginResponseDefaultTypeInternal _LoginResponse_default_instance_;
 class Money;
 struct MoneyDefaultTypeInternal;
 extern MoneyDefaultTypeInternal _Money_default_instance_;
@@ -9279,6 +9285,442 @@ class Ad final :
   friend struct ::TableStruct_demo_2eproto;
 };// -------------------------------------------------------------------
 
+class LoginRequest final :
+    public ::google::protobuf::Message /* @@protoc_insertion_point(class_definition:oteldemo.LoginRequest) */ {
+ public:
+  inline LoginRequest() : LoginRequest(nullptr) {}
+  ~LoginRequest() override;
+  template<typename = void>
+  explicit PROTOBUF_CONSTEXPR LoginRequest(::google::protobuf::internal::ConstantInitialized);
+
+  LoginRequest(const LoginRequest& from);
+  LoginRequest(LoginRequest&& from) noexcept
+    : LoginRequest() {
+    *this = ::std::move(from);
+  }
+
+  inline LoginRequest& operator=(const LoginRequest& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  inline LoginRequest& operator=(LoginRequest&& from) noexcept {
+    if (this == &from) return *this;
+    if (GetOwningArena() == from.GetOwningArena()
+  #ifdef PROTOBUF_FORCE_COPY_IN_MOVE
+        && GetOwningArena() != nullptr
+  #endif  // !PROTOBUF_FORCE_COPY_IN_MOVE
+    ) {
+      InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+
+  inline const ::google::protobuf::UnknownFieldSet& unknown_fields() const {
+    return _internal_metadata_.unknown_fields<::google::protobuf::UnknownFieldSet>(::google::protobuf::UnknownFieldSet::default_instance);
+  }
+  inline ::google::protobuf::UnknownFieldSet* mutable_unknown_fields() {
+    return _internal_metadata_.mutable_unknown_fields<::google::protobuf::UnknownFieldSet>();
+  }
+
+  static const ::google::protobuf::Descriptor* descriptor() {
+    return GetDescriptor();
+  }
+  static const ::google::protobuf::Descriptor* GetDescriptor() {
+    return default_instance().GetMetadata().descriptor;
+  }
+  static const ::google::protobuf::Reflection* GetReflection() {
+    return default_instance().GetMetadata().reflection;
+  }
+  static const LoginRequest& default_instance() {
+    return *internal_default_instance();
+  }
+  static inline const LoginRequest* internal_default_instance() {
+    return reinterpret_cast<const LoginRequest*>(
+               &_LoginRequest_default_instance_);
+  }
+  static constexpr int kIndexInFileMessages =
+    49;
+
+  friend void swap(LoginRequest& a, LoginRequest& b) {
+    a.Swap(&b);
+  }
+  inline void Swap(LoginRequest* other) {
+    if (other == this) return;
+  #ifdef PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetOwningArena() != nullptr &&
+        GetOwningArena() == other->GetOwningArena()) {
+   #else  // PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetOwningArena() == other->GetOwningArena()) {
+  #endif  // !PROTOBUF_FORCE_COPY_IN_SWAP
+      InternalSwap(other);
+    } else {
+      ::google::protobuf::internal::GenericSwap(this, other);
+    }
+  }
+  void UnsafeArenaSwap(LoginRequest* other) {
+    if (other == this) return;
+    ABSL_DCHECK(GetOwningArena() == other->GetOwningArena());
+    InternalSwap(other);
+  }
+
+  // implements Message ----------------------------------------------
+
+  LoginRequest* New(::google::protobuf::Arena* arena = nullptr) const final {
+    return CreateMaybeMessage<LoginRequest>(arena);
+  }
+  using ::google::protobuf::Message::CopyFrom;
+  void CopyFrom(const LoginRequest& from);
+  using ::google::protobuf::Message::MergeFrom;
+  void MergeFrom( const LoginRequest& from) {
+    LoginRequest::MergeImpl(*this, from);
+  }
+  private:
+  static void MergeImpl(::google::protobuf::Message& to_msg, const ::google::protobuf::Message& from_msg);
+  public:
+  PROTOBUF_ATTRIBUTE_REINITIALIZES void Clear() final;
+  bool IsInitialized() const final;
+
+  ::size_t ByteSizeLong() const final;
+  const char* _InternalParse(const char* ptr, ::google::protobuf::internal::ParseContext* ctx) final;
+  ::uint8_t* _InternalSerialize(
+      ::uint8_t* target, ::google::protobuf::io::EpsCopyOutputStream* stream) const final;
+  int GetCachedSize() const final { return _impl_._cached_size_.Get(); }
+
+  private:
+  void SharedCtor(::google::protobuf::Arena* arena);
+  void SharedDtor();
+  void SetCachedSize(int size) const final;
+  void InternalSwap(LoginRequest* other);
+
+  private:
+  friend class ::google::protobuf::internal::AnyMetadata;
+  static ::absl::string_view FullMessageName() {
+    return "oteldemo.LoginRequest";
+  }
+  protected:
+  explicit LoginRequest(::google::protobuf::Arena* arena);
+  public:
+
+  static const ClassData _class_data_;
+  const ::google::protobuf::Message::ClassData*GetClassData() const final;
+
+  ::google::protobuf::Metadata GetMetadata() const final;
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  enum : int {
+    kEmailFieldNumber = 1,
+    kPasswordFieldNumber = 2,
+    kMethodFieldNumber = 3,
+  };
+  // string email = 1;
+  void clear_email() ;
+  const std::string& email() const;
+  template <typename Arg_ = const std::string&, typename... Args_>
+  void set_email(Arg_&& arg, Args_... args);
+  std::string* mutable_email();
+  PROTOBUF_NODISCARD std::string* release_email();
+  void set_allocated_email(std::string* ptr);
+
+  private:
+  const std::string& _internal_email() const;
+  inline PROTOBUF_ALWAYS_INLINE void _internal_set_email(
+      const std::string& value);
+  std::string* _internal_mutable_email();
+
+  public:
+  // string password = 2;
+  void clear_password() ;
+  const std::string& password() const;
+  template <typename Arg_ = const std::string&, typename... Args_>
+  void set_password(Arg_&& arg, Args_... args);
+  std::string* mutable_password();
+  PROTOBUF_NODISCARD std::string* release_password();
+  void set_allocated_password(std::string* ptr);
+
+  private:
+  const std::string& _internal_password() const;
+  inline PROTOBUF_ALWAYS_INLINE void _internal_set_password(
+      const std::string& value);
+  std::string* _internal_mutable_password();
+
+  public:
+  // string method = 3;
+  void clear_method() ;
+  const std::string& method() const;
+  template <typename Arg_ = const std::string&, typename... Args_>
+  void set_method(Arg_&& arg, Args_... args);
+  std::string* mutable_method();
+  PROTOBUF_NODISCARD std::string* release_method();
+  void set_allocated_method(std::string* ptr);
+
+  private:
+  const std::string& _internal_method() const;
+  inline PROTOBUF_ALWAYS_INLINE void _internal_set_method(
+      const std::string& value);
+  std::string* _internal_mutable_method();
+
+  public:
+  // @@protoc_insertion_point(class_scope:oteldemo.LoginRequest)
+ private:
+  class _Internal;
+
+  friend class ::google::protobuf::internal::TcParser;
+  static const ::google::protobuf::internal::TcParseTable<2, 3, 0, 49, 2> _table_;
+  template <typename T> friend class ::google::protobuf::Arena::InternalHelper;
+  typedef void InternalArenaConstructable_;
+  typedef void DestructorSkippable_;
+  struct Impl_ {
+    ::google::protobuf::internal::ArenaStringPtr email_;
+    ::google::protobuf::internal::ArenaStringPtr password_;
+    ::google::protobuf::internal::ArenaStringPtr method_;
+    mutable ::google::protobuf::internal::CachedSize _cached_size_;
+    PROTOBUF_TSAN_DECLARE_MEMBER
+  };
+  union { Impl_ _impl_; };
+  friend struct ::TableStruct_demo_2eproto;
+};// -------------------------------------------------------------------
+
+class LoginResponse final :
+    public ::google::protobuf::Message /* @@protoc_insertion_point(class_definition:oteldemo.LoginResponse) */ {
+ public:
+  inline LoginResponse() : LoginResponse(nullptr) {}
+  ~LoginResponse() override;
+  template<typename = void>
+  explicit PROTOBUF_CONSTEXPR LoginResponse(::google::protobuf::internal::ConstantInitialized);
+
+  LoginResponse(const LoginResponse& from);
+  LoginResponse(LoginResponse&& from) noexcept
+    : LoginResponse() {
+    *this = ::std::move(from);
+  }
+
+  inline LoginResponse& operator=(const LoginResponse& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  inline LoginResponse& operator=(LoginResponse&& from) noexcept {
+    if (this == &from) return *this;
+    if (GetOwningArena() == from.GetOwningArena()
+  #ifdef PROTOBUF_FORCE_COPY_IN_MOVE
+        && GetOwningArena() != nullptr
+  #endif  // !PROTOBUF_FORCE_COPY_IN_MOVE
+    ) {
+      InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+
+  inline const ::google::protobuf::UnknownFieldSet& unknown_fields() const {
+    return _internal_metadata_.unknown_fields<::google::protobuf::UnknownFieldSet>(::google::protobuf::UnknownFieldSet::default_instance);
+  }
+  inline ::google::protobuf::UnknownFieldSet* mutable_unknown_fields() {
+    return _internal_metadata_.mutable_unknown_fields<::google::protobuf::UnknownFieldSet>();
+  }
+
+  static const ::google::protobuf::Descriptor* descriptor() {
+    return GetDescriptor();
+  }
+  static const ::google::protobuf::Descriptor* GetDescriptor() {
+    return default_instance().GetMetadata().descriptor;
+  }
+  static const ::google::protobuf::Reflection* GetReflection() {
+    return default_instance().GetMetadata().reflection;
+  }
+  static const LoginResponse& default_instance() {
+    return *internal_default_instance();
+  }
+  static inline const LoginResponse* internal_default_instance() {
+    return reinterpret_cast<const LoginResponse*>(
+               &_LoginResponse_default_instance_);
+  }
+  static constexpr int kIndexInFileMessages =
+    50;
+
+  friend void swap(LoginResponse& a, LoginResponse& b) {
+    a.Swap(&b);
+  }
+  inline void Swap(LoginResponse* other) {
+    if (other == this) return;
+  #ifdef PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetOwningArena() != nullptr &&
+        GetOwningArena() == other->GetOwningArena()) {
+   #else  // PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetOwningArena() == other->GetOwningArena()) {
+  #endif  // !PROTOBUF_FORCE_COPY_IN_SWAP
+      InternalSwap(other);
+    } else {
+      ::google::protobuf::internal::GenericSwap(this, other);
+    }
+  }
+  void UnsafeArenaSwap(LoginResponse* other) {
+    if (other == this) return;
+    ABSL_DCHECK(GetOwningArena() == other->GetOwningArena());
+    InternalSwap(other);
+  }
+
+  // implements Message ----------------------------------------------
+
+  LoginResponse* New(::google::protobuf::Arena* arena = nullptr) const final {
+    return CreateMaybeMessage<LoginResponse>(arena);
+  }
+  using ::google::protobuf::Message::CopyFrom;
+  void CopyFrom(const LoginResponse& from);
+  using ::google::protobuf::Message::MergeFrom;
+  void MergeFrom( const LoginResponse& from) {
+    LoginResponse::MergeImpl(*this, from);
+  }
+  private:
+  static void MergeImpl(::google::protobuf::Message& to_msg, const ::google::protobuf::Message& from_msg);
+  public:
+  PROTOBUF_ATTRIBUTE_REINITIALIZES void Clear() final;
+  bool IsInitialized() const final;
+
+  ::size_t ByteSizeLong() const final;
+  const char* _InternalParse(const char* ptr, ::google::protobuf::internal::ParseContext* ctx) final;
+  ::uint8_t* _InternalSerialize(
+      ::uint8_t* target, ::google::protobuf::io::EpsCopyOutputStream* stream) const final;
+  int GetCachedSize() const final { return _impl_._cached_size_.Get(); }
+
+  private:
+  void SharedCtor(::google::protobuf::Arena* arena);
+  void SharedDtor();
+  void SetCachedSize(int size) const final;
+  void InternalSwap(LoginResponse* other);
+
+  private:
+  friend class ::google::protobuf::internal::AnyMetadata;
+  static ::absl::string_view FullMessageName() {
+    return "oteldemo.LoginResponse";
+  }
+  protected:
+  explicit LoginResponse(::google::protobuf::Arena* arena);
+  public:
+
+  static const ClassData _class_data_;
+  const ::google::protobuf::Message::ClassData*GetClassData() const final;
+
+  ::google::protobuf::Metadata GetMetadata() const final;
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  enum : int {
+    kCorporateUserIdFieldNumber = 1,
+    kCompanyFieldNumber = 2,
+    kCompanyNameFieldNumber = 3,
+    kEmailFieldNumber = 4,
+    kDisplayNameFieldNumber = 5,
+  };
+  // string corporate_user_id = 1;
+  void clear_corporate_user_id() ;
+  const std::string& corporate_user_id() const;
+  template <typename Arg_ = const std::string&, typename... Args_>
+  void set_corporate_user_id(Arg_&& arg, Args_... args);
+  std::string* mutable_corporate_user_id();
+  PROTOBUF_NODISCARD std::string* release_corporate_user_id();
+  void set_allocated_corporate_user_id(std::string* ptr);
+
+  private:
+  const std::string& _internal_corporate_user_id() const;
+  inline PROTOBUF_ALWAYS_INLINE void _internal_set_corporate_user_id(
+      const std::string& value);
+  std::string* _internal_mutable_corporate_user_id();
+
+  public:
+  // string company = 2;
+  void clear_company() ;
+  const std::string& company() const;
+  template <typename Arg_ = const std::string&, typename... Args_>
+  void set_company(Arg_&& arg, Args_... args);
+  std::string* mutable_company();
+  PROTOBUF_NODISCARD std::string* release_company();
+  void set_allocated_company(std::string* ptr);
+
+  private:
+  const std::string& _internal_company() const;
+  inline PROTOBUF_ALWAYS_INLINE void _internal_set_company(
+      const std::string& value);
+  std::string* _internal_mutable_company();
+
+  public:
+  // string company_name = 3;
+  void clear_company_name() ;
+  const std::string& company_name() const;
+  template <typename Arg_ = const std::string&, typename... Args_>
+  void set_company_name(Arg_&& arg, Args_... args);
+  std::string* mutable_company_name();
+  PROTOBUF_NODISCARD std::string* release_company_name();
+  void set_allocated_company_name(std::string* ptr);
+
+  private:
+  const std::string& _internal_company_name() const;
+  inline PROTOBUF_ALWAYS_INLINE void _internal_set_company_name(
+      const std::string& value);
+  std::string* _internal_mutable_company_name();
+
+  public:
+  // string email = 4;
+  void clear_email() ;
+  const std::string& email() const;
+  template <typename Arg_ = const std::string&, typename... Args_>
+  void set_email(Arg_&& arg, Args_... args);
+  std::string* mutable_email();
+  PROTOBUF_NODISCARD std::string* release_email();
+  void set_allocated_email(std::string* ptr);
+
+  private:
+  const std::string& _internal_email() const;
+  inline PROTOBUF_ALWAYS_INLINE void _internal_set_email(
+      const std::string& value);
+  std::string* _internal_mutable_email();
+
+  public:
+  // string display_name = 5;
+  void clear_display_name() ;
+  const std::string& display_name() const;
+  template <typename Arg_ = const std::string&, typename... Args_>
+  void set_display_name(Arg_&& arg, Args_... args);
+  std::string* mutable_display_name();
+  PROTOBUF_NODISCARD std::string* release_display_name();
+  void set_allocated_display_name(std::string* ptr);
+
+  private:
+  const std::string& _internal_display_name() const;
+  inline PROTOBUF_ALWAYS_INLINE void _internal_set_display_name(
+      const std::string& value);
+  std::string* _internal_mutable_display_name();
+
+  public:
+  // @@protoc_insertion_point(class_scope:oteldemo.LoginResponse)
+ private:
+  class _Internal;
+
+  friend class ::google::protobuf::internal::TcParser;
+  static const ::google::protobuf::internal::TcParseTable<3, 5, 0, 84, 2> _table_;
+  template <typename T> friend class ::google::protobuf::Arena::InternalHelper;
+  typedef void InternalArenaConstructable_;
+  typedef void DestructorSkippable_;
+  struct Impl_ {
+    ::google::protobuf::internal::ArenaStringPtr corporate_user_id_;
+    ::google::protobuf::internal::ArenaStringPtr company_;
+    ::google::protobuf::internal::ArenaStringPtr company_name_;
+    ::google::protobuf::internal::ArenaStringPtr email_;
+    ::google::protobuf::internal::ArenaStringPtr display_name_;
+    mutable ::google::protobuf::internal::CachedSize _cached_size_;
+    PROTOBUF_TSAN_DECLARE_MEMBER
+  };
+  union { Impl_ _impl_; };
+  friend struct ::TableStruct_demo_2eproto;
+};// -------------------------------------------------------------------
+
 class Flag final :
     public ::google::protobuf::Message /* @@protoc_insertion_point(class_definition:oteldemo.Flag) */ {
  public:
@@ -9335,7 +9777,7 @@ class Flag final :
                &_Flag_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    49;
+    51;
 
   friend void swap(Flag& a, Flag& b) {
     a.Swap(&b);
@@ -9529,7 +9971,7 @@ class GetFlagRequest final :
                &_GetFlagRequest_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    50;
+    52;
 
   friend void swap(GetFlagRequest& a, GetFlagRequest& b) {
     a.Swap(&b);
@@ -9693,7 +10135,7 @@ class GetFlagResponse final :
                &_GetFlagResponse_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    51;
+    53;
 
   friend void swap(GetFlagResponse& a, GetFlagResponse& b) {
     a.Swap(&b);
@@ -9857,7 +10299,7 @@ class CreateFlagRequest final :
                &_CreateFlagRequest_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    52;
+    54;
 
   friend void swap(CreateFlagRequest& a, CreateFlagRequest& b) {
     a.Swap(&b);
@@ -10051,7 +10493,7 @@ class CreateFlagResponse final :
                &_CreateFlagResponse_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    53;
+    55;
 
   friend void swap(CreateFlagResponse& a, CreateFlagResponse& b) {
     a.Swap(&b);
@@ -10215,7 +10657,7 @@ class UpdateFlagRequest final :
                &_UpdateFlagRequest_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    54;
+    56;
 
   friend void swap(UpdateFlagRequest& a, UpdateFlagRequest& b) {
     a.Swap(&b);
@@ -10390,7 +10832,7 @@ class UpdateFlagResponse final :
                &_UpdateFlagResponse_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    55;
+    57;
 
   friend void swap(UpdateFlagResponse& a, UpdateFlagResponse& b) {
     a.Swap(&b);
@@ -10515,7 +10957,7 @@ class ListFlagsRequest final :
                &_ListFlagsRequest_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    56;
+    58;
 
   friend void swap(ListFlagsRequest& a, ListFlagsRequest& b) {
     a.Swap(&b);
@@ -10641,7 +11083,7 @@ class ListFlagsResponse final :
                &_ListFlagsResponse_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    57;
+    59;
 
   friend void swap(ListFlagsResponse& a, ListFlagsResponse& b) {
     a.Swap(&b);
@@ -10807,7 +11249,7 @@ class DeleteFlagRequest final :
                &_DeleteFlagRequest_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    58;
+    60;
 
   friend void swap(DeleteFlagRequest& a, DeleteFlagRequest& b) {
     a.Swap(&b);
@@ -10970,7 +11412,7 @@ class DeleteFlagResponse final :
                &_DeleteFlagResponse_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    59;
+    61;
 
   friend void swap(DeleteFlagResponse& a, DeleteFlagResponse& b) {
     a.Swap(&b);
@@ -17438,6 +17880,422 @@ inline void Ad::set_allocated_text(std::string* value) {
         }
   #endif  // PROTOBUF_FORCE_COPY_DEFAULT_STRING
   // @@protoc_insertion_point(field_set_allocated:oteldemo.Ad.text)
+}
+
+// -------------------------------------------------------------------
+
+// LoginRequest
+
+// string email = 1;
+inline void LoginRequest::clear_email() {
+  _impl_.email_.ClearToEmpty();
+}
+inline const std::string& LoginRequest::email() const {
+  // @@protoc_insertion_point(field_get:oteldemo.LoginRequest.email)
+  return _internal_email();
+}
+template <typename Arg_, typename... Args_>
+inline PROTOBUF_ALWAYS_INLINE void LoginRequest::set_email(Arg_&& arg,
+                                                     Args_... args) {
+  PROTOBUF_TSAN_WRITE(&_impl_._tsan_detect_race);
+  ;
+  _impl_.email_.Set(static_cast<Arg_&&>(arg), args..., GetArenaForAllocation());
+  // @@protoc_insertion_point(field_set:oteldemo.LoginRequest.email)
+}
+inline std::string* LoginRequest::mutable_email() {
+  std::string* _s = _internal_mutable_email();
+  // @@protoc_insertion_point(field_mutable:oteldemo.LoginRequest.email)
+  return _s;
+}
+inline const std::string& LoginRequest::_internal_email() const {
+  PROTOBUF_TSAN_READ(&_impl_._tsan_detect_race);
+  return _impl_.email_.Get();
+}
+inline void LoginRequest::_internal_set_email(const std::string& value) {
+  PROTOBUF_TSAN_WRITE(&_impl_._tsan_detect_race);
+  ;
+  _impl_.email_.Set(value, GetArenaForAllocation());
+}
+inline std::string* LoginRequest::_internal_mutable_email() {
+  PROTOBUF_TSAN_WRITE(&_impl_._tsan_detect_race);
+  ;
+  return _impl_.email_.Mutable( GetArenaForAllocation());
+}
+inline std::string* LoginRequest::release_email() {
+  PROTOBUF_TSAN_WRITE(&_impl_._tsan_detect_race);
+  // @@protoc_insertion_point(field_release:oteldemo.LoginRequest.email)
+  return _impl_.email_.Release();
+}
+inline void LoginRequest::set_allocated_email(std::string* value) {
+  PROTOBUF_TSAN_WRITE(&_impl_._tsan_detect_race);
+  _impl_.email_.SetAllocated(value, GetArenaForAllocation());
+  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+        if (_impl_.email_.IsDefault()) {
+          _impl_.email_.Set("", GetArenaForAllocation());
+        }
+  #endif  // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  // @@protoc_insertion_point(field_set_allocated:oteldemo.LoginRequest.email)
+}
+
+// string password = 2;
+inline void LoginRequest::clear_password() {
+  _impl_.password_.ClearToEmpty();
+}
+inline const std::string& LoginRequest::password() const {
+  // @@protoc_insertion_point(field_get:oteldemo.LoginRequest.password)
+  return _internal_password();
+}
+template <typename Arg_, typename... Args_>
+inline PROTOBUF_ALWAYS_INLINE void LoginRequest::set_password(Arg_&& arg,
+                                                     Args_... args) {
+  PROTOBUF_TSAN_WRITE(&_impl_._tsan_detect_race);
+  ;
+  _impl_.password_.Set(static_cast<Arg_&&>(arg), args..., GetArenaForAllocation());
+  // @@protoc_insertion_point(field_set:oteldemo.LoginRequest.password)
+}
+inline std::string* LoginRequest::mutable_password() {
+  std::string* _s = _internal_mutable_password();
+  // @@protoc_insertion_point(field_mutable:oteldemo.LoginRequest.password)
+  return _s;
+}
+inline const std::string& LoginRequest::_internal_password() const {
+  PROTOBUF_TSAN_READ(&_impl_._tsan_detect_race);
+  return _impl_.password_.Get();
+}
+inline void LoginRequest::_internal_set_password(const std::string& value) {
+  PROTOBUF_TSAN_WRITE(&_impl_._tsan_detect_race);
+  ;
+  _impl_.password_.Set(value, GetArenaForAllocation());
+}
+inline std::string* LoginRequest::_internal_mutable_password() {
+  PROTOBUF_TSAN_WRITE(&_impl_._tsan_detect_race);
+  ;
+  return _impl_.password_.Mutable( GetArenaForAllocation());
+}
+inline std::string* LoginRequest::release_password() {
+  PROTOBUF_TSAN_WRITE(&_impl_._tsan_detect_race);
+  // @@protoc_insertion_point(field_release:oteldemo.LoginRequest.password)
+  return _impl_.password_.Release();
+}
+inline void LoginRequest::set_allocated_password(std::string* value) {
+  PROTOBUF_TSAN_WRITE(&_impl_._tsan_detect_race);
+  _impl_.password_.SetAllocated(value, GetArenaForAllocation());
+  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+        if (_impl_.password_.IsDefault()) {
+          _impl_.password_.Set("", GetArenaForAllocation());
+        }
+  #endif  // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  // @@protoc_insertion_point(field_set_allocated:oteldemo.LoginRequest.password)
+}
+
+// string method = 3;
+inline void LoginRequest::clear_method() {
+  _impl_.method_.ClearToEmpty();
+}
+inline const std::string& LoginRequest::method() const {
+  // @@protoc_insertion_point(field_get:oteldemo.LoginRequest.method)
+  return _internal_method();
+}
+template <typename Arg_, typename... Args_>
+inline PROTOBUF_ALWAYS_INLINE void LoginRequest::set_method(Arg_&& arg,
+                                                     Args_... args) {
+  PROTOBUF_TSAN_WRITE(&_impl_._tsan_detect_race);
+  ;
+  _impl_.method_.Set(static_cast<Arg_&&>(arg), args..., GetArenaForAllocation());
+  // @@protoc_insertion_point(field_set:oteldemo.LoginRequest.method)
+}
+inline std::string* LoginRequest::mutable_method() {
+  std::string* _s = _internal_mutable_method();
+  // @@protoc_insertion_point(field_mutable:oteldemo.LoginRequest.method)
+  return _s;
+}
+inline const std::string& LoginRequest::_internal_method() const {
+  PROTOBUF_TSAN_READ(&_impl_._tsan_detect_race);
+  return _impl_.method_.Get();
+}
+inline void LoginRequest::_internal_set_method(const std::string& value) {
+  PROTOBUF_TSAN_WRITE(&_impl_._tsan_detect_race);
+  ;
+  _impl_.method_.Set(value, GetArenaForAllocation());
+}
+inline std::string* LoginRequest::_internal_mutable_method() {
+  PROTOBUF_TSAN_WRITE(&_impl_._tsan_detect_race);
+  ;
+  return _impl_.method_.Mutable( GetArenaForAllocation());
+}
+inline std::string* LoginRequest::release_method() {
+  PROTOBUF_TSAN_WRITE(&_impl_._tsan_detect_race);
+  // @@protoc_insertion_point(field_release:oteldemo.LoginRequest.method)
+  return _impl_.method_.Release();
+}
+inline void LoginRequest::set_allocated_method(std::string* value) {
+  PROTOBUF_TSAN_WRITE(&_impl_._tsan_detect_race);
+  _impl_.method_.SetAllocated(value, GetArenaForAllocation());
+  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+        if (_impl_.method_.IsDefault()) {
+          _impl_.method_.Set("", GetArenaForAllocation());
+        }
+  #endif  // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  // @@protoc_insertion_point(field_set_allocated:oteldemo.LoginRequest.method)
+}
+
+// -------------------------------------------------------------------
+
+// LoginResponse
+
+// string corporate_user_id = 1;
+inline void LoginResponse::clear_corporate_user_id() {
+  _impl_.corporate_user_id_.ClearToEmpty();
+}
+inline const std::string& LoginResponse::corporate_user_id() const {
+  // @@protoc_insertion_point(field_get:oteldemo.LoginResponse.corporate_user_id)
+  return _internal_corporate_user_id();
+}
+template <typename Arg_, typename... Args_>
+inline PROTOBUF_ALWAYS_INLINE void LoginResponse::set_corporate_user_id(Arg_&& arg,
+                                                     Args_... args) {
+  PROTOBUF_TSAN_WRITE(&_impl_._tsan_detect_race);
+  ;
+  _impl_.corporate_user_id_.Set(static_cast<Arg_&&>(arg), args..., GetArenaForAllocation());
+  // @@protoc_insertion_point(field_set:oteldemo.LoginResponse.corporate_user_id)
+}
+inline std::string* LoginResponse::mutable_corporate_user_id() {
+  std::string* _s = _internal_mutable_corporate_user_id();
+  // @@protoc_insertion_point(field_mutable:oteldemo.LoginResponse.corporate_user_id)
+  return _s;
+}
+inline const std::string& LoginResponse::_internal_corporate_user_id() const {
+  PROTOBUF_TSAN_READ(&_impl_._tsan_detect_race);
+  return _impl_.corporate_user_id_.Get();
+}
+inline void LoginResponse::_internal_set_corporate_user_id(const std::string& value) {
+  PROTOBUF_TSAN_WRITE(&_impl_._tsan_detect_race);
+  ;
+  _impl_.corporate_user_id_.Set(value, GetArenaForAllocation());
+}
+inline std::string* LoginResponse::_internal_mutable_corporate_user_id() {
+  PROTOBUF_TSAN_WRITE(&_impl_._tsan_detect_race);
+  ;
+  return _impl_.corporate_user_id_.Mutable( GetArenaForAllocation());
+}
+inline std::string* LoginResponse::release_corporate_user_id() {
+  PROTOBUF_TSAN_WRITE(&_impl_._tsan_detect_race);
+  // @@protoc_insertion_point(field_release:oteldemo.LoginResponse.corporate_user_id)
+  return _impl_.corporate_user_id_.Release();
+}
+inline void LoginResponse::set_allocated_corporate_user_id(std::string* value) {
+  PROTOBUF_TSAN_WRITE(&_impl_._tsan_detect_race);
+  _impl_.corporate_user_id_.SetAllocated(value, GetArenaForAllocation());
+  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+        if (_impl_.corporate_user_id_.IsDefault()) {
+          _impl_.corporate_user_id_.Set("", GetArenaForAllocation());
+        }
+  #endif  // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  // @@protoc_insertion_point(field_set_allocated:oteldemo.LoginResponse.corporate_user_id)
+}
+
+// string company = 2;
+inline void LoginResponse::clear_company() {
+  _impl_.company_.ClearToEmpty();
+}
+inline const std::string& LoginResponse::company() const {
+  // @@protoc_insertion_point(field_get:oteldemo.LoginResponse.company)
+  return _internal_company();
+}
+template <typename Arg_, typename... Args_>
+inline PROTOBUF_ALWAYS_INLINE void LoginResponse::set_company(Arg_&& arg,
+                                                     Args_... args) {
+  PROTOBUF_TSAN_WRITE(&_impl_._tsan_detect_race);
+  ;
+  _impl_.company_.Set(static_cast<Arg_&&>(arg), args..., GetArenaForAllocation());
+  // @@protoc_insertion_point(field_set:oteldemo.LoginResponse.company)
+}
+inline std::string* LoginResponse::mutable_company() {
+  std::string* _s = _internal_mutable_company();
+  // @@protoc_insertion_point(field_mutable:oteldemo.LoginResponse.company)
+  return _s;
+}
+inline const std::string& LoginResponse::_internal_company() const {
+  PROTOBUF_TSAN_READ(&_impl_._tsan_detect_race);
+  return _impl_.company_.Get();
+}
+inline void LoginResponse::_internal_set_company(const std::string& value) {
+  PROTOBUF_TSAN_WRITE(&_impl_._tsan_detect_race);
+  ;
+  _impl_.company_.Set(value, GetArenaForAllocation());
+}
+inline std::string* LoginResponse::_internal_mutable_company() {
+  PROTOBUF_TSAN_WRITE(&_impl_._tsan_detect_race);
+  ;
+  return _impl_.company_.Mutable( GetArenaForAllocation());
+}
+inline std::string* LoginResponse::release_company() {
+  PROTOBUF_TSAN_WRITE(&_impl_._tsan_detect_race);
+  // @@protoc_insertion_point(field_release:oteldemo.LoginResponse.company)
+  return _impl_.company_.Release();
+}
+inline void LoginResponse::set_allocated_company(std::string* value) {
+  PROTOBUF_TSAN_WRITE(&_impl_._tsan_detect_race);
+  _impl_.company_.SetAllocated(value, GetArenaForAllocation());
+  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+        if (_impl_.company_.IsDefault()) {
+          _impl_.company_.Set("", GetArenaForAllocation());
+        }
+  #endif  // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  // @@protoc_insertion_point(field_set_allocated:oteldemo.LoginResponse.company)
+}
+
+// string company_name = 3;
+inline void LoginResponse::clear_company_name() {
+  _impl_.company_name_.ClearToEmpty();
+}
+inline const std::string& LoginResponse::company_name() const {
+  // @@protoc_insertion_point(field_get:oteldemo.LoginResponse.company_name)
+  return _internal_company_name();
+}
+template <typename Arg_, typename... Args_>
+inline PROTOBUF_ALWAYS_INLINE void LoginResponse::set_company_name(Arg_&& arg,
+                                                     Args_... args) {
+  PROTOBUF_TSAN_WRITE(&_impl_._tsan_detect_race);
+  ;
+  _impl_.company_name_.Set(static_cast<Arg_&&>(arg), args..., GetArenaForAllocation());
+  // @@protoc_insertion_point(field_set:oteldemo.LoginResponse.company_name)
+}
+inline std::string* LoginResponse::mutable_company_name() {
+  std::string* _s = _internal_mutable_company_name();
+  // @@protoc_insertion_point(field_mutable:oteldemo.LoginResponse.company_name)
+  return _s;
+}
+inline const std::string& LoginResponse::_internal_company_name() const {
+  PROTOBUF_TSAN_READ(&_impl_._tsan_detect_race);
+  return _impl_.company_name_.Get();
+}
+inline void LoginResponse::_internal_set_company_name(const std::string& value) {
+  PROTOBUF_TSAN_WRITE(&_impl_._tsan_detect_race);
+  ;
+  _impl_.company_name_.Set(value, GetArenaForAllocation());
+}
+inline std::string* LoginResponse::_internal_mutable_company_name() {
+  PROTOBUF_TSAN_WRITE(&_impl_._tsan_detect_race);
+  ;
+  return _impl_.company_name_.Mutable( GetArenaForAllocation());
+}
+inline std::string* LoginResponse::release_company_name() {
+  PROTOBUF_TSAN_WRITE(&_impl_._tsan_detect_race);
+  // @@protoc_insertion_point(field_release:oteldemo.LoginResponse.company_name)
+  return _impl_.company_name_.Release();
+}
+inline void LoginResponse::set_allocated_company_name(std::string* value) {
+  PROTOBUF_TSAN_WRITE(&_impl_._tsan_detect_race);
+  _impl_.company_name_.SetAllocated(value, GetArenaForAllocation());
+  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+        if (_impl_.company_name_.IsDefault()) {
+          _impl_.company_name_.Set("", GetArenaForAllocation());
+        }
+  #endif  // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  // @@protoc_insertion_point(field_set_allocated:oteldemo.LoginResponse.company_name)
+}
+
+// string email = 4;
+inline void LoginResponse::clear_email() {
+  _impl_.email_.ClearToEmpty();
+}
+inline const std::string& LoginResponse::email() const {
+  // @@protoc_insertion_point(field_get:oteldemo.LoginResponse.email)
+  return _internal_email();
+}
+template <typename Arg_, typename... Args_>
+inline PROTOBUF_ALWAYS_INLINE void LoginResponse::set_email(Arg_&& arg,
+                                                     Args_... args) {
+  PROTOBUF_TSAN_WRITE(&_impl_._tsan_detect_race);
+  ;
+  _impl_.email_.Set(static_cast<Arg_&&>(arg), args..., GetArenaForAllocation());
+  // @@protoc_insertion_point(field_set:oteldemo.LoginResponse.email)
+}
+inline std::string* LoginResponse::mutable_email() {
+  std::string* _s = _internal_mutable_email();
+  // @@protoc_insertion_point(field_mutable:oteldemo.LoginResponse.email)
+  return _s;
+}
+inline const std::string& LoginResponse::_internal_email() const {
+  PROTOBUF_TSAN_READ(&_impl_._tsan_detect_race);
+  return _impl_.email_.Get();
+}
+inline void LoginResponse::_internal_set_email(const std::string& value) {
+  PROTOBUF_TSAN_WRITE(&_impl_._tsan_detect_race);
+  ;
+  _impl_.email_.Set(value, GetArenaForAllocation());
+}
+inline std::string* LoginResponse::_internal_mutable_email() {
+  PROTOBUF_TSAN_WRITE(&_impl_._tsan_detect_race);
+  ;
+  return _impl_.email_.Mutable( GetArenaForAllocation());
+}
+inline std::string* LoginResponse::release_email() {
+  PROTOBUF_TSAN_WRITE(&_impl_._tsan_detect_race);
+  // @@protoc_insertion_point(field_release:oteldemo.LoginResponse.email)
+  return _impl_.email_.Release();
+}
+inline void LoginResponse::set_allocated_email(std::string* value) {
+  PROTOBUF_TSAN_WRITE(&_impl_._tsan_detect_race);
+  _impl_.email_.SetAllocated(value, GetArenaForAllocation());
+  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+        if (_impl_.email_.IsDefault()) {
+          _impl_.email_.Set("", GetArenaForAllocation());
+        }
+  #endif  // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  // @@protoc_insertion_point(field_set_allocated:oteldemo.LoginResponse.email)
+}
+
+// string display_name = 5;
+inline void LoginResponse::clear_display_name() {
+  _impl_.display_name_.ClearToEmpty();
+}
+inline const std::string& LoginResponse::display_name() const {
+  // @@protoc_insertion_point(field_get:oteldemo.LoginResponse.display_name)
+  return _internal_display_name();
+}
+template <typename Arg_, typename... Args_>
+inline PROTOBUF_ALWAYS_INLINE void LoginResponse::set_display_name(Arg_&& arg,
+                                                     Args_... args) {
+  PROTOBUF_TSAN_WRITE(&_impl_._tsan_detect_race);
+  ;
+  _impl_.display_name_.Set(static_cast<Arg_&&>(arg), args..., GetArenaForAllocation());
+  // @@protoc_insertion_point(field_set:oteldemo.LoginResponse.display_name)
+}
+inline std::string* LoginResponse::mutable_display_name() {
+  std::string* _s = _internal_mutable_display_name();
+  // @@protoc_insertion_point(field_mutable:oteldemo.LoginResponse.display_name)
+  return _s;
+}
+inline const std::string& LoginResponse::_internal_display_name() const {
+  PROTOBUF_TSAN_READ(&_impl_._tsan_detect_race);
+  return _impl_.display_name_.Get();
+}
+inline void LoginResponse::_internal_set_display_name(const std::string& value) {
+  PROTOBUF_TSAN_WRITE(&_impl_._tsan_detect_race);
+  ;
+  _impl_.display_name_.Set(value, GetArenaForAllocation());
+}
+inline std::string* LoginResponse::_internal_mutable_display_name() {
+  PROTOBUF_TSAN_WRITE(&_impl_._tsan_detect_race);
+  ;
+  return _impl_.display_name_.Mutable( GetArenaForAllocation());
+}
+inline std::string* LoginResponse::release_display_name() {
+  PROTOBUF_TSAN_WRITE(&_impl_._tsan_detect_race);
+  // @@protoc_insertion_point(field_release:oteldemo.LoginResponse.display_name)
+  return _impl_.display_name_.Release();
+}
+inline void LoginResponse::set_allocated_display_name(std::string* value) {
+  PROTOBUF_TSAN_WRITE(&_impl_._tsan_detect_race);
+  _impl_.display_name_.SetAllocated(value, GetArenaForAllocation());
+  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+        if (_impl_.display_name_.IsDefault()) {
+          _impl_.display_name_.Set("", GetArenaForAllocation());
+        }
+  #endif  // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  // @@protoc_insertion_point(field_set_allocated:oteldemo.LoginResponse.display_name)
 }
 
 // -------------------------------------------------------------------
