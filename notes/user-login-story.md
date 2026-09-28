@@ -116,7 +116,8 @@ oteldemo.AuthService/Login                    (otelgrpc server span; feature_fla
 ```
 
 `CheckUserStatus` attributes are `app.auth.status_check.enforced`, `app.auth.status_check.result`
-(`active|not_current|error`) and, on fail-open, `app.auth.status_check.fail_open=true`.
+(`active|not_current|error`). Fail-open is `enforced=false` with `result=error`. (There used to be a separate
+`app.auth.status_check.fail_open` attribute; `4c5525ea` removed it from `main` as redundant, before Release B.)
 
 ### The flag (`src/flagd/demo.flagd.json`)
 
@@ -250,7 +251,7 @@ It's evaluated only for SSO, after the assertion verifies, with
 | Globex / password p95 | 130 / 66ms | 124 / 66ms |
 | Logins per 15 min | 92 | 50 (Locust users block on slow logins) |
 
-The login still succeeds (`fail_open=true`). The error text is above.
+The login still succeeds (fail-open: `enforced=false`, `result=error`). The error text is above.
 
 **First prod numbers** (13:05–13:16 UTC, sampled): Login p50 65ms, **p95 127ms**. Globex was 25% of logins (a small
 sample; the target is 35%), with p95 128ms and 2 `user_not_current`. The non-Globex password share was 39%. Only Globex runs
@@ -286,7 +287,7 @@ small, boring edits plus the JSON. PR description:
 - Login volume drops, because loadgen users block on the slow logins.
 - The trigger fires within one or two 5-minute evaluations.
 - Password and Globex logins are unchanged.
-- `CheckUserStatus` errors are `fail_open=true`, so logins *succeed*, just slowly.
+- `CheckUserStatus` errors are `enforced=false`, so they fail open and logins *succeed*, just slowly.
 
 ## 7. External setup checklist
 
