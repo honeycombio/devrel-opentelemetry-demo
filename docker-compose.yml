@@ -127,6 +127,38 @@ services:
     logging: *logging
 
   # Checkout service
+  auth:
+    image: ${IMAGE_NAME}:${DEMO_VERSION}-auth
+    container_name: auth
+    build:
+      context: ./
+      dockerfile: ${AUTH_DOCKERFILE}
+      cache_from:
+        - ${IMAGE_NAME}:${IMAGE_VERSION}-auth
+    deploy:
+      resources:
+        limits:
+          memory: 30M
+    restart: unless-stopped
+    ports:
+      - "${AUTH_PORT}"
+    environment:
+      - FLAGD_HOST
+      - FLAGD_PORT
+      - AUTH_PORT
+      - DB_CONNECTION_STRING=host=${POSTGRES_HOST} user=otelu password=otelp dbname=${POSTGRES_DB}
+      - GOMEMLIMIT=24MiB
+      - OTEL_EXPORTER_OTLP_ENDPOINT
+      - OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE
+      - OTEL_RESOURCE_ATTRIBUTES
+      - OTEL_SERVICE_NAME=auth
+    depends_on:
+      postgresql:
+        condition: service_started
+      otel-collector:
+        condition: service_started
+    logging: *logging
+
   checkout:
     image: ${IMAGE_NAME}:${DEMO_VERSION}-checkout
     container_name: checkout

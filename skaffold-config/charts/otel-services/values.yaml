@@ -110,6 +110,23 @@ services:
       - name: OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT
         value: "true"
 
+  auth:
+    enabled: true
+    name: auth
+    image:
+      repository: ghcr.io/honeycombio/devrel-opentelemetry-demo
+      tag: latest-auth
+      pullPolicy: IfNotPresent
+    imageOverride:
+      {}
+    port: 8080
+    replicas: 1
+    env:
+      - name: AUTH_PORT
+        value: "8080"
+      - name: DB_CONNECTION_STRING
+        value: "host=postgresql user=otelu password=otelp dbname=otel"
+
   llm:
     enabled: true
     name: llm

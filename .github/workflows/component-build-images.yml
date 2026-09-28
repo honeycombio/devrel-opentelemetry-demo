@@ -84,6 +84,10 @@ jobs:
             tag_suffix: cart
             context: ./
             setup-qemu: false
+          - file: ./src/auth/Dockerfile
+            tag_suffix: auth
+            context: ./
+            setup-qemu: true
           - file: ./src/checkout/Dockerfile
             tag_suffix: checkout
             context: ./
