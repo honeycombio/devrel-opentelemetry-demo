@@ -4,6 +4,19 @@ This is the DevRel OpenTelemetry Demo project. Our job is to "make it real" -- t
 
 This is a fork of the OpenTelemetry Demo. It's a fake e-commerce app.
 
+## jessitron/slow-login-story branch
+
+Right here, on this branch, we are adding some code to let me tell a story.
+The goal is to show off Canvas Connectors. There's a long path to get there.
+I want to create a story here, with real code, not a feature flag that turns on a pathology.
+
+To start with, let's add a "Login" feature to the website. We don't require anyone to log in,
+the usual checkout process & loadgen remains the same. The 'user' But we offer login for corporate accounts, see.
+
+Then we'll make login suddenly very slow for a subset of users. Like only SSO accounts, excluding our biggest customer.
+
+For this branch, find further plans under notes/user-login-story.md
+
 ## Building and Deploying
 
 ### Local Kubernetes deployment via Skaffold
