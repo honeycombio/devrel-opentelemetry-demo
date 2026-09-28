@@ -8,6 +8,7 @@ import (
 	"log/slog"
 	"strings"
 
+	"github.com/open-feature/go-sdk/openfeature"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/baggage"
 	otelcodes "go.opentelemetry.io/otel/codes"
@@ -24,12 +25,14 @@ const (
 	methodPassword = "password"
 	methodSSO      = "sso"
 
-	resultSuccess        = "success"
-	resultBadPassword    = "bad_password"
-	resultUnknownUser    = "unknown_user"
-	resultMethodMismatch = "method_mismatch"
-	resultIdpError       = "idp_error"
-	resultError          = "error"
+	resultSuccess           = "success"
+	resultBadPassword       = "bad_password"
+	resultUnknownUser       = "unknown_user"
+	resultMethodMismatch    = "method_mismatch"
+	resultIdpError          = "idp_error"
+	resultUserNotCurrent    = "user_not_current"
+	resultStatusCheckFailed = "status_check_failed"
+	resultError             = "error"
 )
 
 func (a *auth) Login(ctx context.Context, req *pb.LoginRequest) (*pb.LoginResponse, error) {
@@ -112,6 +115,16 @@ func (a *auth) authenticate(ctx context.Context, req *pb.LoginRequest, method st
 		if err := a.verifySSOAssertion(ctx, user); err != nil {
 			logger.WarnContext(ctx, "sso verification failed", slog.String("company", user.CompanyID), slog.String("error", err.Error()))
 			return user, resultIdpError, status.Error(codes.Unavailable, "single sign-on is unavailable")
+		}
+		evalCtx := openfeature.NewEvaluationContext(user.ID, map[string]any{"company": user.CompanyID})
+		if check, _ := a.flags.BooleanValue(ctx, "auth.user-status-check", false, evalCtx); check {
+			if err := a.checkUserStatus(ctx, user); err != nil {
+				result := resultStatusCheckFailed
+				if errors.Is(err, errUserNotCurrent) {
+					result = resultUserNotCurrent
+				}
+				return user, result, status.Error(codes.PermissionDenied, "your account is not active at your company")
+			}
 		}
 	default:
 		return user, resultMethodMismatch, status.Errorf(codes.InvalidArgument, "unknown login method %q", method)
