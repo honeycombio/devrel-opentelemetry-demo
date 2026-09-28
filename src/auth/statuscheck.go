@@ -42,7 +42,6 @@ func (a *auth) checkUserStatus(ctx context.Context, user *corporateUser) error {
 		if user.EnforceStatusCheck {
 			return err
 		}
-		span.SetAttributes(attribute.Bool("app.auth.status_check.fail_open", true))
 		return nil
 	}
 
