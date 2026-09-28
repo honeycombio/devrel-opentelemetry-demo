@@ -53,3 +53,28 @@ export const Controls = styled.div`
   display: flex;
   height: 60px;
 `;
+
+export const Account = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-right: 20px;
+  color: #29293e;
+  font-size: 15px;
+`;
+
+export const AccountLink = styled(Link)`
+  color: #5262a8;
+  font-weight: 700;
+  text-decoration: none;
+`;
+
+export const AccountButton = styled.button`
+  background: none;
+  border: none;
+  padding: 0;
+  color: #5262a8;
+  font-weight: 700;
+  font-size: 15px;
+  cursor: pointer;
+`;
