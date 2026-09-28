@@ -1,5 +1,9 @@
 # Claude Code Project Notes
 
+This is the DevRel OpenTelemetry Demo project. Our job is to "make it real" -- to make concrete demonstrations of everything Marketing says about the Honeycomb product. We use this project to create data in Honeycomb, so that people and agents in Honeycomb can make insightful deductions about what is happening in production.
+
+This is a fork of the OpenTelemetry Demo. It's a fake e-commerce app.
+
 ## Building and Deploying
 
 ### Local Kubernetes deployment via Skaffold
@@ -14,7 +18,7 @@ Service names match the `image:` entries in `skaffold.yaml` (e.g. `accounting`, 
 
 **Which services to pass as args:** only the ones whose source has changed between your branch and the last release. Every `./run` invocation deploys the full Helm chart, but services not listed in the args fall back to the chart's default image — which is the registry's released `latest-*` tag (already has the most recent merged code), not the OTel-upstream image. They don't need rebuilding.
 
-In practice: diff against the last release (typically `main`), pick only the services with source changes under `src/<service>` (or `deploy/config-files/custom-collector` for the `otelcollector` image), and pass those. Config-only changes (Helm values, collector YAML *referenced by* skaffold-config/) ride along on the chart deploy and don't need any image rebuild.
+In practice: diff against the last release (typically `main`), pick only the services with source changes under `src/<service>` (or `deploy/config-files/custom-collector` for the `otelcollector` image), and pass those. Config-only changes (Helm values, collector YAML _referenced by_ skaffold-config/) ride along on the chart deploy and don't need any image rebuild.
 
 ### How to know when it's done
 
@@ -66,17 +70,17 @@ in the collector rather than removing instrumentation from cart, to avoid fork
 drift in a file we sync from upstream and to avoid silently blinding any future
 HTTP call cart makes.
 
-Note the `feature_flag.evaluation` span event stays on the *calling* span
+Note the `feature_flag.evaluation` span event stays on the _calling_ span
 (OpenFeature's `TraceEnricherHook` writes to `Activity.Current`), so flag data
 is never lost — only the RPC spans are.
 
 **`meta.span_count` on the root won't match what you count.** Refinery stamps it
 at decision time; spans that arrive afterwards show up with
-`meta.refinery.send_reason: trace_send_late_span` and are *not* in that count.
+`meta.refinery.send_reason: trace_send_late_span` and are _not_ in that count.
 
 ## Cutting a release (deploying to devrel-demo/prod)
 
-See `devrel-README.md` → "Deploy to devrel-demo" for the full writeup. Short version: `./scripts/bump-release.sh patch` tags and pushes, which triggers `.github/workflows/release-devrel.yml` to build images *and* deploy to the `prod-aws` Pulumi stack automatically — no manual `pulumi up` needed. To redeploy an existing version without rebuilding, use the `deploy-with-version.yml` workflow instead.
+See `devrel-README.md` → "Deploy to devrel-demo" for the full writeup. Short version: `./scripts/bump-release.sh patch` tags and pushes, which triggers `.github/workflows/release-devrel.yml` to build images _and_ deploy to the `prod-aws` Pulumi stack automatically — no manual `pulumi up` needed. To redeploy an existing version without rebuilding, use the `deploy-with-version.yml` workflow instead.
 
 ## Querying telemetry from the local cluster
 
@@ -92,7 +96,7 @@ The returned `environment.slug` is what to pass to the matching honeycomb MCP se
 
 ## Production cluster access
 
-The shared/"production" demo runs on the **`devrel-demo-aws`** kubectl context (EKS, account `657166037864`, eu-west-1; pulumi stack `infra-aws/prod`). Authenticate with `AWS_PROFILE=really-devrel-sandbox` — that profile maps to account `657166037864`. (The plain `devrel-sandbox` profile may have no creds locally; `set-kubecontext.sh` defaults to it but the *prod* account is `really-devrel-sandbox`.)
+The shared/"production" demo runs on the **`devrel-demo-aws`** kubectl context (EKS, account `657166037864`, eu-west-1; pulumi stack `infra-aws/prod`). Authenticate with `AWS_PROFILE=really-devrel-sandbox` — that profile maps to account `657166037864`. (The plain `devrel-sandbox` profile may have no creds locally; `set-kubecontext.sh` defaults to it but the _prod_ account is `really-devrel-sandbox`.)
 
 The production **app deployment lives in the `devrel-demo` namespace**. The `*-local` namespaces (`jessitron-local`, `martin-local`, etc.) are per-developer Skaffold deploys, and `orion` is a separate cluster (us-west-2, different account).
 
