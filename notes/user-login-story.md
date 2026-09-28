@@ -108,6 +108,9 @@ this section is how we build it. Decisions made in that Q&A:
   one is one of three.
 - **Release A is two PRs**: PR 1 "Corporate login" and PR 2 "Globex: verify employee still
   active after SSO". Release B is PR 3 "Remove stale feature flags".
+- **Plumbing skips PRs** (Jess, later the same day). The mocks, hostAliases/blackhole, the
+  tenant seed and the loadgen are pushed straight to `main`, so the PR trail contains only
+  story code. It's a demo app, so that's fine.
 
 ## Verified facts (2026-09-27; don't re-check unless something changed)
 
@@ -221,7 +224,7 @@ message LoginResponse { string corporate_user_id = 1; string company = 2; string
                 display_name text, password_hash text NULL, last_login_at timestamptz NULL)
   auth.login_event (id bigint GENERATED ALWAYS AS IDENTITY, corporate_user_id text, company_id text,
                 method text, result text, created_at timestamptz DEFAULT now())
-  -- PR 2 adds:
+  -- PR 2 adds (only Globex gets a row; see §3):
   auth.sso_status_check (company_id text PK FK, url_override text NULL, enforce boolean NOT NULL DEFAULT false)
   ```
   Grant `SELECT, INSERT, UPDATE` on the tables, and `USAGE` on the identity sequence
@@ -301,12 +304,16 @@ Keep the naming bland. The blackhole list lives in values as
 `services.auth.hostAliases`, with a one-line comment: "tenant-hosted endpoints; not
 reachable from the demo cluster". Don't mention hanging, timeouts, or the story.
 
-**Risk to know about:** an investigator who reads deploy config can see
-`192.0.2.1 sso-status.<every-sso-tenant>`. It's in PR 1, not PR 3, so the trail from ticket
-to PR doesn't lead there. Also, Go's timeout error text includes the IP
-(`dial tcp 192.0.2.1:443: i/o timeout (Client.Timeout exceeded …)`). If that looks too
-fake, `203.0.113.x` (TEST-NET-3) reads a bit less like a doc address and hangs the same
-way.
+**Keeping it out of the PR trail:** all of this simulation plumbing is **pushed directly
+to `main`, with no PR** (see §6, "How things land"). The Canvas agent follows Linear → PRs,
+so it never sees a diff containing `192.0.2.1 sso-status.<tenant>`. The entries are still
+in the repo for anyone who greps deploy config. That's acceptable, since this is a demo
+app.
+
+The one visible trace of the trick is Go's timeout error text, which includes the IP:
+`dial tcp 192.0.2.1:443: i/o timeout (Client.Timeout exceeded …)`. If that reads too fake,
+`203.0.113.x` (TEST-NET-3) looks a bit less like a documentation address and hangs the
+same way.
 
 ## 3. The flag `auth.user-status-check` (PR 2)
 
@@ -342,8 +349,10 @@ In `src/flagd/demo.flagd.json`:
        open) and set `app.auth.status_check.fail_open=true`.
   4. On `terminated`: `app.auth.result=user_not_current`. If enforcing, `PermissionDenied`.
      If not enforcing, log and allow. This can't happen before Release B.
-- Seed data: every SSO tenant gets a `sso_status_check` row with `url_override NULL`.
-  Globex has `enforce=true`; everyone else has `enforce=false`.
+- Seed data: **only Globex has a `sso_status_check` row** (`enforce=true`,
+  `url_override NULL`). The Login query `LEFT JOIN`s the table, and a missing row means
+  "default URL, don't enforce". So Globex's configuration is data, pushed with the seed,
+  and PR 2's diff is generic multi-tenant code.
   - The code already handles every tenant, which is what makes the Release B cleanup look
     safe.
 
@@ -408,48 +417,76 @@ In `src/flagd/demo.flagd.json`:
 
 ## 6. Release A — commit sequence
 
-Work on a branch per PR, off `main`. Keep it off `jessitron/slow-login-story`, which
-carries the temporary CLAUDE.md focus commit and the grilling skill, and those must not be
-in the PRs. Each commit is deployable with `./run` on its own. Use
-`AWS_PROFILE=devrel-sandbox ./run <services>` (note: `.skaffold.env` currently says
-`martin-devrel-sandbox`).
+### How things land
+The PR trail is the story, so **only story code goes through PRs**. Everything that exists
+only to simulate the outside world or make traffic is **committed straight to `main` and
+pushed, with no PR**:
+- the tenant generator and seed data,
+- the mocks, certs and hostAliases,
+- the loadgen login task,
+- test scripts.
 
-Honeycomb checks: resolve the env from the key first (see CLAUDE.md "Querying telemetry
-from the local cluster").
+The Canvas agent follows Linear → PR → diff and never sees that plumbing.
 
-### PR 1: "Corporate login"
-| # | Commit | `./run` | Verify |
-|---|---|---|---|
-| A1 | Add `AuthService` to demo.proto; regenerate all stubs | `checkout product-catalog frontend` (build check) | Existing traffic unchanged. The checkout and frontend spans still show up. |
-| A2 | Tenant generator, `auth` schema, and seed | `postgresql` | `scripts/query-auth-tenants.sh` (new, modeled on `query-production-order-emails.sh`) shows 40 companies, Globex at about 200 users, and the SSO/password counts |
-| A3 | `auth` service: password login only (SSO returns `Unimplemented`); chart, skaffold, compose, CI, and Pulumi wiring | `auth postgresql` | `scripts/auth-login.sh <email> <pw>` (grpcurl in a temp pod) returns a user. In Honeycomb, `service.name=auth` has `Login`, then `SELECT`, then `VerifyPassword` (about 60ms), then `UPDATE`. A wrong password gives `app.auth.result=bad_password` with the span not marked as an error. |
-| A4 | `sso-mocks` sidecar, TLS CA, hostAliases, and the SSO path in auth | `auth sso-mocks` | An SSO user logs in. A `POST` child span shows `server.address=sso.keystone-id.example`, about 40ms, 200. Check the span name format and the :443 bind. **Blackhole check:** `kubectl exec` into auth and time `wget https://sso-status.initech.example` (≈10s). The distroless image has no shell, so use `kubectl debug` with a curl image sharing the pod network. |
-| A5 | Frontend: login page, header, session, `/api/login`, baggage and attributes, checkout email prefill, `AUTH_ADDR` | `frontend` | Log in at `http://127.0.0.1:919x/login` as a password user and an SSO user. In Honeycomb, one trace goes from browser span through `POST /api/login` and `oteldemo.AuthService/Login` to the children. Then browse and check out: `app.company` shows on frontend spans and the checkout email is pre-filled. `app.user.id` is still the UUID. |
-| A6 | Decoy flags `frontend.login-link` and `auth.login-audit-log` (with `login_event` insert) | `auth frontend` (the flagd file ships with the chart deploy) | The header link shows. `INSERT otel.auth.login_event` appears in the trace. A `feature_flag.evaluation` event is on Login. Turning the flags off in flagd-ui hides them. |
-| A7 | Loadgen `login` task | `load-generator` | After about 15 minutes, `COUNT` of Login grouped by `app.company` has Globex at ≈35%. Grouping by `app.auth.method` gives ≈40% password among non-Globex. `app.auth.result` has a few `bad_password` and `unknown_user`, and no `user_not_current` yet (see A8). P95 of Login is under 300ms. |
+The rule for every commit: **it's either story or plumbing, never both.** Each commit below
+is tagged **PR 1**, **PR 2** or **main**.
 
-In A3, wiring a new service touches:
-- `skaffold.yaml`: artifacts `auth` and `sso-mocks`, plus `setValueTemplates` under the
-  `{{.USER}}-otel-services` release, as `services.auth.imageOverride.*`.
+Workflow:
+1. Develop on one local branch off `main` (e.g. `jessitron/corporate-login`), in the order
+   below, so every commit is testable with `./run` as it's written.
+   - Keep it off `jessitron/slow-login-story`, which carries the temporary CLAUDE.md focus
+     commit and the grilling skill.
+2. When it works end to end, land it in the order under "Landing order" below. Reorder with
+   `git rebase` so each group is a contiguous run of commits.
+3. **Check first:** does `main` on GitHub have branch protection that requires PRs? If so,
+   direct pushes need an admin bypass, or a temporary rule change.
+
+`./run`: `AWS_PROFILE=devrel-sandbox ./run <services>`. Note that `.skaffold.env` currently
+says `martin-devrel-sandbox`.
+
+Honeycomb checks: resolve the destination with `scripts/local-honeycomb-destination.sh`.
+For Jess that's team `modernity`, env `devrel-demo--local-`, via the
+`honeycomb-devrel-demo` MCP server. See CLAUDE.md.
+
+### Development order
+| # | Lands via | Commit | `./run` | Verify |
+|---|---|---|---|---|
+| A1 | PR 1 | Add `AuthService` to demo.proto; regenerate all stubs | `checkout product-catalog frontend` (build check) | Existing traffic is unchanged; checkout and frontend spans still show up. |
+| A2 | PR 1 | `auth` schema in init.sql (tables and grants, no rows) | `postgresql` | `\dt auth.*` shows the tables. |
+| M1 | main | Tenant generator, `auth-seed.sql`, `corporate_users.json`, and `scripts/query-auth-tenants.sh` | `postgresql` | The query script shows 40 companies, Globex at about 200 users, and the SSO/password counts. |
+| A3 | PR 1 | `auth` service: DB lookup, bcrypt, and the password path. The SSO path calls the IdP over HTTP. Also chart, skaffold, compose, CI and Pulumi wiring for `auth` | `auth postgresql` | `scripts/auth-login.sh <email> <pw>` (grpcurl in a temp pod; lands with M2) returns a user. In Honeycomb, `service.name=auth` shows `Login`, then `SELECT`, then `VerifyPassword` (~60ms), then `UPDATE`. A wrong password gives `app.auth.result=bad_password`, and the span isn't marked as an error. SSO logins fail for now: the IdP host doesn't resolve yet. |
+| M2 | main | `sso-mocks` (IdP verify + Globex status endpoint), TLS CA and certs, and the otel-services chart changes for auth: sidecar, CA volume, `SSL_CERT_DIR`, generated `hostAliases` (mocked hosts → 127.0.0.1, other SSO tenants' `sso-status.*` → 192.0.2.1), plus build and CI wiring for `sso-mocks` | `auth sso-mocks` | An SSO user logs in, with a `POST` child span to `server.address=sso.keystone-id.example`, ~40ms, status 200. Check the span name format and the :443 bind. **Blackhole check:** `kubectl debug` into the auth pod with a curl image and time `curl https://sso-status.initech.example`. It should take ≈10s or more. |
+| A4 | PR 1 | Frontend: login page, header, session, `/api/login`, baggage and attributes, checkout email prefill, `AUTH_ADDR` | `frontend` | Log in at `http://127.0.0.1:919x/login` as a password user and as an SSO user. One trace runs from the browser span through `POST /api/login` and `oteldemo.AuthService/Login` to its children. Browse and check out: `app.company` is on frontend spans, the email is pre-filled, and `app.user.id` is still the UUID. |
+| A5 | PR 1 | Decoy flags `frontend.login-link` and `auth.login-audit-log` (with the `login_event` insert) | `auth frontend` (the flagd file ships with the chart deploy) | The header link shows. `INSERT otel.auth.login_event` appears in the trace, and Login has a `feature_flag.evaluation` event. Turning the flags off in flagd-ui hides the link and stops the insert. |
+| M3 | main | Loadgen `login` task | `load-generator` | After ~15 minutes, Login `COUNT` by `app.company` shows Globex at ≈35%. By `app.auth.method`, about 40% of non-Globex logins are password. `app.auth.result` has a few `bad_password` and `unknown_user`, and no `user_not_current` yet. Login P95 is under 300ms. |
+| A6 | PR 2 | `sso_status_check` table in init.sql; `CheckUserStatus` in auth behind `auth.user-status-check` (flagd entry targeted at `company == globex`) | `postgresql auth` (+ restart flagd) | No rows yet, so nothing is enforced: Globex logins run the check, but terminated users still get in. |
+| M4 | main | Seed the Globex `sso_status_check` row (`enforce=true`) | `postgresql` | Globex SSO logins have `CheckUserStatus`, then `GET sso-status.globex.example` (~50ms). About 4% get `user_not_current` and a 403. Non-Globex SSO logins have **no** `CheckUserStatus` span. Login's `feature_flag.evaluation` event shows `on` for Globex and `off` for everyone else. |
+| — | — | *(not a commit)* Local dress rehearsal of the break | — | In flagd-ui, set `auth.user-status-check` to default `on` and remove the targeting. Non-Globex SSO Login p95 should be ≈10s, with `CheckUserStatus` error `i/o timeout`, `fail_open=true`, and the login still succeeding. P50 across all Logins barely moves. Then **restart flagd** to restore. |
+
+Wiring a new service touches these places. `auth`'s wiring goes in A3; `sso-mocks`'s goes
+in M2:
+- `skaffold.yaml`: build artifacts, plus `setValueTemplates` under the
+  `{{.USER}}-otel-services` release (`services.<x>.imageOverride.*`).
 - `skaffold-config/charts/otel-services/{values.yaml,templates/*}`.
-- `deploy/applications/otel-services.ts`: `services.auth.image.tag: ${containerTag}-auth`,
-  plus sso-mocks.
-- `.github/workflows/release-devrel.yml`: matrix entries for `auth` and `sso-mocks`
-  (`file`, `tag_suffix`, `context: ./`, `setup-qemu: true`).
-- `docker-compose.yml` and `.env` (`AUTH_ADDR`, `AUTH_PORT`, `AUTH_DOCKERFILE`).
-  - Compose has no hostAliases gotcha, because `extra_hosts` does the same job. Wire it for
-    completeness, but don't test compose.
+- `deploy/applications/otel-services.ts`: `services.<x>.image.tag: ${containerTag}-<x>`.
+- `.github/workflows/release-devrel.yml`: matrix entries (`file`, `tag_suffix`,
+  `context: ./`, `setup-qemu: true`).
+- `docker-compose.yml` and `.env` (`AUTH_ADDR`, `AUTH_PORT`, `AUTH_DOCKERFILE`). Compose
+  uses `extra_hosts` where k8s uses hostAliases. Wire it for completeness; don't test it.
 
-### PR 2: "Globex: verify employee still active after SSO" (links Linear ticket 1)
-| # | Commit | `./run` | Verify |
-|---|---|---|---|
-| A8 | `sso_status_check` table + seed (Globex `enforce=true`); Globex status endpoint in sso-mocks | `postgresql sso-mocks` | Query shows 1 enforcing tenant |
-| A9 | `CheckUserStatus` in auth behind `auth.user-status-check` (targeted at globex) | `auth` (+ restart flagd so it picks up the file) | Globex SSO logins have `CheckUserStatus` → `GET sso-status.globex.example` (~50ms). About 4% of Globex logins get `user_not_current` and a 403. Non-Globex SSO logins have **no** CheckUserStatus span. The Login span has `feature_flag.evaluation` with variant `on`/`off`. |
-| A9′ | *(not a commit)* Local dress rehearsal of the break | — | In flagd-ui, set `auth.user-status-check` to default `on`, remove targeting. Non-Globex SSO Login p95 ≈10s, `CheckUserStatus` error `i/o timeout`, `fail_open=true`, login still succeeds. P50 of all Login barely moves. Then **restart flagd** to restore. |
+### Landing order
+1. **PR 1 "Corporate login"**: A1, A2, A3, A4, A5. Merge it.
+2. **Push to main**: M1, M2, M3, rebased onto the merged PR 1.
+3. **PR 2 "Globex: verify employee still active after SSO"** (links Linear ticket 1): A6.
+   Merge it.
+4. **Push to main**: M4.
+
+Between steps, `main` may briefly have SSO without mocks. That's harmless: nothing reaches
+prod until the tag.
 
 Then tag: `./scripts/bump-release.sh minor`. That builds images, runs `pulumi up` on
 `prod-aws`, and posts a deploy marker.
-- In prod, check the A7 and A9 numbers again against `devrel-demo`.
+- In prod, check the M3 and M4 numbers again against `devrel-demo`.
 - Let it run long enough (at least a few days) for a clear baseline.
 - Close Linear ticket 1.
 
