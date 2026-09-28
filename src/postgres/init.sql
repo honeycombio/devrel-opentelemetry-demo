@@ -132,6 +132,42 @@ VALUES
     ('HQTGWGPNH4', 'celestial_history', 'I love historical astronomy, and this book delivers. It''s well-researched and provides a window into past beliefs. Highly recommended for scholars.', '5.0'),
     ('HQTGWGPNH4', 'rare_find', 'A truly special book for enthusiasts of astronomical history. The details about ancient astrologers are very interesting. Great for a deeper understanding.', '4.5');
 
+-- Auth Service: create a schema
+CREATE SCHEMA auth;
+GRANT USAGE ON SCHEMA auth TO otelu;
+
+-- Auth Service: create tables
+CREATE TABLE auth.company (
+    company_id TEXT PRIMARY KEY,             -- slug, e.g. 'globex'
+    name TEXT NOT NULL,
+    domain TEXT NOT NULL UNIQUE,
+    login_method TEXT NOT NULL CHECK (login_method IN ('password', 'sso')),
+    idp_tenant TEXT                          -- SSO tenants only
+);
+
+CREATE TABLE auth.corporate_user (
+    corporate_user_id TEXT PRIMARY KEY,      -- usr_...
+    company_id TEXT NOT NULL REFERENCES auth.company(company_id),
+    email TEXT NOT NULL UNIQUE,
+    display_name TEXT NOT NULL,
+    password_hash TEXT,                      -- password tenants only
+    last_login_at TIMESTAMPTZ
+);
+CREATE INDEX idx_corporate_user_company ON auth.corporate_user(company_id);
+
+CREATE TABLE auth.login_event (
+    id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    corporate_user_id TEXT,
+    company_id TEXT,
+    method TEXT NOT NULL,
+    result TEXT NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- Auth Service: grant permission to schema
+GRANT SELECT, INSERT, UPDATE ON ALL TABLES IN SCHEMA auth TO otelu;
+GRANT USAGE ON ALL SEQUENCES IN SCHEMA auth TO otelu;
+
 -- pg_cron: expire orders older than 48 hours (runs every hour)
 CREATE EXTENSION IF NOT EXISTS pg_cron;
 SELECT cron.schedule('expire-orders', '0 * * * *',
