@@ -4,6 +4,19 @@ This is the DevRel OpenTelemetry Demo project. Our job is to "make it real" -- t
 
 This is a fork of the OpenTelemetry Demo. It's a fake e-commerce app.
 
+## jessitron/corporate-login branch
+
+Right here, on this branch, we are adding some code to let me tell a story.
+The goal is to show off Canvas Connectors. There's a long path to get there.
+I want to create a story here, with real code, not a feature flag that turns on a pathology.
+
+To start with, we added a "Login" feature to the website. We don't require anyone to log in,
+the usual checkout process & loadgen remains the same. The 'user' But we offer login for corporate accounts, see.
+
+Then we'll make login suddenly very slow for a subset of users. Like only SSO accounts, excluding our biggest customer.
+
+For this branch, find further plans under notes/user-login-story.md
+
 ## Building and Deploying
 
 ### Local Kubernetes deployment via Skaffold
@@ -93,6 +106,7 @@ scripts/local-honeycomb-destination.sh
 It resolves the key the way `./run` does: source `.skaffold.env`, then `HONEYCOMB_INGEST_KEY`, falling back to `HONEYCOMB_API_KEY`. **Don't grep `.skaffold.env` for the key** — it's often exported in the developer's shell instead (Jess keeps it in a personal, git-excluded `.be` file), so the file may not contain it at all.
 
 The returned `environment.slug` is what to pass as `environment_slug`; the team determines which MCP server. For Jess, it's team `modernity`, env `devrel-demo--local-`, via the `honeycomb-devrel-demo` MCP server with `team: "modernity"`. (Martin's goes to `martindotnet-pro`.)
+
 ## Production cluster access
 
 The shared/"production" demo runs on the **`devrel-demo-aws`** kubectl context (EKS, account `657166037864`, eu-west-1; pulumi stack `infra-aws/prod`). Authenticate with `AWS_PROFILE=really-devrel-sandbox` — that profile maps to account `657166037864`. (The plain `devrel-sandbox` profile may have no creds locally; `set-kubecontext.sh` defaults to it but the _prod_ account is `really-devrel-sandbox`.)
