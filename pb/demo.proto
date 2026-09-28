@@ -370,6 +370,27 @@ message Ad {
     string text = 2;
 }
 
+// ------------Auth service------------------
+
+service AuthService {
+    rpc Login(LoginRequest) returns (LoginResponse) {}
+}
+
+message LoginRequest {
+    string email = 1;
+    string password = 2;
+    // "password" or "sso"
+    string method = 3;
+}
+
+message LoginResponse {
+    string corporate_user_id = 1;
+    string company = 2;
+    string company_name = 3;
+    string email = 4;
+    string display_name = 5;
+}
+
 // ------------Feature flag service------------------
 
 service FeatureFlagService {

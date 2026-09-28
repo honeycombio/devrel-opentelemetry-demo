@@ -2,9 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import Link from 'next/link';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { CypressFields } from '../../utils/enums/CypressFields';
 import Input from '../Input';
+import SessionGateway from '../../gateways/Session.gateway';
 import * as S from './CheckoutForm.styled';
 
 const currentYear = new Date().getFullYear();
@@ -54,6 +55,12 @@ const CheckoutForm = ({ onSubmit }: IProps) => {
     creditCardExpirationYear: 2030,
     creditCardExpirationMonth: 1,
   });
+
+  // Logged-in corporate users check out with their work email. sessionStorage is browser-only.
+  useEffect(() => {
+    const { corporateEmail } = SessionGateway.getSession();
+    if (corporateEmail) setFormData(formData => ({ ...formData, email: corporateEmail }));
+  }, []);
 
   const handleChange = useCallback((e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setFormData(formData => ({

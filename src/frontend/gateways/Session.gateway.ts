@@ -3,7 +3,16 @@
 
 import { v4 } from 'uuid';
 
-interface ISession {
+export interface ICorporateLogin {
+  corporateUserId: string;
+  company: string;
+  companyName: string;
+  corporateEmail: string;
+  displayName: string;
+}
+
+// Corporate login fields stay flat so the whole session can be used as OpenFeature context.
+interface ISession extends Partial<ICorporateLogin> {
   userId: string;
   currencyCode: string;
 }
@@ -27,6 +36,14 @@ const SessionGateway = () => ({
     const session = this.getSession();
 
     sessionStorage.setItem(sessionKey, JSON.stringify({ ...session, [key]: value }));
+  },
+  setCorporateLogin(login: ICorporateLogin) {
+    sessionStorage.setItem(sessionKey, JSON.stringify({ ...this.getSession(), ...login }));
+  },
+  clearCorporateLogin() {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { corporateUserId, company, companyName, corporateEmail, displayName, ...rest } = this.getSession();
+    sessionStorage.setItem(sessionKey, JSON.stringify(rest));
   },
 });
 

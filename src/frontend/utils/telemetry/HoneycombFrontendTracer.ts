@@ -15,6 +15,7 @@ import { CompositePropagator, W3CBaggagePropagator, W3CTraceContextPropagator } 
 import { getWebAutoInstrumentations } from '@opentelemetry/auto-instrumentations-web';
 import { ZoneContextManager} from '@opentelemetry/context-zone';
 import { HoneycombWebSDK, WebVitalsInstrumentation } from '@honeycombio/opentelemetry-web';
+import { SessionIdProcessor } from './SessionIdProcessor';
 
 const {
     NEXT_PUBLIC_OTEL_SERVICE_NAME = '',
@@ -63,7 +64,9 @@ const HoneycombFrontendTracer = (sessionId: string) => {
         ],
         sessionProvider: {
             getSessionId: () => sessionId
-        }
+        },
+        // adds the corporate login (app.company, app.corporate_user.id) to browser spans
+        spanProcessors: [new SessionIdProcessor()],
     });
 
     sdk.start();

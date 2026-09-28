@@ -167,7 +167,7 @@ docker-generate-protobuf:
 
 .PHONY: clean
 clean:
-	rm -rf ./src/{checkout,product-catalog}/genproto/oteldemo/
+	rm -rf ./src/{auth,checkout,product-catalog}/genproto/oteldemo/
 	rm -rf ./src/recommendation/{demo_pb2,demo_pb2_grpc}.py
 	rm -rf ./src/frontend/protos/demo.ts
 

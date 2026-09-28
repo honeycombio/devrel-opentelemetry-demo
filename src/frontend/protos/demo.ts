@@ -299,6 +299,21 @@ export interface Ad {
   text: string;
 }
 
+export interface LoginRequest {
+  email: string;
+  password: string;
+  /** "password" or "sso" */
+  method: string;
+}
+
+export interface LoginResponse {
+  corporateUserId: string;
+  company: string;
+  companyName: string;
+  email: string;
+  displayName: string;
+}
+
 export interface Flag {
   name: string;
   description: string;
@@ -4214,6 +4229,222 @@ export const Ad: MessageFns<Ad> = {
   },
 };
 
+function createBaseLoginRequest(): LoginRequest {
+  return { email: "", password: "", method: "" };
+}
+
+export const LoginRequest: MessageFns<LoginRequest> = {
+  encode(message: LoginRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.email !== "") {
+      writer.uint32(10).string(message.email);
+    }
+    if (message.password !== "") {
+      writer.uint32(18).string(message.password);
+    }
+    if (message.method !== "") {
+      writer.uint32(26).string(message.method);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): LoginRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseLoginRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.email = reader.string();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.password = reader.string();
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.method = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): LoginRequest {
+    return {
+      email: isSet(object.email) ? globalThis.String(object.email) : "",
+      password: isSet(object.password) ? globalThis.String(object.password) : "",
+      method: isSet(object.method) ? globalThis.String(object.method) : "",
+    };
+  },
+
+  toJSON(message: LoginRequest): unknown {
+    const obj: any = {};
+    if (message.email !== "") {
+      obj.email = message.email;
+    }
+    if (message.password !== "") {
+      obj.password = message.password;
+    }
+    if (message.method !== "") {
+      obj.method = message.method;
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<LoginRequest>, I>>(base?: I): LoginRequest {
+    return LoginRequest.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<LoginRequest>, I>>(object: I): LoginRequest {
+    const message = createBaseLoginRequest();
+    message.email = object.email ?? "";
+    message.password = object.password ?? "";
+    message.method = object.method ?? "";
+    return message;
+  },
+};
+
+function createBaseLoginResponse(): LoginResponse {
+  return { corporateUserId: "", company: "", companyName: "", email: "", displayName: "" };
+}
+
+export const LoginResponse: MessageFns<LoginResponse> = {
+  encode(message: LoginResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.corporateUserId !== "") {
+      writer.uint32(10).string(message.corporateUserId);
+    }
+    if (message.company !== "") {
+      writer.uint32(18).string(message.company);
+    }
+    if (message.companyName !== "") {
+      writer.uint32(26).string(message.companyName);
+    }
+    if (message.email !== "") {
+      writer.uint32(34).string(message.email);
+    }
+    if (message.displayName !== "") {
+      writer.uint32(42).string(message.displayName);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): LoginResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseLoginResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.corporateUserId = reader.string();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.company = reader.string();
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.companyName = reader.string();
+          continue;
+        }
+        case 4: {
+          if (tag !== 34) {
+            break;
+          }
+
+          message.email = reader.string();
+          continue;
+        }
+        case 5: {
+          if (tag !== 42) {
+            break;
+          }
+
+          message.displayName = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): LoginResponse {
+    return {
+      corporateUserId: isSet(object.corporateUserId) ? globalThis.String(object.corporateUserId) : "",
+      company: isSet(object.company) ? globalThis.String(object.company) : "",
+      companyName: isSet(object.companyName) ? globalThis.String(object.companyName) : "",
+      email: isSet(object.email) ? globalThis.String(object.email) : "",
+      displayName: isSet(object.displayName) ? globalThis.String(object.displayName) : "",
+    };
+  },
+
+  toJSON(message: LoginResponse): unknown {
+    const obj: any = {};
+    if (message.corporateUserId !== "") {
+      obj.corporateUserId = message.corporateUserId;
+    }
+    if (message.company !== "") {
+      obj.company = message.company;
+    }
+    if (message.companyName !== "") {
+      obj.companyName = message.companyName;
+    }
+    if (message.email !== "") {
+      obj.email = message.email;
+    }
+    if (message.displayName !== "") {
+      obj.displayName = message.displayName;
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<LoginResponse>, I>>(base?: I): LoginResponse {
+    return LoginResponse.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<LoginResponse>, I>>(object: I): LoginResponse {
+    const message = createBaseLoginResponse();
+    message.corporateUserId = object.corporateUserId ?? "";
+    message.company = object.company ?? "";
+    message.companyName = object.companyName ?? "";
+    message.email = object.email ?? "";
+    message.displayName = object.displayName ?? "";
+    return message;
+  },
+};
+
 function createBaseFlag(): Flag {
   return { name: "", description: "", enabled: false };
 }
@@ -5685,6 +5916,50 @@ export interface AdServiceClient extends Client {
 export const AdServiceClient = makeGenericClientConstructor(AdServiceService, "oteldemo.AdService") as unknown as {
   new (address: string, credentials: ChannelCredentials, options?: Partial<ClientOptions>): AdServiceClient;
   service: typeof AdServiceService;
+  serviceName: string;
+};
+
+export type AuthServiceService = typeof AuthServiceService;
+export const AuthServiceService = {
+  login: {
+    path: "/oteldemo.AuthService/Login",
+    requestStream: false,
+    responseStream: false,
+    requestSerialize: (value: LoginRequest): Buffer => Buffer.from(LoginRequest.encode(value).finish()),
+    requestDeserialize: (value: Buffer): LoginRequest => LoginRequest.decode(value),
+    responseSerialize: (value: LoginResponse): Buffer => Buffer.from(LoginResponse.encode(value).finish()),
+    responseDeserialize: (value: Buffer): LoginResponse => LoginResponse.decode(value),
+  },
+} as const;
+
+export interface AuthServiceServer extends UntypedServiceImplementation {
+  login: handleUnaryCall<LoginRequest, LoginResponse>;
+}
+
+export interface AuthServiceClient extends Client {
+  login(
+    request: LoginRequest,
+    callback: (error: ServiceError | null, response: LoginResponse) => void,
+  ): ClientUnaryCall;
+  login(
+    request: LoginRequest,
+    metadata: Metadata,
+    callback: (error: ServiceError | null, response: LoginResponse) => void,
+  ): ClientUnaryCall;
+  login(
+    request: LoginRequest,
+    metadata: Metadata,
+    options: Partial<CallOptions>,
+    callback: (error: ServiceError | null, response: LoginResponse) => void,
+  ): ClientUnaryCall;
+}
+
+export const AuthServiceClient = makeGenericClientConstructor(
+  AuthServiceService,
+  "oteldemo.AuthService",
+) as unknown as {
+  new (address: string, credentials: ChannelCredentials, options?: Partial<ClientOptions>): AuthServiceClient;
+  service: typeof AuthServiceService;
   serviceName: string;
 };
 

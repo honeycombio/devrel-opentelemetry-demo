@@ -33,6 +33,8 @@ components:
     envOverrides:
       - name: PRODUCT_REVIEWS_ADDR
         value: product-reviews:3551
+      - name: AUTH_ADDR
+        value: auth:8080
       - name: ACCOUNTING_ADDR
         value: accounting:5060
   postgresql:

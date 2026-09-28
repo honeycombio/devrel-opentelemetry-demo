@@ -58,6 +58,12 @@ export class OtelServices extends pulumi.ComponentResource {
                         tag: `${args.config.containerTag}-telemetry-docs`,
                     },
                 },
+                auth: {
+                    enabled: true,
+                    image: {
+                        tag: `${args.config.containerTag}-auth`,
+                    },
+                },
                 // product-reviews and llm are deployed directly by Pulumi in oteldemo.ts
                 productReviews: { enabled: false },
                 llm: { enabled: false },

@@ -1399,6 +1399,84 @@ class AdService(object):
             _registered_method=True)
 
 
+class AuthServiceStub(object):
+    """------------Auth service------------------
+
+    """
+
+    def __init__(self, channel):
+        """Constructor.
+
+        Args:
+            channel: A grpc.Channel.
+        """
+        self.Login = channel.unary_unary(
+                '/oteldemo.AuthService/Login',
+                request_serializer=demo__pb2.LoginRequest.SerializeToString,
+                response_deserializer=demo__pb2.LoginResponse.FromString,
+                _registered_method=True)
+
+
+class AuthServiceServicer(object):
+    """------------Auth service------------------
+
+    """
+
+    def Login(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+
+def add_AuthServiceServicer_to_server(servicer, server):
+    rpc_method_handlers = {
+            'Login': grpc.unary_unary_rpc_method_handler(
+                    servicer.Login,
+                    request_deserializer=demo__pb2.LoginRequest.FromString,
+                    response_serializer=demo__pb2.LoginResponse.SerializeToString,
+            ),
+    }
+    generic_handler = grpc.method_handlers_generic_handler(
+            'oteldemo.AuthService', rpc_method_handlers)
+    server.add_generic_rpc_handlers((generic_handler,))
+    server.add_registered_method_handlers('oteldemo.AuthService', rpc_method_handlers)
+
+
+ # This class is part of an EXPERIMENTAL API.
+class AuthService(object):
+    """------------Auth service------------------
+
+    """
+
+    @staticmethod
+    def Login(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/oteldemo.AuthService/Login',
+            demo__pb2.LoginRequest.SerializeToString,
+            demo__pb2.LoginResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+
 class FeatureFlagServiceStub(object):
     """------------Feature flag service------------------
 

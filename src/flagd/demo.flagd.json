@@ -1,6 +1,24 @@
 {
   "$schema": "https://flagd.dev/schema/v0/flags.json",
   "flags": {
+    "frontend.login-link": {
+      "description": "Show the corporate login link in the header",
+      "state": "ENABLED",
+      "variants": {
+        "on": true,
+        "off": false
+      },
+      "defaultVariant": "on"
+    },
+    "auth.login-audit-log": {
+      "description": "Record login attempts in the auth.login_event table",
+      "state": "ENABLED",
+      "variants": {
+        "on": true,
+        "off": false
+      },
+      "defaultVariant": "on"
+    },
     "llmInaccurateResponse": {
       "defaultVariant": "off",
       "description": "LLM returns an inaccurate product summary for product ID L9ECAV7KIM",

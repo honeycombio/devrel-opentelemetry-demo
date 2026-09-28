@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { NextApiHandler } from 'next';
-import {context, Exception, Span, SpanStatusCode, trace} from '@opentelemetry/api';
+import {context, Exception, propagation, Span, SpanStatusCode, trace} from '@opentelemetry/api';
 import { SemanticAttributes } from '@opentelemetry/semantic-conventions';
 import { metrics } from '@opentelemetry/api';
 
@@ -18,6 +18,13 @@ const InstrumentationMiddleware = (handler: NextApiHandler): NextApiHandler => {
     const startTime = Date.now();
 
     const span = trace.getSpan(context.active()) as Span;
+
+    // The browser sends the corporate login as baggage; put it on the server span too.
+    const baggage = propagation.getActiveBaggage();
+    for (const key of ['app.corporate_user.id', 'app.company']) {
+      const value = baggage?.getEntry(key)?.value;
+      if (value) span?.setAttribute(key, value);
+    }
 
     // Log request initiation
     logger.info({

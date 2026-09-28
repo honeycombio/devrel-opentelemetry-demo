@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-import { Ad, Address, Cart, CartItem, Money, PlaceOrderRequest, Product, ProductReview } from '../protos/demo';
+import { Ad, Address, Cart, CartItem, LoginResponse, Money, PlaceOrderRequest, Product, ProductReview } from '../protos/demo';
 import { IProductCart, IProductCartItem, IProductCheckout } from '../types/Cart';
 import request from '../utils/Request';
 import { AttributeNames } from '../utils/enums/AttributeNames';
@@ -9,6 +9,8 @@ import SessionGateway from './Session.gateway';
 import { context, propagation } from "@opentelemetry/api";
 
 const { userId } = SessionGateway.getSession();
+
+type ILoginResult = { ok: true; login: LoginResponse } | { ok: false; error: string };
 
 const basePath = '/api';
 
@@ -100,6 +102,16 @@ const Apis = () => ({
       },
     });
   },
+  async login(email: string, password: string, method: 'password' | 'sso'): Promise<ILoginResult> {
+    const response = await fetch(`${basePath}/login`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ email, password, method }),
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) return { ok: false, error: data.error || `Login failed (${response.status})` };
+    return { ok: true, login: data as LoginResponse };
+  },
   listAds(contextKeys: string[]) {
     return request<Ad[]>({
       url: `${basePath}/data`,
@@ -124,7 +136,13 @@ const ApiGateway = new Proxy(Apis(), {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return function (...args: any[]) {
       const baggage = propagation.getActiveBaggage() || propagation.createBaggage();
-      const newBaggage = baggage.setEntry(AttributeNames.SESSION_ID, { value: userId });
+      let newBaggage = baggage.setEntry(AttributeNames.SESSION_ID, { value: userId });
+      const { corporateUserId, company } = SessionGateway.getSession();
+      if (corporateUserId && company) {
+        newBaggage = newBaggage
+          .setEntry(AttributeNames.CORPORATE_USER_ID, { value: corporateUserId })
+          .setEntry(AttributeNames.COMPANY, { value: company });
+      }
       const newContext = propagation.setBaggage(context.active(), newBaggage);
       return context.with(newContext, () => {
         return Reflect.apply(originalFunction, undefined, args);
