@@ -161,7 +161,7 @@ this section is how we build it. Decisions made in that Q&A:
 | IdP host | `sso.keystone-id.example` (a fictional IdP vendor; tenant in the path) |
 | Globex status host | `sso-status.globex.example` |
 | Default status URL | `https://sso-status.<company-domain>/v1/users/<corporate_user_id>` |
-| Blackhole | `192.0.2.1` for every non-Globex SSO tenant's `sso-status.<domain>` |
+| Blackhole | `192.0.2.<n>`, one address per non-Globex SSO tenant's `sso-status.<domain>` (k8s keys hostAliases by ip; built 2026-09-28) |
 | New fields | `app.corporate_user.id`, `app.company` (slug, e.g. `globex`); `app.user.id` untouched |
 | Flags | `auth.user-status-check` (targeted), `auth.login-audit-log`, `frontend.login-link` |
 
