@@ -17,6 +17,21 @@ quietly() {
     fi
 }
 
+# Print one output of a Pulumi stack. Like quietly: stderr is hidden unless it fails.
+# Use as VAR=$(stack_output <stack> <name>); under set -e a failure stops ./run.
+stack_output() {
+    local errfile value
+    errfile=$(mktemp)
+    if ! value=$(pulumi stack output -s "$1" "$2" 2>"$errfile"); then
+        cat "$errfile" >&2
+        rm -f "$errfile"
+        echo "Error: couldn't read '$2' from Pulumi stack $1. (Logged out? Try: pulumi login)" >&2
+        exit 1
+    fi
+    rm -f "$errfile"
+    echo "$value"
+}
+
 # Source .skaffold.env file if it exists
 if [[ -f .skaffold.env ]]; then
     set -a
@@ -81,19 +96,19 @@ fi
 # Get container registry from Pulumi stack output based on cloud provider
 if [[ "$CLOUD_PROVIDER" == "aws" ]]; then
     echo "Using AWS configuration"
-    CONTAINER_REGISTRY=$(pulumi stack output -s honeycomb-devrel/infra-aws/prod ecrRepositoryUrlPrefix 2>/dev/null)
+    CONTAINER_REGISTRY=$(stack_output honeycomb-devrel/infra-aws/prod ecrRepositoryUrlPrefix)
     echo "Logging in to ECR, because it's so annoying when we forget."
     quietly scripts/login-ecr.sh
 
     # Pull Bedrock inference profiles + local-dev IAM role from the shared infra stack.
-    BEDROCK_HAIKU_PROFILE_ARN=$(pulumi stack output -s honeycomb-devrel/infra-aws/prod bedrockClaudeHaikuProfileArn 2>/dev/null)
-    BEDROCK_AWS_REGION=$(pulumi stack output -s honeycomb-devrel/infra-aws/prod clusterRegion 2>/dev/null)
+    BEDROCK_HAIKU_PROFILE_ARN=$(stack_output honeycomb-devrel/infra-aws/prod bedrockClaudeHaikuProfileArn)
+    BEDROCK_AWS_REGION=$(stack_output honeycomb-devrel/infra-aws/prod clusterRegion)
     # TODO: source from infra stack once outputs land. Hardcoded for local testing.
     BEDROCK_NOVA_LITE_PROFILE_ARN="arn:aws:bedrock:eu-west-1:657166037864:inference-profile/eu.amazon.nova-2-lite-v1:0"
     BEDROCK_NOVA_MICRO_PROFILE_ARN="arn:aws:bedrock:eu-west-1:657166037864:inference-profile/eu.amazon.nova-micro-v1:0"
 elif [[ "$CLOUD_PROVIDER" == "azure" ]]; then
     echo "Using Azure configuration"
-    CONTAINER_REGISTRY=$(pulumi stack output -s honeycomb-devrel/infra-azure/prod acrName 2>/dev/null)
+    CONTAINER_REGISTRY=$(stack_output honeycomb-devrel/infra-azure/prod acrName)
     echo "Logging in to ACR, because it's so annoying when we forget."
     quietly scripts/login-acr.sh
     DOMAINNAME="zurelia.honeydemo.io"
