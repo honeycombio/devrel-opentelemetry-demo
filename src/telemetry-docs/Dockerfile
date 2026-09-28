@@ -33,7 +33,8 @@ FROM python:3.14-slim-bookworm AS site-builder
 
 WORKDIR /app
 
-RUN pip install --no-cache-dir mkdocs mkdocs-material
+# Pinned so pip can't backtrack to ancient versions when PyPI is slow.
+RUN pip install --no-cache-dir mkdocs==1.6.1 mkdocs-material==9.7.7
 
 COPY src/telemetry-docs/mkdocs.yml /app/mkdocs-base.yml
 COPY --from=registry-builder /workspace/docs /app/docs
