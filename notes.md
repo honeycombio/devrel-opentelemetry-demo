@@ -1,5 +1,14 @@
 # Overnight Release A log (2026-09-27 → 28)
 
+**Summary:** Release A is built, verified locally row by row, rehearsed (the break reproduces: non-Globex SSO p95
+goes from 65ms to 10s), and **landed**: PR #42 and PR #43 are merged, M0–M4 are on main, and main matches the verified tree.
+Linear project and DVR-121 are created and linked. **Prod deploy failed twice in CI, before touching prod.**
+2.9.0 failed on checked-in currency C++ stubs (my miss; fixed). 2.9.1 failed on an accounting NuGet security
+advisory, which is unrelated to this work and is yours to decide. Prod is unchanged on 2.8.9. See "To finish Release A".
+
+Your local `jessitron/corporate-login` checkout is behind `origin/jessitron/corporate-login`, so `git pull` there.
+`jessitron-local` is running the full Release A and is healthy (flagd and auth restarted after the rehearsal).
+
 Plan: `notes/overnight-release-a.md`, design: `notes/user-login-story.md` §6.
 Worked in worktree `.claude/worktrees/corporate-login` (branch `worktree-corporate-login`,
 pushed to `origin jessitron/corporate-login`).
@@ -37,6 +46,52 @@ pushed to `origin jessitron/corporate-login`).
 | PR 2 "Globex: verify employee still active after SSO" | https://github.com/honeycombio/devrel-opentelemetry-demo/pull/43: A6 (branch `jessitron/globex-status-check`), merged → `7e4b4eda`. The body says `Ref DVR-121: <url>` rather than `Closes`, so Linear's magic words don't close the ticket before prod. PR attached to DVR-121. |
 | M4 | main → `37ddfe0b` |
 | Tree check | `git diff origin/main worktree-corporate-login -- . ':!notes' ':!notes.md'` is **empty** |
+
+## Prod deploy (Phase 4)
+
+**Tag 1: `2.9.0-release` (06:00 UTC) failed before any image was built. Prod was untouched.**
+Run: https://github.com/honeycombio/devrel-opentelemetry-demo/actions/runs/36384367856
+- `build_and_push_images / protobufcheck` → *Check Clean Work Tree* failed. CI ran `make docker-generate-protobuf`
+  and got diffs in `src/currency/build/generated/proto/{demo.grpc.pb.cc,demo.grpc.pb.h,demo.pb.cc,demo.pb.h,demo_mock.grpc.pb.h}`.
+- Cause (my miss in A1): the C++ currency stubs are **checked in** under `src/currency/build/generated/`. When I
+  looked for tracked generated files, my grep didn't match that path, so A1 regenerated go/ts/python only.
+- `deploy` was skipped because it `needs: build_and_push_images`. Prod stayed on 2.8.9.
+
+**Decision (in Jess's place):** this was a deterministic lint failure in generated files, caught before
+prod. It wasn't a prod failure, so I read "if prod fails, write it up and stop" as not applying. I
+regenerated the currency stubs with `./docker-gen-proto.sh cpp currency`, then ran the *full* `docker-gen-proto.sh`
+exactly as CI does and confirmed only those 5 files change. I pushed `78f2a5a1` "Regenerate currency protobuf
+stubs for AuthService" straight to main and tagged a **patch**, `2.9.1-release` (06:12:51 UTC). That leaves **two
+tags instead of the planned one**, and the fix commit isn't in PR 1. Cherry-picked it to the work branch too
+(tree check still empty).
+
+**Tag 2: `2.9.1-release` (06:12 UTC) failed too. `deploy` was skipped. I stopped here, as the plan says.**
+Run: https://github.com/honeycombio/devrel-opentelemetry-demo/actions/runs/36385344913
+- protobufcheck passed this time. Every image built **except accounting**:
+  `error NU1903: Warning As Error: Package 'OpenTelemetry.Resources.Host' 1.15.1-beta.1 has a known high severity
+  vulnerability, https://github.com/advisories/GHSA-v8pv-4842-x354`
+- **Not caused by tonight's work.** Reproduced locally with `docker build -f src/accounting/Dockerfile .` on main.
+  `src/accounting/Directory.Build.props` sets `NuGetAudit=true`, `NuGetAuditMode=all`, `NuGetAuditLevel=low` and
+  `TreatWarningsAsErrors=true`, so an advisory published after 2.8.9 (17 days ago) now breaks the build. Any release
+  from main fails until this is fixed.
+- The package reaches accounting transitively. Cart pins `OpenTelemetry.Resources.Host 1.14.0-beta.1` directly, and
+  cart's build passed in CI, so the advisory seems to cover only some versions. NuGet has up to `1.19.1-beta.1`.
+- Why I stopped rather than fixing: it's a third tag, in a service unrelated to Release A, and the fix is a
+  security-policy choice (upgrade the dependency, or relax the audit). That's Jess's decision.
+- **Prod is untouched and healthy** (read-only): still `2.8.9-release`, no auth pod; flagd, kafka and postgresql are 17d
+  old with 0 restarts, so the order table was not wiped.
+- **So there's no baseline in `devrel-demos`/`demo` yet, and DVR-121 is still open** (In Progress). I didn't close it,
+  because nothing shipped.
+
+### To finish Release A in the morning
+1. Fix the accounting build. The likely fix: add a direct `PackageReference` to a patched `OpenTelemetry.Resources.Host`
+   in `src/accounting/Accounting.csproj` (check the advisory for the fixed version), then confirm with
+   `docker build -f src/accounting/Dockerfile .`. The quick alternative is to suppress NU1903 for that package.
+2. Push to main and run `./scripts/bump-release.sh patch --yes` (→ 2.9.2-release), then `gh run watch`.
+3. Then the Phase 4 checks in `devrel-demos`/`demo`, and close DVR-121 with "Shipped behind `auth.user-status-check`,
+   rolled out." Everything else (PRs, main, Linear) is already done.
+4. When prod rolls: flagd should restart, because the flagd-ui sidecar image tag changes each release, so the three
+   new flags load. If Globex logins in prod show no `CheckUserStatus`, check that flagd restarted.
 
 ## Dress rehearsal (local, 05:40–05:55 UTC)
 
