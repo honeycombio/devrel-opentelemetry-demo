@@ -13,7 +13,7 @@ MESSAGE="${1:?usage: create-local-deploy-marker.sh <message>}"
 
 PAYLOAD=$(jq -n --arg message "$MESSAGE" '{message: $message, type: "deploy"}')
 
-curl -sS --fail-with-body -X POST "https://api.honeycomb.io/1/markers/__all__" \
+curl -sS --fail-with-body --connect-timeout 5 --max-time 15 -X POST "https://api.honeycomb.io/1/markers/__all__" \
   -H "X-Honeycomb-Team: $HONEYCOMB_MARKERS_API_KEY" \
   -H "Content-Type: application/json" \
   -d "$PAYLOAD"
