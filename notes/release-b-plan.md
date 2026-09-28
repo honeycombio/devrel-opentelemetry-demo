@@ -5,13 +5,13 @@
 
 ## What's ready
 
-| Thing | State |
-|---|---|
-| Code | Branch **`jessitron/remove-stale-flags`**, one commit `3436f360 Remove stale feature flags`, on `origin/main` (`b02735c0`). Local only, **not pushed**. |
-| Diff | `src/auth/login.go` (status check unconditional), `src/auth/audit.go` (always audit), `src/frontend/components/Header/Header.tsx` (login link always shown), `src/flagd/demo.flagd.json` (three entries gone). 4 files, +7 −43. |
-| Linear | **DVR-122** "Remove stale feature flags", Todo, Astronomy Shop, assigned to Jess: https://linear.app/honeycombio/issue/DVR-122/remove-stale-feature-flags |
-| Local rehearsal | Deployed 2026-09-28 17:59Z. Non-Globex SSO Login p50/p95 **10.04s / 10.06s**; Globex SSO p95 127ms; password p95 64ms; overall p95 118ms → **10.06s**. `CheckUserStatus`: `result=error`, `enforced=false`, p95 10.00s. (That rehearsal predates `4c5525ea`, which dropped the redundant `fail_open` attribute.) |
-| Switch local back and forth | `scripts/login-story-local.sh broken \| healthy \| status` |
+| Thing                       | State                                                                                                                                                                                                                                                                                                            |
+| --------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Code                        | Branch **`jessitron/remove-stale-flags`**, one commit `3436f360 Remove stale feature flags`, on `origin/main` (`b02735c0`). Local only, **not pushed**.                                                                                                                                                          |
+| Diff                        | `src/auth/login.go` (status check unconditional), `src/auth/audit.go` (always audit), `src/frontend/components/Header/Header.tsx` (login link always shown), `src/flagd/demo.flagd.json` (three entries gone). 4 files, +7 −43.                                                                                  |
+| Linear                      | **DVR-122** "Remove stale feature flags", Todo, Astronomy Shop, assigned to Jess: https://linear.app/honeycombio/issue/DVR-122/remove-stale-feature-flags                                                                                                                                                        |
+| Local rehearsal             | Deployed 2026-09-28 17:59Z. Non-Globex SSO Login p50/p95 **10.04s / 10.06s**; Globex SSO p95 127ms; password p95 64ms; overall p95 118ms → **10.06s**. `CheckUserStatus`: `result=error`, `enforced=false`, p95 10.00s. (That rehearsal predates `4c5525ea`, which dropped the redundant `fail_open` attribute.) |
+| Switch local back and forth | `scripts/login-story-local.sh broken \| healthy \| status`                                                                                                                                                                                                                                                       |
 
 ## Before Release B (don't skip, the demo depends on it)
 
@@ -91,6 +91,7 @@ If a job flakes (telemetry-docs/PyPI did last time), rerun the failed jobs; don'
 Check the pod: `AWS_PROFILE=really-devrel-sandbox kubectl --context devrel-demo-aws -n devrel-demo get pods -l app.kubernetes.io/name=auth`
 
 Queries (auth dataset, from the deploy marker onward):
+
 - Login latency: `COUNT, P50(duration_ms), P95(duration_ms)` where `name = oteldemo.AuthService/Login`, by
   `app.auth.method` and `app.company`. Expect non-Globex SSO around 10s; Globex and password unchanged.
 - The cause: `COUNT, P95(duration_ms)` where `name = CheckUserStatus`, by `app.auth.status_check.result`,
@@ -107,9 +108,14 @@ DVR-122 → **Done**, comment: "Removed; shipped in <version>." Link the PR if i
 
 ### 7. Set up the demo
 
-- Open the incident (from the trigger) and start a Canvas on it.
-- Check the connectors can see: Linear DVR-121 and DVR-122 in Astronomy Shop, GitHub PRs #43 and PR 3 (probably #44 or later) and
-  their diffs.
+Human does this:
+
+- check that the incident is open in incident.io. Make sure it has a severity.
+- Check the connectors can see: Linear DVR-121 and DVR-122 in Astronomy Shop, GitHub PRs #43 and PR 3 (probably #44 or later) and their diffs. And the incident. And the skills, one for Login Latency and one for "Was it me?" (private)
+- Open the automatic investigation canvas.
+- start recording; show that an automatic investigation is happening.
+- start a new page.
+- Ask the agent whether this could be caused by the change I just merged to main.
 - Try the payoff prompt: "Check on the latest changes I made — could they have caused this?"
 
 ## If something goes wrong
