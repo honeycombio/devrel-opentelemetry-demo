@@ -1,0 +1,19 @@
+#!/bin/bash
+# Deploys to kenrimple-local with the S3 telemetry export on and agentic load off.
+# Bucket and region come from .skaffold.env (TELEMETRY_S3_BUCKET, TELEMETRY_S3_REGION).
+# Extra service names are added to the build list.
+#
+# Collector endpoint for the iOS app:
+#   https://kenrimple-local.aurelia.honeydemo.io/otlp-http
+
+set -e
+cd "$(dirname "$0")"
+
+source .skaffold.env
+
+if [ -z "$TELEMETRY_S3_BUCKET" ]; then
+  echo "TELEMETRY_S3_BUCKET is not set in .skaffold.env. The export would be off." >&2
+  exit 1
+fi
+
+AWS_PROFILE=devrel-sandbox ./run --load-profile non-agentic otelcollector frontend frontendproxy "$@"
