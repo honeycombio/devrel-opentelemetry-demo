@@ -286,6 +286,42 @@ def random_email() -> str:
     auto cache writes a larger prefix to Bedrock every turn."""
     return f"loadgen-{uuid.uuid4().hex[:12]}@aurelia.honeydemo.io"
 
+# Card networks the loadgen checks out with: (name, number prefixes, length, weight).
+# The payment service only accepts visa and mastercard, so the rest are
+# declined there -- a realistic slice of failed checkouts.
+CARD_NETWORKS = [
+    ("visa", ["4"], 16, 50),
+    ("mastercard", ["51", "52", "53", "54", "55", "2221", "2720"], 16, 35),
+    ("amex", ["34", "37"], 15, 10),
+    ("discover", ["6011", "65"], 16, 5),
+]
+
+
+def random_card_number() -> str:
+    """A Luhn-valid card number on a randomly chosen network."""
+    _, prefixes, length, _ = random.choices(CARD_NETWORKS, weights=[n[3] for n in CARD_NETWORKS])[0]
+    digits = [int(d) for d in random.choice(prefixes)]
+    while len(digits) < length - 1:
+        digits.append(random.randint(0, 9))
+    # Luhn check digit: the digits double starting from the rightmost one now, since the check digit goes after.
+    total = 0
+    for i, d in enumerate(reversed(digits)):
+        if i % 2 == 0:
+            d = d * 2
+            if d > 9:
+                d -= 9
+        total += d
+    digits.append((10 - total % 10) % 10)
+    return "".join(str(d) for d in digits)
+
+
+def make_checkout_person(user: str, email: str) -> dict:
+    """A random person from people.json, paying with a card from a random network."""
+    person = {**random.choice(people), "userId": user, "email": email}
+    person["creditCard"] = {**person["creditCard"], "creditCardNumber": random_card_number()}
+    return person
+
+
 # Per-user cooldown on the AI tasks (ask_product_ai_assistant and
 # ask_store_chat). With Locust's wait_time=between(1,10) and the current
 # weighted task mix, a weight-1 task is naturally selected once every
@@ -427,7 +463,7 @@ class WebsiteUser(HttpUser):
                 "item": {"productId": product, "quantity": quantity},
                 "userId": user,
             })
-        checkout_person = {**random.choice(people), "userId": user, "email": email}
+        checkout_person = make_checkout_person(user, email)
         self.client.post("/api/checkout", json=checkout_person)
 
     @task(1)
@@ -632,7 +668,7 @@ class WebsiteUser(HttpUser):
         user = str(uuid.uuid1())
         with self.tracer.start_as_current_span("user_checkout_single", context=Context(), attributes={"user.id": user}):
             self.add_to_cart(user=user)
-            checkout_person = {**random.choice(people), "userId": user, "email": random_email()}
+            checkout_person = make_checkout_person(user, random_email())
             self.client.post("/api/checkout", json=checkout_person)
             logging.info(f"Checkout completed for user {user}")
 
@@ -644,7 +680,7 @@ class WebsiteUser(HttpUser):
                                             attributes={"user.id": user, "item.count": item_count}):
             for i in range(item_count):
                 self.add_to_cart(user=user)
-            checkout_person = {**random.choice(people), "userId": user, "email": random_email()}
+            checkout_person = make_checkout_person(user, random_email())
             self.client.post("/api/checkout", json=checkout_person)
             logging.info(f"Multi-item checkout completed for user {user}")
 
