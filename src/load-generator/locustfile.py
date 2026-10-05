@@ -308,8 +308,15 @@ CARD_NETWORKS = [
 
 
 def random_card_number() -> str:
-    """A Luhn-valid card number on a randomly chosen network."""
-    _, prefixes, length, _ = random.choices(CARD_NETWORKS, weights=[n[3] for n in CARD_NETWORKS])[0]
+    """A Luhn-valid card number on a randomly chosen network.
+
+    2-series mastercards are only sent when frontendAllowsMastercard2Series is on:
+    it simulates the frontend being fixed to let them through, while payment's
+    validator bug (see CARD_NETWORKS) is not."""
+    networks = CARD_NETWORKS
+    if get_flagd_value("frontendAllowsMastercard2Series") <= 0:
+        networks = [n for n in CARD_NETWORKS if n[0] != "mastercard_2series"]
+    _, prefixes, length, _ = random.choices(networks, weights=[n[3] for n in networks])[0]
     digits = [int(d) for d in random.choice(prefixes)]
     while len(digits) < length - 1:
         digits.append(random.randint(0, 9))
