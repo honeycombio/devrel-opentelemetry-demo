@@ -120,6 +120,60 @@ This version gets the cluster-level collector data, with kubernetes events. This
 
 The k8s namespace for this one is devrel-demo.
 
+## Demo stories
+
+Some scenarios in this repo are stories: real code, shipped through ordinary PRs and releases, that behaves
+badly in production. There is no feature flag that turns on a pathology. The point is to have a genuine incident in
+Honeycomb for people and agents to investigate.
+
+### Slow login (Canvas Connectors)
+
+Shows an incident being traced back to a recent code change, using the Linear, GitHub and incident.io connectors in a
+Honeycomb Canvas.
+
+**The setup (on `main`):**
+
+- The `auth` service and the frontend Login link ([PR #42](https://github.com/honeycombio/devrel-opentelemetry-demo/pull/42)).
+  Login is optional; checkout and loadgen don't need it. Corporate accounts sign in with a password or through a mocked
+  SSO provider (`sso-mocks`).
+- Our biggest customer, Globex, asked for a post-SSO check that the employee is still current
+  ([PR #43](https://github.com/honeycombio/devrel-opentelemetry-demo/pull/43), Linear DVR-121). It shipped behind the
+  flagd flag `auth.user-status-check`, targeted at Globex only. Tenants that haven't configured a status URL get
+  `https://sso-status.<company-domain>/v1/users/<id>` by default, which is unreachable for every tenant except Globex.
+  Only Globex has `enforce = true`, so for everyone else the check fails open: the login succeeds, after a 10s timeout.
+
+**The trigger:** [PR #44, "Remove stale feature flags"](https://github.com/honeycombio/devrel-opentelemetry-demo/pull/44)
+(Linear DVR-122). It looks like routine cleanup, but it deletes the Globex targeting, so the status check runs for
+every SSO login. Once the release containing it is live (`2.9.3-release` was the first), non-Globex SSO logins take
+about 10s longer. Password logins and Globex are unaffected.
+
+**What you see in Honeycomb** (auth dataset, after the deploy marker):
+
+- `oteldemo.AuthService/Login`: P95 `duration_ms` goes from about 130ms to about 10s, grouped by `app.auth.method` and
+  `app.company`. About 40% of logins are affected, and login volume drops because loadgen users block.
+- `CheckUserStatus` spans: `app.auth.status_check.result = error`, `app.auth.status_check.enforced = false`, P95 about
+  10s. Use `parent.app.company` to group by company.
+- The Honeycomb trigger "Login latency check" (P95 of Login `duration_ms` > 500) sends a webhook to incident.io, which
+  opens an incident within a couple of 5-minute evaluations.
+
+**Current state:** PR #44 was reverted on `main` (`43de817b`), so `main` is healthy: the flag and its Globex
+targeting are back. `2.9.3-release` shipped the broken version once, for the first recording.
+
+**To trigger it (for example, to record another video):**
+
+1. Let prod run healthy for a while, so the Canvas has a boring "before". (If the release running in prod still includes
+   PR #44, first release the revert, or redeploy an older version with the `deploy-with-version.yml` workflow.)
+2. Revert the revert on `main` (`git revert 43de817b`, ideally through a PR titled like the original, "Remove stale
+   feature flags"), then cut a release: `./scripts/bump-release.sh patch --yes`. The incident starts as soon as the new
+   `auth` pod is live; the code no longer asks flagd, so nothing else is needed.
+3. Check the incident is open in incident.io with a severity, and that the connectors can see Linear DVR-121 and
+   DVR-122, GitHub PRs #43 and #44 with their diffs, and the incident. Then open the Canvas and ask "Check on the latest
+   changes I made. Could they have caused this?"
+
+To put it back, release the revert again, or run `deploy-with-version.yml` with the previous version (no rebuild).
+
+To try it locally, deploy with `./run auth frontend sso-mocks` from a commit with or without PR #44's change.
+
 ## Iteration
 
 We can deploy from local to the cluster in a new namespace, using `skaffold`
