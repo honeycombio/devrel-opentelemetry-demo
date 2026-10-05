@@ -215,9 +215,21 @@ flag changes also post a Honeycomb marker).
 
 - flagd copies the flag file out of its ConfigMap only when the pod starts. After a deploy that adds or changes a
   flag, restart flagd (`kubectl -n <namespace> rollout restart deploy/flagd`) or the flag won't appear in flagd-ui.
-  This was verified on a local deploy; check it in `devrel-demo` before relying on it.
+  A release to `devrel-demo` restarts flagd as part of the deploy (verified with `2.9.5-release`), so the flag is there
+  without a manual restart.
 - Telemetry from `*-local` namespaces goes to a different Honeycomb team than the SLOs above, so a local run
   won't move them.
+
+**Current state:** first shipped in `2.9.5-release`, with the flag off. Prod showed Visa-only cards before it; the full
+network mix appears a few minutes after the new loadgen pods start.
+
+**Not done yet:**
+
+- Flip the flag in prod and confirm Checkout Availability's burn alerts (and the `#general` exhaustion alert) behave as
+  hoped. If 10% failures is too loud or too quiet, tune the `mastercard_2series` weight in `CARD_NETWORKS`.
+- flagd-ui flag changes post a Honeycomb marker, which can give away a blind scenario. A per-flag skip in the
+  collector's flag-change pipeline (`skaffold-config/demo-values.yaml` and
+  `deploy/config-files/collector/values-daemonset.yaml`) would fix that; not looked at in detail yet.
 
 ## Iteration
 

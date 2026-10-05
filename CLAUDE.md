@@ -40,6 +40,8 @@ are for the **production cluster** (`devrel-demo` namespace on EKS) only.
 
 ### Common issues
 
+- **`./run` fails with "Ingest key is not set"**: `HONEYCOMB_API_KEY` isn't in the environment. Jess's key lives in `.be`, but **don't `source .be`** — it also runs `k config use-context devrel-demo-aws` (prod). Export just the key: `eval "$(grep '^export HONEYCOMB_API_KEY=' .be)"`, then `./run ...`.
+- **A new/changed flagd flag doesn't show up in flagd-ui after `./run`**: flagd's init container copies `src/flagd/demo.flagd.json` out of the `flagd-custom-config` ConfigMap only at pod start. Run `kubectl -n <you>-local rollout restart deploy/flagd` (this resets hand-flipped flags to the file's defaults). A prod release restarts flagd as part of the deploy, so no manual step there.
 - **Multiple skaffold processes**: If previous runs are still alive (holding port-forwards), kill them before starting a new run. Check with `ps aux | grep skaffold`.
 - **AWS credentials**: The script sources `.skaffold.env` which sets `AWS_PROFILE=devrel-sandbox`. If running in a context where env vars aren't inherited, pass `AWS_PROFILE=devrel-sandbox` explicitly.
 - **Docker must be running**: Skaffold uses Docker to build images. Start Docker before running.
@@ -81,6 +83,14 @@ at decision time; spans that arrive afterwards show up with
 ## Cutting a release (deploying to devrel-demo/prod)
 
 See `devrel-README.md` → "Deploy to devrel-demo" for the full writeup. Short version: `./scripts/bump-release.sh patch` tags and pushes, which triggers `.github/workflows/release-devrel.yml` to build images _and_ deploy to the `prod-aws` Pulumi stack automatically — no manual `pulumi up` needed. To redeploy an existing version without rebuilding, use the `deploy-with-version.yml` workflow instead.
+
+If a release run's jobs get cancelled or fail without running any steps (check https://www.githubstatus.com for an Actions incident), the runners were starved, not the code. When the run ends, `gh run rerun <run-id> --failed` retries only the failed/cancelled jobs, and `deploy` runs once they pass. Repeat until it succeeds (2.9.5 took two retries).
+
+## Load generator and flags
+
+The loadgen (`src/load-generator/locustfile.py`) reads flagd over OFREP on every use (`get_flagd_value`, no caching), so a flag flip takes effect on its next task. Its checkouts use generated Luhn-valid cards from several networks (`CARD_NETWORKS`); see the "Mastercard 2-series" story in `devrel-README.md`. Payment's card validator (`simple-card-validator` 1.1.0) mis-types 2-series Mastercards as `unknown`/invalid — that is a deliberate, kept bug, not something to fix. Loadgen traces have root span `ingress` from `frontend-proxy` (not `user_checkout_*`), so filter on `root.service.name = frontend-proxy` to isolate them from browser traffic.
+
+Local telemetry (`modernity` / `devrel-demo--local-`) and the shared prod demo (`devrel-demos` / `demo`) are different Honeycomb teams, and the SLOs (e.g. Checkout Availability) live in the prod one, so a local run never moves them.
 
 ## Querying telemetry from the local cluster
 
