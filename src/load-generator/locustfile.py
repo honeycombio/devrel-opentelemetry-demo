@@ -287,15 +287,21 @@ def random_email() -> str:
     return f"loadgen-{uuid.uuid4().hex[:12]}@aurelia.honeydemo.io"
 
 # Card networks the loadgen checks out with: (name, number prefixes, length, weight).
-# The payment service only accepts visa and mastercard, so the rest are
-# declined there -- a realistic slice of failed checkouts.
+# Payment accepts every network it recognises, so these all charge --
+# except the deliberate bug below.
 #
 # Prefixes are chosen so simple-card-validator (in payment) names the network we
-# intend: it doesn't know 2-series mastercards (they'd be "unknown", hence invalid),
-# types 4026/4508/4844/4913/4917/417500 as visa_electron, and 652150-653149 as rupay.
+# intend: it types 4026/4508/4844/4913/4917/417500 as visa_electron and
+# 652150-653149 as rupay, so we steer around those.
+#
+# DELIBERATE BUG: "mastercard_2series" are real Mastercards (2221-2720 BIN range,
+# issued since 2017) that simple-card-validator doesn't know. It types them
+# "unknown" and declares them invalid, so payment rejects them with "Credit card
+# info is invalid" even though they pass Luhn. Keep them -- they're a story.
 CARD_NETWORKS = [
     ("visa", ["42", "43", "46"], 16, 50),
-    ("mastercard", ["51", "52", "53", "54", "55"], 16, 35),
+    ("mastercard", ["51", "52", "53", "54", "55"], 16, 25),
+    ("mastercard_2series", ["2221", "2300", "2500", "2720"], 16, 10),
     ("amex", ["34", "37"], 15, 10),
     ("discover", ["6011"], 16, 5),
 ]
