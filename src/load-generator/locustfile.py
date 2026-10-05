@@ -289,11 +289,15 @@ def random_email() -> str:
 # Card networks the loadgen checks out with: (name, number prefixes, length, weight).
 # The payment service only accepts visa and mastercard, so the rest are
 # declined there -- a realistic slice of failed checkouts.
+#
+# Prefixes are chosen so simple-card-validator (in payment) names the network we
+# intend: it doesn't know 2-series mastercards (they'd be "unknown", hence invalid),
+# types 4026/4508/4844/4913/4917/417500 as visa_electron, and 652150-653149 as rupay.
 CARD_NETWORKS = [
-    ("visa", ["4"], 16, 50),
-    ("mastercard", ["51", "52", "53", "54", "55", "2221", "2720"], 16, 35),
+    ("visa", ["42", "43", "46"], 16, 50),
+    ("mastercard", ["51", "52", "53", "54", "55"], 16, 35),
     ("amex", ["34", "37"], 15, 10),
-    ("discover", ["6011", "65"], 16, 5),
+    ("discover", ["6011"], 16, 5),
 ]
 
 
