@@ -174,6 +174,51 @@ To put it back, release the revert again, or run `deploy-with-version.yml` with 
 
 To try it locally, deploy with `./run auth frontend sso-mocks` from a commit with or without PR #44's change.
 
+### Mastercard 2-series (a validator bug the frontend fix exposes)
+
+Shows a checkout failure that is a real bug in a dependency, surfacing after a "fix" elsewhere. This one does use a
+flag, but the flag only simulates the *frontend fix*; the bug itself is real code in the payment service's card
+validator.
+
+**The setup:**
+
+- The load generator checks out with a Luhn-valid card from a random network: Visa 50%, Mastercard 5-series 25%,
+  Amex 10%, Discover 5%, and 2-series Mastercard 10% (`CARD_NETWORKS` in `src/load-generator/locustfile.py`). The
+  prefixes are chosen so the validator names the intended network (it types a few Visa and Discover ranges as
+  `visa_electron` and `rupay`).
+- The payment service accepts every network the validator recognises (it used to reject all but Visa and Mastercard).
+  The Amex tracetest now expects success.
+- **The bug:** `simple-card-validator` 1.1.0 only knows Mastercard as `^5[1-5]`. Real 2-series Mastercards (2221-2720,
+  issued since 2017) match no network, so the card comes back `unknown` and invalid, and `charge` throws
+  `Credit card info is invalid.` even though the number passes Luhn.
+- **The flag:** `frontendAllowsMastercard2Series` (in `src/flagd/demo.flagd.json`, default `off`). While it is off the
+  loadgen never sends 2-series cards, as if the frontend rejected them before payment. Turning it on simulates a
+  frontend fix that lets them through while payment's bug is still there. The loadgen re-reads the flag on every
+  checkout, so a flip takes effect within seconds.
+
+**The trigger:** turn `frontendAllowsMastercard2Series` on in flagd-ui. About 10% of loadgen checkouts then fail. The
+flag name is allowed to hint at the cause here, since a frontend fix is a believable thing to have shipped (flagd-ui
+flag changes also post a Honeycomb marker).
+
+**What you see in Honeycomb:**
+
+- `charge` spans (payment): `app.payment.card_type = unknown`, `app.payment.card_valid = false`, `error = true`.
+- Frontend-proxy `ingress` root spans for those traces return `http.status_code = 500`.
+- Checkout Availability (`devrel-demos`, environment `demo`: PlaceOrder gRPC status 0, 99% over 7 days) and Frontend
+  Availability burn budget. The checkout SLO's exhaustion alert posts to Slack `#general`, so expect noise.
+
+**To try it by hand:** pay with `2223 0031 2200 3222`, any future expiry, any CVV. It is rejected with the same error.
+
+**To put it back:** turn the flag off. The loadgen stops sending 2-series cards immediately.
+
+**Gotchas:**
+
+- flagd copies the flag file out of its ConfigMap only when the pod starts. After a deploy that adds or changes a
+  flag, restart flagd (`kubectl -n <namespace> rollout restart deploy/flagd`) or the flag won't appear in flagd-ui.
+  This was verified on a local deploy; check it in `devrel-demo` before relying on it.
+- Telemetry from `*-local` namespaces goes to a different Honeycomb team than the SLOs above, so a local run
+  won't move them.
+
 ## Iteration
 
 We can deploy from local to the cluster in a new namespace, using `skaffold`
