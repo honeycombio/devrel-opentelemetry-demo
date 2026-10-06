@@ -7,6 +7,7 @@ import CartItems from '../CartItems';
 import CheckoutForm from '../CheckoutForm';
 import { IFormData } from '../CheckoutForm/CheckoutForm';
 import SessionGateway from '../../gateways/Session.gateway';
+import { paymentStrategyForCard } from '../../utils/PaymentStrategy';
 import { useCart } from '../../providers/Cart.provider';
 import { useCurrency } from '../../providers/Currency.provider';
 import * as S from '../../styles/Cart.styled';
@@ -49,6 +50,7 @@ const CartDetail = () => {
                     zipCode,
                 },
                 userCurrency: selectedCurrency,
+                paymentStrategy: paymentStrategyForCard(creditCardNumber),
                 creditCard: {
                     creditCardCvv,
                     creditCardExpirationMonth,
