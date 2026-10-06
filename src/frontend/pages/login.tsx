@@ -10,6 +10,7 @@ import Input from '../components/Input';
 import ApiGateway from '../gateways/Api.gateway';
 import SessionGateway from '../gateways/Session.gateway';
 import * as S from '../styles/Login.styled';
+import { tracedQuery } from '../utils/telemetry/SpanUtils';
 
 const Login: NextPage = () => {
   const router = useRouter();
@@ -22,7 +23,7 @@ const Login: NextPage = () => {
     setError('');
     setSubmitting(true);
     try {
-      const result = await ApiGateway.login(email, method === 'password' ? password : '', method);
+      const result = await tracedQuery('login', () => ApiGateway.login(email, method === 'password' ? password : '', method), 'login-page');
       if (!result.ok) {
         setError(result.error);
         return;

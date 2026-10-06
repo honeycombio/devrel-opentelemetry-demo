@@ -7,6 +7,7 @@ import ApiGateway from '../gateways/Api.gateway';
 import { CartItem, OrderResult, PlaceOrderRequest } from '../protos/demo';
 import { IProductCart } from '../types/Cart';
 import { useCurrency } from './Currency.provider';
+import { tracedMutation } from '../utils/telemetry/SpanUtils';
 
 interface IContext {
   cart: IProductCart;
@@ -55,7 +56,7 @@ const CartProvider = ({ children }: IProps) => {
   });
 
   const placeOrderMutation = useMutation({
-    mutationFn: ApiGateway.placeOrder,
+    mutationFn: tracedMutation('placeOrder', ApiGateway.placeOrder, 'cart-provider'),
     ...mutationOptions,
   });
 
