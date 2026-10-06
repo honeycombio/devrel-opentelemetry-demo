@@ -762,10 +762,9 @@ browser_traffic_enabled = os.environ.get("LOCUST_BROWSER_TRAFFIC_ENABLED", "").l
 if browser_traffic_enabled:
     class WebsiteBrowserUser(PlaywrightUser):
         headless = True  # to use a headless browser, without a GUI
-
-        def __init__(self, *args, **kwargs):
-            super().__init__(*args, **kwargs)
-            self.tracer = trace.get_tracer(__name__)
+        # Class attribute: PlaywrightUser.__init__ copies self into sub_users, and
+        # @pw tasks run on those copies, so an attribute set after super().__init__() is missing.
+        tracer = trace.get_tracer(__name__)
 
         @task
         @pw
