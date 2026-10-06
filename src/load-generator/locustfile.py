@@ -298,17 +298,27 @@ def random_email() -> str:
 # issued since 2017) that simple-card-validator doesn't know. It types them
 # "unknown" and declares them invalid, so payment rejects them with "Credit card
 # info is invalid" even though they pass Luhn. Keep them -- they're a story.
+#
+# The loadgen plays the browser here: like the real checkout form, it tells the
+# backend which payment strategy it is using (PaymentStrategy in pb/demo.proto).
+# Both Mastercard series are CC_MASTERCARD -- the client knows the 2-series are
+# Mastercards; only payment's validator doesn't.
+PAYMENT_STRATEGY_CC_VISA = 1
+PAYMENT_STRATEGY_CC_MASTERCARD = 2
+PAYMENT_STRATEGY_CC_AMEX = 3
+PAYMENT_STRATEGY_CC_DISCOVER = 4
+
 CARD_NETWORKS = [
-    ("visa", ["42", "43", "46"], 16, 50),
-    ("mastercard", ["51", "52", "53", "54", "55"], 16, 25),
-    ("mastercard_2series", ["2221", "2300", "2500", "2720"], 16, 10),
-    ("amex", ["34", "37"], 15, 10),
-    ("discover", ["6011"], 16, 5),
+    ("visa", PAYMENT_STRATEGY_CC_VISA, ["42", "43", "46"], 16, 50),
+    ("mastercard", PAYMENT_STRATEGY_CC_MASTERCARD, ["51", "52", "53", "54", "55"], 16, 25),
+    ("mastercard_2series", PAYMENT_STRATEGY_CC_MASTERCARD, ["2221", "2300", "2500", "2720"], 16, 10),
+    ("amex", PAYMENT_STRATEGY_CC_AMEX, ["34", "37"], 15, 10),
+    ("discover", PAYMENT_STRATEGY_CC_DISCOVER, ["6011"], 16, 5),
 ]
 
 
-def random_card_number() -> str:
-    """A Luhn-valid card number on a randomly chosen network.
+def random_card() -> tuple[str, int]:
+    """A Luhn-valid card number on a randomly chosen network, and its PaymentStrategy enum value.
 
     2-series mastercards are only sent when frontendAllowsMastercard2Series is on:
     it simulates the frontend being fixed to let them through, while payment's
@@ -316,7 +326,7 @@ def random_card_number() -> str:
     networks = CARD_NETWORKS
     if get_flagd_value("frontendAllowsMastercard2Series") <= 0:
         networks = [n for n in CARD_NETWORKS if n[0] != "mastercard_2series"]
-    _, prefixes, length, _ = random.choices(networks, weights=[n[3] for n in networks])[0]
+    _, strategy, prefixes, length, _ = random.choices(networks, weights=[n[4] for n in networks])[0]
     digits = [int(d) for d in random.choice(prefixes)]
     while len(digits) < length - 1:
         digits.append(random.randint(0, 9))
@@ -329,13 +339,14 @@ def random_card_number() -> str:
                 d -= 9
         total += d
     digits.append((10 - total % 10) % 10)
-    return "".join(str(d) for d in digits)
+    return "".join(str(d) for d in digits), strategy
 
 
 def make_checkout_person(user: str, email: str) -> dict:
     """A random person from people.json, paying with a card from a random network."""
-    person = {**random.choice(people), "userId": user, "email": email}
-    person["creditCard"] = {**person["creditCard"], "creditCardNumber": random_card_number()}
+    card_number, payment_strategy = random_card()
+    person = {**random.choice(people), "userId": user, "email": email, "paymentStrategy": payment_strategy}
+    person["creditCard"] = {**person["creditCard"], "creditCardNumber": card_number}
     return person
 
 

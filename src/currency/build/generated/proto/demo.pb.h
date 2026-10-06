@@ -32,6 +32,7 @@
 #include "google/protobuf/message.h"
 #include "google/protobuf/repeated_field.h"  // IWYU pragma: export
 #include "google/protobuf/extension_set.h"  // IWYU pragma: export
+#include "google/protobuf/generated_enum_reflection.h"
 #include "google/protobuf/unknown_field_set.h"
 // @@protoc_insertion_point(includes)
 
@@ -248,6 +249,42 @@ namespace protobuf {
 }  // namespace google
 
 namespace oteldemo {
+enum PaymentStrategy : int {
+  PAYMENT_STRATEGY_UNSPECIFIED = 0,
+  CC_VISA = 1,
+  CC_MASTERCARD = 2,
+  CC_AMEX = 3,
+  CC_DISCOVER = 4,
+  CC_OTHER = 5,
+  PaymentStrategy_INT_MIN_SENTINEL_DO_NOT_USE_ =
+      std::numeric_limits<::int32_t>::min(),
+  PaymentStrategy_INT_MAX_SENTINEL_DO_NOT_USE_ =
+      std::numeric_limits<::int32_t>::max(),
+};
+
+bool PaymentStrategy_IsValid(int value);
+constexpr PaymentStrategy PaymentStrategy_MIN = static_cast<PaymentStrategy>(0);
+constexpr PaymentStrategy PaymentStrategy_MAX = static_cast<PaymentStrategy>(5);
+constexpr int PaymentStrategy_ARRAYSIZE = 5 + 1;
+const ::google::protobuf::EnumDescriptor*
+PaymentStrategy_descriptor();
+template <typename T>
+const std::string& PaymentStrategy_Name(T value) {
+  static_assert(std::is_same<T, PaymentStrategy>::value ||
+                    std::is_integral<T>::value,
+                "Incorrect type passed to PaymentStrategy_Name().");
+  return PaymentStrategy_Name(static_cast<PaymentStrategy>(value));
+}
+template <>
+inline const std::string& PaymentStrategy_Name(PaymentStrategy value) {
+  return ::google::protobuf::internal::NameOfDenseEnum<PaymentStrategy_descriptor,
+                                                 0, 5>(
+      static_cast<int>(value));
+}
+inline bool PaymentStrategy_Parse(absl::string_view name, PaymentStrategy* value) {
+  return ::google::protobuf::internal::ParseNamedEnum<PaymentStrategy>(
+      PaymentStrategy_descriptor(), name, value);
+}
 
 // ===================================================================
 
@@ -7316,6 +7353,7 @@ class PlaceOrderRequest final :
     kEmailFieldNumber = 5,
     kAddressFieldNumber = 3,
     kCreditCardFieldNumber = 6,
+    kPaymentStrategyFieldNumber = 7,
   };
   // string user_id = 1;
   void clear_user_id() ;
@@ -7395,12 +7433,22 @@ class PlaceOrderRequest final :
   ::oteldemo::CreditCardInfo* _internal_mutable_credit_card();
 
   public:
+  // .oteldemo.PaymentStrategy payment_strategy = 7;
+  void clear_payment_strategy() ;
+  ::oteldemo::PaymentStrategy payment_strategy() const;
+  void set_payment_strategy(::oteldemo::PaymentStrategy value);
+
+  private:
+  ::oteldemo::PaymentStrategy _internal_payment_strategy() const;
+  void _internal_set_payment_strategy(::oteldemo::PaymentStrategy value);
+
+  public:
   // @@protoc_insertion_point(class_scope:oteldemo.PlaceOrderRequest)
  private:
   class _Internal;
 
   friend class ::google::protobuf::internal::TcParser;
-  static const ::google::protobuf::internal::TcParseTable<3, 5, 2, 60, 2> _table_;
+  static const ::google::protobuf::internal::TcParseTable<3, 6, 2, 60, 2> _table_;
   template <typename T> friend class ::google::protobuf::Arena::InternalHelper;
   typedef void InternalArenaConstructable_;
   typedef void DestructorSkippable_;
@@ -7412,6 +7460,7 @@ class PlaceOrderRequest final :
     ::google::protobuf::internal::ArenaStringPtr email_;
     ::oteldemo::Address* address_;
     ::oteldemo::CreditCardInfo* credit_card_;
+    int payment_strategy_;
     PROTOBUF_TSAN_DECLARE_MEMBER
   };
   union { Impl_ _impl_; };
@@ -16584,6 +16633,28 @@ inline void PlaceOrderRequest::set_allocated_credit_card(::oteldemo::CreditCardI
   // @@protoc_insertion_point(field_set_allocated:oteldemo.PlaceOrderRequest.credit_card)
 }
 
+// .oteldemo.PaymentStrategy payment_strategy = 7;
+inline void PlaceOrderRequest::clear_payment_strategy() {
+  _impl_.payment_strategy_ = 0;
+}
+inline ::oteldemo::PaymentStrategy PlaceOrderRequest::payment_strategy() const {
+  // @@protoc_insertion_point(field_get:oteldemo.PlaceOrderRequest.payment_strategy)
+  return _internal_payment_strategy();
+}
+inline void PlaceOrderRequest::set_payment_strategy(::oteldemo::PaymentStrategy value) {
+  _internal_set_payment_strategy(value);
+  // @@protoc_insertion_point(field_set:oteldemo.PlaceOrderRequest.payment_strategy)
+}
+inline ::oteldemo::PaymentStrategy PlaceOrderRequest::_internal_payment_strategy() const {
+  PROTOBUF_TSAN_READ(&_impl_._tsan_detect_race);
+  return static_cast<::oteldemo::PaymentStrategy>(_impl_.payment_strategy_);
+}
+inline void PlaceOrderRequest::_internal_set_payment_strategy(::oteldemo::PaymentStrategy value) {
+  PROTOBUF_TSAN_WRITE(&_impl_._tsan_detect_race);
+  ;
+  _impl_.payment_strategy_ = value;
+}
+
 // -------------------------------------------------------------------
 
 // PlaceOrderResponse
@@ -19010,6 +19081,19 @@ inline void DeleteFlagRequest::set_allocated_name(std::string* value) {
 // @@protoc_insertion_point(namespace_scope)
 }  // namespace oteldemo
 
+
+namespace google {
+namespace protobuf {
+
+template <>
+struct is_proto_enum<::oteldemo::PaymentStrategy> : std::true_type {};
+template <>
+inline const EnumDescriptor* GetEnumDescriptor<::oteldemo::PaymentStrategy>() {
+  return ::oteldemo::PaymentStrategy_descriptor();
+}
+
+}  // namespace protobuf
+}  // namespace google
 
 // @@protoc_insertion_point(global_scope)
 
