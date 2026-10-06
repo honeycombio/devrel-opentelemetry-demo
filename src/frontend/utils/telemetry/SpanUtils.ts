@@ -1,5 +1,5 @@
 import { context, trace } from "@opentelemetry/api";
-import { Attributes} from "@opentelemetry/api";
+import { Attributes, HrTime } from "@opentelemetry/api";
 import { recordExceptionOrErrorMessage } from './recordException';
 
 export async function tracedQuery<T>(
@@ -11,14 +11,16 @@ export async function tracedQuery<T>(
   const span = tracer.startSpan(name);
 
   return context.with(trace.setSpan(context.active(), span), async () => {
+    let endTime: HrTime | undefined;
     try {
       const result = await fn();
       return result;
     } catch (err) {
-      recordExceptionOrErrorMessage(err, span);
+      endTime = recordExceptionOrErrorMessage(err, span);
       return Promise.reject("query failed")
     } finally {
-      span.end();
+      // On error, end at the exception's timestamp so the log is never after the span.
+      span.end(endTime);
     }
   });
 }
@@ -46,14 +48,16 @@ export function tracedMutation<TVariables, TResult>(
     const span = tracer.startSpan(name, { attributes });
 
     return context.with(trace.setSpan(context.active(), span), async () => {
+      let endTime: HrTime | undefined;
       try {
         const result = await fn(variables);
         return result;
       } catch (err: Error | unknown) {
-          recordExceptionOrErrorMessage(err, span);
+        endTime = recordExceptionOrErrorMessage(err, span);
         throw err;
       } finally {
-        span.end();
+        // On error, end at the exception's timestamp so the log is never after the span.
+        span.end(endTime);
       }
     });
   };
