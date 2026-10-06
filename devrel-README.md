@@ -203,6 +203,14 @@ flag changes also post a Honeycomb marker).
 **What you see in Honeycomb:**
 
 - `charge` spans (payment): `app.payment.card_type = unknown`, `app.payment.card_valid = false`, `error = true`.
+- `oteldemo.CheckoutService/PlaceOrder` server spans (checkout, the span the Checkout SLOs are measured on):
+  `app.payment.strategy = CC_MASTERCARD`. So the client recognised the card as a Mastercard and payment did not. The
+  strategy is chosen by the client, never derived downstream: the browser names the network as you type (and shows it
+  under the card number), and the loadgen plays the browser by sending the same `PlaceOrderRequest.payment_strategy`
+  enum (`PaymentStrategy` in `pb/demo.proto`, room for non-card strategies like Google Pay later). Both Mastercard
+  series are `CC_MASTERCARD`; the browser's detector (`src/frontend/utils/PaymentStrategy.ts`) knows the 2-series,
+  payment's validator doesn't. Failed checkouts group cleanly: `app.payment.strategy = CC_MASTERCARD` vs
+  `app.payment.card_type = unknown`.
 - Frontend-proxy `ingress` root spans for those traces return `http.status_code = 500`.
 - Checkout Availability (`devrel-demos`, environment `demo`: PlaceOrder gRPC status 0, 99% over 7 days) and Frontend
   Availability burn budget. The checkout SLO's exhaustion alert posts to Slack `#general`, so expect noise.
@@ -225,6 +233,8 @@ network mix appears a few minutes after the new loadgen pods start.
 
 **Not done yet:**
 
+- Deploy `checkout`, `frontend` and `load-generator` (`./run checkout frontend load-generator`; the new proto field is additive, so the other services' regenerated code
+  needs no rebuild) and confirm `app.payment.strategy` shows on `PlaceOrder` spans for loadgen and for a browser checkout.
 - Flip the flag in prod and confirm Checkout Availability's burn alerts (and the `#general` exhaustion alert) behave as
   hoped. If 10% failures is too loud or too quiet, tune the `mastercard_2series` weight in `CARD_NETWORKS`.
 - flagd-ui flag changes post a Honeycomb marker, which can give away a blind scenario. A per-flag skip in the
