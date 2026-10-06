@@ -32,6 +32,12 @@ components:
       # flag (must stay envOverrides[0] — skaffold sets it by index).
       - name: LOAD_PROFILE
         value: "non-agentic"
+      - name: LOCUST_BROWSER_TRAFFIC_ENABLED
+        value: "true"
+    # Headless Chromium (browser traffic) exceeds the chart's 1500Mi default.
+    resources:
+      limits:
+        memory: 3Gi
   frontend:
     replicas: 1
     envOverrides:
