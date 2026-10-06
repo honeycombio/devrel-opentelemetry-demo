@@ -309,10 +309,11 @@ PAYMENT_STRATEGY_CC_AMEX = 3
 PAYMENT_STRATEGY_CC_DISCOVER = 4
 
 CARD_NETWORKS = [
-    ("visa", PAYMENT_STRATEGY_CC_VISA, ["42", "43", "46"], 16, 50),
-    ("mastercard", PAYMENT_STRATEGY_CC_MASTERCARD, ["51", "52", "53", "54", "55"], 16, 25),
-    ("mastercard_2series", PAYMENT_STRATEGY_CC_MASTERCARD, ["2221", "2300", "2500", "2720"], 16, 10),
-    ("amex", PAYMENT_STRATEGY_CC_AMEX, ["34", "37"], 15, 10),
+    ("visa", PAYMENT_STRATEGY_CC_VISA, ["42", "43", "46"], 16, 10),
+    ("mastercard", PAYMENT_STRATEGY_CC_MASTERCARD, ["51", "52", "53", "54", "55"], 16, 55),
+    # 2-series stays at 2/5 of 5-series, so the Mastercard story's share of Mastercards is unchanged
+    ("mastercard_2series", PAYMENT_STRATEGY_CC_MASTERCARD, ["2221", "2300", "2500", "2720"], 16, 22),
+    ("amex", PAYMENT_STRATEGY_CC_AMEX, ["34", "37"], 15, 8),
     ("discover", PAYMENT_STRATEGY_CC_DISCOVER, ["6011"], 16, 5),
 ]
 

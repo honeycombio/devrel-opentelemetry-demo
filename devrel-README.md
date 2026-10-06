@@ -182,8 +182,9 @@ validator.
 
 **The setup:**
 
-- The load generator checks out with a Luhn-valid card from a random network: Visa 50%, Mastercard 5-series 25%,
-  Amex 10%, Discover 5%, and 2-series Mastercard 10% (`CARD_NETWORKS` in `src/load-generator/locustfile.py`). The
+- The load generator checks out with a Luhn-valid card from a random network: Mastercard 5-series 55%, Visa 10%,
+  Amex 8%, Discover 5%, and 2-series Mastercard 22% (2-series is 2/5 of 5-series, so a big share of all checkouts hits
+  `unknown` without a bigger share of Mastercards going 2-series; `CARD_NETWORKS` in `src/load-generator/locustfile.py`). The
   prefixes are chosen so the validator names the intended network (it types a few Visa and Discover ranges as
   `visa_electron` and `rupay`).
 - The payment service accepts every network the validator recognises (it used to reject all but Visa and Mastercard).
@@ -236,7 +237,7 @@ network mix appears a few minutes after the new loadgen pods start.
 - Deploy `checkout`, `frontend` and `load-generator` (`./run checkout frontend load-generator`; the new proto field is additive, so the other services' regenerated code
   needs no rebuild) and confirm `app.payment.strategy` shows on `PlaceOrder` spans for loadgen and for a browser checkout.
 - Flip the flag in prod and confirm Checkout Availability's burn alerts (and the `#general` exhaustion alert) behave as
-  hoped. If 10% failures is too loud or too quiet, tune the `mastercard_2series` weight in `CARD_NETWORKS`.
+  hoped. If 22% failures is too loud or too quiet, tune the `mastercard_2series` weight in `CARD_NETWORKS`.
 - flagd-ui flag changes post a Honeycomb marker, which can give away a blind scenario. A per-flag skip in the
   collector's flag-change pipeline (`skaffold-config/demo-values.yaml` and
   `deploy/config-files/collector/values-daemonset.yaml`) would fix that; not looked at in detail yet.
