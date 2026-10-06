@@ -797,6 +797,29 @@ if browser_traffic_enabled:
                 except Exception as e:
                     logging.error(f"Error in add to cart task: {str(e)}")
 
+        @task
+        @pw
+        async def checkout_from_browser(self, page: PageWithRetry):
+            with self.tracer.start_as_current_span("browser_checkout", context=Context()):
+                try:
+                    # Up to 5% of orders ship to Slowville, which the checkout service delays 5-8s.
+                    slowville = random.random() < 0.05
+                    page.on("console", lambda msg: print(msg.text))
+                    await page.route('**/*', add_baggage_header)
+                    await page.goto("/", wait_until="domcontentloaded")
+                    await page.click('p:has-text("Roof Binoculars")')
+                    await page.wait_for_load_state("domcontentloaded")
+                    await page.click('button:has-text("Add To Cart")')
+                    await page.wait_for_selector('#checkout-form')  # the add-to-cart click navigates to /cart
+                    if slowville:
+                        await page.fill('#city', 'Slowville')
+                    await page.click('button:has-text("Place Order")')
+                    # Slowville adds up to 8s; leave time for the result and for the browser to export traces.
+                    await page.wait_for_timeout(10000 if slowville else 3000)
+                    logging.info(f"Browser checkout submitted (slowville={slowville})")
+                except Exception as e:
+                    logging.error(f"Error in browser checkout task: {str(e)}")
+
 async def add_baggage_header(route: Route, request: Request):
     existing_baggage = request.headers.get('baggage', '')
     headers = {
