@@ -73,3 +73,6 @@ docs/superpowers/
 
 # Generated S3-export values overlay (created by scripts/create-s3-export-values.sh)
 skaffold-config/s3-export-values.yaml
+
+# TypeScript incremental build cache
+*.tsbuildinfo
