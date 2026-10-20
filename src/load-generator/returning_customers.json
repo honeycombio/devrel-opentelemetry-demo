@@ -1,0 +1,2250 @@
+[
+  {
+    "email": "aisha.wilson96@post.example",
+    "customer_since": 2021,
+    "current_codes": [
+      "COMEBACK15"
+    ]
+  },
+  {
+    "email": "grace.zhang75@post.example",
+    "customer_since": 2016,
+    "current_codes": [
+      "COMEBACK15",
+      "STARGAZE20"
+    ]
+  },
+  {
+    "email": "guido.zhang29@inbox.example",
+    "customer_since": 2021,
+    "current_codes": [
+      "THANKYOU10"
+    ]
+  },
+  {
+    "email": "rosa.turing25@mail.example",
+    "customer_since": 2022,
+    "current_codes": [
+      "COMEBACK15"
+    ]
+  },
+  {
+    "email": "chen.johnson45@post.example",
+    "customer_since": 2023,
+    "current_codes": [
+      "THANKYOU10",
+      "STARGAZE20"
+    ]
+  },
+  {
+    "email": "ada.knuth14@mail.example",
+    "customer_since": 2015,
+    "current_codes": [
+      "THANKYOU10",
+      "COMEBACK15"
+    ]
+  },
+  {
+    "email": "rosa.clarke13@inbox.example",
+    "customer_since": 2026,
+    "current_codes": [
+      "COMEBACK15",
+      "THANKYOU10"
+    ]
+  },
+  {
+    "email": "katherine.perlman98@mail.example",
+    "customer_since": 2024,
+    "current_codes": [
+      "COMEBACK15",
+      "THANKYOU10"
+    ]
+  },
+  {
+    "email": "guido.lamarr18@post.example",
+    "customer_since": 2025,
+    "current_codes": [
+      "STARGAZE20",
+      "THANKYOU10"
+    ]
+  },
+  {
+    "email": "edsger.silva21@inbox.example",
+    "customer_since": 2026,
+    "current_codes": [
+      "STARGAZE20",
+      "THANKYOU10"
+    ]
+  },
+  {
+    "email": "frances.liskov35@post.example",
+    "customer_since": 2016,
+    "current_codes": [
+      "COMEBACK15"
+    ]
+  },
+  {
+    "email": "sophie.larsen10@inbox.example",
+    "customer_since": 2020,
+    "current_codes": [
+      "COMEBACK15",
+      "STARGAZE20"
+    ]
+  },
+  {
+    "email": "aisha.mccarthy38@inbox.example",
+    "customer_since": 2018,
+    "current_codes": [
+      "COMEBACK15"
+    ]
+  },
+  {
+    "email": "ada.raman48@mail.example",
+    "customer_since": 2021,
+    "current_codes": [
+      "STARGAZE20",
+      "COMEBACK15"
+    ]
+  },
+  {
+    "email": "ingrid.dijkstra77@post.example",
+    "customer_since": 2019,
+    "current_codes": [
+      "THANKYOU10"
+    ]
+  },
+  {
+    "email": "dennis.zhang2@post.example",
+    "customer_since": 2024,
+    "current_codes": [
+      "COMEBACK15",
+      "STARGAZE20"
+    ]
+  },
+  {
+    "email": "hedy.silva85@mail.example",
+    "customer_since": 2015,
+    "current_codes": [
+      "STARGAZE20"
+    ]
+  },
+  {
+    "email": "rafael.ortega85@inbox.example",
+    "customer_since": 2024,
+    "current_codes": [
+      "STARGAZE20"
+    ]
+  },
+  {
+    "email": "john.cerf45@inbox.example",
+    "customer_since": 2022,
+    "current_codes": [
+      "COMEBACK15"
+    ]
+  },
+  {
+    "email": "mateo.clarke34@mail.example",
+    "customer_since": 2022,
+    "current_codes": [
+      "STARGAZE20",
+      "THANKYOU10"
+    ]
+  },
+  {
+    "email": "lena.haddad37@post.example",
+    "customer_since": 2019,
+    "current_codes": [
+      "STARGAZE20",
+      "COMEBACK15"
+    ]
+  },
+  {
+    "email": "lena.fischer46@inbox.example",
+    "customer_since": 2020,
+    "current_codes": [
+      "STARGAZE20",
+      "THANKYOU10"
+    ]
+  },
+  {
+    "email": "aisha.mensah33@mail.example",
+    "customer_since": 2018,
+    "current_codes": [
+      "COMEBACK15",
+      "STARGAZE20"
+    ]
+  },
+  {
+    "email": "kwame.cerf95@post.example",
+    "customer_since": 2023,
+    "current_codes": [
+      "COMEBACK15"
+    ]
+  },
+  {
+    "email": "aisha.dijkstra13@inbox.example",
+    "customer_since": 2024,
+    "current_codes": [
+      "STARGAZE20",
+      "COMEBACK15"
+    ]
+  },
+  {
+    "email": "rafael.zhang75@inbox.example",
+    "customer_since": 2026,
+    "current_codes": [
+      "STARGAZE20",
+      "THANKYOU10"
+    ]
+  },
+  {
+    "email": "lena.larsen70@mail.example",
+    "customer_since": 2026,
+    "current_codes": [
+      "STARGAZE20"
+    ]
+  },
+  {
+    "email": "chen.haddad6@post.example",
+    "customer_since": 2016,
+    "current_codes": [
+      "THANKYOU10",
+      "STARGAZE20"
+    ]
+  },
+  {
+    "email": "mateo.haddad7@inbox.example",
+    "customer_since": 2023,
+    "current_codes": [
+      "THANKYOU10"
+    ]
+  },
+  {
+    "email": "dennis.mensah99@post.example",
+    "customer_since": 2022,
+    "current_codes": [
+      "COMEBACK15"
+    ]
+  },
+  {
+    "email": "margaret.ortega16@mail.example",
+    "customer_since": 2018,
+    "current_codes": [
+      "THANKYOU10",
+      "COMEBACK15"
+    ]
+  },
+  {
+    "email": "anita.lamarr12@post.example",
+    "customer_since": 2024,
+    "current_codes": [
+      "STARGAZE20",
+      "THANKYOU10"
+    ]
+  },
+  {
+    "email": "hedy.turing45@mail.example",
+    "customer_since": 2024,
+    "current_codes": [
+      "THANKYOU10",
+      "STARGAZE20"
+    ]
+  },
+  {
+    "email": "kwame.wilson78@post.example",
+    "customer_since": 2019,
+    "current_codes": [
+      "COMEBACK15",
+      "THANKYOU10"
+    ]
+  },
+  {
+    "email": "sophie.johnson94@post.example",
+    "customer_since": 2018,
+    "current_codes": [
+      "STARGAZE20",
+      "THANKYOU10"
+    ]
+  },
+  {
+    "email": "rafael.ortega19@inbox.example",
+    "customer_since": 2018,
+    "current_codes": [
+      "COMEBACK15"
+    ]
+  },
+  {
+    "email": "bjarne.zhang37@inbox.example",
+    "customer_since": 2021,
+    "current_codes": [
+      "STARGAZE20",
+      "THANKYOU10"
+    ]
+  },
+  {
+    "email": "mateo.perlman26@post.example",
+    "customer_since": 2017,
+    "current_codes": [
+      "COMEBACK15",
+      "STARGAZE20"
+    ]
+  },
+  {
+    "email": "chen.silva32@inbox.example",
+    "customer_since": 2016,
+    "current_codes": [
+      "COMEBACK15",
+      "STARGAZE20"
+    ]
+  },
+  {
+    "email": "katherine.haddad91@inbox.example",
+    "customer_since": 2021,
+    "current_codes": [
+      "STARGAZE20"
+    ]
+  },
+  {
+    "email": "linus.cerf97@mail.example",
+    "customer_since": 2018,
+    "current_codes": [
+      "THANKYOU10",
+      "COMEBACK15"
+    ]
+  },
+  {
+    "email": "kwame.ritchie44@post.example",
+    "customer_since": 2019,
+    "current_codes": [
+      "COMEBACK15"
+    ]
+  },
+  {
+    "email": "radia.torvalds41@post.example",
+    "customer_since": 2022,
+    "current_codes": [
+      "STARGAZE20",
+      "THANKYOU10"
+    ]
+  },
+  {
+    "email": "alan.mensah23@mail.example",
+    "customer_since": 2024,
+    "current_codes": [
+      "THANKYOU10"
+    ]
+  },
+  {
+    "email": "edsger.perlman32@mail.example",
+    "customer_since": 2026,
+    "current_codes": [
+      "THANKYOU10"
+    ]
+  },
+  {
+    "email": "radia.okafor83@post.example",
+    "customer_since": 2022,
+    "current_codes": [
+      "THANKYOU10"
+    ]
+  },
+  {
+    "email": "ada.ritchie22@post.example",
+    "customer_since": 2017,
+    "current_codes": [
+      "THANKYOU10"
+    ]
+  },
+  {
+    "email": "mateo.perlman53@inbox.example",
+    "customer_since": 2021,
+    "current_codes": [
+      "STARGAZE20"
+    ]
+  },
+  {
+    "email": "barbara.ritchie39@mail.example",
+    "customer_since": 2024,
+    "current_codes": [
+      "COMEBACK15",
+      "STARGAZE20"
+    ]
+  },
+  {
+    "email": "hedy.torvalds41@post.example",
+    "customer_since": 2016,
+    "current_codes": [
+      "THANKYOU10",
+      "COMEBACK15"
+    ]
+  },
+  {
+    "email": "radia.ritchie3@mail.example",
+    "customer_since": 2026,
+    "current_codes": [
+      "STARGAZE20",
+      "THANKYOU10"
+    ]
+  },
+  {
+    "email": "frances.liskov8@inbox.example",
+    "customer_since": 2021,
+    "current_codes": [
+      "STARGAZE20",
+      "THANKYOU10"
+    ]
+  },
+  {
+    "email": "grace.johnson66@inbox.example",
+    "customer_since": 2022,
+    "current_codes": [
+      "STARGAZE20",
+      "COMEBACK15"
+    ]
+  },
+  {
+    "email": "hedy.johnson1@post.example",
+    "customer_since": 2019,
+    "current_codes": [
+      "STARGAZE20"
+    ]
+  },
+  {
+    "email": "ingrid.okafor98@inbox.example",
+    "customer_since": 2017,
+    "current_codes": [
+      "THANKYOU10",
+      "COMEBACK15"
+    ]
+  },
+  {
+    "email": "lena.dijkstra1@mail.example",
+    "customer_since": 2018,
+    "current_codes": [
+      "THANKYOU10",
+      "COMEBACK15"
+    ]
+  },
+  {
+    "email": "frances.liskov12@inbox.example",
+    "customer_since": 2021,
+    "current_codes": [
+      "COMEBACK15"
+    ]
+  },
+  {
+    "email": "grace.torvalds32@inbox.example",
+    "customer_since": 2022,
+    "current_codes": [
+      "STARGAZE20",
+      "THANKYOU10"
+    ]
+  },
+  {
+    "email": "omar.silva89@inbox.example",
+    "customer_since": 2019,
+    "current_codes": [
+      "THANKYOU10",
+      "STARGAZE20"
+    ]
+  },
+  {
+    "email": "margaret.perlman9@post.example",
+    "customer_since": 2026,
+    "current_codes": [
+      "THANKYOU10",
+      "COMEBACK15"
+    ]
+  },
+  {
+    "email": "ingrid.knuth64@post.example",
+    "customer_since": 2017,
+    "current_codes": [
+      "STARGAZE20",
+      "COMEBACK15"
+    ]
+  },
+  {
+    "email": "lena.ortega94@post.example",
+    "customer_since": 2020,
+    "current_codes": [
+      "THANKYOU10"
+    ]
+  },
+  {
+    "email": "bjarne.silva29@mail.example",
+    "customer_since": 2018,
+    "current_codes": [
+      "COMEBACK15"
+    ]
+  },
+  {
+    "email": "alan.larsen7@mail.example",
+    "customer_since": 2026,
+    "current_codes": [
+      "THANKYOU10"
+    ]
+  },
+  {
+    "email": "chen.raman21@post.example",
+    "customer_since": 2018,
+    "current_codes": [
+      "STARGAZE20",
+      "THANKYOU10"
+    ]
+  },
+  {
+    "email": "tim.hopper96@inbox.example",
+    "customer_since": 2022,
+    "current_codes": [
+      "STARGAZE20"
+    ]
+  },
+  {
+    "email": "dennis.wilson5@mail.example",
+    "customer_since": 2020,
+    "current_codes": [
+      "STARGAZE20"
+    ]
+  },
+  {
+    "email": "ken.cerf66@post.example",
+    "customer_since": 2022,
+    "current_codes": [
+      "COMEBACK15"
+    ]
+  },
+  {
+    "email": "alan.raman57@inbox.example",
+    "customer_since": 2020,
+    "current_codes": [
+      "THANKYOU10"
+    ]
+  },
+  {
+    "email": "linus.hopper10@mail.example",
+    "customer_since": 2021,
+    "current_codes": [
+      "COMEBACK15"
+    ]
+  },
+  {
+    "email": "barbara.clarke3@post.example",
+    "customer_since": 2022,
+    "current_codes": [
+      "THANKYOU10"
+    ]
+  },
+  {
+    "email": "tim.liskov64@inbox.example",
+    "customer_since": 2016,
+    "current_codes": [
+      "STARGAZE20",
+      "COMEBACK15"
+    ]
+  },
+  {
+    "email": "aisha.torvalds58@inbox.example",
+    "customer_since": 2025,
+    "current_codes": [
+      "STARGAZE20"
+    ]
+  },
+  {
+    "email": "guido.perlman88@post.example",
+    "customer_since": 2016,
+    "current_codes": [
+      "THANKYOU10"
+    ]
+  },
+  {
+    "email": "alan.lovelace10@mail.example",
+    "customer_since": 2025,
+    "current_codes": [
+      "STARGAZE20"
+    ]
+  },
+  {
+    "email": "tim.lovelace30@post.example",
+    "customer_since": 2020,
+    "current_codes": [
+      "STARGAZE20"
+    ]
+  },
+  {
+    "email": "barbara.mccarthy1@post.example",
+    "customer_since": 2021,
+    "current_codes": [
+      "THANKYOU10",
+      "COMEBACK15"
+    ]
+  },
+  {
+    "email": "ada.cerf42@inbox.example",
+    "customer_since": 2024,
+    "current_codes": [
+      "COMEBACK15"
+    ]
+  },
+  {
+    "email": "alan.clarke73@inbox.example",
+    "customer_since": 2017,
+    "current_codes": [
+      "THANKYOU10",
+      "COMEBACK15"
+    ]
+  },
+  {
+    "email": "edsger.bello49@inbox.example",
+    "customer_since": 2019,
+    "current_codes": [
+      "STARGAZE20",
+      "COMEBACK15"
+    ]
+  },
+  {
+    "email": "omar.cerf60@inbox.example",
+    "customer_since": 2024,
+    "current_codes": [
+      "THANKYOU10",
+      "STARGAZE20"
+    ]
+  },
+  {
+    "email": "omar.zhang41@inbox.example",
+    "customer_since": 2021,
+    "current_codes": [
+      "THANKYOU10"
+    ]
+  },
+  {
+    "email": "edsger.wilson64@inbox.example",
+    "customer_since": 2024,
+    "current_codes": [
+      "THANKYOU10"
+    ]
+  },
+  {
+    "email": "katherine.mccarthy93@post.example",
+    "customer_since": 2020,
+    "current_codes": [
+      "COMEBACK15",
+      "STARGAZE20"
+    ]
+  },
+  {
+    "email": "ada.lamarr2@post.example",
+    "customer_since": 2025,
+    "current_codes": [
+      "COMEBACK15"
+    ]
+  },
+  {
+    "email": "tim.johnson34@inbox.example",
+    "customer_since": 2022,
+    "current_codes": [
+      "THANKYOU10",
+      "COMEBACK15"
+    ]
+  },
+  {
+    "email": "sophie.larsen16@mail.example",
+    "customer_since": 2022,
+    "current_codes": [
+      "STARGAZE20",
+      "THANKYOU10"
+    ]
+  },
+  {
+    "email": "margaret.thompson21@mail.example",
+    "customer_since": 2024,
+    "current_codes": [
+      "STARGAZE20"
+    ]
+  },
+  {
+    "email": "tim.wilson67@inbox.example",
+    "customer_since": 2024,
+    "current_codes": [
+      "COMEBACK15",
+      "STARGAZE20"
+    ]
+  },
+  {
+    "email": "chen.bello26@mail.example",
+    "customer_since": 2016,
+    "current_codes": [
+      "COMEBACK15",
+      "STARGAZE20"
+    ]
+  },
+  {
+    "email": "linus.lamarr87@post.example",
+    "customer_since": 2017,
+    "current_codes": [
+      "THANKYOU10"
+    ]
+  },
+  {
+    "email": "ken.larsen37@post.example",
+    "customer_since": 2019,
+    "current_codes": [
+      "STARGAZE20",
+      "COMEBACK15"
+    ]
+  },
+  {
+    "email": "rafael.bello44@inbox.example",
+    "customer_since": 2025,
+    "current_codes": [
+      "COMEBACK15",
+      "STARGAZE20"
+    ]
+  },
+  {
+    "email": "mateo.wilson35@mail.example",
+    "customer_since": 2019,
+    "current_codes": [
+      "COMEBACK15"
+    ]
+  },
+  {
+    "email": "margaret.ritchie35@mail.example",
+    "customer_since": 2021,
+    "current_codes": [
+      "STARGAZE20"
+    ]
+  },
+  {
+    "email": "radia.dijkstra86@mail.example",
+    "customer_since": 2019,
+    "current_codes": [
+      "COMEBACK15",
+      "THANKYOU10"
+    ]
+  },
+  {
+    "email": "tim.fischer26@mail.example",
+    "customer_since": 2018,
+    "current_codes": [
+      "THANKYOU10",
+      "COMEBACK15"
+    ]
+  },
+  {
+    "email": "margaret.lovelace67@inbox.example",
+    "customer_since": 2019,
+    "current_codes": [
+      "STARGAZE20",
+      "COMEBACK15"
+    ]
+  },
+  {
+    "email": "sophie.torvalds27@inbox.example",
+    "customer_since": 2026,
+    "current_codes": [
+      "STARGAZE20"
+    ]
+  },
+  {
+    "email": "bjarne.turing46@mail.example",
+    "customer_since": 2015,
+    "current_codes": [
+      "THANKYOU10"
+    ]
+  },
+  {
+    "email": "mateo.torvalds5@mail.example",
+    "customer_since": 2024,
+    "current_codes": [
+      "COMEBACK15",
+      "STARGAZE20"
+    ]
+  },
+  {
+    "email": "chen.fischer47@mail.example",
+    "customer_since": 2025,
+    "current_codes": [
+      "THANKYOU10"
+    ]
+  },
+  {
+    "email": "barbara.larsen62@inbox.example",
+    "customer_since": 2018,
+    "current_codes": [
+      "STARGAZE20",
+      "COMEBACK15"
+    ]
+  },
+  {
+    "email": "ingrid.ritchie88@inbox.example",
+    "customer_since": 2021,
+    "current_codes": [
+      "THANKYOU10"
+    ]
+  },
+  {
+    "email": "tim.cerf89@inbox.example",
+    "customer_since": 2019,
+    "current_codes": [
+      "COMEBACK15",
+      "THANKYOU10"
+    ]
+  },
+  {
+    "email": "chen.torvalds11@mail.example",
+    "customer_since": 2016,
+    "current_codes": [
+      "THANKYOU10"
+    ]
+  },
+  {
+    "email": "alan.silva91@inbox.example",
+    "customer_since": 2024,
+    "current_codes": [
+      "COMEBACK15",
+      "STARGAZE20"
+    ]
+  },
+  {
+    "email": "frances.thompson48@post.example",
+    "customer_since": 2025,
+    "current_codes": [
+      "COMEBACK15",
+      "THANKYOU10"
+    ]
+  },
+  {
+    "email": "ingrid.dijkstra72@inbox.example",
+    "customer_since": 2021,
+    "current_codes": [
+      "THANKYOU10"
+    ]
+  },
+  {
+    "email": "chen.dijkstra21@inbox.example",
+    "customer_since": 2018,
+    "current_codes": [
+      "STARGAZE20"
+    ]
+  },
+  {
+    "email": "sophie.okafor44@post.example",
+    "customer_since": 2017,
+    "current_codes": [
+      "STARGAZE20",
+      "THANKYOU10"
+    ]
+  },
+  {
+    "email": "omar.clarke6@inbox.example",
+    "customer_since": 2018,
+    "current_codes": [
+      "THANKYOU10",
+      "COMEBACK15"
+    ]
+  },
+  {
+    "email": "sophie.liskov31@mail.example",
+    "customer_since": 2026,
+    "current_codes": [
+      "COMEBACK15"
+    ]
+  },
+  {
+    "email": "ingrid.liskov88@post.example",
+    "customer_since": 2023,
+    "current_codes": [
+      "COMEBACK15"
+    ]
+  },
+  {
+    "email": "margaret.cerf2@mail.example",
+    "customer_since": 2025,
+    "current_codes": [
+      "THANKYOU10"
+    ]
+  },
+  {
+    "email": "donald.larsen7@post.example",
+    "customer_since": 2025,
+    "current_codes": [
+      "THANKYOU10"
+    ]
+  },
+  {
+    "email": "kwame.hopper99@post.example",
+    "customer_since": 2026,
+    "current_codes": [
+      "STARGAZE20"
+    ]
+  },
+  {
+    "email": "rafael.zhang34@inbox.example",
+    "customer_since": 2026,
+    "current_codes": [
+      "STARGAZE20",
+      "THANKYOU10"
+    ]
+  },
+  {
+    "email": "lena.lamarr38@inbox.example",
+    "customer_since": 2016,
+    "current_codes": [
+      "THANKYOU10"
+    ]
+  },
+  {
+    "email": "ada.dijkstra1@mail.example",
+    "customer_since": 2015,
+    "current_codes": [
+      "THANKYOU10",
+      "STARGAZE20"
+    ]
+  },
+  {
+    "email": "grace.hamilton24@post.example",
+    "customer_since": 2021,
+    "current_codes": [
+      "COMEBACK15"
+    ]
+  },
+  {
+    "email": "mateo.raman54@mail.example",
+    "customer_since": 2025,
+    "current_codes": [
+      "STARGAZE20"
+    ]
+  },
+  {
+    "email": "barbara.cerf35@mail.example",
+    "customer_since": 2026,
+    "current_codes": [
+      "STARGAZE20",
+      "THANKYOU10"
+    ]
+  },
+  {
+    "email": "rafael.mensah55@mail.example",
+    "customer_since": 2015,
+    "current_codes": [
+      "COMEBACK15",
+      "THANKYOU10"
+    ]
+  },
+  {
+    "email": "radia.okafor85@mail.example",
+    "customer_since": 2024,
+    "current_codes": [
+      "THANKYOU10"
+    ]
+  },
+  {
+    "email": "rosa.zhang55@inbox.example",
+    "customer_since": 2025,
+    "current_codes": [
+      "COMEBACK15"
+    ]
+  },
+  {
+    "email": "edsger.lamarr22@post.example",
+    "customer_since": 2019,
+    "current_codes": [
+      "COMEBACK15"
+    ]
+  },
+  {
+    "email": "tim.johnson58@mail.example",
+    "customer_since": 2023,
+    "current_codes": [
+      "THANKYOU10",
+      "STARGAZE20"
+    ]
+  },
+  {
+    "email": "tim.larsen10@post.example",
+    "customer_since": 2023,
+    "current_codes": [
+      "STARGAZE20",
+      "THANKYOU10"
+    ]
+  },
+  {
+    "email": "donald.okafor50@post.example",
+    "customer_since": 2017,
+    "current_codes": [
+      "THANKYOU10",
+      "STARGAZE20"
+    ]
+  },
+  {
+    "email": "bjarne.knuth6@inbox.example",
+    "customer_since": 2015,
+    "current_codes": [
+      "STARGAZE20"
+    ]
+  },
+  {
+    "email": "kwame.perlman38@mail.example",
+    "customer_since": 2020,
+    "current_codes": [
+      "COMEBACK15"
+    ]
+  },
+  {
+    "email": "omar.johnson69@inbox.example",
+    "customer_since": 2022,
+    "current_codes": [
+      "COMEBACK15",
+      "THANKYOU10"
+    ]
+  },
+  {
+    "email": "grace.ritchie15@mail.example",
+    "customer_since": 2023,
+    "current_codes": [
+      "THANKYOU10"
+    ]
+  },
+  {
+    "email": "ada.haddad75@inbox.example",
+    "customer_since": 2017,
+    "current_codes": [
+      "STARGAZE20"
+    ]
+  },
+  {
+    "email": "linus.thompson11@inbox.example",
+    "customer_since": 2022,
+    "current_codes": [
+      "STARGAZE20"
+    ]
+  },
+  {
+    "email": "hedy.cerf99@post.example",
+    "customer_since": 2020,
+    "current_codes": [
+      "COMEBACK15",
+      "STARGAZE20"
+    ]
+  },
+  {
+    "email": "kwame.larsen35@mail.example",
+    "customer_since": 2026,
+    "current_codes": [
+      "THANKYOU10",
+      "COMEBACK15"
+    ]
+  },
+  {
+    "email": "hedy.cerf29@inbox.example",
+    "customer_since": 2018,
+    "current_codes": [
+      "THANKYOU10"
+    ]
+  },
+  {
+    "email": "ingrid.johnson56@post.example",
+    "customer_since": 2022,
+    "current_codes": [
+      "COMEBACK15"
+    ]
+  },
+  {
+    "email": "bjarne.wilson25@inbox.example",
+    "customer_since": 2017,
+    "current_codes": [
+      "COMEBACK15"
+    ]
+  },
+  {
+    "email": "dennis.fischer22@inbox.example",
+    "customer_since": 2024,
+    "current_codes": [
+      "COMEBACK15",
+      "THANKYOU10"
+    ]
+  },
+  {
+    "email": "bjarne.fischer44@mail.example",
+    "customer_since": 2015,
+    "current_codes": [
+      "COMEBACK15",
+      "THANKYOU10"
+    ]
+  },
+  {
+    "email": "margaret.perlman39@mail.example",
+    "customer_since": 2018,
+    "current_codes": [
+      "THANKYOU10",
+      "STARGAZE20"
+    ]
+  },
+  {
+    "email": "mateo.johnson91@post.example",
+    "customer_since": 2016,
+    "current_codes": [
+      "COMEBACK15",
+      "STARGAZE20"
+    ]
+  },
+  {
+    "email": "anita.thompson43@mail.example",
+    "customer_since": 2015,
+    "current_codes": [
+      "THANKYOU10",
+      "STARGAZE20"
+    ]
+  },
+  {
+    "email": "radia.mensah62@mail.example",
+    "customer_since": 2016,
+    "current_codes": [
+      "STARGAZE20"
+    ]
+  },
+  {
+    "email": "tim.lamarr21@mail.example",
+    "customer_since": 2023,
+    "current_codes": [
+      "THANKYOU10",
+      "COMEBACK15"
+    ]
+  },
+  {
+    "email": "barbara.dijkstra40@mail.example",
+    "customer_since": 2020,
+    "current_codes": [
+      "THANKYOU10"
+    ]
+  },
+  {
+    "email": "ken.bello23@post.example",
+    "customer_since": 2015,
+    "current_codes": [
+      "COMEBACK15"
+    ]
+  },
+  {
+    "email": "ingrid.perlman26@inbox.example",
+    "customer_since": 2020,
+    "current_codes": [
+      "STARGAZE20"
+    ]
+  },
+  {
+    "email": "linus.zhang91@post.example",
+    "customer_since": 2017,
+    "current_codes": [
+      "THANKYOU10"
+    ]
+  },
+  {
+    "email": "ada.fischer82@post.example",
+    "customer_since": 2026,
+    "current_codes": [
+      "THANKYOU10"
+    ]
+  },
+  {
+    "email": "linus.zhang53@post.example",
+    "customer_since": 2024,
+    "current_codes": [
+      "COMEBACK15",
+      "THANKYOU10"
+    ]
+  },
+  {
+    "email": "priya.hamilton67@inbox.example",
+    "customer_since": 2019,
+    "current_codes": [
+      "THANKYOU10"
+    ]
+  },
+  {
+    "email": "rafael.hopper23@inbox.example",
+    "customer_since": 2018,
+    "current_codes": [
+      "STARGAZE20"
+    ]
+  },
+  {
+    "email": "chen.dijkstra1@post.example",
+    "customer_since": 2025,
+    "current_codes": [
+      "COMEBACK15",
+      "THANKYOU10"
+    ]
+  },
+  {
+    "email": "donald.perlman34@post.example",
+    "customer_since": 2017,
+    "current_codes": [
+      "STARGAZE20"
+    ]
+  },
+  {
+    "email": "mateo.knuth25@post.example",
+    "customer_since": 2020,
+    "current_codes": [
+      "THANKYOU10",
+      "STARGAZE20"
+    ]
+  },
+  {
+    "email": "ingrid.lamarr45@inbox.example",
+    "customer_since": 2016,
+    "current_codes": [
+      "THANKYOU10",
+      "COMEBACK15"
+    ]
+  },
+  {
+    "email": "donald.knuth71@post.example",
+    "customer_since": 2024,
+    "current_codes": [
+      "STARGAZE20"
+    ]
+  },
+  {
+    "email": "linus.silva75@inbox.example",
+    "customer_since": 2018,
+    "current_codes": [
+      "COMEBACK15"
+    ]
+  },
+  {
+    "email": "john.lovelace98@mail.example",
+    "customer_since": 2026,
+    "current_codes": [
+      "STARGAZE20",
+      "THANKYOU10"
+    ]
+  },
+  {
+    "email": "chen.mensah44@inbox.example",
+    "customer_since": 2024,
+    "current_codes": [
+      "STARGAZE20",
+      "THANKYOU10"
+    ]
+  },
+  {
+    "email": "radia.mccarthy18@mail.example",
+    "customer_since": 2018,
+    "current_codes": [
+      "COMEBACK15",
+      "STARGAZE20"
+    ]
+  },
+  {
+    "email": "ken.perlman93@post.example",
+    "customer_since": 2021,
+    "current_codes": [
+      "STARGAZE20"
+    ]
+  },
+  {
+    "email": "radia.mensah51@inbox.example",
+    "customer_since": 2026,
+    "current_codes": [
+      "THANKYOU10"
+    ]
+  },
+  {
+    "email": "omar.lovelace59@inbox.example",
+    "customer_since": 2015,
+    "current_codes": [
+      "COMEBACK15",
+      "STARGAZE20"
+    ]
+  },
+  {
+    "email": "ken.larsen23@mail.example",
+    "customer_since": 2019,
+    "current_codes": [
+      "STARGAZE20"
+    ]
+  },
+  {
+    "email": "ingrid.fischer97@post.example",
+    "customer_since": 2021,
+    "current_codes": [
+      "THANKYOU10",
+      "STARGAZE20"
+    ]
+  },
+  {
+    "email": "frances.hopper77@post.example",
+    "customer_since": 2017,
+    "current_codes": [
+      "COMEBACK15",
+      "STARGAZE20"
+    ]
+  },
+  {
+    "email": "donald.johnson33@post.example",
+    "customer_since": 2025,
+    "current_codes": [
+      "THANKYOU10",
+      "COMEBACK15"
+    ]
+  },
+  {
+    "email": "bjarne.cerf74@mail.example",
+    "customer_since": 2019,
+    "current_codes": [
+      "STARGAZE20",
+      "COMEBACK15"
+    ]
+  },
+  {
+    "email": "rosa.silva4@mail.example",
+    "customer_since": 2017,
+    "current_codes": [
+      "THANKYOU10"
+    ]
+  },
+  {
+    "email": "guido.okafor78@mail.example",
+    "customer_since": 2019,
+    "current_codes": [
+      "COMEBACK15"
+    ]
+  },
+  {
+    "email": "omar.haddad18@inbox.example",
+    "customer_since": 2024,
+    "current_codes": [
+      "COMEBACK15"
+    ]
+  },
+  {
+    "email": "guido.cerf7@mail.example",
+    "customer_since": 2025,
+    "current_codes": [
+      "STARGAZE20",
+      "COMEBACK15"
+    ]
+  },
+  {
+    "email": "guido.silva25@post.example",
+    "customer_since": 2019,
+    "current_codes": [
+      "STARGAZE20"
+    ]
+  },
+  {
+    "email": "rafael.larsen52@inbox.example",
+    "customer_since": 2022,
+    "current_codes": [
+      "COMEBACK15"
+    ]
+  },
+  {
+    "email": "alan.dijkstra39@mail.example",
+    "customer_since": 2020,
+    "current_codes": [
+      "COMEBACK15"
+    ]
+  },
+  {
+    "email": "linus.liskov69@inbox.example",
+    "customer_since": 2015,
+    "current_codes": [
+      "COMEBACK15",
+      "STARGAZE20"
+    ]
+  },
+  {
+    "email": "barbara.perlman88@post.example",
+    "customer_since": 2025,
+    "current_codes": [
+      "THANKYOU10"
+    ]
+  },
+  {
+    "email": "ingrid.dijkstra34@inbox.example",
+    "customer_since": 2021,
+    "current_codes": [
+      "COMEBACK15",
+      "THANKYOU10"
+    ]
+  },
+  {
+    "email": "guido.torvalds87@post.example",
+    "customer_since": 2016,
+    "current_codes": [
+      "COMEBACK15"
+    ]
+  },
+  {
+    "email": "grace.johnson70@mail.example",
+    "customer_since": 2016,
+    "current_codes": [
+      "STARGAZE20",
+      "THANKYOU10"
+    ]
+  },
+  {
+    "email": "donald.thompson59@post.example",
+    "customer_since": 2016,
+    "current_codes": [
+      "COMEBACK15"
+    ]
+  },
+  {
+    "email": "radia.cerf90@post.example",
+    "customer_since": 2017,
+    "current_codes": [
+      "COMEBACK15",
+      "THANKYOU10"
+    ]
+  },
+  {
+    "email": "anita.cerf43@post.example",
+    "customer_since": 2020,
+    "current_codes": [
+      "STARGAZE20"
+    ]
+  },
+  {
+    "email": "john.larsen89@inbox.example",
+    "customer_since": 2017,
+    "current_codes": [
+      "THANKYOU10",
+      "STARGAZE20"
+    ]
+  },
+  {
+    "email": "alan.mccarthy21@post.example",
+    "customer_since": 2021,
+    "current_codes": [
+      "STARGAZE20",
+      "THANKYOU10"
+    ]
+  },
+  {
+    "email": "donald.larsen37@mail.example",
+    "customer_since": 2025,
+    "current_codes": [
+      "COMEBACK15",
+      "THANKYOU10"
+    ]
+  },
+  {
+    "email": "john.okafor44@mail.example",
+    "customer_since": 2019,
+    "current_codes": [
+      "THANKYOU10"
+    ]
+  },
+  {
+    "email": "linus.mensah23@inbox.example",
+    "customer_since": 2025,
+    "current_codes": [
+      "COMEBACK15",
+      "STARGAZE20"
+    ]
+  },
+  {
+    "email": "sophie.turing80@inbox.example",
+    "customer_since": 2019,
+    "current_codes": [
+      "THANKYOU10"
+    ]
+  },
+  {
+    "email": "guido.hamilton58@post.example",
+    "customer_since": 2023,
+    "current_codes": [
+      "THANKYOU10",
+      "STARGAZE20"
+    ]
+  },
+  {
+    "email": "frances.torvalds19@post.example",
+    "customer_since": 2018,
+    "current_codes": [
+      "COMEBACK15",
+      "STARGAZE20"
+    ]
+  },
+  {
+    "email": "anita.lovelace13@mail.example",
+    "customer_since": 2022,
+    "current_codes": [
+      "THANKYOU10"
+    ]
+  },
+  {
+    "email": "katherine.fischer46@post.example",
+    "customer_since": 2019,
+    "current_codes": [
+      "THANKYOU10"
+    ]
+  },
+  {
+    "email": "mateo.johnson96@mail.example",
+    "customer_since": 2019,
+    "current_codes": [
+      "THANKYOU10"
+    ]
+  },
+  {
+    "email": "chen.clarke18@inbox.example",
+    "customer_since": 2016,
+    "current_codes": [
+      "THANKYOU10",
+      "STARGAZE20"
+    ]
+  },
+  {
+    "email": "dennis.raman65@mail.example",
+    "customer_since": 2025,
+    "current_codes": [
+      "STARGAZE20",
+      "THANKYOU10"
+    ]
+  },
+  {
+    "email": "tim.bello7@inbox.example",
+    "customer_since": 2015,
+    "current_codes": [
+      "THANKYOU10",
+      "STARGAZE20"
+    ]
+  },
+  {
+    "email": "grace.hamilton39@mail.example",
+    "customer_since": 2017,
+    "current_codes": [
+      "COMEBACK15",
+      "STARGAZE20"
+    ]
+  },
+  {
+    "email": "sophie.wilson13@mail.example",
+    "customer_since": 2018,
+    "current_codes": [
+      "THANKYOU10"
+    ]
+  },
+  {
+    "email": "grace.lovelace52@inbox.example",
+    "customer_since": 2015,
+    "current_codes": [
+      "COMEBACK15"
+    ]
+  },
+  {
+    "email": "ken.larsen88@post.example",
+    "customer_since": 2022,
+    "current_codes": [
+      "COMEBACK15"
+    ]
+  },
+  {
+    "email": "ingrid.liskov98@mail.example",
+    "customer_since": 2023,
+    "current_codes": [
+      "STARGAZE20",
+      "THANKYOU10"
+    ]
+  },
+  {
+    "email": "ken.thompson36@mail.example",
+    "customer_since": 2017,
+    "current_codes": [
+      "COMEBACK15"
+    ]
+  },
+  {
+    "email": "ken.zhang42@inbox.example",
+    "customer_since": 2017,
+    "current_codes": [
+      "THANKYOU10",
+      "STARGAZE20"
+    ]
+  },
+  {
+    "email": "ingrid.ritchie53@post.example",
+    "customer_since": 2026,
+    "current_codes": [
+      "COMEBACK15"
+    ]
+  },
+  {
+    "email": "edsger.perlman16@mail.example",
+    "customer_since": 2018,
+    "current_codes": [
+      "THANKYOU10"
+    ]
+  },
+  {
+    "email": "edsger.cerf94@post.example",
+    "customer_since": 2015,
+    "current_codes": [
+      "COMEBACK15",
+      "THANKYOU10"
+    ]
+  },
+  {
+    "email": "priya.knuth8@inbox.example",
+    "customer_since": 2021,
+    "current_codes": [
+      "THANKYOU10",
+      "STARGAZE20"
+    ]
+  },
+  {
+    "email": "omar.clarke54@mail.example",
+    "customer_since": 2019,
+    "current_codes": [
+      "COMEBACK15"
+    ]
+  },
+  {
+    "email": "ken.thompson67@mail.example",
+    "customer_since": 2021,
+    "current_codes": [
+      "THANKYOU10"
+    ]
+  },
+  {
+    "email": "dennis.okafor92@mail.example",
+    "customer_since": 2016,
+    "current_codes": [
+      "COMEBACK15"
+    ]
+  },
+  {
+    "email": "ingrid.clarke33@inbox.example",
+    "customer_since": 2022,
+    "current_codes": [
+      "COMEBACK15"
+    ]
+  },
+  {
+    "email": "sophie.torvalds32@mail.example",
+    "customer_since": 2015,
+    "current_codes": [
+      "STARGAZE20",
+      "THANKYOU10"
+    ]
+  },
+  {
+    "email": "rosa.lamarr51@post.example",
+    "customer_since": 2016,
+    "current_codes": [
+      "STARGAZE20"
+    ]
+  },
+  {
+    "email": "anita.raman8@post.example",
+    "customer_since": 2019,
+    "current_codes": [
+      "COMEBACK15",
+      "STARGAZE20"
+    ]
+  },
+  {
+    "email": "aisha.mensah53@mail.example",
+    "customer_since": 2025,
+    "current_codes": [
+      "STARGAZE20"
+    ]
+  },
+  {
+    "email": "dennis.silva11@inbox.example",
+    "customer_since": 2020,
+    "current_codes": [
+      "THANKYOU10"
+    ]
+  },
+  {
+    "email": "omar.zhang55@inbox.example",
+    "customer_since": 2015,
+    "current_codes": [
+      "COMEBACK15",
+      "THANKYOU10"
+    ]
+  },
+  {
+    "email": "ada.johnson93@inbox.example",
+    "customer_since": 2016,
+    "current_codes": [
+      "COMEBACK15",
+      "THANKYOU10"
+    ]
+  },
+  {
+    "email": "rafael.cerf75@mail.example",
+    "customer_since": 2024,
+    "current_codes": [
+      "STARGAZE20",
+      "THANKYOU10"
+    ]
+  },
+  {
+    "email": "dennis.mccarthy50@mail.example",
+    "customer_since": 2016,
+    "current_codes": [
+      "THANKYOU10"
+    ]
+  },
+  {
+    "email": "katherine.thompson38@mail.example",
+    "customer_since": 2017,
+    "current_codes": [
+      "COMEBACK15",
+      "STARGAZE20"
+    ]
+  },
+  {
+    "email": "anita.raman30@mail.example",
+    "customer_since": 2022,
+    "current_codes": [
+      "STARGAZE20",
+      "THANKYOU10"
+    ]
+  },
+  {
+    "email": "donald.silva4@post.example",
+    "customer_since": 2016,
+    "current_codes": [
+      "COMEBACK15"
+    ]
+  },
+  {
+    "email": "katherine.cerf83@mail.example",
+    "customer_since": 2017,
+    "current_codes": [
+      "STARGAZE20"
+    ]
+  },
+  {
+    "email": "katherine.zhang71@mail.example",
+    "customer_since": 2015,
+    "current_codes": [
+      "STARGAZE20",
+      "THANKYOU10"
+    ]
+  },
+  {
+    "email": "priya.haddad47@inbox.example",
+    "customer_since": 2015,
+    "current_codes": [
+      "THANKYOU10"
+    ]
+  },
+  {
+    "email": "margaret.hamilton84@inbox.example",
+    "customer_since": 2018,
+    "current_codes": [
+      "STARGAZE20"
+    ]
+  },
+  {
+    "email": "tim.cerf17@post.example",
+    "customer_since": 2019,
+    "current_codes": [
+      "COMEBACK15",
+      "THANKYOU10"
+    ]
+  },
+  {
+    "email": "donald.thompson17@mail.example",
+    "customer_since": 2018,
+    "current_codes": [
+      "STARGAZE20"
+    ]
+  },
+  {
+    "email": "radia.ortega44@mail.example",
+    "customer_since": 2022,
+    "current_codes": [
+      "THANKYOU10",
+      "COMEBACK15"
+    ]
+  },
+  {
+    "email": "ada.thompson74@inbox.example",
+    "customer_since": 2025,
+    "current_codes": [
+      "STARGAZE20"
+    ]
+  },
+  {
+    "email": "linus.zhang78@mail.example",
+    "customer_since": 2016,
+    "current_codes": [
+      "COMEBACK15",
+      "STARGAZE20"
+    ]
+  },
+  {
+    "email": "donald.johnson97@post.example",
+    "customer_since": 2023,
+    "current_codes": [
+      "STARGAZE20",
+      "THANKYOU10"
+    ]
+  },
+  {
+    "email": "ken.mccarthy32@mail.example",
+    "customer_since": 2022,
+    "current_codes": [
+      "STARGAZE20",
+      "THANKYOU10"
+    ]
+  },
+  {
+    "email": "sophie.mccarthy12@mail.example",
+    "customer_since": 2025,
+    "current_codes": [
+      "THANKYOU10"
+    ]
+  },
+  {
+    "email": "chen.bello63@post.example",
+    "customer_since": 2023,
+    "current_codes": [
+      "STARGAZE20"
+    ]
+  },
+  {
+    "email": "kwame.turing45@mail.example",
+    "customer_since": 2017,
+    "current_codes": [
+      "STARGAZE20",
+      "THANKYOU10"
+    ]
+  },
+  {
+    "email": "ken.silva79@mail.example",
+    "customer_since": 2024,
+    "current_codes": [
+      "STARGAZE20"
+    ]
+  },
+  {
+    "email": "mateo.larsen41@inbox.example",
+    "customer_since": 2024,
+    "current_codes": [
+      "THANKYOU10"
+    ]
+  },
+  {
+    "email": "john.hopper60@post.example",
+    "customer_since": 2026,
+    "current_codes": [
+      "COMEBACK15"
+    ]
+  },
+  {
+    "email": "alan.mensah82@post.example",
+    "customer_since": 2026,
+    "current_codes": [
+      "COMEBACK15",
+      "THANKYOU10"
+    ]
+  },
+  {
+    "email": "kwame.cerf55@mail.example",
+    "customer_since": 2022,
+    "current_codes": [
+      "COMEBACK15",
+      "THANKYOU10"
+    ]
+  },
+  {
+    "email": "guido.dijkstra12@inbox.example",
+    "customer_since": 2026,
+    "current_codes": [
+      "COMEBACK15",
+      "STARGAZE20"
+    ]
+  },
+  {
+    "email": "lena.raman66@mail.example",
+    "customer_since": 2022,
+    "current_codes": [
+      "THANKYOU10",
+      "STARGAZE20"
+    ]
+  },
+  {
+    "email": "lena.torvalds5@post.example",
+    "customer_since": 2022,
+    "current_codes": [
+      "COMEBACK15",
+      "THANKYOU10"
+    ]
+  },
+  {
+    "email": "alan.raman20@mail.example",
+    "customer_since": 2020,
+    "current_codes": [
+      "THANKYOU10"
+    ]
+  },
+  {
+    "email": "ingrid.haddad54@mail.example",
+    "customer_since": 2020,
+    "current_codes": [
+      "THANKYOU10",
+      "COMEBACK15"
+    ]
+  },
+  {
+    "email": "linus.turing44@post.example",
+    "customer_since": 2020,
+    "current_codes": [
+      "STARGAZE20"
+    ]
+  },
+  {
+    "email": "ingrid.mccarthy58@inbox.example",
+    "customer_since": 2015,
+    "current_codes": [
+      "COMEBACK15"
+    ]
+  },
+  {
+    "email": "lena.thompson5@mail.example",
+    "customer_since": 2018,
+    "current_codes": [
+      "THANKYOU10"
+    ]
+  },
+  {
+    "email": "sophie.perlman94@inbox.example",
+    "customer_since": 2017,
+    "current_codes": [
+      "COMEBACK15",
+      "STARGAZE20"
+    ]
+  },
+  {
+    "email": "dennis.hopper3@inbox.example",
+    "customer_since": 2020,
+    "current_codes": [
+      "STARGAZE20"
+    ]
+  },
+  {
+    "email": "tim.okafor74@mail.example",
+    "customer_since": 2020,
+    "current_codes": [
+      "COMEBACK15"
+    ]
+  },
+  {
+    "email": "dennis.wilson67@mail.example",
+    "customer_since": 2026,
+    "current_codes": [
+      "COMEBACK15"
+    ]
+  },
+  {
+    "email": "ada.clarke20@mail.example",
+    "customer_since": 2022,
+    "current_codes": [
+      "STARGAZE20",
+      "THANKYOU10"
+    ]
+  },
+  {
+    "email": "hedy.okafor18@mail.example",
+    "customer_since": 2019,
+    "current_codes": [
+      "THANKYOU10",
+      "STARGAZE20"
+    ]
+  },
+  {
+    "email": "radia.clarke23@inbox.example",
+    "customer_since": 2018,
+    "current_codes": [
+      "COMEBACK15"
+    ]
+  },
+  {
+    "email": "alan.lamarr89@mail.example",
+    "customer_since": 2015,
+    "current_codes": [
+      "THANKYOU10"
+    ]
+  },
+  {
+    "email": "ingrid.torvalds58@post.example",
+    "customer_since": 2020,
+    "current_codes": [
+      "COMEBACK15"
+    ]
+  },
+  {
+    "email": "bjarne.turing30@inbox.example",
+    "customer_since": 2026,
+    "current_codes": [
+      "STARGAZE20"
+    ]
+  },
+  {
+    "email": "john.silva96@post.example",
+    "customer_since": 2018,
+    "current_codes": [
+      "THANKYOU10",
+      "COMEBACK15"
+    ]
+  },
+  {
+    "email": "edsger.cerf51@post.example",
+    "customer_since": 2022,
+    "current_codes": [
+      "COMEBACK15",
+      "THANKYOU10"
+    ]
+  },
+  {
+    "email": "ingrid.fischer33@inbox.example",
+    "customer_since": 2023,
+    "current_codes": [
+      "COMEBACK15",
+      "STARGAZE20"
+    ]
+  },
+  {
+    "email": "barbara.turing28@mail.example",
+    "customer_since": 2018,
+    "current_codes": [
+      "STARGAZE20"
+    ]
+  },
+  {
+    "email": "mateo.clarke47@inbox.example",
+    "customer_since": 2020,
+    "current_codes": [
+      "STARGAZE20",
+      "COMEBACK15"
+    ]
+  },
+  {
+    "email": "rafael.clarke99@post.example",
+    "customer_since": 2017,
+    "current_codes": [
+      "STARGAZE20",
+      "COMEBACK15"
+    ]
+  },
+  {
+    "email": "margaret.knuth74@inbox.example",
+    "customer_since": 2016,
+    "current_codes": [
+      "COMEBACK15",
+      "STARGAZE20"
+    ]
+  },
+  {
+    "email": "edsger.mccarthy9@inbox.example",
+    "customer_since": 2016,
+    "current_codes": [
+      "COMEBACK15"
+    ]
+  },
+  {
+    "email": "lena.fischer59@inbox.example",
+    "customer_since": 2019,
+    "current_codes": [
+      "STARGAZE20"
+    ]
+  },
+  {
+    "email": "omar.johnson58@inbox.example",
+    "customer_since": 2018,
+    "current_codes": [
+      "COMEBACK15"
+    ]
+  },
+  {
+    "email": "katherine.hamilton15@mail.example",
+    "customer_since": 2020,
+    "current_codes": [
+      "STARGAZE20",
+      "THANKYOU10"
+    ]
+  },
+  {
+    "email": "sophie.haddad34@mail.example",
+    "customer_since": 2021,
+    "current_codes": [
+      "COMEBACK15",
+      "THANKYOU10"
+    ]
+  },
+  {
+    "email": "omar.knuth33@inbox.example",
+    "customer_since": 2017,
+    "current_codes": [
+      "COMEBACK15"
+    ]
+  },
+  {
+    "email": "priya.haddad37@post.example",
+    "customer_since": 2023,
+    "current_codes": [
+      "COMEBACK15",
+      "STARGAZE20"
+    ]
+  },
+  {
+    "email": "margaret.clarke78@mail.example",
+    "customer_since": 2025,
+    "current_codes": [
+      "STARGAZE20"
+    ]
+  },
+  {
+    "email": "frances.lamarr78@inbox.example",
+    "customer_since": 2026,
+    "current_codes": [
+      "STARGAZE20"
+    ]
+  },
+  {
+    "email": "rafael.liskov11@inbox.example",
+    "customer_since": 2019,
+    "current_codes": [
+      "COMEBACK15"
+    ]
+  },
+  {
+    "email": "chen.larsen91@mail.example",
+    "customer_since": 2020,
+    "current_codes": [
+      "THANKYOU10"
+    ]
+  },
+  {
+    "email": "bjarne.turing47@mail.example",
+    "customer_since": 2017,
+    "current_codes": [
+      "STARGAZE20",
+      "COMEBACK15"
+    ]
+  },
+  {
+    "email": "hedy.knuth58@inbox.example",
+    "customer_since": 2023,
+    "current_codes": [
+      "STARGAZE20"
+    ]
+  },
+  {
+    "email": "anita.larsen96@mail.example",
+    "customer_since": 2026,
+    "current_codes": [
+      "THANKYOU10",
+      "COMEBACK15"
+    ]
+  },
+  {
+    "email": "anita.larsen82@inbox.example",
+    "customer_since": 2017,
+    "current_codes": [
+      "STARGAZE20",
+      "THANKYOU10"
+    ]
+  },
+  {
+    "email": "barbara.thompson53@mail.example",
+    "customer_since": 2026,
+    "current_codes": [
+      "THANKYOU10"
+    ]
+  },
+  {
+    "email": "katherine.thompson22@inbox.example",
+    "customer_since": 2018,
+    "current_codes": [
+      "COMEBACK15"
+    ]
+  },
+  {
+    "email": "chen.knuth31@mail.example",
+    "customer_since": 2016,
+    "current_codes": [
+      "COMEBACK15"
+    ]
+  },
+  {
+    "email": "rafael.zhang56@mail.example",
+    "customer_since": 2017,
+    "current_codes": [
+      "COMEBACK15",
+      "STARGAZE20"
+    ]
+  },
+  {
+    "email": "alan.dijkstra37@mail.example",
+    "customer_since": 2023,
+    "current_codes": [
+      "STARGAZE20",
+      "THANKYOU10"
+    ]
+  },
+  {
+    "email": "ken.clarke20@inbox.example",
+    "customer_since": 2026,
+    "current_codes": [
+      "STARGAZE20",
+      "THANKYOU10"
+    ]
+  },
+  {
+    "email": "mateo.dijkstra5@mail.example",
+    "customer_since": 2016,
+    "current_codes": [
+      "THANKYOU10"
+    ]
+  },
+  {
+    "email": "tim.larsen71@inbox.example",
+    "customer_since": 2015,
+    "current_codes": [
+      "COMEBACK15"
+    ]
+  },
+  {
+    "email": "ada.torvalds80@mail.example",
+    "customer_since": 2016,
+    "current_codes": [
+      "COMEBACK15"
+    ]
+  },
+  {
+    "email": "margaret.zhang99@post.example",
+    "customer_since": 2022,
+    "current_codes": [
+      "STARGAZE20",
+      "THANKYOU10"
+    ]
+  },
+  {
+    "email": "margaret.mensah25@mail.example",
+    "customer_since": 2024,
+    "current_codes": [
+      "STARGAZE20"
+    ]
+  },
+  {
+    "email": "kwame.mensah58@post.example",
+    "customer_since": 2021,
+    "current_codes": [
+      "COMEBACK15",
+      "THANKYOU10"
+    ]
+  }
+]

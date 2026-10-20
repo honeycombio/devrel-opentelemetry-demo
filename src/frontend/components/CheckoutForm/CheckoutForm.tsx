@@ -23,6 +23,7 @@ export interface IFormData {
   creditCardCvv: number;
   creditCardExpirationYear: number;
   creditCardExpirationMonth: number;
+  promoCode: string;
 }
 
 interface IProps {
@@ -42,6 +43,7 @@ const CheckoutForm = ({ onSubmit }: IProps) => {
       creditCardExpirationMonth,
       creditCardExpirationYear,
       creditCardNumber,
+      promoCode,
     },
     setFormData,
   ] = useState<IFormData>({
@@ -55,6 +57,7 @@ const CheckoutForm = ({ onSubmit }: IProps) => {
     creditCardCvv: 672,
     creditCardExpirationYear: 2030,
     creditCardExpirationMonth: 1,
+    promoCode: '',
   });
 
   // Logged-in corporate users check out with their work email. sessionStorage is browser-only.
@@ -86,6 +89,7 @@ const CheckoutForm = ({ onSubmit }: IProps) => {
           creditCardExpirationMonth,
           creditCardExpirationYear,
           creditCardNumber,
+          promoCode,
         });
       }}
     >
@@ -198,6 +202,16 @@ const CheckoutForm = ({ onSubmit }: IProps) => {
           onChange={handleChange}
         />
       </S.CardRow>
+
+      <Input
+        label="Promo Code"
+        type="text"
+        id="promo_code"
+        name="promoCode"
+        placeholder="Optional"
+        value={promoCode}
+        onChange={handleChange}
+      />
 
       <S.SubmitContainer>
         <Link href="/">

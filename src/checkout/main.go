@@ -151,6 +151,7 @@ type checkout struct {
 	currencySvcClient       pb.CurrencyServiceClient
 	emailSvcClient          pb.EmailServiceClient
 	paymentSvcClient        pb.PaymentServiceClient
+	promos                  *promoStore // nil when DB_CONNECTION_STRING is unset; promo codes are then never applied
 }
 
 func main() {
@@ -231,6 +232,17 @@ func main() {
 	svc.paymentSvcClient = pb.NewPaymentServiceClient(c)
 	defer c.Close()
 
+	if dbConn := os.Getenv("DB_CONNECTION_STRING"); dbConn != "" {
+		svc.promos, err = newPromoStore(context.Background(), dbConn)
+		if err != nil {
+			logger.Error(fmt.Sprintf("could not create promo store: %v", err))
+		} else {
+			defer svc.promos.close()
+		}
+	} else {
+		logger.Warn("DB_CONNECTION_STRING not set; promo codes will not be applied")
+	}
+
 	svc.kafkaBrokerSvcAddr = os.Getenv("KAFKA_ADDR")
 
 	if svc.kafkaBrokerSvcAddr != "" {
@@ -299,6 +311,7 @@ func (cs *checkout) PlaceOrder(ctx context.Context, req *pb.PlaceOrderRequest) (
 		// What the client (browser or loadgen) says the customer is paying with, e.g. CC_MASTERCARD.
 		// Not derived from the card number here: payment may classify the same card differently.
 		attribute.String("app.payment.strategy", req.PaymentStrategy.String()),
+		attribute.Bool("app.promo.entered", req.PromoCode != ""),
 	)
 	logger.LogAttrs(
 		ctx,
@@ -363,6 +376,20 @@ func (cs *checkout) PlaceOrder(ctx context.Context, req *pb.PlaceOrderRequest) (
 		}
 	}
 
+	var promo *appliedPromo
+	if req.PromoCode != "" {
+		promo = cs.applyPromoCode(ctx, req.Email, req.PromoCode, prep.orderItems, req.UserCurrency)
+	}
+	if promo != nil {
+		total, err = money.Sum(total, money.Negate(promo.discount))
+		if err != nil {
+			logger.LogAttrs(ctx, slog.LevelError, "failed to apply promo discount", slog.String("error", err.Error()))
+			span.SetStatus(otelcodes.Error, "invalid money calculation")
+			span.RecordError(err)
+			return nil, status.Errorf(codes.Internal, "failed to calculate order total: %+v", err)
+		}
+	}
+
 	txID, err := cs.chargeCard(ctx, total, req.CreditCard)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to charge card: %+v", err)
@@ -384,6 +411,10 @@ func (cs *checkout) PlaceOrder(ctx context.Context, req *pb.PlaceOrderRequest) (
 	span.AddEvent("shipped", trace.WithAttributes(shippingTrackingAttribute))
 
 	_ = cs.emptyUserCart(ctx, req.UserId)
+
+	if promo != nil {
+		cs.recordPromoRedemption(ctx, promo, orderID.String())
+	}
 
 	orderResult := &pb.OrderResult{
 		OrderId:            orderID.String(),

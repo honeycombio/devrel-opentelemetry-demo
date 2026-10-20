@@ -310,6 +310,8 @@ message PlaceOrderRequest {
     string email = 5;
     CreditCardInfo credit_card = 6;
     PaymentStrategy payment_strategy = 7;
+    // As typed by the customer; empty when none was entered.
+    string promo_code = 8;
 }
 
 message PlaceOrderResponse {

@@ -15,8 +15,9 @@ COPY ./src/checkout/genproto/oteldemo/ genproto/oteldemo/
 COPY ./src/checkout/kafka/ kafka/
 COPY ./src/checkout/money/ money/
 COPY ./src/checkout/main.go main.go
+COPY ./src/checkout/promo.go promo.go
 
-RUN CGO_ENABLED=0 GOOS=linux go build -ldflags "-s -w" -o checkout main.go
+RUN CGO_ENABLED=0 GOOS=linux go build -ldflags "-s -w" -o checkout .
 
 FROM gcr.io/distroless/static-debian12:nonroot
 

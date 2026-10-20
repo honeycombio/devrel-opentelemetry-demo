@@ -20,6 +20,11 @@ components:
         value: "5060"
       - name: ASPNETCORE_URLS
         value: "http://*:5060"
+  checkout:
+    envOverrides:
+      # Promo codes are read from the promotions schema in Postgres.
+      - name: DB_CONNECTION_STRING
+        value: "host=postgresql user=otelu password=otelp dbname=otel"
   load-generator:
     replicas: 2
     envOverrides:

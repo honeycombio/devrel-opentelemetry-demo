@@ -2101,8 +2101,10 @@ type PlaceOrderRequest struct {
 	Email           string                 `protobuf:"bytes,5,opt,name=email,proto3" json:"email,omitempty"`
 	CreditCard      *CreditCardInfo        `protobuf:"bytes,6,opt,name=credit_card,json=creditCard,proto3" json:"credit_card,omitempty"`
 	PaymentStrategy PaymentStrategy        `protobuf:"varint,7,opt,name=payment_strategy,json=paymentStrategy,proto3,enum=oteldemo.PaymentStrategy" json:"payment_strategy,omitempty"`
-	unknownFields   protoimpl.UnknownFields
-	sizeCache       protoimpl.SizeCache
+	// As typed by the customer; empty when none was entered.
+	PromoCode     string `protobuf:"bytes,8,opt,name=promo_code,json=promoCode,proto3" json:"promo_code,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *PlaceOrderRequest) Reset() {
@@ -2175,6 +2177,13 @@ func (x *PlaceOrderRequest) GetPaymentStrategy() PaymentStrategy {
 		return x.PaymentStrategy
 	}
 	return PaymentStrategy_PAYMENT_STRATEGY_UNSPECIFIED
+}
+
+func (x *PlaceOrderRequest) GetPromoCode() string {
+	if x != nil {
+		return x.PromoCode
+	}
+	return ""
 }
 
 type PlaceOrderResponse struct {
@@ -3484,7 +3493,7 @@ const file_demo_proto_rawDesc = "" +
 	"total_cost\x18\t \x01(\v2\x0f.oteldemo.MoneyR\ttotalCost\"a\n" +
 	"\x1cSendOrderConfirmationRequest\x12\x14\n" +
 	"\x05email\x18\x01 \x01(\tR\x05email\x12+\n" +
-	"\x05order\x18\x02 \x01(\v2\x15.oteldemo.OrderResultR\x05order\"\x95\x02\n" +
+	"\x05order\x18\x02 \x01(\v2\x15.oteldemo.OrderResultR\x05order\"\xb4\x02\n" +
 	"\x11PlaceOrderRequest\x12\x17\n" +
 	"\auser_id\x18\x01 \x01(\tR\x06userId\x12#\n" +
 	"\ruser_currency\x18\x02 \x01(\tR\fuserCurrency\x12+\n" +
@@ -3492,7 +3501,9 @@ const file_demo_proto_rawDesc = "" +
 	"\x05email\x18\x05 \x01(\tR\x05email\x129\n" +
 	"\vcredit_card\x18\x06 \x01(\v2\x18.oteldemo.CreditCardInfoR\n" +
 	"creditCard\x12D\n" +
-	"\x10payment_strategy\x18\a \x01(\x0e2\x19.oteldemo.PaymentStrategyR\x0fpaymentStrategy\"A\n" +
+	"\x10payment_strategy\x18\a \x01(\x0e2\x19.oteldemo.PaymentStrategyR\x0fpaymentStrategy\x12\x1d\n" +
+	"\n" +
+	"promo_code\x18\b \x01(\tR\tpromoCode\"A\n" +
 	"\x12PlaceOrderResponse\x12+\n" +
 	"\x05order\x18\x01 \x01(\v2\x15.oteldemo.OrderResultR\x05order\"/\n" +
 	"\x17GetOrdersByEmailRequest\x12\x14\n" +

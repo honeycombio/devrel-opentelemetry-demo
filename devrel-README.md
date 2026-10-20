@@ -242,6 +242,41 @@ network mix appears a few minutes after the new loadgen pods start.
   collector's flag-change pipeline (`skaffold-config/demo-values.yaml` and
   `deploy/config-files/collector/values-daemonset.yaml`) would fix that; not looked at in detail yet.
 
+### Old promo codes contain special characters
+
+Shows a new feature that fails only for long-standing customers, because it reads data nobody has looked at in
+years.
+
+**The setup (this branch, healthy):**
+
+- Checkout takes an optional promo code (`PlaceOrderRequest.promo_code`, a "Promo Code" field on the checkout form).
+  `applyPromoCode` (`src/checkout/promo.go`) looks it up in Postgres: the code must have been issued to that email
+  and still be valid. It takes `percent_off` off the item subtotal. A code that can't be used doesn't fail the order;
+  it is charged at full price, and `app.promo.result` says why.
+- The `promotions` schema (`src/postgres/init.sql`): `promo_code`, `customer_promo` (every code a customer has ever
+  been issued, redeemed or not) and `redemption`. Seeded by `scripts/generate-promo-seed.py` with 300 returning
+  customers.
+- Codes come from two systems. Before 2020 marketing typed codes into the newsletter tool by hand
+  (`issued_by = legacy-newsletter`), so they contain spaces, punctuation and accents: `SUMMER-20%`, `XMAS'18`,
+  `FRIENDS&FAMILY`, `CAFÉ15`, `BLACK FRIDAY!`. Since 2020 `promo-engine` generates them, always `[A-Z0-9]`. About
+  40% of returning customers date from the newsletter days, and nearly all of those still have special-character
+  codes in their history. Today nothing reads those old rows, because checkout only looks at the code that was entered.
+- The loadgen's `checkout_returning_customer` task checks out as a returning customer (`returning_customers.json`),
+  and 70% of the time enters one of their current codes (`THANKYOU10`, `COMEBACK15`, `STARGAZE20`).
+
+**The trigger (a later PR):** a new promo type that goes back through all of a customer's promo codes, and dies when
+it hits one with a special character. Only customers from before 2020 are affected.
+
+**What you see in Honeycomb** (on this branch): `applyPromoCode` spans in checkout with `app.promo.code`,
+`app.promo.issued_by`, `app.promo.percent_off`, `app.promo.result` and `app.promo.discount.amount`. The Postgres
+lookups are `SELECT otel.promotions.customer_promo` child spans. `PlaceOrder` has `app.promo.entered`.
+
+**To try it by hand:** check out as `aisha.wilson96@post.example` with code `COMEBACK15`.
+
+To try it locally: `./run checkout frontend load-generator postgresql`. (The proto change is additive. Auth,
+product-catalog, product-reviews and recommendation were regenerated but don't need rebuilding. Currency's C++
+stubs weren't regenerated, because it never uses `PlaceOrderRequest`.)
+
 ## Iteration
 
 We can deploy from local to the cluster in a new namespace, using `skaffold`

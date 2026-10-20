@@ -20,4 +20,5 @@ RUN playwright install --with-deps chromium
 COPY ./src/load-generator/locustfile.py .
 COPY ./src/load-generator/people.json .
 COPY ./src/load-generator/corporate_users.json .
+COPY ./src/load-generator/returning_customers.json .
 ENTRYPOINT ["locust", "--skip-log-setup"]

@@ -304,6 +304,8 @@ export interface PlaceOrderRequest {
   email: string;
   creditCard: CreditCardInfo | undefined;
   paymentStrategy: PaymentStrategy;
+  /** As typed by the customer; empty when none was entered. */
+  promoCode: string;
 }
 
 export interface PlaceOrderResponse {
@@ -3362,7 +3364,15 @@ export const SendOrderConfirmationRequest: MessageFns<SendOrderConfirmationReque
 };
 
 function createBasePlaceOrderRequest(): PlaceOrderRequest {
-  return { userId: "", userCurrency: "", address: undefined, email: "", creditCard: undefined, paymentStrategy: 0 };
+  return {
+    userId: "",
+    userCurrency: "",
+    address: undefined,
+    email: "",
+    creditCard: undefined,
+    paymentStrategy: 0,
+    promoCode: "",
+  };
 }
 
 export const PlaceOrderRequest: MessageFns<PlaceOrderRequest> = {
@@ -3384,6 +3394,9 @@ export const PlaceOrderRequest: MessageFns<PlaceOrderRequest> = {
     }
     if (message.paymentStrategy !== 0) {
       writer.uint32(56).int32(message.paymentStrategy);
+    }
+    if (message.promoCode !== "") {
+      writer.uint32(66).string(message.promoCode);
     }
     return writer;
   },
@@ -3443,6 +3456,14 @@ export const PlaceOrderRequest: MessageFns<PlaceOrderRequest> = {
           message.paymentStrategy = reader.int32() as any;
           continue;
         }
+        case 8: {
+          if (tag !== 66) {
+            break;
+          }
+
+          message.promoCode = reader.string();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -3460,6 +3481,7 @@ export const PlaceOrderRequest: MessageFns<PlaceOrderRequest> = {
       email: isSet(object.email) ? globalThis.String(object.email) : "",
       creditCard: isSet(object.creditCard) ? CreditCardInfo.fromJSON(object.creditCard) : undefined,
       paymentStrategy: isSet(object.paymentStrategy) ? paymentStrategyFromJSON(object.paymentStrategy) : 0,
+      promoCode: isSet(object.promoCode) ? globalThis.String(object.promoCode) : "",
     };
   },
 
@@ -3483,6 +3505,9 @@ export const PlaceOrderRequest: MessageFns<PlaceOrderRequest> = {
     if (message.paymentStrategy !== 0) {
       obj.paymentStrategy = paymentStrategyToJSON(message.paymentStrategy);
     }
+    if (message.promoCode !== "") {
+      obj.promoCode = message.promoCode;
+    }
     return obj;
   },
 
@@ -3501,6 +3526,7 @@ export const PlaceOrderRequest: MessageFns<PlaceOrderRequest> = {
       ? CreditCardInfo.fromPartial(object.creditCard)
       : undefined;
     message.paymentStrategy = object.paymentStrategy ?? 0;
+    message.promoCode = object.promoCode ?? "";
     return message;
   },
 };

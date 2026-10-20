@@ -7,6 +7,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends postgresql-17-c
 
 COPY ./src/postgres/init.sql /docker-entrypoint-initdb.d/init.sql
 COPY ./src/postgres/auth-seed.sql /docker-entrypoint-initdb.d/zz-auth-seed.sql
+COPY ./src/postgres/promo-seed.sql /docker-entrypoint-initdb.d/zz-promo-seed.sql
 
 EXPOSE ${POSTGRES_PORT}
 
