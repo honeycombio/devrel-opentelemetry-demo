@@ -350,9 +350,9 @@ opentelemetry-collector:
         s3uploader:
           region: us-east-1
           s3_bucket: takeout-telemetry-samples
-          s3_prefix: captured/old_promo_codes_contain_special_characters
+          s3_prefix: captured/some_test_data_is_better_than_none
           s3_partition_format: '%Y/%m/%d/%H'
-          file_prefix: old_promo_codes_contain_special_characters_
+          file_prefix: some_test_data_is_better_than_none_
         marshaler: otlp_json
       otlp/honeycomb:
         endpoint: api.honeycomb.io:443
