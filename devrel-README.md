@@ -249,29 +249,26 @@ years.
 
 **The setup (this branch, healthy):**
 
-- Checkout takes an optional promo code (`PlaceOrderRequest.promo_code`, a "Promo Code" field on the checkout form).
-  `applyPromoCode` (`src/checkout/promo.go`) looks it up in Postgres: the code must have been issued to that email
-  and still be valid. It takes `percent_off` off the item subtotal. A code that can't be used doesn't fail the order;
-  it is charged at full price, and `app.promo.result` says why.
-- The `promotions` schema (`src/postgres/init.sql`): `promo_code`, `customer_promo` (every code a customer has ever
-  been issued, redeemed or not) and `redemption`. Seeded by `scripts/generate-promo-seed.py` with 300 returning
-  customers.
-- Codes come from two systems. Before 2020 marketing typed codes into the newsletter tool by hand
-  (`issued_by = legacy-newsletter`), so they contain spaces, punctuation and accents: `SUMMER-20%`, `XMAS'18`,
-  `FRIENDS&FAMILY`, `CAFÉ15`, `BLACK FRIDAY!`. Since 2020 `promo-engine` generates them, always `[A-Z0-9]`. About
-  40% of returning customers date from the newsletter days, and nearly all of those still have special-character
-  codes in their history. Today nothing reads those old rows, because checkout only looks at the code that was entered.
+- Checkout takes an optional promo code (`PlaceOrderRequest.promo_code`, a "Promo Code" field on the checkout form,
+  letters and digits only). `applyPromoCode` (`src/checkout/promo.go`) looks it up in `promotions.promo_code` and takes
+  `percent_off` off the item subtotal: `SAVE10`, `SAVE25`, `WELCOME15`, `THANKYOU10`, `STARGAZE20`, `COMEBACK15`. Any
+  customer can use any active code. An unknown code doesn't fail the order; it is charged at full price, and
+  `app.promo.result` says why. Each use is recorded in `promotions.redemption`.
+- `promotions.redemption` is seeded (`scripts/generate-promo-seed.py`) with the promo history of 300 returning
+  customers. Customers from before 2020 used codes from the old newsletter tool, where marketing typed codes in by
+  hand: `SUMMER-20%`, `XMAS'18`, `FRIENDS&FAMILY`, `CAFÉ15`, `BLACK FRIDAY!`. Those codes no longer exist, and
+  nothing reads the old redemptions today. About a third of returning customers (103) have one in their history.
 - The loadgen's `checkout_returning_customer` task checks out as a returning customer (`returning_customers.json`),
-  and 70% of the time enters one of their current codes (`THANKYOU10`, `COMEBACK15`, `STARGAZE20`).
+  and 70% of the time enters one of the current codes.
 
 **The trigger (a later PR):** a new promo type that goes back through all of a customer's promo codes, and dies when
 it hits one with a special character. Only customers from before 2020 are affected.
 
 **What you see in Honeycomb** (on this branch): `applyPromoCode` spans in checkout with `app.promo.code`,
-`app.promo.issued_by`, `app.promo.percent_off`, `app.promo.result` and `app.promo.discount.amount`. The Postgres
-lookups are `SELECT otel.promotions.customer_promo` child spans. `PlaceOrder` has `app.promo.entered`.
+`app.promo.percent_off`, `app.promo.result` and `app.promo.discount.amount`. The Postgres calls are
+`SELECT otel.promotions.promo_code` and `INSERT otel.promotions.redemption` spans. `PlaceOrder` has `app.promo.entered`.
 
-**To try it by hand:** check out as `aisha.wilson96@post.example` with code `COMEBACK15`.
+**To try it by hand:** check out with code `SAVE25`.
 
 To try it locally: `./run checkout frontend load-generator postgresql`. (The proto change is additive. Auth,
 product-catalog, product-reviews and recommendation were regenerated but don't need rebuilding. Currency's C++

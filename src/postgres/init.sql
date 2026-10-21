@@ -181,23 +181,13 @@ GRANT USAGE ON SCHEMA promotions TO otelu;
 
 -- Promotions: create tables
 CREATE TABLE promotions.promo_code (
-    code TEXT PRIMARY KEY,                   -- as typed by the customer
-    campaign TEXT NOT NULL,
-    issued_by TEXT NOT NULL CHECK (issued_by IN ('legacy-newsletter', 'promo-engine')),
+    code TEXT PRIMARY KEY,                   -- letters and digits only, e.g. 'SAVE25'
     percent_off INT NOT NULL CHECK (percent_off BETWEEN 1 AND 100),
-    valid_from DATE NOT NULL,
-    valid_until DATE                         -- NULL: no expiry
+    active BOOLEAN NOT NULL DEFAULT true
 );
 
--- Every code a customer has been issued, redeemed or not
-CREATE TABLE promotions.customer_promo (
-    email TEXT NOT NULL,
-    code TEXT NOT NULL REFERENCES promotions.promo_code(code),
-    issued_at TIMESTAMPTZ NOT NULL,
-    redeemed_at TIMESTAMPTZ,
-    PRIMARY KEY (email, code)
-);
-
+-- Every time a customer used a promo code. No foreign key to promo_code: older
+-- rows name codes from before the current promo system that no longer exist.
 CREATE TABLE promotions.redemption (
     id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     email TEXT NOT NULL,
@@ -205,6 +195,7 @@ CREATE TABLE promotions.redemption (
     order_id TEXT NOT NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+CREATE INDEX idx_redemption_email ON promotions.redemption(email);
 
 -- Promotions: grant permission to schema
 GRANT SELECT, INSERT, UPDATE ON ALL TABLES IN SCHEMA promotions TO otelu;

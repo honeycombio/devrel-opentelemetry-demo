@@ -209,6 +209,8 @@ const CheckoutForm = ({ onSubmit }: IProps) => {
         id="promo_code"
         name="promoCode"
         placeholder="Optional"
+        pattern="[A-Za-z0-9]*"
+        title="Letters and numbers only"
         value={promoCode}
         onChange={handleChange}
       />

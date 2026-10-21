@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"log/slog"
 	"strings"
-	"time"
 
 	"github.com/exaring/otelpgx"
 	"github.com/jackc/pgx/v5"
@@ -21,18 +20,15 @@ import (
 	"github.com/open-telemetry/opentelemetry-demo/src/checkout/money"
 )
 
-// Promo codes live in Postgres, in the promotions schema. A customer can only use a
-// code that was issued to them (promotions.customer_promo) and is still valid.
+// Promo codes live in Postgres, in the promotions schema. Any customer can use any active
+// code; it takes percent_off off the item subtotal.
 
-var errPromoNotIssued = errors.New("promo code not issued to this customer")
+var errPromoNotFound = errors.New("promo code not found")
 
-type customerPromo struct {
+type promoCode struct {
 	Code       string
-	Campaign   string
-	IssuedBy   string // legacy-newsletter or promo-engine
 	PercentOff int
-	ValidFrom  time.Time
-	ValidUntil *time.Time
+	Active     bool
 }
 
 type promoStore struct {
@@ -58,16 +54,13 @@ func newPromoStore(ctx context.Context, connString string) (*promoStore, error) 
 
 func (s *promoStore) close() { s.pool.Close() }
 
-func (s *promoStore) findCustomerPromo(ctx context.Context, email, code string) (*customerPromo, error) {
-	var p customerPromo
-	err := s.pool.QueryRow(ctx, `
-		SELECT p.code, p.campaign, p.issued_by, p.percent_off, p.valid_from, p.valid_until
-		  FROM promotions.customer_promo cp
-		  JOIN promotions.promo_code p ON p.code = cp.code
-		 WHERE cp.email = $1 AND cp.code = $2`, email, code).Scan(
-		&p.Code, &p.Campaign, &p.IssuedBy, &p.PercentOff, &p.ValidFrom, &p.ValidUntil)
+func (s *promoStore) findPromoCode(ctx context.Context, code string) (*promoCode, error) {
+	var p promoCode
+	err := s.pool.QueryRow(ctx,
+		`SELECT code, percent_off, active FROM promotions.promo_code WHERE code = $1`, code).Scan(
+		&p.Code, &p.PercentOff, &p.Active)
 	if errors.Is(err, pgx.ErrNoRows) {
-		return nil, errPromoNotIssued
+		return nil, errPromoNotFound
 	}
 	if err != nil {
 		return nil, err
@@ -76,14 +69,9 @@ func (s *promoStore) findCustomerPromo(ctx context.Context, email, code string) 
 }
 
 func (s *promoStore) recordRedemption(ctx context.Context, email, code, orderID string) error {
-	if _, err := s.pool.Exec(ctx,
-		`INSERT INTO promotions.redemption (email, code, order_id) VALUES ($1, $2, $3)`,
-		email, code, orderID); err != nil {
-		return err
-	}
 	_, err := s.pool.Exec(ctx,
-		`UPDATE promotions.customer_promo SET redeemed_at = now() WHERE email = $1 AND code = $2 AND redeemed_at IS NULL`,
-		email, code)
+		`INSERT INTO promotions.redemption (email, code, order_id) VALUES ($1, $2, $3)`,
+		email, code, orderID)
 	return err
 }
 
@@ -110,7 +98,7 @@ func spanName(stmt string) string {
 }
 
 type appliedPromo struct {
-	promo    *customerPromo
+	promo    *promoCode
 	email    string
 	discount *pb.Money
 }
@@ -138,27 +126,18 @@ func (cs *checkout) applyPromoCode(ctx context.Context, email, code string, item
 	if cs.promos == nil {
 		return reject("unavailable")
 	}
-	promo, err := cs.promos.findCustomerPromo(ctx, email, code)
-	if errors.Is(err, errPromoNotIssued) {
-		return reject("not_issued")
+	promo, err := cs.promos.findPromoCode(ctx, code)
+	if errors.Is(err, errPromoNotFound) {
+		return reject("unknown_code")
 	}
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(otelcodes.Error, "promo lookup failed")
 		return reject("lookup_failed")
 	}
-	span.SetAttributes(
-		attribute.String("app.promo.campaign", promo.Campaign),
-		attribute.String("app.promo.issued_by", promo.IssuedBy),
-		attribute.Int("app.promo.percent_off", promo.PercentOff),
-	)
-
-	now := time.Now()
-	if now.Before(promo.ValidFrom) {
-		return reject("not_yet_valid")
-	}
-	if promo.ValidUntil != nil && now.After(promo.ValidUntil.Add(24*time.Hour)) {
-		return reject("expired")
+	span.SetAttributes(attribute.Int("app.promo.percent_off", promo.PercentOff))
+	if !promo.Active {
+		return reject("inactive")
 	}
 
 	subtotal := &pb.Money{CurrencyCode: currency}
