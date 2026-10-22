@@ -38,3 +38,15 @@ func TestNormalizePromoCode(t *testing.T) {
 		}
 	}
 }
+
+// A sub-$1 item first used to make money.Sum produce an invalid running total.
+func TestItemSubtotal(t *testing.T) {
+	items := []*pb.OrderItem{
+		{Item: &pb.CartItem{ProductId: "HQTGWGPNH4", Quantity: 1}, Cost: &pb.Money{CurrencyCode: "USD", Nanos: 990_000_000}},
+		{Item: &pb.CartItem{ProductId: "0PUK6V6EV0", Quantity: 2}, Cost: &pb.Money{CurrencyCode: "USD", Units: 101, Nanos: 960_000_000}},
+	}
+	got := itemSubtotal(items, "USD")
+	if got.Units != 204 || got.Nanos != 910_000_000 || got.CurrencyCode != "USD" {
+		t.Errorf("itemSubtotal = %v, want USD 204.91", got)
+	}
+}

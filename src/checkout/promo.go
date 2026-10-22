@@ -17,7 +17,6 @@ import (
 	"go.opentelemetry.io/otel/trace"
 
 	pb "github.com/open-telemetry/opentelemetry-demo/src/checkout/genproto/oteldemo"
-	"github.com/open-telemetry/opentelemetry-demo/src/checkout/money"
 )
 
 // Promo codes live in Postgres, in the promotions schema. Any customer can use any active
@@ -140,15 +139,7 @@ func (cs *checkout) applyPromoCode(ctx context.Context, email, code string, item
 		return reject("inactive")
 	}
 
-	subtotal := &pb.Money{CurrencyCode: currency}
-	for _, it := range items {
-		subtotal, err = money.Sum(subtotal, money.MultiplySlow(it.Cost, uint32(it.GetItem().GetQuantity())))
-		if err != nil {
-			span.RecordError(err)
-			return reject("invalid_subtotal")
-		}
-	}
-	discount := percentOf(subtotal, promo.PercentOff)
+	discount := percentOf(itemSubtotal(items, currency), promo.PercentOff)
 
 	span.SetAttributes(
 		attribute.String("app.promo.result", "applied"),
@@ -156,6 +147,17 @@ func (cs *checkout) applyPromoCode(ctx context.Context, email, code string, item
 	)
 	span.AddEvent("promo applied", trace.WithAttributes(attribute.String("app.promo.code", code)))
 	return &appliedPromo{promo: promo, email: email, discount: discount}
+}
+
+// itemSubtotal adds up price x quantity for each item. It works in nanos rather than
+// with money.Sum, which mis-normalizes a running total that starts below one unit
+// (0 + 0.99 comes out as 1 unit and -0.01, which it then rejects as invalid).
+func itemSubtotal(items []*pb.OrderItem, currency string) *pb.Money {
+	var nanos int64
+	for _, it := range items {
+		nanos += (it.Cost.GetUnits()*1_000_000_000 + int64(it.Cost.GetNanos())) * int64(it.GetItem().GetQuantity())
+	}
+	return &pb.Money{CurrencyCode: currency, Units: nanos / 1_000_000_000, Nanos: int32(nanos % 1_000_000_000)}
 }
 
 // percentOf returns pct percent of m, rounded down to the nano.
