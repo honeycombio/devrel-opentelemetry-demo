@@ -16,6 +16,7 @@ COPY ./src/checkout/kafka/ kafka/
 COPY ./src/checkout/money/ money/
 COPY ./src/checkout/main.go main.go
 COPY ./src/checkout/promo.go promo.go
+COPY ./src/checkout/loyalty.go loyalty.go
 
 RUN CGO_ENABLED=0 GOOS=linux go build -ldflags "-s -w" -o checkout .
 

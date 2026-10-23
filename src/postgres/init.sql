@@ -183,6 +183,8 @@ GRANT USAGE ON SCHEMA promotions TO otelu;
 CREATE TABLE promotions.promo_code (
     code TEXT PRIMARY KEY,                   -- letters and digits only, e.g. 'SAVE25'
     percent_off INT NOT NULL CHECK (percent_off BETWEEN 1 AND 100),
+    -- percent: flat percent_off. loyalty: percent_off plus a bonus from the customer's past redemptions
+    kind TEXT NOT NULL DEFAULT 'percent' CHECK (kind IN ('percent', 'loyalty')),
     active BOOLEAN NOT NULL DEFAULT true
 );
 

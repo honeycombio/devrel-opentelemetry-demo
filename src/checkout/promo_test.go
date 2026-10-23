@@ -50,3 +50,17 @@ func TestItemSubtotal(t *testing.T) {
 		t.Errorf("itemSubtotal = %v, want USD 204.91", got)
 	}
 }
+
+func TestPercentFromCode(t *testing.T) {
+	for code, want := range map[string]int{
+		"SAVE10":     10,
+		"SAVE25":     25,
+		"WELCOME15":  15,
+		"STARGAZE20": 20,
+		"LOYALTY5":   5,
+	} {
+		if got := percentFromCode(code); got != want {
+			t.Errorf("percentFromCode(%q) = %d, want %d", code, got, want)
+		}
+	}
+}

@@ -20,13 +20,14 @@ import (
 )
 
 // Promo codes live in Postgres, in the promotions schema. Any customer can use any active
-// code; it takes percent_off off the item subtotal.
+// code; it takes percent_off off the item subtotal (more for loyalty codes, see loyalty.go).
 
 var errPromoNotFound = errors.New("promo code not found")
 
 type promoCode struct {
 	Code       string
 	PercentOff int
+	Kind       string // percent or loyalty
 	Active     bool
 }
 
@@ -56,8 +57,8 @@ func (s *promoStore) close() { s.pool.Close() }
 func (s *promoStore) findPromoCode(ctx context.Context, code string) (*promoCode, error) {
 	var p promoCode
 	err := s.pool.QueryRow(ctx,
-		`SELECT code, percent_off, active FROM promotions.promo_code WHERE code = $1`, code).Scan(
-		&p.Code, &p.PercentOff, &p.Active)
+		`SELECT code, percent_off, kind, active FROM promotions.promo_code WHERE code = $1`, code).Scan(
+		&p.Code, &p.PercentOff, &p.Kind, &p.Active)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, errPromoNotFound
 	}
@@ -65,6 +66,16 @@ func (s *promoStore) findPromoCode(ctx context.Context, code string) (*promoCode
 		return nil, err
 	}
 	return &p, nil
+}
+
+// redeemedCodes is every promo code the customer has used, oldest first.
+func (s *promoStore) redeemedCodes(ctx context.Context, email string) ([]string, error) {
+	rows, err := s.pool.Query(ctx,
+		`SELECT code FROM promotions.redemption WHERE email = $1 ORDER BY created_at`, email)
+	if err != nil {
+		return nil, err
+	}
+	return pgx.CollectRows(rows, pgx.RowTo[string])
 }
 
 func (s *promoStore) recordRedemption(ctx context.Context, email, code, orderID string) error {
@@ -134,12 +145,18 @@ func (cs *checkout) applyPromoCode(ctx context.Context, email, code string, item
 		span.SetStatus(otelcodes.Error, "promo lookup failed")
 		return reject("lookup_failed")
 	}
-	span.SetAttributes(attribute.Int("app.promo.percent_off", promo.PercentOff))
+	span.SetAttributes(attribute.String("app.promo.kind", promo.Kind))
 	if !promo.Active {
 		return reject("inactive")
 	}
 
-	discount := percentOf(itemSubtotal(items, currency), promo.PercentOff)
+	percent := promo.PercentOff
+	if promo.Kind == "loyalty" {
+		percent = cs.loyaltyPercent(ctx, email, promo.PercentOff)
+	}
+	span.SetAttributes(attribute.Int("app.promo.percent_off", percent))
+
+	discount := percentOf(itemSubtotal(items, currency), percent)
 
 	span.SetAttributes(
 		attribute.String("app.promo.result", "applied"),

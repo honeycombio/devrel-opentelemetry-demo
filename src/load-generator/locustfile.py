@@ -133,6 +133,8 @@ for u in corporate_users:
 with open('returning_customers.json', encoding='utf-8') as returning_customers_file:
     returning_customers = json.load(returning_customers_file)
 PROMO_CODES = ["SAVE10", "SAVE25", "WELCOME15", "THANKYOU10", "STARGAZE20", "COMEBACK15"]
+# The loyalty code we've emailed to returning customers.
+LOYALTY_CODE = "LOYALTY5"
 
 
 # A realistic-looking forwarded email thread a frustrated customer might paste
@@ -729,7 +731,7 @@ class WebsiteUser(HttpUser):
             self.add_to_cart(user=user)
             checkout_person = make_checkout_person(user, customer["email"])
             if random.random() < 0.7:
-                checkout_person["promoCode"] = random.choice(PROMO_CODES)
+                checkout_person["promoCode"] = LOYALTY_CODE if random.random() < 0.4 else random.choice(PROMO_CODES)
             self.client.post("/api/checkout", json=checkout_person)
             logging.info(f"Returning-customer checkout completed for user {user}")
 
