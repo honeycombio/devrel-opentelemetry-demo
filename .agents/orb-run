@@ -1,0 +1,138 @@
+#!/usr/bin/env bash
+# ./run for Amp orbs: builds with skaffold and deploys the whole Helm chart,
+# like ./run, but into a k3d (k3s in Docker) cluster inside the orb. No AWS,
+# EKS or Pulumi. Uses the `orb` profile in skaffold.yaml.
+#
+#   .agents/orb-run [--all] [service ...]
+#
+# Service names match the `image:` entries in skaffold.yaml, same as ./run.
+# Only the services you name are built from source; the rest run the released
+# ghcr.io/honeycombio/devrel-opentelemetry-demo:latest-* images. --all builds
+# every service (about 15 minutes on an a1.large). The full demo needs an
+# a1.large (8 CPU / 16 GB) or bigger orb.
+#
+# Honeycomb: set the personal Amp secret DEVREL_OTEL_DEMO_HONEYCOMB_API_KEY to
+# send telemetry (HONEYCOMB_API_KEY is ignored here on purpose). Without it the
+# demo still runs and exports are silently dropped.
+set -euo pipefail
+
+cd "$(dirname "${BASH_SOURCE[0]}")/.."
+export PATH="$HOME/.local/bin:$PATH"
+
+CLUSTER=orb
+REGISTRY_NAME=registry.localhost
+REGISTRY=k3d-$REGISTRY_NAME:5000
+export USER="${USER:-$(id -un)}"
+NAMESPACE="$USER-local"
+
+if [[ -f .skaffold.env ]]; then
+  set -a
+  eval "$(cat .skaffold.env)"
+  set +a
+fi
+
+BUILD_ALL=false
+SERVICES=()
+for arg in "$@"; do
+  case "$arg" in
+    --all) BUILD_ALL=true ;;
+    -*) echo "Usage: $0 [--all] [service ...]" >&2; exit 1 ;;
+    *) SERVICES+=("$arg") ;;
+  esac
+done
+if $BUILD_ALL; then
+  mapfile -t SERVICES < <(sed -n 's/^    - image: //p' skaffold.yaml)
+fi
+
+echo "==> Docker"
+.agents/orb-docker-up.sh
+
+echo "==> k3d cluster '$CLUSTER'"
+grep -q "$REGISTRY_NAME" /etc/hosts || echo "127.0.0.1 k3d-$REGISTRY_NAME" | sudo tee -a /etc/hosts >/dev/null
+k3d registry list 2>/dev/null | grep -q "k3d-$REGISTRY_NAME" \
+  || k3d registry create "$REGISTRY_NAME" --port 5000
+if ! k3d cluster list 2>/dev/null | grep -q "^$CLUSTER "; then
+  # Traefik, servicelb and metrics-server are off: the chart brings its own
+  # Service wiring and the memory is better spent on the demo.
+  k3d cluster create "$CLUSTER" --registry-use "$REGISTRY" --no-lb --wait --timeout 300s \
+    --k3s-arg "--disable=traefik@server:0" \
+    --k3s-arg "--disable=servicelb@server:0" \
+    --k3s-arg "--disable=metrics-server@server:0"
+else
+  k3d cluster start "$CLUSTER" --wait >/dev/null
+fi
+kubectl config use-context "k3d-$CLUSTER" >/dev/null
+# skaffold's "before" hook creates a ConfigMap here, before helm would create the namespace.
+kubectl create namespace "$NAMESPACE" --dry-run=client -o yaml | kubectl apply -f - >/dev/null
+
+echo "==> Honeycomb keys"
+# Orbs use only this orb secret, never an ambient HONEYCOMB_API_KEY or
+# HONEYCOMB_INGEST_KEY, which may belong to another team or environment.
+unset HONEYCOMB_API_KEY HONEYCOMB_INGEST_KEY HONEYCOMB_MARKERS_API_KEY
+if [[ -n "${DEVREL_OTEL_DEMO_HONEYCOMB_API_KEY:-}" ]]; then
+  export HONEYCOMB_INGEST_KEY="$DEVREL_OTEL_DEMO_HONEYCOMB_API_KEY"
+  export HONEYCOMB_MARKERS_API_KEY="$DEVREL_OTEL_DEMO_HONEYCOMB_API_KEY"
+  # Not scripts/validate-honeycomb-keys.sh: it needs a .skaffold.env and sources it,
+  # which would overwrite the key above.
+  if ! auth=$(curl -fsS -m 15 -H "X-Honeycomb-Team: $DEVREL_OTEL_DEMO_HONEYCOMB_API_KEY" https://api.honeycomb.io/1/auth) \
+    || [[ $(jq -r '.api_key_access | .events and .markers' <<<"$auth") != true ]]; then
+    echo "DEVREL_OTEL_DEMO_HONEYCOMB_API_KEY was rejected by Honeycomb, or lacks the events and markers permissions." >&2
+    echo "Tell the user; they can replace it the same way as when adding it (personal Amp secret, then amp orb restart-processes)." >&2
+    exit 1
+  fi
+  echo "Honeycomb key OK: team $(jq -r .team.slug <<<"$auth"), environment $(jq -r '.environment.slug // "classic"' <<<"$auth")"
+  export DEPLOY_MARKER_MESSAGE=".agents/orb-run ${SERVICES[*]:-} -> $NAMESPACE (orb)"
+else
+  cat >&2 <<'EOF2'
+WARNING: DEVREL_OTEL_DEMO_HONEYCOMB_API_KEY is not set. The demo will run, but no
+telemetry will reach Honeycomb.
+
+NOTE FOR THE AI AGENT RUNNING THIS: tell the user about this now, before moving
+on. They add the key as a PERSONAL secret in Amp (it is private to them and
+only this repo reads this name). Do not ask them to paste the key into the
+chat, and do not put it in a file or on a command line. Offer these two ways:
+  1. Call manage_amp(topic: 'secrets', operation: 'set', parameters: {
+     scope: 'personal', name: 'DEVREL_OTEL_DEMO_HONEYCOMB_API_KEY' }). Amp
+     opens a masked dialog for them to enter the key.
+  2. Or they open Amp Settings > Secrets & Env Vars, and add a personal secret
+     with that name.
+The key must be a Honeycomb ingest key (events + markers permissions) for the
+team and environment where they want the demo's data.
+After it is set, run `amp orb restart-processes` so this orb sees it, then
+re-run .agents/orb-run.
+EOF2
+  # The collector config references these variables, so they must exist.
+  export HONEYCOMB_INGEST_KEY=unset HONEYCOMB_MARKERS_API_KEY=unset
+fi
+
+# Values skaffold.yaml templates in. The orb profile turns off ingress and
+# Bedrock, so these are placeholders.
+export CLOUD_PROVIDER=local DOMAINNAME=orb.local INGRESS_CLASS=none
+export BEDROCK_AWS_REGION= BEDROCK_HAIKU_PROFILE_ARN= BEDROCK_NOVA_LITE_PROFILE_ARN= BEDROCK_NOVA_MICRO_PROFILE_ARN=
+export AGENT_LOAD_ENABLED=
+
+BUILD_FLAGS=()
+for svc in "${SERVICES[@]}"; do
+  BUILD_FLAGS+=(-b "$svc")
+done
+if [[ ${#SERVICES[@]} -eq 0 ]]; then
+  # Same trick as ./run: a name that matches no image, so nothing is built.
+  BUILD_FLAGS=(-b nothing-things-are-v-slow-when-you-do-this)
+  echo "No services given: deploying the released latest-* images."
+fi
+
+# Parallel builds speed things up but the Java, .NET and C++ ones are memory hungry.
+CONCURRENCY="${ORB_BUILD_CONCURRENCY:-$(( $(nproc) / 4 > 1 ? $(nproc) / 4 : 1 ))}"
+
+echo "==> skaffold run -p orb ($NAMESPACE)"
+skaffold run -p orb --kube-context "k3d-$CLUSTER" -d "$REGISTRY" \
+  "${BUILD_FLAGS[@]}" --build-concurrency "$CONCURRENCY" \
+  -l skaffold.dev/run-id=static --cache-artifacts=false
+
+echo "==> frontend-proxy port-forward"
+if command -v amp >/dev/null 2>&1; then
+  amp orb service start demo-frontend-proxy --portal --title "Demo frontend-proxy" \
+    --command "exec kubectl --context k3d-$CLUSTER -n $NAMESPACE port-forward --address 127.0.0.1 svc/frontend-proxy \$PORT:8080"
+else
+  echo "Run: kubectl -n $NAMESPACE port-forward svc/frontend-proxy 9191:8080"
+fi

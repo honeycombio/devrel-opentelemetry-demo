@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+# Runs after an orb starts or wakes. Dockerd is not part of the snapshot's
+# running processes, so start it again (a no-op if it is already up). The k3d
+# cluster is created on demand by .agents/orb-run, not here, to stay fast.
+set -euo pipefail
+
+cd "$(dirname "${BASH_SOURCE[0]}")/.."
+export PATH="$HOME/.local/bin:$PATH"
+
+.agents/orb-docker-up.sh

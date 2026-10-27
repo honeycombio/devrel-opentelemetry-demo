@@ -89,6 +89,10 @@ You'll need to have the following installed:
 ./run
 ```
 
+## Running the demo in an Amp orb
+
+See [.agents/orb-README.md](.agents/orb-README.md).
+
 ## Setup for DevRel
 
 Be a member of our Honeycomb Devrel Azure account, or the AWS DevRel Sandox account

@@ -1,0 +1,131 @@
+#!/usr/bin/env bash
+# Orb setup for the DevRel OpenTelemetry demo.
+#
+# The demo only runs in Docker / Kubernetes. Orbs ship dockerd, so this installs
+# what .agents/orb-run needs to run the whole demo in a k3d (k3s in Docker)
+# cluster with skaffold: helm, kubectl, skaffold, k3d, docker buildx, plus the
+# k3d images. It also installs the lint tooling from CI (markdownlint,
+# yamllint) and the Python load generator's dependencies.
+# Start Docker with .agents/orb-docker-up.sh (.agents/resume does), then run
+# .agents/orb-run. The full demo needs an a1.large or bigger orb.
+set -euo pipefail
+
+cd "$(dirname "${BASH_SOURCE[0]}")/.."
+repo_root="$PWD"
+
+HELM_VERSION=v4.3.1
+SKAFFOLD_VERSION=v2.25.0
+KUBECTL_VERSION=v1.37.1
+K3D_VERSION=v5.9.0
+BUILDX_VERSION=v0.38.1
+bin_dir="$HOME/.local/bin"
+mkdir -p "$bin_dir"
+export PATH="$bin_dir:$PATH"
+
+step() { echo; echo "==> $* ($(date +%T))"; }
+
+# --- Kubernetes CLIs (pinned, only downloaded when missing or a different version)
+step "helm $HELM_VERSION"
+if [ "$(helm version --short 2>/dev/null | cut -d+ -f1)" != "$HELM_VERSION" ]; then
+  curl -fsSL "https://get.helm.sh/helm-$HELM_VERSION-linux-amd64.tar.gz" \
+    | tar -xz -C "$bin_dir" --strip-components=1 linux-amd64/helm
+fi
+
+step "skaffold $SKAFFOLD_VERSION"
+if [ "$(skaffold version 2>/dev/null)" != "$SKAFFOLD_VERSION" ]; then
+  curl -fsSL -o "$bin_dir/skaffold" \
+    "https://storage.googleapis.com/skaffold/releases/$SKAFFOLD_VERSION/skaffold-linux-amd64"
+  chmod +x "$bin_dir/skaffold"
+fi
+
+step "kubectl $KUBECTL_VERSION"
+if [ "$(kubectl version --client -o json 2>/dev/null | jq -r .clientVersion.gitVersion 2>/dev/null)" != "$KUBECTL_VERSION" ]; then
+  curl -fsSL -o "$bin_dir/kubectl" "https://dl.k8s.io/release/$KUBECTL_VERSION/bin/linux/amd64/kubectl"
+  chmod +x "$bin_dir/kubectl"
+fi
+
+step "k3d $K3D_VERSION"
+if [ "$(k3d version 2>/dev/null | sed -n 's/^k3d version //p')" != "$K3D_VERSION" ]; then
+  curl -fsSL -o "$bin_dir/k3d" "https://github.com/k3d-io/k3d/releases/download/$K3D_VERSION/k3d-linux-amd64"
+  chmod +x "$bin_dir/k3d"
+fi
+
+# skaffold builds with BuildKit, which needs the buildx CLI plugin.
+step "docker buildx $BUILDX_VERSION"
+buildx="$HOME/.docker/cli-plugins/docker-buildx"
+if [ "$("$buildx" version 2>/dev/null | awk '{print $2}')" != "$BUILDX_VERSION" ]; then
+  mkdir -p "$(dirname "$buildx")"
+  curl -fsSL -o "$buildx" "https://github.com/docker/buildx/releases/download/$BUILDX_VERSION/buildx-$BUILDX_VERSION.linux-amd64"
+  chmod +x "$buildx"
+fi
+skaffold config set --global collect-metrics false >/dev/null 2>&1 || true
+
+# --- Pre-pull the k3d images into Docker's image store, which the snapshot
+# keeps. dockerd is a service in a live orb; start a throwaway one here if
+# nothing is running. Processes left over after setup never reach the snapshot,
+# so stop ours at the end.
+step "k3d images"
+dockerd_pid=
+if ! docker info >/dev/null 2>&1; then
+  sudo dockerd --group root >/tmp/setup-dockerd.log 2>&1 &
+  dockerd_pid=$!
+  trap '[ -z "$dockerd_pid" ] || { sudo kill "$dockerd_pid"; wait "$dockerd_pid" 2>/dev/null || true; }' EXIT
+  for _ in $(seq 1 60); do docker info >/dev/null 2>&1 && break; sleep 1; done
+fi
+k3s_image="rancher/k3s:$(k3d version | sed -n 's/^k3s version \(.*\) (default)$/\1/p')"
+for image in "$k3s_image" ghcr.io/k3d-io/k3d-tools:"${K3D_VERSION#v}" registry:2; do
+  docker image inspect "$image" >/dev/null 2>&1 || docker pull --quiet "$image" >/dev/null
+done
+
+# --- Repo lint tooling (same as .github/workflows/checks.yml)
+step "root npm dependencies (markdownlint, linkspector, license checker)"
+# Linkspector downloads Chromium via puppeteer; markdown/yaml linting doesn't need it.
+PUPPETEER_SKIP_DOWNLOAD=1 npm ci --no-audit --no-fund
+
+step "yamllint"
+if ! command -v yamllint >/dev/null 2>&1; then
+  pip install --quiet --user "yamllint~=1.30.0"
+fi
+
+# --- Python load generator (src/load-generator); runs against a cluster, but
+# the venv lets agents import, lint and unit-test locustfile.py.
+step "load-generator venv"
+venv="$repo_root/src/load-generator/.venv"
+if [ ! -x "$venv/bin/python" ]; then
+  python3 -m venv "$venv"
+fi
+"$venv/bin/pip" install --quiet -r src/load-generator/requirements.txt
+
+# --- Agent guidance for this orb
+step "orb AGENTS.md hint"
+agents_md="$HOME/.config/amp/AGENTS.md"
+marker="<!-- devrel-otel-demo orb setup -->"
+mkdir -p "$(dirname "$agents_md")"
+# Rewrite our block (always last in the file) so edits here reach stale snapshots.
+[ ! -f "$agents_md" ] || sed -i "/^$marker\$/,\$d" "$agents_md"
+{
+  cat <<EOF
+
+$marker
+# Orb notes for the DevRel OTel demo
+- The whole demo can run in this orb: \`.agents/orb-run [--all] [service ...]\` is \`./run\` for orbs (skaffold + a k3d cluster, no AWS/Pulumi). Needs an a1.large orb or bigger; see .agents/orb-README.md.
+- Docker is installed but not started by default; \`.agents/orb-docker-up.sh\` starts it (\`.agents/resume\` does too).
+- Preinstalled in \`~/.local/bin\`: helm, kubectl, skaffold, k3d. Also markdownlint/yamllint (\`make markdownlint\`, \`yamllint .\`).
+- Python load generator venv: \`src/load-generator/.venv\`.
+- Language toolchains (Go, .NET, Java, Node, ...) are NOT installed; services are built inside Docker.
+- Telemetry to Honeycomb needs the personal Amp secret \`DEVREL_OTEL_DEMO_HONEYCOMB_API_KEY\` (HONEYCOMB_API_KEY is deliberately ignored by .agents/orb-run). If it is unset, tell the user and have them add it with \`manage_amp(topic: 'secrets', operation: 'set', parameters: { scope: 'personal', name: 'DEVREL_OTEL_DEMO_HONEYCOMB_API_KEY' })\` (a masked dialog) or in Amp Settings > Secrets & Env Vars. Never ask them to paste the key into the chat. Then run \`amp orb restart-processes\` and re-run .agents/orb-run.
+- Bedrock (AWS) is not reachable, so store-chat and llm-evals do not work here; llm-evals is off and product-reviews uses the fake llm.
+EOF
+} >> "$agents_md"
+
+# Make ~/.local/bin visible in login shells (where pip --user scripts also land).
+profile_marker="# devrel-otel-demo: ~/.local/bin on PATH"
+if ! grep -Fqx "$profile_marker" "$HOME/.bash_profile" 2>/dev/null; then
+  cat >> "$HOME/.bash_profile" <<'EOF'
+
+# devrel-otel-demo: ~/.local/bin on PATH
+case ":$PATH:" in *":$HOME/.local/bin:"*) ;; *) export PATH="$HOME/.local/bin:$PATH" ;; esac
+EOF
+fi
+
+step "done"

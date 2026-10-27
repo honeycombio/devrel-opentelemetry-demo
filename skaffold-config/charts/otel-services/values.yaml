@@ -13,6 +13,8 @@ services:
     port: 3551
     replicas: 1
     kafkaAddr: ""
+    # Replaces a same-named entry in env.
+    extraEnv: []
     env:
       - name: PRODUCT_REVIEWS_PORT
         value: "3551"
