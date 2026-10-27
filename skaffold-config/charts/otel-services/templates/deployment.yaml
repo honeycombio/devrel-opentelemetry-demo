@@ -40,7 +40,16 @@ spec:
               value: {{ .Values.otel.collectorName }}
             - name: OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE
               value: {{ .Values.otel.metricsTemporality }}
+            {{- $extra := dict }}
+            {{- range .Values.services.productReviews.extraEnv }}{{- $_ := set $extra .name true }}{{- end }}
             {{- range .Values.services.productReviews.env }}
+            {{- if not (hasKey $extra .name) }}
+            - name: {{ .name }}
+              value: {{ .value | quote }}
+            {{- end }}
+            {{- end }}
+            {{- /* extraEnv replaces a same-named entry in env (duplicate keys fail server-side apply). */}}
+            {{- range .Values.services.productReviews.extraEnv }}
             - name: {{ .name }}
               value: {{ .value | quote }}
             {{- end }}
