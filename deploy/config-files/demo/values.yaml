@@ -41,6 +41,10 @@ components:
     resources:
       limits:
         memory: 512Mi
+    envOverrides:
+      # opentelemetry_postgres sends server-side query spans here (see src/postgres/Dockerfile).
+      - name: OTEL_EXPORTER_OTLP_ENDPOINT
+        value: http://$(OTEL_COLLECTOR_NAME):4318
   kafka:
     # The chart default of 600Mi OOM-kills the broker: JVM heap (-Xmx400M) plus
     # off-heap (metaspace, direct buffers) plus log-segment page cache exceeds the

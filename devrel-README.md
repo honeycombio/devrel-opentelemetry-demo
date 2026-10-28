@@ -368,6 +368,13 @@ eBPF instruments everything in the `devrel-demo` namespace by default. We exclud
 
 Exclusions are in `kubernetes/helm-obi.yml` under `discovery.exclude_instrument`. If you add other telemetry-pipeline services to the namespace, you may need to exclude them too.
 
+## Postgres query tracing (SQLCommenter)
+
+Clients append a SQLCommenter comment (`/*traceparent='00-<trace>-<span>-01'*/`) to their queries: product-reviews (psycopg2 instrumentation), accounting (`SqlCommenterInterceptor`) and auth (`sqlcommenter()` in `db.go`). Postgres uses it two ways (`src/postgres/Dockerfile`):
+
+- **Spans:** the [opentelemetry-postgres](https://github.com/practical-otel/opentelemetry-postgres) extension (built from a pinned commit) sends a `SERVER` span per `SELECT`/`INSERT`/`UPDATE`/`DELETE`, parented to the client's DB span, straight to the collector over OTLP. Known gaps: DDL, parse/plan-time errors, and prepared statements that reuse the first `Parse`'s traceparent.
+- **Logs:** every statement is logged as JSON (`log_destination=jsonlog`, tailed to stdout by `entrypoint.sh`). The collector's `transform/postgres_logs` turns each entry into an OTel log record with the trace context taken from the comment.
+
 ## Deploy to devrel-demo
 
 Releasing is tag-driven and fully automated — pushing a release tag builds the images *and* deploys them to prod. There is no manual `pulumi up` step anymore.

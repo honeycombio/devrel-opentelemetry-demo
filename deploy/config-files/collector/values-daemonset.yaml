@@ -145,6 +145,37 @@ config:
             - set(attributes["trace.trace_id"], attributes["trace_id"])
             - set(attributes["trace.parent_id"], attributes["span_id"])
             - set(attributes["meta.annotation_type"], "span_event")
+    transform/postgres_logs:
+      error_mode: ignore
+      log_statements:
+        # Postgres writes jsonlog (see src/postgres/Dockerfile); transform/parse_json_body
+        # has already flattened each entry into attributes. Make it an OTel log record:
+        # the human-readable message as body, Postgres's severity mapped to OTel's,
+        # and db.* attributes.
+        - context: log
+          conditions:
+            - resource.attributes["k8s.container.name"] == "postgresql" and attributes["backend_type"] != nil
+          statements:
+            # jsonlog's query_id is a 64-bit integer; ParseJSON turns it into a lossy float, so re-read it from the raw body.
+            - set(attributes["postgresql.query_id"], ExtractPatterns(body, "\"query_id\":(?P<id>-?[0-9]+)")["id"])
+            - delete_key(attributes, "query_id")
+            - set(body, attributes["message"])
+            - set(attributes["db.system.name"], "postgresql")
+            - set(attributes["db.namespace"], attributes["dbname"]) where attributes["dbname"] != nil
+            - set(severity_number, 5) where IsMatch(attributes["error_severity"], "^DEBUG")
+            - set(severity_number, 9) where attributes["error_severity"] == "LOG" or attributes["error_severity"] == "INFO" or attributes["error_severity"] == "NOTICE"
+            - set(severity_number, 13) where attributes["error_severity"] == "WARNING"
+            - set(severity_number, 17) where attributes["error_severity"] == "ERROR"
+            - set(severity_number, 21) where attributes["error_severity"] == "FATAL" or attributes["error_severity"] == "PANIC"
+            - set(severity_text, attributes["error_severity"])
+            # SQLCommenter: clients append /*traceparent='00-<trace>-<span>-<flags>'*/ to
+            # each query. Statement logs carry it in `message` ("duration: ... statement: ...");
+            # error logs carry the failing query in `statement`. Use it as the log's trace context.
+            - set(cache["sql"], attributes["message"])
+            - set(cache["sql"], attributes["statement"]) where attributes["statement"] != nil and not IsMatch(cache["sql"], "traceparent=")
+            - merge_maps(cache, ExtractPatterns(cache["sql"], "traceparent='00-(?P<trace_id>[0-9a-f]{32})-(?P<span_id>[0-9a-f]{16})-"), "upsert") where IsMatch(cache["sql"], "traceparent='00-")
+            - set(trace_id.string, cache["trace_id"]) where cache["trace_id"] != nil
+            - set(span_id.string, cache["span_id"]) where cache["span_id"] != nil
     transform/parse_json_body:
       error_mode: ignore
       log_statements:
@@ -439,6 +470,7 @@ config:
           - transform/access_log_severity
           - transform/filelog_severity
           - transform/pino_trace_fields
+          - transform/postgres_logs
           - transform/attribution
           - drain
 

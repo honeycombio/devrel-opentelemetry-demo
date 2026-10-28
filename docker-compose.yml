@@ -862,6 +862,8 @@ services:
       - POSTGRES_USER=root
       - POSTGRES_PASSWORD
       - POSTGRES_DB
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://${OTEL_COLLECTOR_HOST}:${OTEL_COLLECTOR_PORT_HTTP}
+      - OTEL_SERVICE_NAME=postgresql
     logging: *logging
 
   # Valkey used by Cart service
