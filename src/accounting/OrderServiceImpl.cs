@@ -1,6 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
+using System.Diagnostics;
 using Grpc.Core;
 using Microsoft.EntityFrameworkCore;
 using Oteldemo;
@@ -11,15 +12,26 @@ internal class OrderServiceImpl : OrderService.OrderServiceBase
 {
     private readonly IDbContextFactory<AccountingDbContext> _dbContextFactory;
     private readonly PaymentService.PaymentServiceClient _paymentClient;
+    private readonly ProductCatalogService.ProductCatalogServiceClient _catalogClient;
+    private readonly CurrencyService.CurrencyServiceClient _currencyClient;
     private readonly ILogger<OrderServiceImpl> _logger;
+
+    // Observatory Hour: "spend more, save more" on these categories, counted over the last 30 minutes.
+    private const string PromoCode = "OBSERVATORY";
+    private static readonly TimeSpan PromoLookback = TimeSpan.FromMinutes(30);
+    private static readonly string[] PromoCategories = ["accessories", "books"];
 
     public OrderServiceImpl(
         IDbContextFactory<AccountingDbContext> dbContextFactory,
         PaymentService.PaymentServiceClient paymentClient,
+        ProductCatalogService.ProductCatalogServiceClient catalogClient,
+        CurrencyService.CurrencyServiceClient currencyClient,
         ILogger<OrderServiceImpl> logger)
     {
         _dbContextFactory = dbContextFactory;
         _paymentClient = paymentClient;
+        _catalogClient = catalogClient;
+        _currencyClient = currencyClient;
         _logger = logger;
     }
 
@@ -145,6 +157,114 @@ internal class OrderServiceImpl : OrderService.OrderServiceBase
             Success = refundResponse.Success,
             Status = "refunded",
             RefundTransactionId = refundResponse.RefundTransactionId,
+        };
+    }
+
+    public override async Task<ValidatePromoResponse> ValidatePromo(ValidatePromoRequest request, ServerCallContext context)
+    {
+        if (!string.Equals(request.PromoCode, PromoCode, StringComparison.OrdinalIgnoreCase))
+        {
+            return new ValidatePromoResponse { Valid = false };
+        }
+
+        using var db = _dbContextFactory.CreateDbContext();
+        var ct = context.CancellationToken;
+        var windowStart = DateTime.UtcNow - PromoLookback;
+
+        // The tier depends on what this customer has already spent in the window. The orders table keeps the final
+        // total but not which lines were eligible, so work it out again from each earlier order's items.
+        var earlierOrders = await db.Orders
+            .Where(o => o.Email == request.Email && o.CreatedAt >= windowStart)
+            .ToListAsync(ct);
+
+        decimal earlierEligibleUsd = 0;
+        var itemsScanned = 0;
+        foreach (var order in earlierOrders)
+        {
+            var items = await db.CartItems
+                .Where(i => i.OrderId == order.Id)
+                .ToListAsync(ct);
+
+            foreach (var item in items)
+            {
+                itemsScanned++;
+                if (!await IsPromoEligibleAsync(item.ProductId, ct))
+                {
+                    continue;
+                }
+
+                var usd = await ToUsdAsync(
+                    new Money { CurrencyCode = item.ItemCostCurrencyCode, Units = item.ItemCostUnits, Nanos = item.ItemCostNanos },
+                    ct);
+                earlierEligibleUsd += usd * item.Quantity;
+            }
+        }
+
+        decimal thisOrderEligibleUsd = 0;
+        decimal thisOrderEligible = 0;
+        foreach (var item in request.Items)
+        {
+            if (!await IsPromoEligibleAsync(item.Item.ProductId, ct))
+            {
+                continue;
+            }
+
+            var cost = ToDecimal(item.Cost) * item.Item.Quantity;
+            thisOrderEligible += cost;
+            thisOrderEligibleUsd += await ToUsdAsync(item.Cost, ct) * item.Item.Quantity;
+        }
+
+        var spendUsd = earlierEligibleUsd + thisOrderEligibleUsd;
+        var percent = spendUsd switch
+        {
+            > 500m => 15,
+            >= 200m => 10,
+            _ => 5,
+        };
+        var discount = FromDecimal(request.UserCurrency, Math.Round(thisOrderEligible * percent / 100m, 2));
+
+        var activity = Activity.Current;
+        activity?.SetTag("app.promo.code", PromoCode);
+        activity?.SetTag("app.promo.window_start", windowStart.ToString("O"));
+        activity?.SetTag("app.promo.orders_scanned", earlierOrders.Count);
+        activity?.SetTag("app.promo.items_scanned", itemsScanned);
+        activity?.SetTag("app.promo.eligible_spend_usd", (double)spendUsd);
+        activity?.SetTag("app.promo.discount_percent", percent);
+
+        return new ValidatePromoResponse
+        {
+            Valid = true,
+            DiscountPercent = percent,
+            Discount = discount,
+            OrdersScanned = earlierOrders.Count,
+            ItemsScanned = itemsScanned,
+        };
+    }
+
+    private async Task<bool> IsPromoEligibleAsync(string productId, CancellationToken ct)
+    {
+        var product = await _catalogClient.GetProductAsync(new GetProductRequest { Id = productId }, cancellationToken: ct);
+        return product.Categories.Any(c => PromoCategories.Contains(c));
+    }
+
+    private async Task<decimal> ToUsdAsync(Money money, CancellationToken ct)
+    {
+        var usd = await _currencyClient.ConvertAsync(
+            new CurrencyConversionRequest { From = money, ToCode = "USD" },
+            cancellationToken: ct);
+        return ToDecimal(usd);
+    }
+
+    private static decimal ToDecimal(Money money) => money.Units + money.Nanos / 1_000_000_000m;
+
+    private static Money FromDecimal(string currencyCode, decimal amount)
+    {
+        var units = (long)decimal.Truncate(amount);
+        return new Money
+        {
+            CurrencyCode = currencyCode,
+            Units = units,
+            Nanos = (int)((amount - units) * 1_000_000_000m),
         };
     }
 
