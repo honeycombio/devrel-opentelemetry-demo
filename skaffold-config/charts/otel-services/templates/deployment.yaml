@@ -17,6 +17,8 @@ spec:
       opentelemetry.io/name: {{ .Values.services.productReviews.name }}
   template:
     metadata:
+      annotations:
+        resource.opentelemetry.io/service.name: {{ .Values.services.productReviews.name }}
       labels:
         opentelemetry.io/name: {{ .Values.services.productReviews.name }}
         app.kubernetes.io/component: {{ .Values.services.productReviews.name }}
@@ -80,6 +82,8 @@ spec:
       opentelemetry.io/name: {{ .Values.services.llm.name }}
   template:
     metadata:
+      annotations:
+        resource.opentelemetry.io/service.name: {{ .Values.services.llm.name }}
       labels:
         opentelemetry.io/name: {{ .Values.services.llm.name }}
         app.kubernetes.io/component: {{ .Values.services.llm.name }}
@@ -130,6 +134,8 @@ spec:
       opentelemetry.io/name: {{ .Values.services.storechat.name }}
   template:
     metadata:
+      annotations:
+        resource.opentelemetry.io/service.name: {{ .Values.services.storechat.name }}
       labels:
         opentelemetry.io/name: {{ .Values.services.storechat.name }}
         app.kubernetes.io/component: {{ .Values.services.storechat.name }}
@@ -198,6 +204,8 @@ spec:
       opentelemetry.io/name: {{ .Values.services.telemetryDocs.name }}
   template:
     metadata:
+      annotations:
+        resource.opentelemetry.io/service.name: {{ .Values.services.telemetryDocs.name }}
       labels:
         opentelemetry.io/name: {{ .Values.services.telemetryDocs.name }}
         app.kubernetes.io/component: {{ .Values.services.telemetryDocs.name }}
@@ -242,6 +250,8 @@ spec:
       opentelemetry.io/name: {{ .Values.services.llmEvals.name }}
   template:
     metadata:
+      annotations:
+        resource.opentelemetry.io/service.name: {{ .Values.services.llmEvals.name }}
       labels:
         opentelemetry.io/name: {{ .Values.services.llmEvals.name }}
         app.kubernetes.io/component: {{ .Values.services.llmEvals.name }}
@@ -300,6 +310,8 @@ spec:
       opentelemetry.io/name: {{ .Values.services.auth.name }}
   template:
     metadata:
+      annotations:
+        resource.opentelemetry.io/service.name: {{ .Values.services.auth.name }}
       labels:
         opentelemetry.io/name: {{ .Values.services.auth.name }}
         app.kubernetes.io/component: {{ .Values.services.auth.name }}

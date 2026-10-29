@@ -8,6 +8,10 @@ default:
       value: "service.name=$(OTEL_SERVICE_NAME),service.namespace=opentelemetry-demo,service.version=latest"
 components:
   accounting:
+    podAnnotations:
+      resource.opentelemetry.io/service.name: accounting
+      resource.opentelemetry.io/service.namespace: opentelemetry-demo
+      resource.opentelemetry.io/service.version: latest
     service:
       port: 5060
     resources:
@@ -21,6 +25,10 @@ components:
       - name: ASPNETCORE_URLS
         value: "http://*:5060"
   load-generator:
+    podAnnotations:
+      resource.opentelemetry.io/service.name: load-generator
+      resource.opentelemetry.io/service.namespace: opentelemetry-demo
+      resource.opentelemetry.io/service.version: latest
     replicas: 2
     envOverrides:
       # Opt in agent (Bedrock-hitting) loadgen tasks. Locals leave this
@@ -29,6 +37,10 @@ components:
       - name: AGENT_LOAD_ENABLED
         value: "true"
   frontend:
+    podAnnotations:
+      resource.opentelemetry.io/service.name: api-gateway
+      resource.opentelemetry.io/service.namespace: opentelemetry-demo
+      resource.opentelemetry.io/service.version: latest
     replicas: 2
     envOverrides:
       - name: PRODUCT_REVIEWS_ADDR
@@ -38,10 +50,18 @@ components:
       - name: ACCOUNTING_ADDR
         value: accounting:5060
   postgresql:
+    podAnnotations:
+      resource.opentelemetry.io/service.name: postgresql
+      resource.opentelemetry.io/service.namespace: opentelemetry-demo
+      resource.opentelemetry.io/service.version: latest
     resources:
       limits:
         memory: 512Mi
   kafka:
+    podAnnotations:
+      resource.opentelemetry.io/service.name: kafka
+      resource.opentelemetry.io/service.namespace: opentelemetry-demo
+      resource.opentelemetry.io/service.version: latest
     # The chart default of 600Mi OOM-kills the broker: JVM heap (-Xmx400M) plus
     # off-heap (metaspace, direct buffers) plus log-segment page cache exceeds the
     # cgroup limit under load. When Kafka crash-loops, the accounting consumer can't
@@ -51,6 +71,10 @@ components:
       limits:
         memory: 1Gi
   frontend-proxy:
+    podAnnotations:
+      resource.opentelemetry.io/service.name: frontend-proxy
+      resource.opentelemetry.io/service.namespace: opentelemetry-demo
+      resource.opentelemetry.io/service.version: latest
     envOverrides:
       - name: ENVOY_ADDR
         value: 0.0.0.0
@@ -65,6 +89,10 @@ components:
       - name: TELEMETRY_DOCS_PORT
         value: "8000"
   flagd:
+    podAnnotations:
+      resource.opentelemetry.io/service.name: flagd
+      resource.opentelemetry.io/service.namespace: opentelemetry-demo
+      resource.opentelemetry.io/service.version: latest
     # Rebind the chart's `config-ro` volume to our flagd-custom-config ConfigMap
     # (a superset of the chart's default flags). flagd and the flagd-ui sidecar
     # both mount config-ro, so the UI can now see and edit every flag.
@@ -98,6 +126,72 @@ components:
         volumeMounts:
           - name: config-rw
             mountPath: /app/data
+
+  ad:
+    podAnnotations:
+      resource.opentelemetry.io/service.name: ad
+      resource.opentelemetry.io/service.namespace: opentelemetry-demo
+      resource.opentelemetry.io/service.version: latest
+  cart:
+    podAnnotations:
+      resource.opentelemetry.io/service.name: cart
+      resource.opentelemetry.io/service.namespace: opentelemetry-demo
+      resource.opentelemetry.io/service.version: latest
+  checkout:
+    podAnnotations:
+      resource.opentelemetry.io/service.name: checkout
+      resource.opentelemetry.io/service.namespace: opentelemetry-demo
+      resource.opentelemetry.io/service.version: latest
+  currency:
+    podAnnotations:
+      resource.opentelemetry.io/service.name: currency
+      resource.opentelemetry.io/service.namespace: opentelemetry-demo
+      resource.opentelemetry.io/service.version: latest
+  email:
+    podAnnotations:
+      resource.opentelemetry.io/service.name: email
+      resource.opentelemetry.io/service.namespace: opentelemetry-demo
+      resource.opentelemetry.io/service.version: latest
+  fraud-detection:
+    podAnnotations:
+      resource.opentelemetry.io/service.name: fraud-detection
+      resource.opentelemetry.io/service.namespace: opentelemetry-demo
+      resource.opentelemetry.io/service.version: latest
+  image-provider:
+    podAnnotations:
+      resource.opentelemetry.io/service.name: image-provider
+      resource.opentelemetry.io/service.namespace: opentelemetry-demo
+      resource.opentelemetry.io/service.version: latest
+  payment:
+    podAnnotations:
+      resource.opentelemetry.io/service.name: payment
+      resource.opentelemetry.io/service.namespace: opentelemetry-demo
+      resource.opentelemetry.io/service.version: latest
+  product-catalog:
+    podAnnotations:
+      resource.opentelemetry.io/service.name: product-catalog
+      resource.opentelemetry.io/service.namespace: opentelemetry-demo
+      resource.opentelemetry.io/service.version: latest
+  quote:
+    podAnnotations:
+      resource.opentelemetry.io/service.name: quote
+      resource.opentelemetry.io/service.namespace: opentelemetry-demo
+      resource.opentelemetry.io/service.version: latest
+  recommendation:
+    podAnnotations:
+      resource.opentelemetry.io/service.name: recommendation
+      resource.opentelemetry.io/service.namespace: opentelemetry-demo
+      resource.opentelemetry.io/service.version: latest
+  shipping:
+    podAnnotations:
+      resource.opentelemetry.io/service.name: shipping
+      resource.opentelemetry.io/service.namespace: opentelemetry-demo
+      resource.opentelemetry.io/service.version: latest
+  valkey-cart:
+    podAnnotations:
+      resource.opentelemetry.io/service.name: valkey-cart
+      resource.opentelemetry.io/service.namespace: opentelemetry-demo
+      resource.opentelemetry.io/service.version: latest
 
 opentelemetry-collector:
   enabled: false

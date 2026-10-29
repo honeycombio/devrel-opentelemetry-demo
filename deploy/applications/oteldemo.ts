@@ -23,6 +23,15 @@ export class OtelDemo extends pulumi.ComponentResource {
         opts: pulumi.ComponentResourceOptions = {}) {
         super("devrel:otel-demo", name, args, opts);
 
+        // Every component of the otel-demo chart. The chart reads podAnnotations
+        // per component only, never from `default`.
+        const demoComponents = [
+            "accounting", "ad", "cart", "checkout", "currency", "email", "flagd",
+            "fraud-detection", "frontend", "frontend-proxy", "image-provider", "kafka",
+            "load-generator", "payment", "postgresql", "product-catalog", "quote",
+            "recommendation", "shipping", "valkey-cart"
+        ];
+
         const values =
         {
             "default": {
@@ -35,7 +44,16 @@ export class OtelDemo extends pulumi.ComponentResource {
                 "image": {
                     "tag": args.config.containerTag
                 }
-            }
+            },
+            // The deployed version is the image tag. The collector's
+            // k8sattributes processor turns this annotation into service.version
+            // on the pods' kubeletstats metrics. It merges over the "latest"
+            // that config-files/demo/values.yaml sets for local deployments.
+            "components": Object.fromEntries(demoComponents.map(component => [component, {
+                "podAnnotations": {
+                    "resource.opentelemetry.io/service.version": args.config.containerTag
+                }
+            }]))
         };
 
         // The otel-demo chart creates a flagd-config ConfigMap from its own bundled flags (no values override).
@@ -118,6 +136,9 @@ export class OtelDemo extends pulumi.ComponentResource {
                 },
                 template: {
                     metadata: {
+                        annotations: {
+                            "resource.opentelemetry.io/service.name": "product-reviews"
+                        },
                         labels: {
                             "opentelemetry.io/name": "product-reviews",
                             "app.kubernetes.io/component": "product-reviews",
@@ -228,6 +249,9 @@ export class OtelDemo extends pulumi.ComponentResource {
                 },
                 template: {
                     metadata: {
+                        annotations: {
+                            "resource.opentelemetry.io/service.name": "llm"
+                        },
                         labels: {
                             "opentelemetry.io/name": "llm",
                             "app.kubernetes.io/component": "llm",
