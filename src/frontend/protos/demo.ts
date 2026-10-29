@@ -304,10 +304,33 @@ export interface PlaceOrderRequest {
   email: string;
   creditCard: CreditCardInfo | undefined;
   paymentStrategy: PaymentStrategy;
+  /** Optional promo code, e.g. OBSERVATORY. Ignored unless the promo is active. */
+  promoCode: string;
 }
 
 export interface PlaceOrderResponse {
   order: OrderResult | undefined;
+}
+
+export interface ValidatePromoRequest {
+  email: string;
+  promoCode: string;
+  /** Currency of the item costs below, and of the discount in the response. */
+  userCurrency: string;
+  /** The items of the order being placed. */
+  items: OrderItem[];
+}
+
+export interface ValidatePromoResponse {
+  valid: boolean;
+  discountPercent: number;
+  /** Discount on this order's eligible items, in the request's currency. */
+  discount:
+    | Money
+    | undefined;
+  /** How many of the customer's earlier orders and line items were walked to price the tier. */
+  ordersScanned: number;
+  itemsScanned: number;
 }
 
 export interface GetOrdersByEmailRequest {
@@ -3362,7 +3385,15 @@ export const SendOrderConfirmationRequest: MessageFns<SendOrderConfirmationReque
 };
 
 function createBasePlaceOrderRequest(): PlaceOrderRequest {
-  return { userId: "", userCurrency: "", address: undefined, email: "", creditCard: undefined, paymentStrategy: 0 };
+  return {
+    userId: "",
+    userCurrency: "",
+    address: undefined,
+    email: "",
+    creditCard: undefined,
+    paymentStrategy: 0,
+    promoCode: "",
+  };
 }
 
 export const PlaceOrderRequest: MessageFns<PlaceOrderRequest> = {
@@ -3384,6 +3415,9 @@ export const PlaceOrderRequest: MessageFns<PlaceOrderRequest> = {
     }
     if (message.paymentStrategy !== 0) {
       writer.uint32(56).int32(message.paymentStrategy);
+    }
+    if (message.promoCode !== "") {
+      writer.uint32(66).string(message.promoCode);
     }
     return writer;
   },
@@ -3443,6 +3477,14 @@ export const PlaceOrderRequest: MessageFns<PlaceOrderRequest> = {
           message.paymentStrategy = reader.int32() as any;
           continue;
         }
+        case 8: {
+          if (tag !== 66) {
+            break;
+          }
+
+          message.promoCode = reader.string();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -3460,6 +3502,7 @@ export const PlaceOrderRequest: MessageFns<PlaceOrderRequest> = {
       email: isSet(object.email) ? globalThis.String(object.email) : "",
       creditCard: isSet(object.creditCard) ? CreditCardInfo.fromJSON(object.creditCard) : undefined,
       paymentStrategy: isSet(object.paymentStrategy) ? paymentStrategyFromJSON(object.paymentStrategy) : 0,
+      promoCode: isSet(object.promoCode) ? globalThis.String(object.promoCode) : "",
     };
   },
 
@@ -3483,6 +3526,9 @@ export const PlaceOrderRequest: MessageFns<PlaceOrderRequest> = {
     if (message.paymentStrategy !== 0) {
       obj.paymentStrategy = paymentStrategyToJSON(message.paymentStrategy);
     }
+    if (message.promoCode !== "") {
+      obj.promoCode = message.promoCode;
+    }
     return obj;
   },
 
@@ -3501,6 +3547,7 @@ export const PlaceOrderRequest: MessageFns<PlaceOrderRequest> = {
       ? CreditCardInfo.fromPartial(object.creditCard)
       : undefined;
     message.paymentStrategy = object.paymentStrategy ?? 0;
+    message.promoCode = object.promoCode ?? "";
     return message;
   },
 };
@@ -3561,6 +3608,240 @@ export const PlaceOrderResponse: MessageFns<PlaceOrderResponse> = {
     message.order = (object.order !== undefined && object.order !== null)
       ? OrderResult.fromPartial(object.order)
       : undefined;
+    return message;
+  },
+};
+
+function createBaseValidatePromoRequest(): ValidatePromoRequest {
+  return { email: "", promoCode: "", userCurrency: "", items: [] };
+}
+
+export const ValidatePromoRequest: MessageFns<ValidatePromoRequest> = {
+  encode(message: ValidatePromoRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.email !== "") {
+      writer.uint32(10).string(message.email);
+    }
+    if (message.promoCode !== "") {
+      writer.uint32(18).string(message.promoCode);
+    }
+    if (message.userCurrency !== "") {
+      writer.uint32(26).string(message.userCurrency);
+    }
+    for (const v of message.items) {
+      OrderItem.encode(v!, writer.uint32(34).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): ValidatePromoRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseValidatePromoRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.email = reader.string();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.promoCode = reader.string();
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.userCurrency = reader.string();
+          continue;
+        }
+        case 4: {
+          if (tag !== 34) {
+            break;
+          }
+
+          message.items.push(OrderItem.decode(reader, reader.uint32()));
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ValidatePromoRequest {
+    return {
+      email: isSet(object.email) ? globalThis.String(object.email) : "",
+      promoCode: isSet(object.promoCode) ? globalThis.String(object.promoCode) : "",
+      userCurrency: isSet(object.userCurrency) ? globalThis.String(object.userCurrency) : "",
+      items: globalThis.Array.isArray(object?.items) ? object.items.map((e: any) => OrderItem.fromJSON(e)) : [],
+    };
+  },
+
+  toJSON(message: ValidatePromoRequest): unknown {
+    const obj: any = {};
+    if (message.email !== "") {
+      obj.email = message.email;
+    }
+    if (message.promoCode !== "") {
+      obj.promoCode = message.promoCode;
+    }
+    if (message.userCurrency !== "") {
+      obj.userCurrency = message.userCurrency;
+    }
+    if (message.items?.length) {
+      obj.items = message.items.map((e) => OrderItem.toJSON(e));
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<ValidatePromoRequest>, I>>(base?: I): ValidatePromoRequest {
+    return ValidatePromoRequest.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<ValidatePromoRequest>, I>>(object: I): ValidatePromoRequest {
+    const message = createBaseValidatePromoRequest();
+    message.email = object.email ?? "";
+    message.promoCode = object.promoCode ?? "";
+    message.userCurrency = object.userCurrency ?? "";
+    message.items = object.items?.map((e) => OrderItem.fromPartial(e)) || [];
+    return message;
+  },
+};
+
+function createBaseValidatePromoResponse(): ValidatePromoResponse {
+  return { valid: false, discountPercent: 0, discount: undefined, ordersScanned: 0, itemsScanned: 0 };
+}
+
+export const ValidatePromoResponse: MessageFns<ValidatePromoResponse> = {
+  encode(message: ValidatePromoResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.valid !== false) {
+      writer.uint32(8).bool(message.valid);
+    }
+    if (message.discountPercent !== 0) {
+      writer.uint32(16).int32(message.discountPercent);
+    }
+    if (message.discount !== undefined) {
+      Money.encode(message.discount, writer.uint32(26).fork()).join();
+    }
+    if (message.ordersScanned !== 0) {
+      writer.uint32(32).int32(message.ordersScanned);
+    }
+    if (message.itemsScanned !== 0) {
+      writer.uint32(40).int32(message.itemsScanned);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): ValidatePromoResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseValidatePromoResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.valid = reader.bool();
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.discountPercent = reader.int32();
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.discount = Money.decode(reader, reader.uint32());
+          continue;
+        }
+        case 4: {
+          if (tag !== 32) {
+            break;
+          }
+
+          message.ordersScanned = reader.int32();
+          continue;
+        }
+        case 5: {
+          if (tag !== 40) {
+            break;
+          }
+
+          message.itemsScanned = reader.int32();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ValidatePromoResponse {
+    return {
+      valid: isSet(object.valid) ? globalThis.Boolean(object.valid) : false,
+      discountPercent: isSet(object.discountPercent) ? globalThis.Number(object.discountPercent) : 0,
+      discount: isSet(object.discount) ? Money.fromJSON(object.discount) : undefined,
+      ordersScanned: isSet(object.ordersScanned) ? globalThis.Number(object.ordersScanned) : 0,
+      itemsScanned: isSet(object.itemsScanned) ? globalThis.Number(object.itemsScanned) : 0,
+    };
+  },
+
+  toJSON(message: ValidatePromoResponse): unknown {
+    const obj: any = {};
+    if (message.valid !== false) {
+      obj.valid = message.valid;
+    }
+    if (message.discountPercent !== 0) {
+      obj.discountPercent = Math.round(message.discountPercent);
+    }
+    if (message.discount !== undefined) {
+      obj.discount = Money.toJSON(message.discount);
+    }
+    if (message.ordersScanned !== 0) {
+      obj.ordersScanned = Math.round(message.ordersScanned);
+    }
+    if (message.itemsScanned !== 0) {
+      obj.itemsScanned = Math.round(message.itemsScanned);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<ValidatePromoResponse>, I>>(base?: I): ValidatePromoResponse {
+    return ValidatePromoResponse.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<ValidatePromoResponse>, I>>(object: I): ValidatePromoResponse {
+    const message = createBaseValidatePromoResponse();
+    message.valid = object.valid ?? false;
+    message.discountPercent = object.discountPercent ?? 0;
+    message.discount = (object.discount !== undefined && object.discount !== null)
+      ? Money.fromPartial(object.discount)
+      : undefined;
+    message.ordersScanned = object.ordersScanned ?? 0;
+    message.itemsScanned = object.itemsScanned ?? 0;
     return message;
   },
 };
@@ -5894,12 +6175,23 @@ export const OrderServiceService = {
     responseSerialize: (value: RefundOrderResponse): Buffer => Buffer.from(RefundOrderResponse.encode(value).finish()),
     responseDeserialize: (value: Buffer): RefundOrderResponse => RefundOrderResponse.decode(value),
   },
+  validatePromo: {
+    path: "/oteldemo.OrderService/ValidatePromo",
+    requestStream: false,
+    responseStream: false,
+    requestSerialize: (value: ValidatePromoRequest): Buffer => Buffer.from(ValidatePromoRequest.encode(value).finish()),
+    requestDeserialize: (value: Buffer): ValidatePromoRequest => ValidatePromoRequest.decode(value),
+    responseSerialize: (value: ValidatePromoResponse): Buffer =>
+      Buffer.from(ValidatePromoResponse.encode(value).finish()),
+    responseDeserialize: (value: Buffer): ValidatePromoResponse => ValidatePromoResponse.decode(value),
+  },
 } as const;
 
 export interface OrderServiceServer extends UntypedServiceImplementation {
   getOrdersByEmail: handleUnaryCall<GetOrdersByEmailRequest, GetOrdersByEmailResponse>;
   getOrder: handleUnaryCall<GetOrderRequest, OrderDetail>;
   refundOrder: handleUnaryCall<RefundOrderRequest, RefundOrderResponse>;
+  validatePromo: handleUnaryCall<ValidatePromoRequest, ValidatePromoResponse>;
 }
 
 export interface OrderServiceClient extends Client {
@@ -5947,6 +6239,21 @@ export interface OrderServiceClient extends Client {
     metadata: Metadata,
     options: Partial<CallOptions>,
     callback: (error: ServiceError | null, response: RefundOrderResponse) => void,
+  ): ClientUnaryCall;
+  validatePromo(
+    request: ValidatePromoRequest,
+    callback: (error: ServiceError | null, response: ValidatePromoResponse) => void,
+  ): ClientUnaryCall;
+  validatePromo(
+    request: ValidatePromoRequest,
+    metadata: Metadata,
+    callback: (error: ServiceError | null, response: ValidatePromoResponse) => void,
+  ): ClientUnaryCall;
+  validatePromo(
+    request: ValidatePromoRequest,
+    metadata: Metadata,
+    options: Partial<CallOptions>,
+    callback: (error: ServiceError | null, response: ValidatePromoResponse) => void,
   ): ClientUnaryCall;
 }
 
