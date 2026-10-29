@@ -6,12 +6,10 @@
 # each query and sends a SERVER span, parented to the client's DB span, to the
 # collector over OTLP. Download the prebuilt release for this Postgres major
 # version and CPU (`uname -m` is x86_64 or aarch64, matching the release names).
-FROM postgres:17.6 AS otel-postgres
+FROM docker.io/library/alpine:3.22 AS otel-postgres
 ARG OTEL_POSTGRES_VERSION=0.1.0
-RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates curl \
-    && rm -rf /var/lib/apt/lists/*
 RUN name=opentelemetry-postgres-${OTEL_POSTGRES_VERSION}-pg17-linux-$(uname -m)-glibc \
-    && curl -fsSL https://github.com/practical-otel/opentelemetry-postgres/releases/download/v${OTEL_POSTGRES_VERSION}/${name}.tar.gz \
+    && wget -qO- https://github.com/practical-otel/opentelemetry-postgres/releases/download/v${OTEL_POSTGRES_VERSION}/${name}.tar.gz \
        | tar -xz -C /tmp \
     && mv /tmp/${name} /tmp/otel-postgres
 
