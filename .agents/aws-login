@@ -1,0 +1,35 @@
+#!/usr/bin/env bash
+# "Log back in to aws": (re)create the SSO config if missing, run the device-code
+# login, then verify the identity. The user opens the printed URL, enters the
+# printed code, and approves. Device code is required: the browser-redirect flow
+# is rejected by this Identity Center. Its region is us-east-1, not eu-west-1.
+set -euo pipefail
+export PATH="$HOME/.local/bin:$PATH"
+
+profile=devrel-sandbox
+config="$HOME/.aws/config"
+mkdir -p "$HOME/.aws"
+touch "$config"
+
+if ! grep -Fqx "[sso-session $profile]" "$config"; then
+  cat >> "$config" <<CFG
+
+[sso-session $profile]
+sso_start_url = https://d-9067a537a5.awsapps.com/start
+sso_region = us-east-1
+sso_registration_scopes = sso:account:access
+CFG
+fi
+if ! grep -Fqx "[profile $profile]" "$config"; then
+  cat >> "$config" <<CFG
+
+[profile $profile]
+sso_session = $profile
+sso_account_id = 702835727665
+sso_role_name = SalesEngineerAccess
+region = eu-west-1
+CFG
+fi
+
+aws sso login --use-device-code --profile "$profile"
+aws sts get-caller-identity --profile "$profile"
