@@ -136,7 +136,9 @@ const ApiGateway = new Proxy(Apis(), {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return function (...args: any[]) {
       const baggage = propagation.getActiveBaggage() || propagation.createBaggage();
-      let newBaggage = baggage.setEntry(AttributeNames.SESSION_ID, { value: userId });
+      let newBaggage = baggage
+        .setEntry(AttributeNames.SESSION_ID, { value: userId })
+        .setEntry(AttributeNames.ENDUSER_ID, { value: userId });
       const { corporateUserId, company } = SessionGateway.getSession();
       if (corporateUserId && company) {
         newBaggage = newBaggage

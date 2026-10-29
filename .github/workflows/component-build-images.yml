@@ -84,6 +84,22 @@ jobs:
             tag_suffix: cart
             context: ./
             setup-qemu: false
+          - file: ./src/agent/Dockerfile
+            tag_suffix: agent
+            context: ./
+            setup-qemu: true
+          - file: ./src/chatbot/Dockerfile
+            tag_suffix: chatbot
+            context: ./
+            setup-qemu: true
+          - file: ./src/mcp/Dockerfile
+            tag_suffix: mcp
+            context: ./
+            setup-qemu: true
+          - file: ./src/opamp-server/Dockerfile
+            tag_suffix: opamp-server
+            context: ./
+            setup-qemu: true
           - file: ./src/auth/Dockerfile
             tag_suffix: auth
             context: ./
@@ -148,8 +164,8 @@ jobs:
             tag_suffix: payment
             context: ./
             setup-qemu: true
-          - file: ./src/postgres/Dockerfile
-            tag_suffix: postgresql
+          - file: ./src/postgresql/Dockerfile
+            tag_suffix: astronomy-db
             context: ./
             setup-qemu: true
           - file: ./src/product-catalog/Dockerfile
@@ -174,10 +190,6 @@ jobs:
             setup-qemu: true
           - file: ./src/telemetry-docs/Dockerfile
             tag_suffix: telemetry-docs
-            context: ./
-            setup-qemu: true
-          - file: ./test/tracetesting/Dockerfile
-            tag_suffix: traceBasedTests
             context: ./
             setup-qemu: true
 
@@ -257,7 +269,7 @@ jobs:
           build-args: |
             OTEL_JAVA_AGENT_VERSION=${{ env.OTEL_JAVA_AGENT_VERSION }}
             OPENTELEMETRY_CPP_VERSION=${{ env.OPENTELEMETRY_CPP_VERSION }}
-            TRACETEST_IMAGE_VERSION=${{ env.TRACETEST_IMAGE_VERSION }}
+            OPAMP_GO_REF=${{ env.OPAMP_GO_REF }}
           tags: ${{ steps.docker_metatdata.outputs.tags }}
           labels: ${{ steps.docker_metatdata.outputs.labels }}
           cache-from: type=gha

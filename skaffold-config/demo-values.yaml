@@ -437,7 +437,7 @@ opentelemetry-collector:
         traces:
           exporters:
             - otlp/honeycomb
-            - spanmetrics
+            - span_metrics
             - awss3
           processors:
             - filter/drop_flagd_spans

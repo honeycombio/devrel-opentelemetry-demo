@@ -3,21 +3,18 @@
 
 import { NextApiHandler } from 'next';
 import {context, Exception, propagation, Span, SpanStatusCode, trace} from '@opentelemetry/api';
-import { SemanticAttributes } from '@opentelemetry/semantic-conventions';
-import { metrics } from '@opentelemetry/api';
-
-import logger from './Logger';
-
-const meter = metrics.getMeter('frontend');
-const requestCounter = meter.createCounter('app.frontend.requests');
+import {
+  ATTR_HTTP_REQUEST_METHOD,
+  ATTR_HTTP_RESPONSE_STATUS_CODE,
+  ATTR_URL_PATH,
+  SemanticAttributes,
+} from '@opentelemetry/semantic-conventions';
+import logger from './logger';
 
 const InstrumentationMiddleware = (handler: NextApiHandler): NextApiHandler => {
   return async (request, response) => {
-    const {method, url = ''} = request;
-    const [target] = url.split('?');
-    const startTime = Date.now();
-
     const span = trace.getSpan(context.active()) as Span;
+    const urlPath = request.url?.split('?', 1)[0];
 
     // The browser sends the corporate login as baggage; put it on the server span too.
     const baggage = propagation.getActiveBaggage();
@@ -26,46 +23,33 @@ const InstrumentationMiddleware = (handler: NextApiHandler): NextApiHandler => {
       if (value) span?.setAttribute(key, value);
     }
 
-    // Log request initiation
-    logger.info({
-      req: request,
-      'app.request.method': method,
-      'app.request.target': target,
-      'app.request.user_agent': request.headers['user-agent'],
-    }, 'API request started');
-
     let httpStatus = 200;
     try {
       await runWithSpan(span, async () => handler(request, response));
       httpStatus = response.statusCode;
-      
-      // Log successful response
-      const duration = Date.now() - startTime;
-      logger.info({
-        'app.response.status_code': httpStatus,
-        'app.response.duration_ms': duration,
-        'app.request.method': method,
-        'app.request.target': target,
-      }, 'API request completed successfully');
-      
+      logger.info(
+        {
+          [ATTR_HTTP_REQUEST_METHOD]: request.method,
+          [ATTR_URL_PATH]: urlPath,
+          [ATTR_HTTP_RESPONSE_STATUS_CODE]: httpStatus,
+        },
+        'API request completed'
+      );
     } catch (error) {
       span.recordException(error as Exception);
       span.setStatus({ code: SpanStatusCode.ERROR });
       httpStatus = 500;
-      
-      // Log error with context
-      const duration = Date.now() - startTime;
-      logger.error({
-        err: error,
-        'app.response.status_code': httpStatus,
-        'app.response.duration_ms': duration,
-        'app.request.method': method,
-        'app.request.target': target,
-      }, 'API request failed');
-      
+      logger.error(
+        {
+          err: error,
+          [ATTR_HTTP_REQUEST_METHOD]: request.method,
+          [ATTR_URL_PATH]: urlPath,
+          [ATTR_HTTP_RESPONSE_STATUS_CODE]: httpStatus,
+        },
+        'API request failed'
+      );
       throw error;
     } finally {
-      requestCounter.add(1, { method, target, status: httpStatus });
       span.setAttribute(SemanticAttributes.HTTP_STATUS_CODE, httpStatus);
     }
   };

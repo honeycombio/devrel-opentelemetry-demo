@@ -15,7 +15,25 @@ build:
       docker:
         dockerfile: src/ad/Dockerfile
         buildArgs:
-          OTEL_JAVA_AGENT_VERSION: 2.21.0
+          OTEL_JAVA_AGENT_VERSION: 2.31.1
+    - image: agent
+      context: .
+      docker:
+        dockerfile: src/agent/Dockerfile
+    - image: chatbot
+      context: .
+      docker:
+        dockerfile: src/chatbot/Dockerfile
+    - image: mcp
+      context: .
+      docker:
+        dockerfile: src/mcp/Dockerfile
+    - image: opamp-server
+      context: .
+      docker:
+        dockerfile: src/opamp-server/Dockerfile
+        buildArgs:
+          OPAMP_GO_REF: 40c117bcec97130c236fc4b9aabc3a1a5e514c50
     - image: cart
       context: .
       docker:
@@ -45,7 +63,7 @@ build:
       docker:
         dockerfile: src/currency/Dockerfile
         buildArgs:
-          OPENTELEMETRY_CPP_VERSION: 1.23.0
+          OPENTELEMETRY_CPP_VERSION: 1.28.0
     - image: email
       context: .
       docker:
@@ -55,7 +73,7 @@ build:
       docker:
         dockerfile: src/fraud-detection/Dockerfile
         buildArgs:
-          OTEL_JAVA_AGENT_VERSION: 2.21.0
+          OTEL_JAVA_AGENT_VERSION: 2.31.1
     - image: frontend
       context: .
       docker:
@@ -73,7 +91,7 @@ build:
       docker:
         dockerfile: src/kafka/Dockerfile
         buildArgs:
-          OTEL_JAVA_AGENT_VERSION: 2.21.0
+          OTEL_JAVA_AGENT_VERSION: 2.31.1
     - image: llm
       context: .
       docker:
@@ -86,10 +104,10 @@ build:
       context: .
       docker:
         dockerfile: src/payment/Dockerfile
-    - image: postgresql
+    - image: astronomy-db
       context: .
       docker:
-        dockerfile: src/postgres/Dockerfile
+        dockerfile: src/postgresql/Dockerfile
     - image: product-catalog
       context: .
       docker:
@@ -136,7 +154,7 @@ deploy:
         namespace: "{{.USER}}-local"
         repo: https://open-telemetry.github.io/opentelemetry-helm-charts
         remoteChart: opentelemetry-demo
-        version: 0.39.0
+        version: 0.42.6
         recreatePods: false
         skipBuildDependencies: false
         valuesFiles:
@@ -174,6 +192,14 @@ deploy:
           components.accounting.imageOverride.tag: "{{if .IMAGE_REPO_accounting }}{{.IMAGE_TAG_accounting}}@{{.IMAGE_DIGEST_accounting}}{{end}}"
           components.ad.imageOverride.repository: "{{if .IMAGE_REPO_ad }}{{.IMAGE_REPO_ad}}{{end}}"
           components.ad.imageOverride.tag: "{{if .IMAGE_REPO_ad }}{{.IMAGE_TAG_ad}}@{{.IMAGE_DIGEST_ad}}{{end}}"
+          components.agent.imageOverride.repository: "{{if .IMAGE_REPO_agent }}{{.IMAGE_REPO_agent}}{{end}}"
+          components.agent.imageOverride.tag: "{{if .IMAGE_REPO_agent }}{{.IMAGE_TAG_agent}}@{{.IMAGE_DIGEST_agent}}{{end}}"
+          components.chatbot.imageOverride.repository: "{{if .IMAGE_REPO_chatbot }}{{.IMAGE_REPO_chatbot}}{{end}}"
+          components.chatbot.imageOverride.tag: "{{if .IMAGE_REPO_chatbot }}{{.IMAGE_TAG_chatbot}}@{{.IMAGE_DIGEST_chatbot}}{{end}}"
+          components.mcp.imageOverride.repository: "{{if .IMAGE_REPO_mcp }}{{.IMAGE_REPO_mcp}}{{end}}"
+          components.mcp.imageOverride.tag: "{{if .IMAGE_REPO_mcp }}{{.IMAGE_TAG_mcp}}@{{.IMAGE_DIGEST_mcp}}{{end}}"
+          components.opamp-server.imageOverride.repository: "{{if .IMAGE_REPO_opamp_server }}{{.IMAGE_REPO_opamp_server}}{{end}}"
+          components.opamp-server.imageOverride.tag: "{{if .IMAGE_REPO_opamp_server }}{{.IMAGE_TAG_opamp_server}}@{{.IMAGE_DIGEST_opamp_server}}{{end}}"
           components.cart.imageOverride.repository: "{{if .IMAGE_REPO_cart }}{{.IMAGE_REPO_cart}}{{end}}"
           components.cart.imageOverride.tag: "{{if .IMAGE_REPO_cart }}{{.IMAGE_TAG_cart}}@{{.IMAGE_DIGEST_cart}}{{end}}"
           components.checkout.imageOverride.repository: "{{if .IMAGE_REPO_checkout }}{{.IMAGE_REPO_checkout}}{{end}}"
@@ -196,14 +222,16 @@ deploy:
           components.load-generator.imageOverride.tag: "{{if .IMAGE_REPO_load_generator }}{{.IMAGE_TAG_load_generator}}@{{.IMAGE_DIGEST_load_generator}}{{end}}"
           components.payment.imageOverride.repository: "{{if .IMAGE_REPO_payment }}{{.IMAGE_REPO_payment}}{{end}}"
           components.payment.imageOverride.tag: "{{if .IMAGE_REPO_payment }}{{.IMAGE_TAG_payment}}@{{.IMAGE_DIGEST_payment}}{{end}}"
-          components.postgresql.imageOverride.repository: "{{if .IMAGE_REPO_postgresql }}{{.IMAGE_REPO_postgresql}}{{end}}"
-          components.postgresql.imageOverride.tag: "{{if .IMAGE_REPO_postgresql }}{{.IMAGE_TAG_postgresql}}@{{.IMAGE_DIGEST_postgresql}}{{end}}"
+          components.astronomy-db.imageOverride.repository: "{{if .IMAGE_REPO_astronomy_db }}{{.IMAGE_REPO_astronomy_db}}{{end}}"
+          components.astronomy-db.imageOverride.tag: "{{if .IMAGE_REPO_astronomy_db }}{{.IMAGE_TAG_astronomy_db}}@{{.IMAGE_DIGEST_astronomy_db}}{{end}}"
           components.product-catalog.imageOverride.repository: "{{if .IMAGE_REPO_product_catalog }}{{.IMAGE_REPO_product_catalog}}{{end}}"
           components.product-catalog.imageOverride.tag: "{{if .IMAGE_REPO_product_catalog }}{{.IMAGE_TAG_product_catalog}}@{{.IMAGE_DIGEST_product_catalog}}{{end}}"
           components.quote.imageOverride.repository: "{{if .IMAGE_REPO_quote }}{{.IMAGE_REPO_quote}}{{end}}"
           components.quote.imageOverride.tag: "{{if .IMAGE_REPO_quote }}{{.IMAGE_TAG_quote}}@{{.IMAGE_DIGEST_quote}}{{end}}"
           components.recommendation.imageOverride.repository: "{{if .IMAGE_REPO_recommendation }}{{.IMAGE_REPO_recommendation}}{{end}}"
           components.recommendation.imageOverride.tag: "{{if .IMAGE_REPO_recommendation }}{{.IMAGE_TAG_recommendation}}@{{.IMAGE_DIGEST_recommendation}}{{end}}"
+          components.telemetry-docs.imageOverride.repository: "{{if .IMAGE_REPO_telemetry_docs }}{{.IMAGE_REPO_telemetry_docs}}{{end}}"
+          components.telemetry-docs.imageOverride.tag: "{{if .IMAGE_REPO_telemetry_docs }}{{.IMAGE_TAG_telemetry_docs}}@{{.IMAGE_DIGEST_telemetry_docs}}{{end}}"
           components.shipping.imageOverride.repository: "{{if .IMAGE_REPO_shipping }}{{.IMAGE_REPO_shipping}}{{end}}"
           components.shipping.imageOverride.tag: "{{if .IMAGE_REPO_shipping }}{{.IMAGE_TAG_shipping}}@{{.IMAGE_DIGEST_shipping}}{{end}}"
           # flagd-ui is a sidecar in the flagd pod. The chart's _objects.tpl
@@ -243,8 +271,6 @@ deploy:
           services.productReviews.imageOverride.tag: "{{if .IMAGE_REPO_product_reviews }}{{.IMAGE_TAG_product_reviews}}@{{.IMAGE_DIGEST_product_reviews}}{{end}}"
           services.llm.imageOverride.repository: "{{if .IMAGE_REPO_llm }}{{.IMAGE_REPO_llm}}{{end}}"
           services.llm.imageOverride.tag: "{{if .IMAGE_REPO_llm }}{{.IMAGE_TAG_llm}}@{{.IMAGE_DIGEST_llm}}{{end}}"
-          services.telemetryDocs.imageOverride.repository: "{{if .IMAGE_REPO_telemetry_docs }}{{.IMAGE_REPO_telemetry_docs}}{{end}}"
-          services.telemetryDocs.imageOverride.tag: "{{if .IMAGE_REPO_telemetry_docs }}{{.IMAGE_TAG_telemetry_docs}}@{{.IMAGE_DIGEST_telemetry_docs}}{{end}}"
           services.auth.imageOverride.repository: "{{if .IMAGE_REPO_auth }}{{.IMAGE_REPO_auth}}{{end}}"
           services.auth.imageOverride.tag: "{{if .IMAGE_REPO_auth }}{{.IMAGE_TAG_auth}}@{{.IMAGE_DIGEST_auth}}{{end}}"
           services.auth.sidecar.imageOverride.repository: "{{if .IMAGE_REPO_sso_mocks }}{{.IMAGE_REPO_sso_mocks}}{{end}}"

@@ -7,7 +7,7 @@ import { trace } from '@opentelemetry/api';
 import InstrumentationMiddleware from '../../utils/telemetry/InstrumentationMiddleware';
 import AuthGateway from '../../gateways/rpc/Auth.gateway';
 import { LoginRequest, LoginResponse } from '../../protos/demo';
-import logger from '../../utils/telemetry/Logger';
+import logger from '../../utils/telemetry/logger';
 
 type TResponse = LoginResponse | { error: string };
 

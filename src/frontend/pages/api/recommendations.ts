@@ -7,7 +7,7 @@ import RecommendationsGateway from '../../gateways/rpc/Recommendations.gateway';
 import { Empty, Product } from '../../protos/demo';
 import ProductCatalogService from '../../services/ProductCatalog.service';
 
-import logger from '../../utils/telemetry/Logger';
+import logger from '../../utils/telemetry/logger';
 
 type TResponse = Product[] | Empty;
 

@@ -8,27 +8,12 @@ attribute_groups:
     brief: Payment service attributes
     stability: stable
     attributes:
-      - ref: app.loyalty.level
-      - ref: app.payment.card_type
-      - ref: app.payment.card_valid
-      - ref: app.payment.charged
-      - ref: app.payment.amount
-      - ref: app.payment.transaction.id
-      - ref: app.payment.declined
-      - ref: app.payment.decline_reason
-  - id: service.payment.feature_flags
-    visibility: public
-    brief: Feature flag evaluation attributes recorded on payment spans
-    stability: stable
-    note: >
-      The payment service reads its flags from flagd. Every evaluation is recorded on the charge or refund
-      span. A failed evaluation falls back to a default and adds a feature_flag.evaluation_failed span event;
-      it never sets an error status on the span, because failing to read a flag is not a failed payment.
-    attributes:
-      - ref: feature_flag.key
-      - ref: feature_flag.provider.name
-      - ref: feature_flag.result.value
-      - ref: feature_flag.result.variant
-      - ref: feature_flag.result.reason
-      - ref: error.type
-      - ref: error.message
+      - ref: user_agent.synthetic.type
+      - ref: enduser.id
+      - ref: demo.user_context.loyalty_level
+      - ref: demo.payment.card_type
+      - ref: demo.payment.card_valid
+      - ref: demo.payment.card_number
+      - ref: demo.payment.card_cvv
+      - ref: demo.payment.charged
+      - ref: demo.payment.amount

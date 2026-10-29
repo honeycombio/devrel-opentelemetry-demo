@@ -192,7 +192,6 @@ validator.
   prefixes are chosen so the validator names the intended network (it types a few Visa and Discover ranges as
   `visa_electron` and `rupay`).
 - The payment service accepts every network the validator recognises (it used to reject all but Visa and Mastercard).
-  The Amex tracetest now expects success.
 - **The bug:** `simple-card-validator` 1.1.0 only knows Mastercard as `^5[1-5]`. Real 2-series Mastercards (2221-2720,
   issued since 2017) match no network, so the card comes back `unknown` and invalid, and `charge` throws
   `Credit card info is invalid.` even though the number passes Luhn.

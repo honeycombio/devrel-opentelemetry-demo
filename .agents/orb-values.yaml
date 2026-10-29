@@ -17,7 +17,7 @@ opentelemetry-collector:
         traces:
           exporters:
             - otlp/honeycomb
-            - spanmetrics
+            - span_metrics
 components:
   load-generator:
     # The chart's 1500Mi limit is below the from-source load generator's peak
