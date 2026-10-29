@@ -5,11 +5,13 @@ package main
 import (
 	"context"
 	"errors"
+	"fmt"
 	"strings"
 
 	"github.com/exaring/otelpgx"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"go.opentelemetry.io/otel/trace"
 )
 
 var errUserNotFound = errors.New("user not found")
@@ -50,18 +52,31 @@ func newStore(ctx context.Context, connString string) (*store, error) {
 	return &store{pool: pool}, nil
 }
 
+// sqlcommenter appends the caller's trace context to a query as a SQLCommenter
+// comment. Postgres logs the comment with the statement, which lets the
+// collector tie Postgres logs to the trace. otelpgx starts its query span only
+// after the SQL is built, so the span ID is the calling span's, not the query
+// span's.
+func sqlcommenter(ctx context.Context, query string) string {
+	sc := trace.SpanContextFromContext(ctx)
+	if !sc.IsValid() {
+		return query
+	}
+	return fmt.Sprintf("%s /*traceparent='00-%s-%s-%s'*/", query, sc.TraceID(), sc.SpanID(), sc.TraceFlags())
+}
+
 func (s *store) close() { s.pool.Close() }
 
 func (s *store) findUserByEmail(ctx context.Context, email string) (*corporateUser, error) {
 	var u corporateUser
-	err := s.pool.QueryRow(ctx, `
+	err := s.pool.QueryRow(ctx, sqlcommenter(ctx, `
 		SELECT u.corporate_user_id, u.email, u.display_name, u.password_hash,
 		       c.company_id, c.name, c.domain, c.login_method, c.idp_tenant,
 		       s.url_override, COALESCE(s.enforce, false)
 		  FROM auth.corporate_user u
 		  JOIN auth.company c ON c.company_id = u.company_id
 		  LEFT JOIN auth.sso_status_check s ON s.company_id = c.company_id
-		 WHERE u.email = $1`, strings.ToLower(email)).Scan(
+		 WHERE u.email = $1`), strings.ToLower(email)).Scan(
 		&u.ID, &u.Email, &u.DisplayName, &u.PasswordHash,
 		&u.CompanyID, &u.CompanyName, &u.Domain, &u.LoginMethod, &u.IdpTenant,
 		&u.StatusCheckURL, &u.EnforceStatusCheck)
@@ -76,13 +91,13 @@ func (s *store) findUserByEmail(ctx context.Context, email string) (*corporateUs
 
 func (s *store) recordLogin(ctx context.Context, userID string) error {
 	_, err := s.pool.Exec(ctx,
-		`UPDATE auth.corporate_user SET last_login_at = now() WHERE corporate_user_id = $1`, userID)
+		sqlcommenter(ctx, `UPDATE auth.corporate_user SET last_login_at = now() WHERE corporate_user_id = $1`), userID)
 	return err
 }
 
 func (s *store) recordLoginEvent(ctx context.Context, userID, companyID *string, method, result string) error {
 	_, err := s.pool.Exec(ctx,
-		`INSERT INTO auth.login_event (corporate_user_id, company_id, method, result) VALUES ($1, $2, $3, $4)`,
+		sqlcommenter(ctx, `INSERT INTO auth.login_event (corporate_user_id, company_id, method, result) VALUES ($1, $2, $3, $4)`),
 		userID, companyID, method, result)
 	return err
 }

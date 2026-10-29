@@ -19,7 +19,9 @@ var connectionString = Environment.GetEnvironmentVariable("DB_CONNECTION_STRING"
 if (connectionString != null)
 {
     builder.Services.AddDbContextFactory<AccountingDbContext>(options =>
-        options.UseNpgsql(connectionString).UseSnakeCaseNamingConvention());
+        options.UseNpgsql(connectionString)
+            .UseSnakeCaseNamingConvention()
+            .AddInterceptors(new SqlCommenterInterceptor()));
 }
 
 var paymentAddr = Environment.GetEnvironmentVariable("PAYMENT_ADDR") ?? "payment:50051";
