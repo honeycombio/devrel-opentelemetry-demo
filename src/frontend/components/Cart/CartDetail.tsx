@@ -36,6 +36,7 @@ const CartDetail = () => {
       creditCardExpirationMonth,
       creditCardExpirationYear,
       creditCardNumber,
+      promoCode,
     }: IFormData) => {
         setOrderError('');
         try {
@@ -51,6 +52,7 @@ const CartDetail = () => {
                 },
                 userCurrency: selectedCurrency,
                 paymentStrategy: paymentStrategyForCard(creditCardNumber),
+                promoCode,
                 creditCard: {
                     creditCardCvv,
                     creditCardExpirationMonth,
