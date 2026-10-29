@@ -1,0 +1,12 @@
+change_type: enhancement
+
+component: kubernetes
+
+note: Set `resource.opentelemetry.io/service.name` on every pod so kubeletstats pod metrics carry an explicit `service.name`.
+
+issues: [49]
+
+subtext: |-
+  The demo chart components, the otel-services chart and both collectors are
+  annotated. frontend is named api-gateway, and the daemonset collector is
+  named otel-collector instead of its Helm release name.
