@@ -93,6 +93,9 @@ def get_flagd_value(FlagName):
     client = api.get_client()
     return client.get_integer_value(FlagName, 0)
 
+def get_flagd_bool(FlagName):
+    return api.get_client().get_boolean_value(FlagName, False)
+
 categories = [
     "binoculars",
     "telescopes",
@@ -348,6 +351,19 @@ def make_checkout_person(user: str, email: str) -> dict:
     card_number, payment_strategy = random_card()
     person = {**random.choice(people), "userId": user, "email": email, "paymentStrategy": payment_strategy}
     person["creditCard"] = {**person["creditCard"], "creditCardNumber": card_number}
+    return person
+
+
+# Observatory Hour: while marketing has the promo on (flagd promo.observatory-hour), a third of
+# ordinary checkouts try the code. They have no recent orders, so for them it is cheap.
+PROMO_FLAG = "promo.observatory-hour"
+PROMO_CODE = "OBSERVATORY"
+ORGANIC_PROMO_SHARE = 1 / 3
+
+
+def maybe_add_promo(person: dict) -> dict:
+    if random.random() < ORGANIC_PROMO_SHARE and get_flagd_bool(PROMO_FLAG):
+        person["promoCode"] = PROMO_CODE
     return person
 
 
@@ -697,7 +713,7 @@ class WebsiteUser(HttpUser):
         user = str(uuid.uuid1())
         with self.tracer.start_as_current_span("user_checkout_single", context=Context(), attributes={"user.id": user}):
             self.add_to_cart(user=user)
-            checkout_person = make_checkout_person(user, random_email())
+            checkout_person = maybe_add_promo(make_checkout_person(user, random_email()))
             self.client.post("/api/checkout", json=checkout_person)
             logging.info(f"Checkout completed for user {user}")
 
@@ -709,7 +725,7 @@ class WebsiteUser(HttpUser):
                                             attributes={"user.id": user, "item.count": item_count}):
             for i in range(item_count):
                 self.add_to_cart(user=user)
-            checkout_person = make_checkout_person(user, random_email())
+            checkout_person = maybe_add_promo(make_checkout_person(user, random_email()))
             self.client.post("/api/checkout", json=checkout_person)
             logging.info(f"Multi-item checkout completed for user {user}")
 
@@ -755,6 +771,65 @@ class WebsiteUser(HttpUser):
             ctx = baggage.set_baggage("synthetic_request", "true", context=ctx)
             context.attach(ctx)
             self.index()
+
+
+class CircleClubBuyer(HttpUser):
+    """A bulk buyer (astronomy club, school, reseller) who stocks up while the Observatory Hour promo is on.
+
+    Each one starts a 30-minute shopping session when it sees the flag go on, placing a big order every 10 to
+    20 seconds. The promo counts spend over the last 30 minutes, so each order makes the next price check
+    walk more earlier orders. When the session ends the orders age out and the lookup is cheap again.
+    It starts a new session only after the flag has been seen off, so one flip is one fin.
+
+    There are two buyers per loadgen process, each with its own customer email.
+    """
+    fixed_count = 2
+    SESSION_SECONDS = 30 * 60
+    EMAILS = ["circle-club-1@aurelia.honeydemo.io", "circle-club-2@aurelia.honeydemo.io"]
+    # Everything a club would stock up on: five promo products (accessories, books) and three that are not.
+    PRODUCTS = ["L9ECAV7KIM", "LS4PSXUNUM", "6E92ZMYYFZ", "0PUK6V6EV0", "HQTGWGPNH4",
+                "OLJCESPC7Z", "2ZYFJ3GM2N", "1YMWWN1N4O"]
+    _next_email = 0
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.tracer = trace.get_tracer(__name__)
+        self.email = CircleClubBuyer.EMAILS[CircleClubBuyer._next_email % len(CircleClubBuyer.EMAILS)]
+        CircleClubBuyer._next_email += 1
+        self.armed = True
+        self.session_started = None
+
+    def wait_time(self):
+        # Poll the flag quickly while idle, then pace the orders.
+        return random.uniform(10, 20) if self.session_started is not None else random.uniform(2, 5)
+
+    @task
+    def shop(self):
+        if not get_flagd_bool(PROMO_FLAG):
+            self.armed = True
+            self.session_started = None
+            return
+        now = time.monotonic()
+        if self.session_started is None:
+            if not self.armed:
+                return
+            self.armed = False
+            self.session_started = now
+            logging.info(f"Promo is on: {self.email} starts a shopping session")
+        elif now - self.session_started > self.SESSION_SECONDS:
+            return
+        user = str(uuid.uuid1())
+        with self.tracer.start_as_current_span("user_bulk_promo_checkout", context=Context(),
+                                               attributes={"user.id": user, "email": self.email}):
+            for product in self.PRODUCTS:
+                self.client.post("/api/cart", json={
+                    "item": {"productId": product, "quantity": random.randint(2, 6)},
+                    "userId": user,
+                })
+            person = make_checkout_person(user, self.email)
+            person["promoCode"] = PROMO_CODE
+            self.client.post("/api/checkout", json=person)
+            logging.info(f"Bulk promo checkout completed for {self.email}")
 
 
 browser_traffic_enabled = os.environ.get("LOCUST_BROWSER_TRAFFIC_ENABLED", "").lower() in ("true", "yes", "on")

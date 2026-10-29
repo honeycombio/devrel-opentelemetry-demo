@@ -214,6 +214,15 @@
         "off": 0
       },
       "defaultVariant": "off"
+    },
+    "promo.observatory-hour": {
+      "description": "Observatory Hour promo: spend more, save more on accessories and books with code OBSERVATORY. On activates it; off ends it.",
+      "state": "ENABLED",
+      "variants": {
+        "on": true,
+        "off": false
+      },
+      "defaultVariant": "off"
     }
   }
 }

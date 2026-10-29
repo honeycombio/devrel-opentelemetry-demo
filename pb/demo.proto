@@ -310,6 +310,8 @@ message PlaceOrderRequest {
     string email = 5;
     CreditCardInfo credit_card = 6;
     PaymentStrategy payment_strategy = 7;
+    // Optional promo code, e.g. OBSERVATORY. Ignored unless the promo is active.
+    string promo_code = 8;
 }
 
 message PlaceOrderResponse {
@@ -322,6 +324,26 @@ service OrderService {
     rpc GetOrdersByEmail(GetOrdersByEmailRequest) returns (GetOrdersByEmailResponse) {}
     rpc GetOrder(GetOrderRequest) returns (OrderDetail) {}
     rpc RefundOrder(RefundOrderRequest) returns (RefundOrderResponse) {}
+    rpc ValidatePromo(ValidatePromoRequest) returns (ValidatePromoResponse) {}
+}
+
+message ValidatePromoRequest {
+    string email = 1;
+    string promo_code = 2;
+    // Currency of the item costs below, and of the discount in the response.
+    string user_currency = 3;
+    // The items of the order being placed.
+    repeated OrderItem items = 4;
+}
+
+message ValidatePromoResponse {
+    bool valid = 1;
+    int32 discount_percent = 2;
+    // Discount on this order's eligible items, in the request's currency.
+    Money discount = 3;
+    // How many of the customer's earlier orders and line items were walked to price the tier.
+    int32 orders_scanned = 4;
+    int32 items_scanned = 5;
 }
 
 message GetOrdersByEmailRequest {

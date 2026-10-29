@@ -20,6 +20,15 @@ components:
         value: "5060"
       - name: ASPNETCORE_URLS
         value: "http://*:5060"
+      # ValidatePromo walks a customer's earlier orders, calling these per item.
+      - name: PRODUCT_CATALOG_ADDR
+        value: product-catalog:8080
+      - name: CURRENCY_ADDR
+        value: currency:8080
+  checkout:
+    envOverrides:
+      - name: ACCOUNTING_ADDR
+        value: accounting:5060
   load-generator:
     replicas: 2
     envOverrides:

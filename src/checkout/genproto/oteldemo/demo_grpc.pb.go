@@ -1334,6 +1334,7 @@ const (
 	OrderService_GetOrdersByEmail_FullMethodName = "/oteldemo.OrderService/GetOrdersByEmail"
 	OrderService_GetOrder_FullMethodName         = "/oteldemo.OrderService/GetOrder"
 	OrderService_RefundOrder_FullMethodName      = "/oteldemo.OrderService/RefundOrder"
+	OrderService_ValidatePromo_FullMethodName    = "/oteldemo.OrderService/ValidatePromo"
 )
 
 // OrderServiceClient is the client API for OrderService service.
@@ -1343,6 +1344,7 @@ type OrderServiceClient interface {
 	GetOrdersByEmail(ctx context.Context, in *GetOrdersByEmailRequest, opts ...grpc.CallOption) (*GetOrdersByEmailResponse, error)
 	GetOrder(ctx context.Context, in *GetOrderRequest, opts ...grpc.CallOption) (*OrderDetail, error)
 	RefundOrder(ctx context.Context, in *RefundOrderRequest, opts ...grpc.CallOption) (*RefundOrderResponse, error)
+	ValidatePromo(ctx context.Context, in *ValidatePromoRequest, opts ...grpc.CallOption) (*ValidatePromoResponse, error)
 }
 
 type orderServiceClient struct {
@@ -1383,6 +1385,16 @@ func (c *orderServiceClient) RefundOrder(ctx context.Context, in *RefundOrderReq
 	return out, nil
 }
 
+func (c *orderServiceClient) ValidatePromo(ctx context.Context, in *ValidatePromoRequest, opts ...grpc.CallOption) (*ValidatePromoResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ValidatePromoResponse)
+	err := c.cc.Invoke(ctx, OrderService_ValidatePromo_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // OrderServiceServer is the server API for OrderService service.
 // All implementations must embed UnimplementedOrderServiceServer
 // for forward compatibility.
@@ -1390,6 +1402,7 @@ type OrderServiceServer interface {
 	GetOrdersByEmail(context.Context, *GetOrdersByEmailRequest) (*GetOrdersByEmailResponse, error)
 	GetOrder(context.Context, *GetOrderRequest) (*OrderDetail, error)
 	RefundOrder(context.Context, *RefundOrderRequest) (*RefundOrderResponse, error)
+	ValidatePromo(context.Context, *ValidatePromoRequest) (*ValidatePromoResponse, error)
 	mustEmbedUnimplementedOrderServiceServer()
 }
 
@@ -1408,6 +1421,9 @@ func (UnimplementedOrderServiceServer) GetOrder(context.Context, *GetOrderReques
 }
 func (UnimplementedOrderServiceServer) RefundOrder(context.Context, *RefundOrderRequest) (*RefundOrderResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method RefundOrder not implemented")
+}
+func (UnimplementedOrderServiceServer) ValidatePromo(context.Context, *ValidatePromoRequest) (*ValidatePromoResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ValidatePromo not implemented")
 }
 func (UnimplementedOrderServiceServer) mustEmbedUnimplementedOrderServiceServer() {}
 func (UnimplementedOrderServiceServer) testEmbeddedByValue()                      {}
@@ -1484,6 +1500,24 @@ func _OrderService_RefundOrder_Handler(srv interface{}, ctx context.Context, dec
 	return interceptor(ctx, in, info, handler)
 }
 
+func _OrderService_ValidatePromo_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ValidatePromoRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(OrderServiceServer).ValidatePromo(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: OrderService_ValidatePromo_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(OrderServiceServer).ValidatePromo(ctx, req.(*ValidatePromoRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // OrderService_ServiceDesc is the grpc.ServiceDesc for OrderService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -1502,6 +1536,10 @@ var OrderService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "RefundOrder",
 			Handler:    _OrderService_RefundOrder_Handler,
+		},
+		{
+			MethodName: "ValidatePromo",
+			Handler:    _OrderService_ValidatePromo_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
