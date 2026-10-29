@@ -370,7 +370,7 @@ Exclusions are in `kubernetes/helm-obi.yml` under `discovery.exclude_instrument`
 
 ## Postgres query tracing (SQLCommenter)
 
-Clients append a SQLCommenter comment (`/*traceparent='00-<trace>-<span>-01'*/`) to their queries: product-reviews (psycopg2 instrumentation), accounting (`SqlCommenterInterceptor`) and auth (`sqlcommenter()` in `db.go`). In Postgres (`src/postgres/Dockerfile`), the [opentelemetry-postgres](https://github.com/practical-otel/opentelemetry-postgres) extension (built from a pinned commit) sends a `SERVER` span per `SELECT`/`INSERT`/`UPDATE`/`DELETE`, parented to the client's DB span, straight to the collector over OTLP. Known gaps: DDL, parse/plan-time errors, and prepared statements that reuse the first `Parse`'s traceparent.
+Clients append a SQLCommenter comment (`/*traceparent='00-<trace>-<span>-01'*/`) to their queries: product-reviews (psycopg2 instrumentation), accounting (`SqlCommenterInterceptor`) and auth (`sqlcommenter()` in `db.go`). In Postgres (`src/postgres/Dockerfile`), the [opentelemetry-postgres](https://github.com/practical-otel/opentelemetry-postgres) extension (prebuilt v0.1.0 release, downloaded in the image build) sends a `SERVER` span per `SELECT`/`INSERT`/`UPDATE`/`DELETE`, parented to the client's DB span, straight to the collector over OTLP. Known gaps: DDL, parse/plan-time errors, and prepared statements that reuse the first `Parse`'s traceparent.
 
 ## Deploy to devrel-demo
 
