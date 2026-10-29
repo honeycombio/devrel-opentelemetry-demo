@@ -286,6 +286,71 @@ def random_email() -> str:
     auto cache writes a larger prefix to Bedrock every turn."""
     return f"loadgen-{uuid.uuid4().hex[:12]}@aurelia.honeydemo.io"
 
+# Card networks the loadgen checks out with: (name, number prefixes, length, weight).
+# Payment accepts every network it recognises, so these all charge --
+# except the deliberate bug below.
+#
+# Prefixes are chosen so simple-card-validator (in payment) names the network we
+# intend: it types 4026/4508/4844/4913/4917/417500 as visa_electron and
+# 652150-653149 as rupay, so we steer around those.
+#
+# DELIBERATE BUG: "mastercard_2series" are real Mastercards (2221-2720 BIN range,
+# issued since 2017) that simple-card-validator doesn't know. It types them
+# "unknown" and declares them invalid, so payment rejects them with "Credit card
+# info is invalid" even though they pass Luhn. Keep them -- they're a story.
+#
+# The loadgen plays the browser here: like the real checkout form, it tells the
+# backend which payment strategy it is using (PaymentStrategy in pb/demo.proto).
+# Both Mastercard series are CC_MASTERCARD -- the client knows the 2-series are
+# Mastercards; only payment's validator doesn't.
+PAYMENT_STRATEGY_CC_VISA = 1
+PAYMENT_STRATEGY_CC_MASTERCARD = 2
+PAYMENT_STRATEGY_CC_AMEX = 3
+PAYMENT_STRATEGY_CC_DISCOVER = 4
+
+CARD_NETWORKS = [
+    ("visa", PAYMENT_STRATEGY_CC_VISA, ["42", "43", "46"], 16, 10),
+    ("mastercard", PAYMENT_STRATEGY_CC_MASTERCARD, ["51", "52", "53", "54", "55"], 16, 55),
+    # 2-series stays at 2/5 of 5-series, so the Mastercard story's share of Mastercards is unchanged
+    ("mastercard_2series", PAYMENT_STRATEGY_CC_MASTERCARD, ["2221", "2300", "2500", "2720"], 16, 22),
+    ("amex", PAYMENT_STRATEGY_CC_AMEX, ["34", "37"], 15, 8),
+    ("discover", PAYMENT_STRATEGY_CC_DISCOVER, ["6011"], 16, 5),
+]
+
+
+def random_card() -> tuple[str, int]:
+    """A Luhn-valid card number on a randomly chosen network, and its PaymentStrategy enum value.
+
+    2-series mastercards are only sent when frontendAllowsMastercard2Series is on:
+    it simulates the frontend being fixed to let them through, while payment's
+    validator bug (see CARD_NETWORKS) is not."""
+    networks = CARD_NETWORKS
+    if get_flagd_value("frontendAllowsMastercard2Series") <= 0:
+        networks = [n for n in CARD_NETWORKS if n[0] != "mastercard_2series"]
+    _, strategy, prefixes, length, _ = random.choices(networks, weights=[n[4] for n in networks])[0]
+    digits = [int(d) for d in random.choice(prefixes)]
+    while len(digits) < length - 1:
+        digits.append(random.randint(0, 9))
+    # Luhn check digit: the digits double starting from the rightmost one now, since the check digit goes after.
+    total = 0
+    for i, d in enumerate(reversed(digits)):
+        if i % 2 == 0:
+            d = d * 2
+            if d > 9:
+                d -= 9
+        total += d
+    digits.append((10 - total % 10) % 10)
+    return "".join(str(d) for d in digits), strategy
+
+
+def make_checkout_person(user: str, email: str) -> dict:
+    """A random person from people.json, paying with a card from a random network."""
+    card_number, payment_strategy = random_card()
+    person = {**random.choice(people), "userId": user, "email": email, "paymentStrategy": payment_strategy}
+    person["creditCard"] = {**person["creditCard"], "creditCardNumber": card_number}
+    return person
+
+
 # Per-user cooldown on the AI tasks (ask_product_ai_assistant and
 # ask_store_chat). With Locust's wait_time=between(1,10) and the current
 # weighted task mix, a weight-1 task is naturally selected once every
@@ -443,7 +508,7 @@ class WebsiteUser(HttpUser):
                 "item": {"productId": product, "quantity": quantity},
                 "userId": user,
             })
-        checkout_person = {**random.choice(people), "userId": user, "email": email}
+        checkout_person = make_checkout_person(user, email)
         self.client.post("/api/checkout", json=checkout_person)
 
     @task(1)
@@ -656,7 +721,7 @@ class WebsiteUser(HttpUser):
         user = str(uuid.uuid1())
         with self.tracer.start_as_current_span("user_checkout_single", context=Context(), attributes={"user.id": user}):
             self.add_to_cart(user=user)
-            checkout_person = {**random.choice(people), "userId": user, "email": random_email()}
+            checkout_person = make_checkout_person(user, random_email())
             self.client.post("/api/checkout", json=checkout_person)
             logging.info(f"Checkout completed for user {user}")
 
@@ -670,7 +735,7 @@ class WebsiteUser(HttpUser):
                                             attributes={"user.id": user, "item.count": item_count}):
             for i in range(item_count):
                 self.add_to_cart(user=user)
-            checkout_person = {**random.choice(people), "userId": user, "email": random_email()}
+            checkout_person = make_checkout_person(user, random_email())
             self.client.post("/api/checkout", json=checkout_person)
             logging.info(f"Multi-item checkout completed for user {user}")
 

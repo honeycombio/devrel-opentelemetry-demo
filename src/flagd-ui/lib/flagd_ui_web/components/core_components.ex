@@ -209,7 +209,7 @@ defmodule FlagdUiWeb.CoreComponents do
         <select
           id={@id}
           name={@name}
-          class={["w-full select", @errors != [] && "select-error"]}
+          class={["w-full select text-black", @errors != [] && "select-error"]}
           multiple={@multiple}
           {@rest}
         >

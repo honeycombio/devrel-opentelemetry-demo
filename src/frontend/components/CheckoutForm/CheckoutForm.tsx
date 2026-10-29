@@ -6,6 +6,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { CypressFields } from '../../utils/enums/CypressFields';
 import Input from '../Input';
 import SessionGateway from '../../gateways/Session.gateway';
+import { paymentStrategyDisplayName, paymentStrategyForCard } from '../../utils/PaymentStrategy';
 import * as S from './CheckoutForm.styled';
 
 const currentYear = new Date().getFullYear();
@@ -148,6 +149,7 @@ const CheckoutForm = ({ onSubmit }: IProps) => {
         required
         pattern="\d{4}-\d{4}-\d{4}-\d{4}"
       />
+      <small id="credit_card_network">{paymentStrategyDisplayName(paymentStrategyForCard(creditCardNumber))}</small>
 
       <S.CardRow>
         <Input

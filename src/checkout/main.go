@@ -296,6 +296,9 @@ func (cs *checkout) PlaceOrder(ctx context.Context, req *pb.PlaceOrderRequest) (
 		attribute.String("app.user.id", req.UserId),
 		attribute.String("app.user.currency", req.UserCurrency),
 		attribute.String("app.user.city", req.Address.City),
+		// What the client (browser or loadgen) says the customer is paying with, e.g. CC_MASTERCARD.
+		// Not derived from the card number here: payment may classify the same card differently.
+		attribute.String("app.payment.strategy", req.PaymentStrategy.String()),
 	)
 	logger.LogAttrs(
 		ctx,

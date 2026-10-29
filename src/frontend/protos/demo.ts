@@ -21,6 +21,67 @@ import {
 
 export const protobufPackage = "oteldemo";
 
+/**
+ * How the customer is paying, as the client (browser or load generator) understands it.
+ * Room for non-card strategies (Google Pay etc.) later.
+ */
+export enum PaymentStrategy {
+  PAYMENT_STRATEGY_UNSPECIFIED = 0,
+  CC_VISA = 1,
+  CC_MASTERCARD = 2,
+  CC_AMEX = 3,
+  CC_DISCOVER = 4,
+  CC_OTHER = 5,
+  UNRECOGNIZED = -1,
+}
+
+export function paymentStrategyFromJSON(object: any): PaymentStrategy {
+  switch (object) {
+    case 0:
+    case "PAYMENT_STRATEGY_UNSPECIFIED":
+      return PaymentStrategy.PAYMENT_STRATEGY_UNSPECIFIED;
+    case 1:
+    case "CC_VISA":
+      return PaymentStrategy.CC_VISA;
+    case 2:
+    case "CC_MASTERCARD":
+      return PaymentStrategy.CC_MASTERCARD;
+    case 3:
+    case "CC_AMEX":
+      return PaymentStrategy.CC_AMEX;
+    case 4:
+    case "CC_DISCOVER":
+      return PaymentStrategy.CC_DISCOVER;
+    case 5:
+    case "CC_OTHER":
+      return PaymentStrategy.CC_OTHER;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return PaymentStrategy.UNRECOGNIZED;
+  }
+}
+
+export function paymentStrategyToJSON(object: PaymentStrategy): string {
+  switch (object) {
+    case PaymentStrategy.PAYMENT_STRATEGY_UNSPECIFIED:
+      return "PAYMENT_STRATEGY_UNSPECIFIED";
+    case PaymentStrategy.CC_VISA:
+      return "CC_VISA";
+    case PaymentStrategy.CC_MASTERCARD:
+      return "CC_MASTERCARD";
+    case PaymentStrategy.CC_AMEX:
+      return "CC_AMEX";
+    case PaymentStrategy.CC_DISCOVER:
+      return "CC_DISCOVER";
+    case PaymentStrategy.CC_OTHER:
+      return "CC_OTHER";
+    case PaymentStrategy.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
+}
+
 export interface CartItem {
   productId: string;
   quantity: number;
@@ -242,6 +303,7 @@ export interface PlaceOrderRequest {
   address: Address | undefined;
   email: string;
   creditCard: CreditCardInfo | undefined;
+  paymentStrategy: PaymentStrategy;
 }
 
 export interface PlaceOrderResponse {
@@ -3300,7 +3362,7 @@ export const SendOrderConfirmationRequest: MessageFns<SendOrderConfirmationReque
 };
 
 function createBasePlaceOrderRequest(): PlaceOrderRequest {
-  return { userId: "", userCurrency: "", address: undefined, email: "", creditCard: undefined };
+  return { userId: "", userCurrency: "", address: undefined, email: "", creditCard: undefined, paymentStrategy: 0 };
 }
 
 export const PlaceOrderRequest: MessageFns<PlaceOrderRequest> = {
@@ -3319,6 +3381,9 @@ export const PlaceOrderRequest: MessageFns<PlaceOrderRequest> = {
     }
     if (message.creditCard !== undefined) {
       CreditCardInfo.encode(message.creditCard, writer.uint32(50).fork()).join();
+    }
+    if (message.paymentStrategy !== 0) {
+      writer.uint32(56).int32(message.paymentStrategy);
     }
     return writer;
   },
@@ -3370,6 +3435,14 @@ export const PlaceOrderRequest: MessageFns<PlaceOrderRequest> = {
           message.creditCard = CreditCardInfo.decode(reader, reader.uint32());
           continue;
         }
+        case 7: {
+          if (tag !== 56) {
+            break;
+          }
+
+          message.paymentStrategy = reader.int32() as any;
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -3386,6 +3459,7 @@ export const PlaceOrderRequest: MessageFns<PlaceOrderRequest> = {
       address: isSet(object.address) ? Address.fromJSON(object.address) : undefined,
       email: isSet(object.email) ? globalThis.String(object.email) : "",
       creditCard: isSet(object.creditCard) ? CreditCardInfo.fromJSON(object.creditCard) : undefined,
+      paymentStrategy: isSet(object.paymentStrategy) ? paymentStrategyFromJSON(object.paymentStrategy) : 0,
     };
   },
 
@@ -3406,6 +3480,9 @@ export const PlaceOrderRequest: MessageFns<PlaceOrderRequest> = {
     if (message.creditCard !== undefined) {
       obj.creditCard = CreditCardInfo.toJSON(message.creditCard);
     }
+    if (message.paymentStrategy !== 0) {
+      obj.paymentStrategy = paymentStrategyToJSON(message.paymentStrategy);
+    }
     return obj;
   },
 
@@ -3423,6 +3500,7 @@ export const PlaceOrderRequest: MessageFns<PlaceOrderRequest> = {
     message.creditCard = (object.creditCard !== undefined && object.creditCard !== null)
       ? CreditCardInfo.fromPartial(object.creditCard)
       : undefined;
+    message.paymentStrategy = object.paymentStrategy ?? 0;
     return message;
   },
 };

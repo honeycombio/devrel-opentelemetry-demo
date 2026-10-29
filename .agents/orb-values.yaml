@@ -1,0 +1,27 @@
+########################
+#
+# Extra Helm values for the `orb` skaffold profile (k3d inside an Amp orb).
+# Applied after demo-values.yaml, so these win. See .agents/orb-run.
+#
+########################
+opentelemetry-collector:
+  config:
+    service:
+      pipelines:
+        # Same as demo-values.yaml minus awss3: the S3 sample upload needs AWS
+        # credentials (EKS Pod Identity in the real cluster) that an orb lacks.
+        # Lists replace rather than merge, so each is spelled out in full.
+        logs:
+          exporters:
+            - otlp/honeycomb
+        traces:
+          exporters:
+            - otlp/honeycomb
+            - spanmetrics
+components:
+  load-generator:
+    # The chart's 1500Mi limit is below the from-source load generator's peak
+    # (~1.6Gi while the Playwright browser starts), which gets it OOMKilled.
+    resources:
+      limits:
+        memory: 3Gi

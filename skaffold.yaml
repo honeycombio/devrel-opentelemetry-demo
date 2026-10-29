@@ -278,3 +278,39 @@ deploy:
         - host:
             command:
               - "./scripts/deploy-marker-hook.sh"
+profiles:
+  # `skaffold run -p orb`: the same deploy as ./run, but into the k3d cluster
+  # that .agents/orb-run creates inside an Amp orb. No AWS, EKS or Pulumi, and
+  # no ALB ingress or Bedrock. Images go to the cluster's local registry.
+  - name: orb
+    patches:
+      # k3d clusters count as local to skaffold, which would `k3d image import`
+      # instead of using the registry. Push so imagePullPolicy: Always works.
+      - op: add
+        path: /build/local/push
+        value: true
+      # Skip the EKS Pod Identity hook (after hook 0). The deploy-marker hook stays.
+      - op: remove
+        path: /deploy/helm/hooks/after/0
+      - op: add
+        path: /deploy/helm/releases/0/valuesFiles/-
+        value: .agents/orb-values.yaml
+      # No ALB in k3d; reach the demo through a port-forward to frontend-proxy.
+      - op: replace
+        path: /deploy/helm/releases/1/setValueTemplates/ingress.enabled
+        value: false
+      - op: replace
+        path: /deploy/helm/releases/1/setValueTemplates/ingress.generateCertificate
+        value: false
+      # llm-evals and store-chat score/call AWS Bedrock; the Bedrock profile
+      # ARNs are empty here, so don't run llm-evals.
+      - op: replace
+        path: /deploy/helm/releases/1/setValues/services.llmEvals.enabled
+        value: "false"
+      # product-reviews: use the in-cluster fake `llm` service instead of Bedrock.
+      - op: add
+        path: /deploy/helm/releases/1/setValues/services.productReviews.extraEnv[0].name
+        value: LLM_PROVIDER
+      - op: add
+        path: /deploy/helm/releases/1/setValues/services.productReviews.extraEnv[0].value
+        value: openai

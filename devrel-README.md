@@ -89,6 +89,10 @@ You'll need to have the following installed:
 ./run
 ```
 
+## Running the demo in an Amp orb
+
+See [.agents/orb-README.md](.agents/orb-README.md).
+
 ## Setup for DevRel
 
 Be a member of our Honeycomb Devrel Azure account, or the AWS DevRel Sandox account
@@ -119,6 +123,128 @@ This is the public one that we will keep and up and usable. That pushes Honeycom
 This version gets the cluster-level collector data, with kubernetes events. This is deployed in ./deploy
 
 The k8s namespace for this one is devrel-demo.
+
+## Demo stories
+
+Some scenarios in this repo are stories: real code, shipped through ordinary PRs and releases, that behaves
+badly in production. There is no feature flag that turns on a pathology. The point is to have a genuine incident in
+Honeycomb for people and agents to investigate.
+
+### Slow login (Canvas Connectors)
+
+Shows an incident being traced back to a recent code change, using the Linear, GitHub and incident.io connectors in a
+Honeycomb Canvas.
+
+**The setup (on `main`):**
+
+- The `auth` service and the frontend Login link ([PR #42](https://github.com/honeycombio/devrel-opentelemetry-demo/pull/42)).
+  Login is optional; checkout and loadgen don't need it. Corporate accounts sign in with a password or through a mocked
+  SSO provider (`sso-mocks`).
+- Our biggest customer, Globex, asked for a post-SSO check that the employee is still current
+  ([PR #43](https://github.com/honeycombio/devrel-opentelemetry-demo/pull/43), Linear DVR-121). It shipped behind the
+  flagd flag `auth.user-status-check`, targeted at Globex only. Tenants that haven't configured a status URL get
+  `https://sso-status.<company-domain>/v1/users/<id>` by default, which is unreachable for every tenant except Globex.
+  Only Globex has `enforce = true`, so for everyone else the check fails open: the login succeeds, after a 10s timeout.
+
+**The trigger:** [PR #44, "Remove stale feature flags"](https://github.com/honeycombio/devrel-opentelemetry-demo/pull/44)
+(Linear DVR-122). It looks like routine cleanup, but it deletes the Globex targeting, so the status check runs for
+every SSO login. Once the release containing it is live (`2.9.3-release` was the first), non-Globex SSO logins take
+about 10s longer. Password logins and Globex are unaffected.
+
+**What you see in Honeycomb** (auth dataset, after the deploy marker):
+
+- `oteldemo.AuthService/Login`: P95 `duration_ms` goes from about 130ms to about 10s, grouped by `app.auth.method` and
+  `app.company`. About 40% of logins are affected, and login volume drops because loadgen users block.
+- `CheckUserStatus` spans: `app.auth.status_check.result = error`, `app.auth.status_check.enforced = false`, P95 about
+  10s. Use `parent.app.company` to group by company.
+- The Honeycomb trigger "Login latency check" (P95 of Login `duration_ms` > 500) sends a webhook to incident.io, which
+  opens an incident within a couple of 5-minute evaluations.
+
+**Current state:** PR #44 was reverted on `main` (`43de817b`), so `main` is healthy: the flag and its Globex
+targeting are back. `2.9.3-release` shipped the broken version once, for the first recording.
+
+**To trigger it (for example, to record another video):**
+
+1. Let prod run healthy for a while, so the Canvas has a boring "before". (If the release running in prod still includes
+   PR #44, first release the revert, or redeploy an older version with the `deploy-with-version.yml` workflow.)
+2. Revert the revert on `main` (`git revert 43de817b`, ideally through a PR titled like the original, "Remove stale
+   feature flags"), then cut a release: `./scripts/bump-release.sh patch --yes`. The incident starts as soon as the new
+   `auth` pod is live; the code no longer asks flagd, so nothing else is needed.
+3. Check the incident is open in incident.io with a severity, and that the connectors can see Linear DVR-121 and
+   DVR-122, GitHub PRs #43 and #44 with their diffs, and the incident. Then open the Canvas and ask "Check on the latest
+   changes I made. Could they have caused this?"
+
+To put it back, release the revert again, or run `deploy-with-version.yml` with the previous version (no rebuild).
+
+To try it locally, deploy with `./run auth frontend sso-mocks` from a commit with or without PR #44's change.
+
+### Mastercard 2-series (a validator bug the frontend fix exposes)
+
+Shows a checkout failure that is a real bug in a dependency, surfacing after a "fix" elsewhere. This one does use a
+flag, but the flag only simulates the *frontend fix*; the bug itself is real code in the payment service's card
+validator.
+
+**The setup:**
+
+- The load generator checks out with a Luhn-valid card from a random network: Mastercard 5-series 55%, Visa 10%,
+  Amex 8%, Discover 5%, and 2-series Mastercard 22% (2-series is 2/5 of 5-series, so a big share of all checkouts hits
+  `unknown` without a bigger share of Mastercards going 2-series; `CARD_NETWORKS` in `src/load-generator/locustfile.py`). The
+  prefixes are chosen so the validator names the intended network (it types a few Visa and Discover ranges as
+  `visa_electron` and `rupay`).
+- The payment service accepts every network the validator recognises (it used to reject all but Visa and Mastercard).
+  The Amex tracetest now expects success.
+- **The bug:** `simple-card-validator` 1.1.0 only knows Mastercard as `^5[1-5]`. Real 2-series Mastercards (2221-2720,
+  issued since 2017) match no network, so the card comes back `unknown` and invalid, and `charge` throws
+  `Credit card info is invalid.` even though the number passes Luhn.
+- **The flag:** `frontendAllowsMastercard2Series` (in `src/flagd/demo.flagd.json`, default `off`). While it is off the
+  loadgen never sends 2-series cards, as if the frontend rejected them before payment. Turning it on simulates a
+  frontend fix that lets them through while payment's bug is still there. The loadgen re-reads the flag on every
+  checkout, so a flip takes effect within seconds.
+
+**The trigger:** turn `frontendAllowsMastercard2Series` on in flagd-ui. About 10% of loadgen checkouts then fail. The
+flag name is allowed to hint at the cause here, since a frontend fix is a believable thing to have shipped (flagd-ui
+flag changes also post a Honeycomb marker).
+
+**What you see in Honeycomb:**
+
+- `charge` spans (payment): `app.payment.card_type = unknown`, `app.payment.card_valid = false`, `error = true`.
+- `oteldemo.CheckoutService/PlaceOrder` server spans (checkout, the span the Checkout SLOs are measured on):
+  `app.payment.strategy = CC_MASTERCARD`. So the client recognised the card as a Mastercard and payment did not. The
+  strategy is chosen by the client, never derived downstream: the browser names the network as you type (and shows it
+  under the card number), and the loadgen plays the browser by sending the same `PlaceOrderRequest.payment_strategy`
+  enum (`PaymentStrategy` in `pb/demo.proto`, room for non-card strategies like Google Pay later). Both Mastercard
+  series are `CC_MASTERCARD`; the browser's detector (`src/frontend/utils/PaymentStrategy.ts`) knows the 2-series,
+  payment's validator doesn't. Failed checkouts group cleanly: `app.payment.strategy = CC_MASTERCARD` vs
+  `app.payment.card_type = unknown`.
+- Frontend-proxy `ingress` root spans for those traces return `http.status_code = 500`.
+- Checkout Availability (`devrel-demos`, environment `demo`: PlaceOrder gRPC status 0, 99% over 7 days) and Frontend
+  Availability burn budget. The checkout SLO's exhaustion alert posts to Slack `#general`, so expect noise.
+
+**To try it by hand:** pay with `2223 0031 2200 3222`, any future expiry, any CVV. It is rejected with the same error.
+
+**To put it back:** turn the flag off. The loadgen stops sending 2-series cards immediately.
+
+**Gotchas:**
+
+- flagd copies the flag file out of its ConfigMap only when the pod starts. After a deploy that adds or changes a
+  flag, restart flagd (`kubectl -n <namespace> rollout restart deploy/flagd`) or the flag won't appear in flagd-ui.
+  A release to `devrel-demo` restarts flagd as part of the deploy (verified with `2.9.5-release`), so the flag is there
+  without a manual restart.
+- Telemetry from `*-local` namespaces goes to a different Honeycomb team than the SLOs above, so a local run
+  won't move them.
+
+**Current state:** first shipped in `2.9.5-release`, with the flag off. Prod showed Visa-only cards before it; the full
+network mix appears a few minutes after the new loadgen pods start.
+
+**Not done yet:**
+
+- Deploy `checkout`, `frontend` and `load-generator` (`./run checkout frontend load-generator`; the new proto field is additive, so the other services' regenerated code
+  needs no rebuild) and confirm `app.payment.strategy` shows on `PlaceOrder` spans for loadgen and for a browser checkout.
+- Flip the flag in prod and confirm Checkout Availability's burn alerts (and the `#general` exhaustion alert) behave as
+  hoped. If 22% failures is too loud or too quiet, tune the `mastercard_2series` weight in `CARD_NETWORKS`.
+- flagd-ui flag changes post a Honeycomb marker, which can give away a blind scenario. A per-flag skip in the
+  collector's flag-change pipeline (`skaffold-config/demo-values.yaml` and
+  `deploy/config-files/collector/values-daemonset.yaml`) would fix that; not looked at in detail yet.
 
 ## Iteration
 

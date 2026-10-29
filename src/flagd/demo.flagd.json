@@ -205,6 +205,15 @@
         "off": 0
       },
       "defaultVariant": "off"
+    },
+    "frontendAllowsMastercard2Series": {
+      "description": "Simulates a frontend fix that starts letting 2-series Mastercards through to checkout. Payment's card validator still mis-types them as unknown and rejects them, so turning this on makes ~10% of load-generator checkouts fail with 'Credit card info is invalid'.",
+      "state": "ENABLED",
+      "variants": {
+        "on": 1,
+        "off": 0
+      },
+      "defaultVariant": "off"
     }
   }
 }

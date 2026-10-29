@@ -291,6 +291,17 @@ service CheckoutService {
     rpc PlaceOrder(PlaceOrderRequest) returns (PlaceOrderResponse) {}
 }
 
+// How the customer is paying, as the client (browser or load generator) understands it.
+// Room for non-card strategies (Google Pay etc.) later.
+enum PaymentStrategy {
+    PAYMENT_STRATEGY_UNSPECIFIED = 0;
+    CC_VISA = 1;
+    CC_MASTERCARD = 2;
+    CC_AMEX = 3;
+    CC_DISCOVER = 4;
+    CC_OTHER = 5;
+}
+
 message PlaceOrderRequest {
     string user_id = 1;
     string user_currency = 2;
@@ -298,6 +309,7 @@ message PlaceOrderRequest {
     Address address = 3;
     string email = 5;
     CreditCardInfo credit_card = 6;
+    PaymentStrategy payment_strategy = 7;
 }
 
 message PlaceOrderResponse {
