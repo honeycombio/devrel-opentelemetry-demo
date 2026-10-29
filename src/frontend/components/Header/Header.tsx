@@ -11,11 +11,16 @@ import * as S from './Header.styled';
 const Header = () => {
   // sessionStorage only exists in the browser, so read it after mount.
   const [account, setAccount] = useState<{ companyName: string; displayName: string } | null>(null);
-  const showLoginLink = useBooleanFlagValue('frontend.login-link', false);
+  // The server never has the flag, so it always renders the default. Show the
+  // flag-gated link only after mount, so the first client render matches the
+  // server HTML and hydration does not fail (React error #418).
+  const [mounted, setMounted] = useState(false);
+  const showLoginLink = useBooleanFlagValue('frontend.login-link', false) && mounted;
 
   useEffect(() => {
     const { companyName, displayName } = SessionGateway.getSession();
     setAccount(companyName && displayName ? { companyName, displayName } : null);
+    setMounted(true);
   }, []);
 
   const logOut = () => {

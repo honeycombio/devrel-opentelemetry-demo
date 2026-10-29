@@ -31,6 +31,12 @@ components:
       # value is templated from ./run's --agent-load flag; empty = off.
       - name: AGENT_LOAD_ENABLED
         value: ""
+      - name: LOCUST_BROWSER_TRAFFIC_ENABLED
+        value: "true"
+    # Headless Chromium (browser traffic) exceeds the chart's 1500Mi default.
+    resources:
+      limits:
+        memory: 3Gi
   frontend:
     replicas: 1
     envOverrides:

@@ -11,7 +11,7 @@ import Theme from '../styles/Theme';
 import SessionGateway from '../gateways/Session.gateway';
 import { OpenFeatureProvider, OpenFeature } from '@openfeature/react-sdk';
 import { FlagdWebProvider } from '@openfeature/flagd-web-provider';
-import HoneycombFrontendTracer from '../utils/telemetry/HoneycombFrontendTracer';
+import FrontendTracer from '../utils/telemetry/FrontendTracer';
 
 declare global {
   interface Window {
@@ -34,10 +34,10 @@ const reactQueryClient = new QueryClient({
     },
 });
 
-// on client only, bootstrap HFO
+// on client only, bootstrap browser telemetry
 if (typeof window !== 'undefined' && window.location) {
     const session = SessionGateway.getSession();
-    HoneycombFrontendTracer(session.userId);
+    void FrontendTracer();
 
     // Set context prior to provider init to avoid multiple http calls
     OpenFeature.setContext({ targetingKey: session.userId, ...session }).then(() => {
