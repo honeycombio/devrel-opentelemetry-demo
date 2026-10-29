@@ -50,6 +50,15 @@ if [ "$(k3d version 2>/dev/null | sed -n 's/^k3d version //p')" != "$K3D_VERSION
   chmod +x "$bin_dir/k3d"
 fi
 
+step "aws-cli v2"
+if ! command -v aws >/dev/null 2>&1; then
+  tmp="$(mktemp -d)"
+  curl -fsSL https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip -o "$tmp/awscliv2.zip"
+  unzip -q "$tmp/awscliv2.zip" -d "$tmp"
+  "$tmp/aws/install" -i "$HOME/.local/aws-cli" -b "$bin_dir" --update
+  rm -rf "$tmp"
+fi
+
 # skaffold builds with BuildKit, which needs the buildx CLI plugin.
 step "docker buildx $BUILDX_VERSION"
 buildx="$HOME/.docker/cli-plugins/docker-buildx"
@@ -114,6 +123,7 @@ $marker
 - Python load generator venv: \`src/load-generator/.venv\`.
 - Language toolchains (Go, .NET, Java, Node, ...) are NOT installed; services are built inside Docker.
 - Telemetry to Honeycomb needs the personal Amp secret \`DEVREL_OTEL_DEMO_HONEYCOMB_API_KEY\` (HONEYCOMB_API_KEY is deliberately ignored by .agents/orb-run). If it is unset, tell the user and have them add it with \`manage_amp(topic: 'secrets', operation: 'set', parameters: { scope: 'personal', name: 'DEVREL_OTEL_DEMO_HONEYCOMB_API_KEY' })\` (a masked dialog) or in Amp Settings > Secrets & Env Vars. Never ask them to paste the key into the chat. Then run \`amp orb restart-processes\` and re-run .agents/orb-run.
+- AWS CLI v2 is installed. When the user says "log back in to aws" (or the SSO session expired), start \`.agents/aws-login\` with shell_command (not a \`&\` job, which dies when the call returns), read its output with shell_command_status, and give the user the device URL and code to approve in their browser (never the browser-redirect flow; it is rejected). Keep polling until it exits. Then ALWAYS run \`aws sts get-caller-identity --profile devrel-sandbox\` yourself, even if the script's own output is missing, and report the account, role, and user to the user. Do this after every login, and when the user asks to check their identity. Profile \`devrel-sandbox\` is account 702835727665 (Hound), role SalesEngineerAccess, Identity Center in us-east-1. The prod demo account 657166037864 is not in this login.
 - Bedrock (AWS) is not reachable, so store-chat and llm-evals do not work here; llm-evals is off and product-reviews uses the fake llm.
 EOF
 } >> "$agents_md"
