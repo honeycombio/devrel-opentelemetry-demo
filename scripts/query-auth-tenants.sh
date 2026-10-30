@@ -19,7 +19,7 @@ if [[ -n "${CONTEXT:-}" ]]; then
   KUBECTL+=(--context "$CONTEXT")
 fi
 
-POD="$("${KUBECTL[@]}" get pods -l app.kubernetes.io/name=postgresql -o jsonpath='{.items[0].metadata.name}' 2>/dev/null || true)"
+POD="$("${KUBECTL[@]}" get pods -l app.kubernetes.io/name=astronomy-db -o jsonpath='{.items[0].metadata.name}' 2>/dev/null || true)"
 if [[ -z "$POD" ]]; then
   echo "Could not find a postgres pod in namespace $NAMESPACE" >&2
   exit 1
@@ -39,7 +39,7 @@ SQL_EVENTS="SELECT company_id, method, result, COUNT(*) FROM auth.login_event
              WHERE created_at > now() - interval '1 hour' GROUP BY 1, 2, 3 ORDER BY 4 DESC LIMIT 15;"
 
 psql() {
-  "${KUBECTL[@]}" exec "$POD" -- env PGPASSWORD=otel psql -U root -d otel -P pager=off "$@"
+  "${KUBECTL[@]}" exec "$POD" -- env PGPASSWORD=changeit psql -U postgres -d astronomy_db -P pager=off "$@"
 }
 
 psql -c "$SQL"

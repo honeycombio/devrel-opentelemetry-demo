@@ -1,6 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 const { context, propagation, trace, metrics, SpanStatusCode } = require('@opentelemetry/api');
+const { ATTR_ERROR_TYPE } = require('@opentelemetry/semantic-conventions');
 const cardValidator = require('simple-card-validator');
 const { v4: uuidv4 } = require('uuid');
 
@@ -9,7 +10,9 @@ const logger = require('./logger');
 const transactions = require('./transactionStore');
 const tracer = trace.getTracer('payment');
 const meter = metrics.getMeter('payment');
-const transactionsCounter = meter.createCounter('app.payment.transactions');
+const transactionsCounter = meter.createCounter('demo.payment.transactions', {
+  unit: '{transaction}',
+});
 
 const LOYALTY_LEVEL = ['platinum', 'gold', 'silver', 'bronze'];
 
@@ -57,9 +60,9 @@ module.exports.charge = async request => {
     const loyalty_level = random(LOYALTY_LEVEL);
 
     span.setAttributes({
-      'app.payment.card_type': cardType,
-      'app.payment.card_valid': valid,
-      'app.loyalty.level': loyalty_level
+      'demo.payment.card_type': cardType,
+      'demo.payment.card_valid': valid,
+      'demo.user_context.loyalty_level': loyalty_level
     });
 
     if (!valid) {
@@ -74,13 +77,13 @@ module.exports.charge = async request => {
     const baggage = propagation.getBaggage(context.active());
     const synthetic = baggage?.getEntry('synthetic_request')?.value === 'true';
     span.setAttributes({
-      'app.payment.charged': !synthetic,
+      'demo.payment.charged': !synthetic,
       'app.payment.transaction.id': transactionId
     });
 
     const { units, nanos, currencyCode } = request.amount;
     logger.info({ transactionId, cardType, lastFourDigits, amount: { units, nanos, currencyCode }, loyalty_level }, 'Transaction complete.');
-    transactionsCounter.add(1, { 'app.payment.currency': currencyCode });
+    transactionsCounter.add(1, { 'demo.payment.currency': currencyCode });
 
     transactions.set(transactionId, { status: 'charged', amount: request.amount });
 
@@ -88,6 +91,8 @@ module.exports.charge = async request => {
   } catch (err) {
     span.recordException(err);
     span.setStatus({ code: SpanStatusCode.ERROR, message: err.message });
+    span.setAttribute(ATTR_ERROR_TYPE, err.name || 'Error');
+
     throw err;
   } finally {
     span.end();

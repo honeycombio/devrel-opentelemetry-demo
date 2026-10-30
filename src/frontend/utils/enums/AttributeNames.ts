@@ -5,4 +5,5 @@ export enum AttributeNames {
     SESSION_ID = 'session.id',
     CORPORATE_USER_ID = 'app.corporate_user.id',
     COMPANY = 'app.company',
+    ENDUSER_ID = 'enduser.id',
 }

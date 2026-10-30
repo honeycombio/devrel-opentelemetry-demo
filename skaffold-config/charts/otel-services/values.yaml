@@ -34,7 +34,7 @@ services:
       - name: PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION
         value: "python"
       - name: DB_CONNECTION_STRING
-        value: "host=postgresql user=otelu password=otelp dbname=otel"
+        value: "host=astronomy-db user=astronomy_user password=astronomy_password dbname=astronomy_db"
       # Switch the LLM backend. `bedrock` uses our Pod Identity to call the
       # AWS Bedrock Converse API; `openai` falls back to the upstream fake `src/llm/`.
       - name: LLM_PROVIDER
@@ -131,7 +131,7 @@ services:
       - name: FLAGD_PORT
         value: "8013"
       - name: DB_CONNECTION_STRING
-        value: "host=postgresql user=otelu password=otelp dbname=otel"
+        value: "host=astronomy-db user=astronomy_user password=astronomy_password dbname=astronomy_db"
       # system roots plus the partner CA for the in-pod third-party stand-ins
       - name: SSL_CERT_DIR
         value: "/etc/ssl/certs:/etc/sso-mocks-ca"
@@ -162,24 +162,6 @@ services:
       - name: FLAGD_PORT
         value: "8013"
 
-  telemetryDocs:
-    enabled: true
-    name: telemetry-docs
-    image:
-      repository: ghcr.io/honeycombio/devrel-opentelemetry-demo
-      tag: latest-telemetry-docs
-      pullPolicy: IfNotPresent
-    imageOverride:
-      {}
-    port: 8000
-    replicas: 1
-    env:
-      - name: TELEMETRY_DOCS_PORT
-        value: "8000"
-      - name: OTEL_COLLECTOR_HOST
-        value: "otel-collector"
-      - name: OTEL_COLLECTOR_PORT_GRPC
-        value: "4317"
 
 otel:
   collectorName: otel-collector

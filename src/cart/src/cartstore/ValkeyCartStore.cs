@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 using System;
 using System.Linq;
+using System.Collections.Generic;
+using OpenFeature;
 using System.Threading.Tasks;
 using Grpc.Core;
 using StackExchange.Redis;
@@ -9,33 +11,35 @@ using Google.Protobuf;
 using Microsoft.Extensions.Logging;
 using System.Diagnostics.Metrics;
 using System.Diagnostics;
+using System.Threading;
 
 namespace cart.cartstore;
 
 public class ValkeyCartStore : ICartStore
 {
     private readonly ILogger _logger;
+    private readonly IFeatureClient _featureClient;
     private const string CartFieldName = "cart";
     private const int RedisRetryNumber = 30;
 
     private volatile ConnectionMultiplexer _redis;
     private volatile bool _isRedisConnectionOpened;
 
-    private readonly object _locker = new();
+    private readonly Lock _locker = new();
     private readonly byte[] _emptyCartBytes;
     private readonly string _connectionString;
 
     private static readonly ActivitySource CartActivitySource = new("OpenTelemetry.Demo.Cart");
     private static readonly Meter CartMeter = new Meter("OpenTelemetry.Demo.Cart");
     private static readonly Histogram<double> addItemHistogram = CartMeter.CreateHistogram(
-        "app.cart.add_item.latency",
+        "demo.cart.add_item.latency",
         unit: "s",
         advice: new InstrumentAdvice<double>
         {
             HistogramBucketBoundaries = [ 0.005, 0.01, 0.025, 0.05, 0.075, 0.1, 0.25, 0.5, 0.75, 1, 2.5, 5, 7.5, 10 ]
         });
     private static readonly Histogram<double> getCartHistogram = CartMeter.CreateHistogram(
-        "app.cart.get_cart.latency",
+        "demo.cart.get_cart.latency",
         unit: "s",
         advice: new InstrumentAdvice<double>
         {
@@ -43,15 +47,22 @@ public class ValkeyCartStore : ICartStore
         });
     private readonly ConfigurationOptions _redisConnectionOptions;
 
-    public ValkeyCartStore(ILogger<ValkeyCartStore> logger, string valkeyAddress)
+    public ValkeyCartStore(ILogger<ValkeyCartStore> logger, string valkeyAddress, IFeatureClient featureClient, string valkeyPassword = null, bool valkeyTls = false)
     {
         _logger = logger;
+        _featureClient = featureClient;
         // Serialize empty cart into byte array.
         var cart = new Oteldemo.Cart();
         _emptyCartBytes = cart.ToByteArray();
-        _connectionString = $"{valkeyAddress},ssl=false,allowAdmin=true,abortConnect=false";
+        _connectionString = $"{valkeyAddress},ssl={(valkeyTls ? "true" : "false")},allowAdmin=true,abortConnect=false";
 
         _redisConnectionOptions = ConfigurationOptions.Parse(_connectionString);
+
+        // Set the password on the options rather than the connection string, which gets logged.
+        if (!string.IsNullOrEmpty(valkeyPassword))
+        {
+            _redisConnectionOptions.Password = valkeyPassword;
+        }
 
         // Try to reconnect multiple times if the first retry fails.
         _redisConnectionOptions.ConnectRetry = RedisRetryNumber;
@@ -86,34 +97,36 @@ public class ValkeyCartStore : ICartStore
                 return;
             }
 
-            _logger.LogDebug("Connecting to Redis: {_connectionString}", _connectionString);
+            Log.RedisConnecting(_logger, _connectionString);
+
             _redis = ConnectionMultiplexer.Connect(_redisConnectionOptions);
 
             if (_redis == null || !_redis.IsConnected)
             {
-                _logger.LogError("Wasn't able to connect to redis");
+                Log.RedisConnectionFailed(_logger);
 
                 // We weren't able to connect to Redis despite some retries with exponential backoff.
                 throw new ApplicationException("Wasn't able to connect to redis");
             }
 
-            _logger.LogInformation("Successfully connected to Redis");
+            Log.RedisConnected(_logger);
             var cache = _redis.GetDatabase();
 
-            _logger.LogDebug("Performing small test");
+            Log.RedisSmallTest(_logger);
             cache.StringSet("cart", "OK" );
-            object res = cache.StringGet("cart");
-            _logger.LogDebug("Small test result: {res}", res);
+            string res = (string)cache.StringGet("cart");
 
-            _redis.InternalError += (_, e) => { Console.WriteLine(e.Exception); };
+            Log.RedisSmallTestResult(_logger, res);
+
+            _redis.InternalError += (_, e) => { Log.RedisInternalError(_logger, e.Exception); };
             _redis.ConnectionRestored += (_, _) =>
             {
                 _isRedisConnectionOpened = true;
-                _logger.LogInformation("Connection to redis was restored successfully.");
+                Log.RedisConnectionRestored(_logger);
             };
             _redis.ConnectionFailed += (_, _) =>
             {
-                _logger.LogInformation("Connection failed. Disposing the object");
+                Log.RedisConnectionLost(_logger);
                 _isRedisConnectionOpened = false;
             };
 
@@ -124,7 +137,8 @@ public class ValkeyCartStore : ICartStore
     public async Task AddItemAsync(string userId, string productId, int quantity)
     {
         var stopwatch = Stopwatch.StartNew();
-        _logger.LogInformation("AddItemAsync called with {app.user.id}, productId={productId}, quantity={quantity}", userId, productId, quantity);
+
+        Log.AddItemAsync(_logger, userId, productId, quantity);
 
         try
         {
@@ -147,8 +161,7 @@ public class ValkeyCartStore : ICartStore
             }
             else
             {
-                _logger.LogInformation("Cart for user {app.user.id} found. Updating the cart.", userId);
-                cart = Oteldemo.Cart.Parser.ParseFrom(value);
+                cart = Oteldemo.Cart.Parser.ParseFrom((byte[])value);
                 var existingItem = cart.Items.SingleOrDefault(i => i.ProductId == productId);
                 if (existingItem == null)
                 {
@@ -175,8 +188,7 @@ public class ValkeyCartStore : ICartStore
 
     public async Task EmptyCartAsync(string userId)
     {
-        _logger.LogInformation("EmptyCartAsync called with {app.user.id}", userId);
-
+        Log.EmptyCartAsync(_logger, userId);
         try
         {
             EnsureRedisConnected();
@@ -194,8 +206,11 @@ public class ValkeyCartStore : ICartStore
 
     public async Task<Oteldemo.Cart> GetCartAsync(string userId)
     {
+        var overflowEnabled = await _featureClient.GetBooleanValueAsync("cartMetricCardinalityOverflow", false);
+        var activity = Activity.Current;
         var stopwatch = Stopwatch.StartNew();
-        _logger.LogInformation("GetCartAsync called with {app.user.id}", userId);
+
+        Log.GetCartAsync(_logger, userId);
 
         try
         {
@@ -208,8 +223,7 @@ public class ValkeyCartStore : ICartStore
 
             if (!value.IsNull)
             {
-                _logger.LogInformation("Cart for user {app.user.id} found in the cache.", userId);
-                return Oteldemo.Cart.Parser.ParseFrom(value);
+                return Oteldemo.Cart.Parser.ParseFrom((byte[])value);
             }
 
             _logger.LogInformation("Cart for user {app.user.id} not found in the cache.", userId);
@@ -222,7 +236,17 @@ public class ValkeyCartStore : ICartStore
         }
         finally
         {
-            getCartHistogram.Record(stopwatch.Elapsed.TotalSeconds);
+            if (overflowEnabled && activity is not null && activity.TraceId != default)
+            {
+                // Intentionally bad practice: trace IDs as metric attributes cause high cardinality.
+                // Only for demonstrating overflow. Use exemplars for metric-to-trace correlation.
+                getCartHistogram.Record(stopwatch.Elapsed.TotalSeconds,
+                    new KeyValuePair<string, object>("demo.cart.trace_id", activity.TraceId.ToString()));
+            }
+            else
+            {
+                getCartHistogram.Record(stopwatch.Elapsed.TotalSeconds);
+            }
         }
     }
 

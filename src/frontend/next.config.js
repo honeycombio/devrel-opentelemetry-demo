@@ -19,7 +19,6 @@ const {
   CHECKOUT_ADDR = '',
   CURRENCY_ADDR = '',
   PRODUCT_CATALOG_ADDR = '',
-  PRODUCT_REVIEWS_ADDR = '',
   RECOMMENDATION_ADDR = '',
   SHIPPING_ADDR = '',
   ENV_PLATFORM = '',
@@ -34,6 +33,7 @@ const nextConfig = {
   compiler: {
     styledComponents: true,
   },
+  serverExternalPackages: ['pino'],
   // Turbopack configuration (Next.js 16 default bundler)
   // Turbopack automatically handles Node.js polyfills for client bundles
   turbopack: {
@@ -58,7 +58,6 @@ const nextConfig = {
     CHECKOUT_ADDR,
     CURRENCY_ADDR,
     PRODUCT_CATALOG_ADDR,
-    PRODUCT_REVIEWS_ADDR,
     RECOMMENDATION_ADDR,
     SHIPPING_ADDR,
     OTEL_EXPORTER_OTLP_TRACES_ENDPOINT,

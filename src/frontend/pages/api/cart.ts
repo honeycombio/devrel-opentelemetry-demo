@@ -8,7 +8,7 @@ import ProductCatalogService from '../../services/ProductCatalog.service';
 import { IProductCart, IProductCartItem } from '../../types/Cart';
 import InstrumentationMiddleware from '../../utils/telemetry/InstrumentationMiddleware';
 
-import logger from '../../utils/telemetry/Logger';
+import logger from '../../utils/telemetry/logger';
 
 type TResponse = IProductCart | Empty;
 
@@ -119,7 +119,7 @@ const handler: NextApiHandler<TResponse> = async ({ method, body, query }, res) 
     }
 
     default: {
-      return res.status(405);
+      return res.status(405).send('');
     }
   }
 };

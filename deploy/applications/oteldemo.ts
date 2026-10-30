@@ -155,7 +155,7 @@ export class OtelDemo extends pulumi.ComponentResource {
                                 // we already capture on the llm.chat wrapper span in `llm_client.py`.
                                 { name: "OTEL_PYTHON_DISABLED_INSTRUMENTATIONS", value: "botocore" },
                                 { name: "PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION", value: "python" },
-                                { name: "DB_CONNECTION_STRING", value: "host=postgresql user=otelu password=otelp dbname=otel" },
+                                { name: "DB_CONNECTION_STRING", value: "host=astronomy-db user=astronomy_user password=astronomy_password dbname=astronomy_db" },
                                 // LLM provider — `bedrock` uses our Pod Identity to call Bedrock Converse;
                                 // `openai` falls back to the upstream `src/llm/` fake. Both paths exercise
                                 // real tool-use; only the LLM backend differs.

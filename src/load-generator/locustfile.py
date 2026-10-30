@@ -13,6 +13,11 @@ import logging
 from locust import HttpUser, task, between
 from locust_plugins.users.playwright import PlaywrightUser, pw, PageWithRetry, event
 
+# Workaround for gRPC/gevent incompatibility on shutdown (greenlet finalization crash).
+# Mark gevent as loaded before gRPC exporter imports to prevent C-extension cleanup conflicts.
+import grpc.experimental.gevent
+grpc.experimental.gevent.gevent_loaded = True
+
 from opentelemetry import context, baggage, trace
 from opentelemetry.context import Context
 from opentelemetry.metrics import set_meter_provider
@@ -41,10 +46,21 @@ from openfeature.contrib.hook.opentelemetry import TracingHook
 
 from playwright.async_api import Route, Request
 
+metric_exporter = OTLPMetricExporter(insecure=True)
+meter_provider = MeterProvider(
+    [PeriodicExportingMetricReader(metric_exporter)]
+)
+set_meter_provider(meter_provider)
+
 # Configure tracer provider first (needed for trace context in logs)
-tracer_provider = TracerProvider()
+tracer_provider = TracerProvider(meter_provider=meter_provider)
 trace.set_tracer_provider(tracer_provider)
-tracer_provider.add_span_processor(BatchSpanProcessor(OTLPSpanExporter(insecure=True)))
+tracer_provider.add_span_processor(
+    BatchSpanProcessor(
+        OTLPSpanExporter(insecure=True),
+        meter_provider=meter_provider,
+    )
+)
 
 # Drop traceparent from outbound HTTP. Loadgen still emits its own spans, but
 # downstream services see no incoming trace context and start fresh root
@@ -53,12 +69,17 @@ tracer_provider.add_span_processor(BatchSpanProcessor(OTLPSpanExporter(insecure=
 set_global_textmap(W3CBaggagePropagator())
 
 # Configure logger provider with the same resource
-logger_provider = LoggerProvider()
+logger_provider = LoggerProvider(meter_provider=meter_provider)
 set_logger_provider(logger_provider)
 
 # Set up log exporter and processor
 log_exporter = OTLPLogExporter(insecure=True)
-logger_provider.add_log_record_processor(BatchLogRecordProcessor(log_exporter))
+logger_provider.add_log_record_processor(
+    BatchLogRecordProcessor(
+        log_exporter,
+        meter_provider=meter_provider,
+    )
+)
 
 # Create logging handler that will include trace context
 handler = LoggingHandler(level=logging.INFO, logger_provider=logger_provider)
@@ -67,10 +88,6 @@ handler = LoggingHandler(level=logging.INFO, logger_provider=logger_provider)
 root_logger = logging.getLogger()
 root_logger.addHandler(handler)
 root_logger.setLevel(logging.INFO)
-
-# Configure metrics
-metric_exporter = OTLPMetricExporter(insecure=True)
-set_meter_provider(MeterProvider([PeriodicExportingMetricReader(metric_exporter)]))
 
 # Instrument logging to automatically inject trace context
 LoggingInstrumentor().instrument(set_logging_format=True)
@@ -366,8 +383,19 @@ PASTED_EMAIL_TASK_MIN_INTERVAL_SECONDS = 600  # ~10 min/user keeps this rare
 # Set AGENT_LOAD_ENABLED=true in the deployed environment only.
 agent_load_enabled = os.environ.get("AGENT_LOAD_ENABLED", "").lower() in ("true", "yes", "on", "1")
 
+# Prompts the AstronomyShopAgent's bundled VCR fixtures
+# (src/agent/fixtures/vcr_cassettes) have canned responses for, so
+# USE_VCR=True replays cleanly without a real LLM.
+agent_prompts = [
+    "Show all available products in the store.",
+    "What currencies are supported by the Astronomy Shop?",
+    "What current promotions are available on binoculars?",
+]
+agent_endpoint = os.environ.get("AGENT_ENDPOINT", "agent")
+agent_port = os.environ.get("AGENT_PORT", "8010")
 
 class WebsiteUser(HttpUser):
+    weight = int(os.environ.get("LOCUST_HTTP_USER_WEIGHT", "9"))
     wait_time = between(1, 10)
 
     def __init__(self, *args, **kwargs):
@@ -380,21 +408,21 @@ class WebsiteUser(HttpUser):
 
     @task(1)
     def index(self):
-        with self.tracer.start_as_current_span("user_index", context=Context()):
+        with self.tracer.start_as_current_span("user_index", context=context.get_current()):
             logging.info("User accessing index page")
             self.client.get("/")
 
     @task(10)
     def browse_product(self):
         product = random.choice(products)
-        with self.tracer.start_as_current_span("user_browse_product", context=Context(), attributes={"product.id": product}):
+        with self.tracer.start_as_current_span("user_browse_product", context=context.get_current(), attributes={"demo.product.id": product}):
             logging.info(f"User browsing product: {product}")
             self.client.get("/api/products/" + product)
 
     @task(3)
     def get_recommendations(self):
         product = random.choice(products)
-        with self.tracer.start_as_current_span("user_get_recommendations", context=Context(), attributes={"product.id": product}):
+        with self.tracer.start_as_current_span("user_get_recommendations", context=context.get_current(), attributes={"demo.product.id": product}):
             logging.info(f"User getting recommendations for product: {product}")
             params = {
                 "productIds": [product],
@@ -659,7 +687,7 @@ class WebsiteUser(HttpUser):
     @task(3)
     def get_ads(self):
         category = random.choice(categories)
-        with self.tracer.start_as_current_span("user_get_ads", context=Context(), attributes={"category": str(category)}):
+        with self.tracer.start_as_current_span("user_get_ads", context=context.get_current(), attributes={"demo.ad.category": str(category)}):
             logging.info(f"User getting ads for category: {category}")
             params = {
                 "contextKeys": [category],
@@ -668,7 +696,7 @@ class WebsiteUser(HttpUser):
 
     @task(3)
     def view_cart(self):
-        with self.tracer.start_as_current_span("user_view_cart", context=Context()):
+        with self.tracer.start_as_current_span("user_view_cart", context=context.get_current()):
             logging.info("User viewing cart")
             self.client.get("/api/cart")
 
@@ -695,7 +723,7 @@ class WebsiteUser(HttpUser):
     @task(1)
     def checkout(self):
         user = str(uuid.uuid1())
-        with self.tracer.start_as_current_span("user_checkout_single", context=Context(), attributes={"user.id": user}):
+        with self.tracer.start_as_current_span("user_checkout_single", context=context.get_current(), attributes={"user.id": user}):
             self.add_to_cart(user=user)
             checkout_person = make_checkout_person(user, random_email())
             self.client.post("/api/checkout", json=checkout_person)
@@ -705,8 +733,8 @@ class WebsiteUser(HttpUser):
     def checkout_multi(self):
         user = str(uuid.uuid1())
         item_count = random.choice([2, 3, 4])
-        with self.tracer.start_as_current_span("user_checkout_multi", context=Context(),
-                                            attributes={"user.id": user, "item.count": item_count}):
+        with self.tracer.start_as_current_span("user_checkout_multi", context=context.get_current(),
+                                            attributes={"user.id": user, "demo.cart.items.count": item_count}):
             for i in range(item_count):
                 self.add_to_cart(user=user)
             checkout_person = make_checkout_person(user, random_email())
@@ -742,18 +770,33 @@ class WebsiteUser(HttpUser):
     def flood_home(self):
         flood_count = get_flagd_value("loadGeneratorFloodHomepage")
         if flood_count > 0:
-            with self.tracer.start_as_current_span("user_flood_home",  context=Context(), attributes={"flood.count": flood_count}):
+            with self.tracer.start_as_current_span("user_flood_home",  context=context.get_current(), attributes={"demo.request.flood.count": flood_count}):
                 logging.info(f"User flooding homepage {flood_count} times")
                 for _ in range(0, flood_count):
                     self.client.get("/")
 
+    @task(3)
+    def ask_agent(self):
+        prompt = random.choice(agent_prompts)
+        input_messages = json.dumps([{"role": "user", "parts": [{"type": "text", "content": prompt}]}])
+        with self.tracer.start_as_current_span("user_ask_agent", context=context.get_current(), attributes={"gen_ai.input.messages": input_messages}):
+            logging.info(f"User asking agent: {prompt}")
+            self.client.post(
+                f"http://{agent_endpoint}:{agent_port}/prompt",
+                json={"message": prompt},
+            )
+
     def on_start(self):
-        with self.tracer.start_as_current_span("user_session_start", context=Context()):
-            session_id = str(uuid.uuid4())
-            logging.info(f"Starting user session: {session_id}")
-            ctx = baggage.set_baggage("session.id", session_id)
-            ctx = baggage.set_baggage("synthetic_request", "true", context=ctx)
-            context.attach(ctx)
+        session_id = str(uuid.uuid4())
+        logging.info(f"Starting user session: {session_id}")
+        # Attach the baggage-bearing context OUTSIDE of any span's `with` block.
+        # If this were attached *inside* start_as_current_span(...)'s `with` block,
+        # that block's own exit would detach past this manual attach and silently
+        # discard the baggage for the rest of the user's session.
+        ctx = baggage.set_baggage("session.id", session_id)
+        ctx = baggage.set_baggage("synthetic_request", "true", context=ctx)
+        context.attach(ctx)
+        with self.tracer.start_as_current_span("user_session_start", context=context.get_current()):
             self.index()
 
 
@@ -761,16 +804,14 @@ browser_traffic_enabled = os.environ.get("LOCUST_BROWSER_TRAFFIC_ENABLED", "").l
 
 if browser_traffic_enabled:
     class WebsiteBrowserUser(PlaywrightUser):
+        weight = int(os.environ.get("LOCUST_BROWSER_USER_WEIGHT", "1"))
         headless = True  # to use a headless browser, without a GUI
-
-        def __init__(self, *args, **kwargs):
-            super().__init__(*args, **kwargs)
-            self.tracer = trace.get_tracer(__name__)
 
         @task
         @pw
         async def open_cart_page_and_change_currency(self, page: PageWithRetry):
-            with self.tracer.start_as_current_span("browser_change_currency", context=Context()):
+            tracer = trace.get_tracer(__name__)
+            with tracer.start_as_current_span("browser_change_currency", context=Context()):
                 try:
                     page.on("console", lambda msg: print(msg.text))
                     await page.route('**/*', add_baggage_header)
@@ -784,11 +825,18 @@ if browser_traffic_enabled:
         @task
         @pw
         async def add_product_to_cart(self, page: PageWithRetry):
-            with self.tracer.start_as_current_span("browser_add_to_cart", context=Context()):
+            tracer = trace.get_tracer(__name__)
+            with tracer.start_as_current_span("browser_add_to_cart", context=Context()):
                 try:
                     page.on("console", lambda msg: print(msg.text))
                     await page.route('**/*', add_baggage_header)
-                    await page.goto("/", wait_until="domcontentloaded")
+                    # Wait for Roof Binoculars image to load (awaiting successful XHR response in less than 15 seconds)
+                    async with page.expect_event(
+                        "response",
+                        predicate=lambda r: '/images/products/RoofBinoculars.jpg' in r.url and r.status == 200,
+                        timeout=15000
+                    ):
+                        await page.goto("/", wait_until="domcontentloaded")
                     await page.click('p:has-text("Roof Binoculars")')
                     await page.wait_for_load_state("domcontentloaded")
                     await page.click('button:has-text("Add To Cart")')

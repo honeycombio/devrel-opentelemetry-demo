@@ -37,7 +37,21 @@ components:
         value: auth:8080
       - name: ACCOUNTING_ADDR
         value: accounting:5060
-  postgresql:
+  # Our own postgres image carries its init scripts (pg_cron, order columns,
+  # reviews and auth schemas). The chart's init ConfigMap is mounted over
+  # /docker-entrypoint-initdb.d and would hide them, so it is cleared.
+  astronomy-db:
+    imageOverride:
+      repository: "ghcr.io/honeycombio/devrel-opentelemetry-demo"
+      tag: "latest-astronomy-db"
+    command:
+      - "docker-entrypoint.sh"
+      - "postgres"
+      - "-c"
+      - "shared_preload_libraries=pg_stat_statements,pg_cron"
+      - "-c"
+      - "cron.database_name=astronomy_db"
+    mountedConfigMaps: []
     resources:
       limits:
         memory: 512Mi
