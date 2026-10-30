@@ -134,7 +134,7 @@ services:
       - FLAGD_HOST
       - FLAGD_PORT
       - AUTH_PORT
-      - DB_CONNECTION_STRING=host=${POSTGRES_HOST} user=otelu password=otelp dbname=${POSTGRES_DB}
+      - DB_CONNECTION_STRING=host=${POSTGRES_HOST} user=astronomy_user password=${POSTGRES_ASTRONOMY_PASSWORD} dbname=astronomy_db
       - GOMEMLIMIT=24MiB
       - OTEL_EXPORTER_OTLP_ENDPOINT
       - OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE
@@ -147,8 +147,8 @@ services:
     volumes:
       - ./src/sso-mocks/certs/ca.pem:/etc/sso-mocks-ca/ca.pem:ro
     depends_on:
-      postgresql:
-        condition: service_started
+      astronomy-db:
+        condition: service_healthy
       otel-collector:
         condition: service_started
     logging: *logging
@@ -847,8 +847,13 @@ services:
 
   # PostgreSQL database for the astronomy demo
   astronomy-db:
-    image: ${POSTGRES_IMAGE}
+    image: ${IMAGE_NAME}:${DEMO_VERSION}-astronomy-db
     container_name: astronomy-db
+    build:
+      context: ./
+      dockerfile: ${POSTGRES_DOCKERFILE}
+      cache_from:
+        - ${IMAGE_NAME}:${IMAGE_VERSION}-astronomy-db
     deploy:
       resources:
         limits:
@@ -856,7 +861,6 @@ services:
     restart: unless-stopped
     ports:
       - ${POSTGRES_PORT}
-    command: postgres -c shared_preload_libraries=pg_stat_statements
     environment:
       - POSTGRES_PASSWORD
     healthcheck:
@@ -865,8 +869,6 @@ services:
       interval: 5s
       timeout: 5s
       retries: 10
-    volumes:
-      - ./src/postgresql/init.sql:/docker-entrypoint-initdb.d/init.sql
     logging: *logging
 
   # Valkey used by Cart service
