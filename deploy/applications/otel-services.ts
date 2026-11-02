@@ -9,7 +9,7 @@ export interface OtelServicesArgs {
 }
 
 /**
- * Deploys the otel-services Helm chart (storechat, llm-evals, telemetry-docs, product-reviews, llm).
+ * Deploys the otel-services Helm chart (storechat, llm-evals, auth).
  * The Helm release is named "otel-services", which means the Kubernetes ServiceAccount
  * will also be named "otel-services" — matching the BedrockPodIdentityAssociation.
  */
@@ -52,12 +52,6 @@ export class OtelServices extends pulumi.ComponentResource {
                     bedrockHaikuProfileArn: bedrockHaikuProfileArn,
                     kafkaAddr: 'kafka:9092',
                 },
-                telemetryDocs: {
-                    enabled: true,
-                    image: {
-                        tag: `${args.config.containerTag}-telemetry-docs`,
-                    },
-                },
                 auth: {
                     enabled: true,
                     image: {
@@ -69,9 +63,6 @@ export class OtelServices extends pulumi.ComponentResource {
                         },
                     },
                 },
-                // product-reviews and llm are deployed directly by Pulumi in oteldemo.ts
-                productReviews: { enabled: false },
-                llm: { enabled: false },
             },
             otel: {
                 collectorName: args.collectorName,

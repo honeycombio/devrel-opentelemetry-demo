@@ -75,9 +75,9 @@ export class DeploymentVersions {
     public readonly refineryHelmVersion: string;
     public readonly defaultCollectorVersion: string;
     constructor() {
-        this.collectorHelmVersion = "0.134.0";
-        this.defaultCollectorVersion = "0.135.0";
-        this.demoHelmVersion = "0.39.0";
+        this.collectorHelmVersion = "0.173.1";
+        this.defaultCollectorVersion = "0.160.0";
+        this.demoHelmVersion = "0.42.6";
         this.refineryHelmVersion = "2.17.0";
     }
 }

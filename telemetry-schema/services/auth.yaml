@@ -1,0 +1,23 @@
+# Copyright The OpenTelemetry Authors
+# SPDX-License-Identifier: Apache-2.0
+
+file_format: definition/2
+attribute_groups:
+  - id: service.auth
+    visibility: public
+    brief: Auth service attributes
+    stability: stable
+    attributes:
+      - ref: user.id
+      - ref: demo.company
+      - ref: demo.corporate_user.id
+      - ref: demo.auth.method
+      - ref: demo.auth.result
+      - ref: demo.auth.email_domain
+      - ref: demo.auth.idp
+      - ref: demo.auth.idp_tenant
+      - ref: demo.auth.hash_algorithm
+      - ref: demo.auth.hash_cost
+      - ref: demo.auth.password_match
+      - ref: demo.auth.status_check.enforced
+      - ref: demo.auth.status_check.result

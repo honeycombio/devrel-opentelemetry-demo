@@ -7,7 +7,7 @@ import { trace } from '@opentelemetry/api';
 import InstrumentationMiddleware from '../../utils/telemetry/InstrumentationMiddleware';
 import AuthGateway from '../../gateways/rpc/Auth.gateway';
 import { LoginRequest, LoginResponse } from '../../protos/demo';
-import logger from '../../utils/telemetry/Logger';
+import logger from '../../utils/telemetry/logger';
 
 type TResponse = LoginResponse | { error: string };
 
@@ -24,13 +24,13 @@ const handler = async ({ method, body }: NextApiRequest, res: NextApiResponse<TR
     case 'POST': {
       const { email = '', password = '', method: loginMethod = 'password' } = body as LoginRequest;
       const span = trace.getActiveSpan();
-      span?.setAttribute('app.auth.method', loginMethod);
+      span?.setAttribute('demo.auth.method', loginMethod);
 
       try {
         const login = await AuthGateway.login({ email, password, method: loginMethod });
         span?.setAttributes({
-          'app.company': login.company,
-          'app.corporate_user.id': login.corporateUserId,
+          'demo.company': login.company,
+          'demo.corporate_user.id': login.corporateUserId,
         });
         return res.status(200).json(login);
       } catch (error: unknown) {
@@ -38,7 +38,7 @@ const handler = async ({ method, body }: NextApiRequest, res: NextApiResponse<TR
         const httpStatus = httpStatusFor[code];
         if (httpStatus === undefined) throw error;
 
-        logger.info({ 'app.auth.method': loginMethod, 'rpc.grpc.status_code': code }, 'Login rejected');
+        logger.info({ 'demo.auth.method': loginMethod, 'rpc.grpc.status_code': code }, 'Login rejected');
         return res.status(httpStatus).json({ error: (error as ServiceError).details || 'Login failed' });
       }
     }

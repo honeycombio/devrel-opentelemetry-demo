@@ -1,7 +1,7 @@
 # Copyright The OpenTelemetry Authors
 # SPDX-License-Identifier: Apache-2.0
 
-FROM docker.io/library/node:22-slim AS builder
+FROM docker.io/library/node:26.12.1-slim@sha256:36793bcbb160a6a16cede1e62b93f84e26b78a972a8a4c0b879c1c12f22761ec AS builder
 
 WORKDIR /app
 
@@ -32,7 +32,7 @@ RUN npm run build
 
 # -----------------------------------------------------------------------------
 
-FROM docker.io/library/node:22-slim AS deps
+FROM docker.io/library/node:26.12.1-slim@sha256:36793bcbb160a6a16cede1e62b93f84e26b78a972a8a4c0b879c1c12f22761ec AS deps
 
 WORKDIR /app
 
@@ -43,7 +43,7 @@ RUN npm ci --omit=dev
 
 # -----------------------------------------------------------------------------
 
-FROM gcr.io/distroless/nodejs22-debian12:nonroot
+FROM gcr.io/distroless/nodejs24-debian13:nonroot@sha256:cb606325b7ec4af55462cb0b424a53b452a5b4a894ffe841fcf1048d216fb9f8
 
 WORKDIR /app
 
@@ -57,6 +57,7 @@ COPY ./pb/openapi.yaml public/openapi.yaml
 
 COPY ./src/frontend/utils/telemetry/Instrumentation.js Instrumentation.js
 
+ARG FRONTEND_PORT=8080
 EXPOSE ${FRONTEND_PORT}
 
 CMD ["--require=./Instrumentation.js", "server.js"]

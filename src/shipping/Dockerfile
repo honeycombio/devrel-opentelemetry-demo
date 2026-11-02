@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 
-FROM --platform=${BUILDPLATFORM} docker.io/library/rust:1.91 AS builder
+FROM --platform=${BUILDPLATFORM} docker.io/library/rust:1.99.1@sha256:931c2c0531a8b143e044f0f3914dfe802f15bb3d1955f0b657e9359327ac2ffc AS builder
 ARG TARGETARCH
 ARG TARGETPLATFORM
 ARG BUILDPLATFORM
@@ -31,24 +31,28 @@ RUN if [ "${TARGETPLATFORM}" = "linux/arm64" ] && [ "${BUILDPLATFORM}" != "linux
             CC_aarch64_unknown_linux_gnu=aarch64-linux-gnu-gcc \
             CXX_aarch64_unknown_linux_gnu=aarch64-linux-gnu-g++ \
         cargo build -r --target aarch64-unknown-linux-gnu && \
-        cp /app/target/aarch64-unknown-linux-gnu/release/shipping /app/target/release/shipping; \
+        cp /app/target/aarch64-unknown-linux-gnu/release/shipping /app/target/release/shipping && \
+        cp /app/target/aarch64-unknown-linux-gnu/release/healthcheck /app/target/release/healthcheck; \
     elif [ "${TARGETPLATFORM}" = "linux/amd64" ] && [ "${BUILDPLATFORM}" != "linux/amd64" ] ; then \
         env CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER=x86_64-linux-gnu-gcc \
             CC_x86_64_unknown_linux_gnu=x86_64-linux-gnu-gcc \
             CXX_x86_64_unknown_linux_gnu=x86_64-linux-gnu-g++ \
         cargo build -r --target x86_64-unknown-linux-gnu && \
-        cp /app/target/x86_64-unknown-linux-gnu/release/shipping /app/target/release/shipping; \
+        cp /app/target/x86_64-unknown-linux-gnu/release/shipping /app/target/release/shipping && \
+        cp /app/target/x86_64-unknown-linux-gnu/release/healthcheck /app/target/release/healthcheck; \
     else \
         cargo build -r; \
     fi
 
 
-FROM gcr.io/distroless/cc-debian13:nonroot
+FROM gcr.io/distroless/cc-debian13:nonroot@sha256:3ee00291cf386ec52a552e6a858d555debd74776eb4bfa53fa3df2cd6677515e
 
 WORKDIR /app
 
 COPY --from=builder /app/target/release/shipping shipping
+COPY --from=builder /app/target/release/healthcheck healthcheck
 
+ARG SHIPPING_PORT=50050
 EXPOSE ${SHIPPING_PORT}
 
 CMD ["./shipping"]

@@ -8,5 +8,23 @@ attribute_groups:
     brief: Frontend service attributes
     stability: stable
     attributes:
-      - ref: app.synthetic_request
+      - ref: demo.synthetic_request
       - ref: session.id
+      - ref: enduser.id
+      - ref: user.id
+      - ref: error.type
+      - ref: demo.company
+      - ref: demo.corporate_user.id
+      - ref: demo.auth.method
+      - ref: demo.product.id
+      - ref: demo.product.name
+      - ref: demo.product.price
+      - ref: demo.product.recommended.count
+      - ref: demo.user_context.selected_currency
+      - ref: demo.cart.items.count
+      - ref: demo.cart.total_quantity
+      - ref: demo.cart.quantity_added
+      - ref: demo.cart.quantity_requested
+      - ref: demo.cart.action
+      - ref: demo.recommendations.input_product_count
+      - ref: demo.recommendations.product_ids

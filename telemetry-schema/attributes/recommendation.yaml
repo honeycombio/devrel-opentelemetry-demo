@@ -1,0 +1,22 @@
+# Copyright The OpenTelemetry Authors
+# SPDX-License-Identifier: Apache-2.0
+
+file_format: definition/2
+attributes:
+  - key: demo.recommendation.cache_hit
+    type: boolean
+    brief: Whether the recommendation cache was hit
+    stability: stable
+    note: Indicates whether the recommendation was served from cache (true) or computed fresh (false)
+  - key: demo.recommendations.input_product_count
+    type: int
+    brief: Number of products recommendations were requested for
+    stability: stable
+    note: How many product ids the frontend sent to the recommendation service.
+    examples: [1, 3]
+  - key: demo.recommendations.product_ids
+    type: string[]
+    brief: Recommended product ids
+    stability: stable
+    note: The first four product ids the recommendation service returned.
+    examples: [["66VCHSJNUP", "OLJCESPC7Z"]]

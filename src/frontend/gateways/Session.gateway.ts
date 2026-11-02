@@ -18,10 +18,10 @@ interface ISession extends Partial<ICorporateLogin> {
 }
 
 const sessionKey = 'session';
-const defaultSession = {
+const defaultSession: Readonly<ISession> = Object.freeze({
   userId: v4(),
   currencyCode: 'USD',
-};
+});
 
 const SessionGateway = () => ({
   getSession(): ISession {
@@ -46,5 +46,14 @@ const SessionGateway = () => ({
     sessionStorage.setItem(sessionKey, JSON.stringify(rest));
   },
 });
+
+const isValid = (session: unknown): session is ISession => {
+  return (
+    typeof session === 'object' &&
+    session !== null &&
+    typeof (session as ISession).userId === 'string' &&
+    typeof (session as ISession).currencyCode === 'string'
+  );
+};
 
 export default SessionGateway();

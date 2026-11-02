@@ -11,17 +11,17 @@
 # Env overrides:
 #   CONTEXT    kubectl context     (default: devrel-demo-aws)
 #   NAMESPACE  k8s namespace        (default: devrel-demo  <- the shared "production" deploy)
-#   PGUSER     postgres superuser   (default: root)
-#   PGPASS     postgres password    (default: otel)
-#   PGDB       database name        (default: otel)
+#   PGUSER     postgres superuser   (default: postgres)
+#   PGPASS     postgres password    (default: changeit)
+#   PGDB       database name        (default: changeit)
 
 set -euo pipefail
 
 CONTEXT="${CONTEXT:-devrel-demo-aws}"
 NAMESPACE="${NAMESPACE:-devrel-demo}"
-PGUSER="${PGUSER:-root}"
-PGPASS="${PGPASS:-otel}"
-PGDB="${PGDB:-otel}"
+PGUSER="${PGUSER:-postgres}"
+PGPASS="${PGPASS:-changeit}"
+PGDB="${PGDB:-astronomy_db}"
 
 if [[ -z "${AWS_PROFILE:-}" ]]; then
   echo "Defaulting AWS_PROFILE=really-devrel-sandbox (prod cluster account)" >&2
@@ -30,7 +30,7 @@ fi
 
 # Pod name has a generated suffix, so resolve it by deployment label.
 POD="$(kubectl --context "$CONTEXT" -n "$NAMESPACE" \
-  get pods -l app.kubernetes.io/name=postgresql -o jsonpath='{.items[0].metadata.name}' 2>/dev/null)"
+  get pods -l app.kubernetes.io/name=astronomy-db -o jsonpath='{.items[0].metadata.name}' 2>/dev/null)"
 if [[ -z "$POD" ]]; then
   # Fall back to a name match if the label differs.
   POD="$(kubectl --context "$CONTEXT" -n "$NAMESPACE" \

@@ -7,7 +7,7 @@ import RecommendationsGateway from '../../gateways/rpc/Recommendations.gateway';
 import { Empty, Product } from '../../protos/demo';
 import ProductCatalogService from '../../services/ProductCatalog.service';
 
-import logger from '../../utils/telemetry/Logger';
+import logger from '../../utils/telemetry/logger';
 
 type TResponse = Product[] | Empty;
 
@@ -26,27 +26,27 @@ const handler = async ({ method, query }: NextApiRequest, res: NextApiResponse<T
         );
 
         logger.info({
-          'app.user.id': sessionId,
-          'app.recommendations.input_product_count': Array.isArray(productIds) ? productIds.length : 1,
-          'app.recommendations.returned_count': recommendedProductList.length,
-          'app.recommendations.product_ids': productList.slice(0, 4),
-          'app.request.currency': currencyCode,
+          'user.id': sessionId,
+          'demo.recommendations.input_product_count': Array.isArray(productIds) ? productIds.length : 1,
+          'demo.product.recommended.count': recommendedProductList.length,
+          'demo.recommendations.product_ids': productList.slice(0, 4),
+          'demo.user_context.selected_currency': currencyCode,
         }, 'Recommendations retrieved successfully');
 
         return res.status(200).json(recommendedProductList);
       } catch (error) {
         logger.error({
-          'app.user.id': sessionId,
-          'app.recommendations.input_product_count': Array.isArray(productIds) ? productIds.length : 1,
-          'app.request.currency': currencyCode,
+          'user.id': sessionId,
+          'demo.recommendations.input_product_count': Array.isArray(productIds) ? productIds.length : 1,
+          'demo.user_context.selected_currency': currencyCode,
           err: error,
         }, 'Failed to retrieve recommendations');
         
         logger.info({
-          'app.user.id': sessionId,
-          'app.error.type': 'recommendations_failed',
-          'app.recommendations.input_product_count': Array.isArray(productIds) ? productIds.length : 1,
-          'app.request.currency': currencyCode,
+          'user.id': sessionId,
+          'error.type': 'recommendations_failed',
+          'demo.recommendations.input_product_count': Array.isArray(productIds) ? productIds.length : 1,
+          'demo.user_context.selected_currency': currencyCode,
         }, 'Recommendations retrieval failed - unable to get product suggestions');
         
         throw error;

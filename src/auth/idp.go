@@ -22,7 +22,7 @@ var errAssertionRejected = errors.New("identity provider rejected the assertion"
 func (a *auth) verifySSOAssertion(ctx context.Context, user *corporateUser) error {
 	ctx, span := tracer.Start(ctx, "VerifySSOAssertion")
 	defer span.End()
-	span.SetAttributes(attribute.String("app.auth.idp", "keystone-id"))
+	span.SetAttributes(attribute.String("demo.auth.idp", "keystone-id"))
 
 	if user.IdpTenant == nil {
 		err := fmt.Errorf("company %s has no identity provider tenant", user.CompanyID)
@@ -30,7 +30,7 @@ func (a *auth) verifySSOAssertion(ctx context.Context, user *corporateUser) erro
 		span.SetStatus(otelcodes.Error, err.Error())
 		return err
 	}
-	span.SetAttributes(attribute.String("app.auth.idp_tenant", *user.IdpTenant))
+	span.SetAttributes(attribute.String("demo.auth.idp_tenant", *user.IdpTenant))
 
 	body, _ := json.Marshal(map[string]string{"subject": user.Email})
 	url := fmt.Sprintf("%s/%s/assertions/verify", idpBaseURL, *user.IdpTenant)

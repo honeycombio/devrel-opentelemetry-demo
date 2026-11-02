@@ -1,0 +1,75 @@
+# Copyright The OpenTelemetry Authors
+# SPDX-License-Identifier: Apache-2.0
+
+file_format: definition/2
+attributes:
+  - key: demo.company
+    type: string
+    brief: Corporate customer slug
+    stability: stable
+    note: The company the corporate user belongs to. Set on login spans and carried in baggage so downstream spans can be grouped by tenant.
+    examples: ["globex", "dunder-paper"]
+  - key: demo.corporate_user.id
+    type: string
+    brief: Corporate user identifier
+    stability: stable
+    note: The id of the corporate user who logged in. Set on login spans and carried in baggage after login.
+    examples: ["usr_8f3a2c"]
+  - key: demo.auth.method
+    type: string
+    brief: Login method
+    stability: stable
+    note: How the company's users authenticate.
+    examples: ["password", "sso"]
+  - key: demo.auth.result
+    type: string
+    brief: Login outcome
+    stability: stable
+    note: The outcome of a login attempt.
+    examples: ["success", "invalid_credentials", "unknown_user"]
+  - key: demo.auth.email_domain
+    type: string
+    brief: Email domain used to log in
+    stability: stable
+    note: The domain part of the email address, used to find the company.
+    examples: ["globex.example"]
+  - key: demo.auth.idp
+    type: string
+    brief: Identity provider
+    stability: stable
+    note: The SSO identity provider the login was sent to.
+    examples: ["keystone-id"]
+  - key: demo.auth.idp_tenant
+    type: string
+    brief: Identity provider tenant
+    stability: stable
+    note: The tenant id the company has at the identity provider.
+    examples: ["globex-b67476"]
+  - key: demo.auth.hash_algorithm
+    type: string
+    brief: Password hash algorithm
+    stability: stable
+    note: The algorithm used to check a password login.
+    examples: ["bcrypt"]
+  - key: demo.auth.hash_cost
+    type: int
+    brief: Password hash cost
+    stability: stable
+    note: The work factor of the password hash check.
+    examples: [10]
+  - key: demo.auth.password_match
+    type: boolean
+    brief: Whether the password matched
+    stability: stable
+    note: True when the submitted password matched the stored hash.
+  - key: demo.auth.status_check.enforced
+    type: boolean
+    brief: Whether the employee status check is enforced
+    stability: stable
+    note: True when a failed status check blocks the login. When false, a failed check is only recorded.
+  - key: demo.auth.status_check.result
+    type: string
+    brief: Employee status check result
+    stability: stable
+    note: The result of the post-SSO check that the employee is still active at the company.
+    examples: ["active", "not_current", "error"]

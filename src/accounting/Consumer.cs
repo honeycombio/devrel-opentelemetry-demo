@@ -25,7 +25,7 @@ internal class AccountingDbContext : DbContext
 
 internal class Consumer : BackgroundService
 {
-    private const string TopicName = "orders";
+    private static readonly string TopicName = Environment.GetEnvironmentVariable("KAFKA_TOPIC") ?? "orders";
 
     private readonly ILogger _logger;
     private readonly IConsumer<string, byte[]> _consumer;
@@ -38,7 +38,7 @@ internal class Consumer : BackgroundService
         _dbContextFactory = dbContextFactory;
 
         var servers = Environment.GetEnvironmentVariable("KAFKA_ADDR")
-            ?? throw new ArgumentNullException("KAFKA_ADDR");
+            ?? throw new InvalidOperationException("The KAFKA_ADDR environment variable is not set.");
 
         _consumer = BuildConsumer(servers);
         _consumer.Subscribe(TopicName);
@@ -126,6 +126,7 @@ internal class Consumer : BackgroundService
                 return ProcessResult.Processed;
             }
 
+            using var dbContext = new DBContext();
             var orderEntity = new OrderEntity
             {
                 Id = order.OrderId,
@@ -183,11 +184,11 @@ internal class Consumer : BackgroundService
         }
     }
 
-    private IConsumer<string, byte[]> BuildConsumer(string servers)
+    private static IConsumer<string, byte[]> BuildConsumer(string servers)
     {
         var conf = new ConsumerConfig
         {
-            GroupId = $"accounting",
+            GroupId = "accounting",
             BootstrapServers = servers,
             // https://github.com/confluentinc/confluent-kafka-dotnet/tree/07de95ed647af80a0db39ce6a8891a630423b952#basic-consumer-example
             AutoOffsetReset = AutoOffsetReset.Earliest,
@@ -198,5 +199,11 @@ internal class Consumer : BackgroundService
 
         return new ConsumerBuilder<string, byte[]>(conf)
             .Build();
+    }
+
+    public override void Dispose()
+    {
+        _consumer?.Dispose();
+        base.Dispose();
     }
 }

@@ -8,7 +8,7 @@ import ProductCatalogService from '../../services/ProductCatalog.service';
 import { IProductCart, IProductCartItem } from '../../types/Cart';
 import InstrumentationMiddleware from '../../utils/telemetry/InstrumentationMiddleware';
 
-import logger from '../../utils/telemetry/Logger';
+import logger from '../../utils/telemetry/logger';
 
 type TResponse = IProductCart | Empty;
 
@@ -33,24 +33,24 @@ const handler: NextApiHandler<TResponse> = async ({ method, body, query }, res) 
         );
 
         logger.info({
-          'app.user.id': sessionId,
-          'app.cart.item_count': items.length,
-          'app.cart.total_quantity': items.reduce((sum, item) => sum + item.quantity, 0),
-          'app.request.currency': currencyCode,
+          'user.id': sessionId,
+          'demo.cart.items.count': items.length,
+          'demo.cart.total_quantity': items.reduce((sum, item) => sum + item.quantity, 0),
+          'demo.user_context.selected_currency': currencyCode,
         }, 'Cart retrieved successfully');
 
         return res.status(200).json({ userId, items: productList });
       } catch (error) {
         logger.error({
-          'app.user.id': sessionId,
-          'app.request.currency': currencyCode,
+          'user.id': sessionId,
+          'demo.user_context.selected_currency': currencyCode,
           err: error,
         }, 'Failed to retrieve cart');
         
         logger.info({
-          'app.user.id': sessionId,
-          'app.error.type': 'cart_retrieval_failed',
-          'app.request.currency': currencyCode,
+          'user.id': sessionId,
+          'error.type': 'cart_retrieval_failed',
+          'demo.user_context.selected_currency': currencyCode,
         }, 'Cart retrieval failed - unable to load user cart');
         
         throw error;
@@ -65,26 +65,26 @@ const handler: NextApiHandler<TResponse> = async ({ method, body, query }, res) 
         const cart = await CartGateway.getCart(userId);
 
         logger.info({
-          'app.user.id': userId,
-          'app.product.id': item?.productId,
-          'app.cart.quantity_added': item?.quantity,
-          'app.cart.total_items': cart.items.length,
+          'user.id': userId,
+          'demo.product.id': item?.productId,
+          'demo.cart.quantity_added': item?.quantity,
+          'demo.cart.items.count': cart.items.length,
         }, 'Item added to cart successfully');
 
         return res.status(200).json(cart);
       } catch (error) {
         logger.error({
-          'app.user.id': userId,
-          'app.product.id': item?.productId,
-          'app.cart.quantity_requested': item?.quantity,
+          'user.id': userId,
+          'demo.product.id': item?.productId,
+          'demo.cart.quantity_requested': item?.quantity,
           err: error,
         }, 'Failed to add item to cart');
         
         logger.info({
-          'app.user.id': userId,
-          'app.product.id': item?.productId,
-          'app.error.type': 'cart_add_failed',
-          'app.cart.quantity_requested': item?.quantity,
+          'user.id': userId,
+          'demo.product.id': item?.productId,
+          'error.type': 'cart_add_failed',
+          'demo.cart.quantity_requested': item?.quantity,
         }, 'Cart add operation failed - unable to add item to user cart');
         
         throw error;
@@ -98,20 +98,20 @@ const handler: NextApiHandler<TResponse> = async ({ method, body, query }, res) 
         await CartGateway.emptyCart(userId);
 
         logger.info({
-          'app.user.id': userId,
-          'app.cart.action': 'empty',
+          'user.id': userId,
+          'demo.cart.action': 'empty',
         }, 'Cart emptied successfully');
 
         return res.status(204).send('');
       } catch (error) {
         logger.error({
-          'app.user.id': userId,
+          'user.id': userId,
           err: error,
         }, 'Failed to empty cart');
         
         logger.info({
-          'app.user.id': userId,
-          'app.error.type': 'cart_empty_failed',
+          'user.id': userId,
+          'error.type': 'cart_empty_failed',
         }, 'Cart empty operation failed - unable to clear user cart');
         
         throw error;
@@ -119,7 +119,7 @@ const handler: NextApiHandler<TResponse> = async ({ method, body, query }, res) 
     }
 
     default: {
-      return res.status(405);
+      return res.status(405).send('');
     }
   }
 };

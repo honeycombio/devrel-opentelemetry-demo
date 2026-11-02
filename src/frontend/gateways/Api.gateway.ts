@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-import { Ad, Address, Cart, CartItem, LoginResponse, Money, PlaceOrderRequest, Product, ProductReview } from '../protos/demo';
+import { Ad, Address, Cart, CartItem, LoginResponse, Money, PlaceOrderRequest, Product } from '../protos/demo';
 import { IProductCart, IProductCartItem, IProductCheckout } from '../types/Cart';
 import request from '../utils/Request';
 import { AttributeNames } from '../utils/enums/AttributeNames';
@@ -75,23 +75,6 @@ const Apis = () => ({
       queryParams: { currencyCode },
     });
   },
-  getProductReviews(productId: string) {
-    return request<ProductReview[]>({
-      url: `${basePath}/product-reviews/${productId}`
-    });
-  },
-  getAverageProductReviewScore(productId: string) {
-    return request<string>({
-      url: `${basePath}/product-reviews-avg-score/${productId}`
-    });
-  },
-  askProductAIAssistant(productId: string, question: string) {
-    return request<string>({
-      url: `${basePath}/product-ask-ai-assistant/${productId}`,
-      method: 'POST',
-      body: { question },
-    });
-  },
   listRecommendations(productIds: string[], currencyCode: string) {
     return request<Product[]>({
       url: `${basePath}/recommendations`,
@@ -136,7 +119,9 @@ const ApiGateway = new Proxy(Apis(), {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return function (...args: any[]) {
       const baggage = propagation.getActiveBaggage() || propagation.createBaggage();
-      let newBaggage = baggage.setEntry(AttributeNames.SESSION_ID, { value: userId });
+      let newBaggage = baggage
+        .setEntry(AttributeNames.SESSION_ID, { value: userId })
+        .setEntry(AttributeNames.ENDUSER_ID, { value: userId });
       const { corporateUserId, company } = SessionGateway.getSession();
       if (corporateUserId && company) {
         newBaggage = newBaggage
