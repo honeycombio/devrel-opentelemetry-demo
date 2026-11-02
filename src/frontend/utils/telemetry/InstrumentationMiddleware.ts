@@ -16,9 +16,9 @@ const InstrumentationMiddleware = (handler: NextApiHandler): NextApiHandler => {
     const span = trace.getSpan(context.active()) as Span;
     const urlPath = request.url?.split('?', 1)[0];
 
-    // The browser sends the corporate login as baggage; put it on the server span too.
+    // The browser sends the session and corporate login as baggage; put them on the server span too.
     const baggage = propagation.getActiveBaggage();
-    for (const key of ['demo.corporate_user.id', 'demo.company']) {
+    for (const key of ['session.id', 'enduser.id', 'demo.corporate_user.id', 'demo.company']) {
       const value = baggage?.getEntry(key)?.value;
       if (value) span?.setAttribute(key, value);
     }

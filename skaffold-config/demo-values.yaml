@@ -41,6 +41,11 @@ components:
         value: accounting:5060
       - name: ENV_PLATFORM
         value: local
+      # Browser telemetry: "true" goes back to the classic web instrumentations
+      # (span per click, documentLoad spans) instead of @opentelemetry/browser-instrumentation.
+      # See src/frontend/utils/telemetry/FrontendTracer.ts.
+      # - name: WEB_OTEL_CLASSIC_INSTRUMENTATION
+      #   value: "true"
   frontend-proxy:
     envOverrides:
       # Needed until the demo helm chart updates to include it.
