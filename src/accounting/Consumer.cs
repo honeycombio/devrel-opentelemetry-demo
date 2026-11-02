@@ -126,7 +126,6 @@ internal class Consumer : BackgroundService
                 return ProcessResult.Processed;
             }
 
-            using var dbContext = new DBContext();
             var orderEntity = new OrderEntity
             {
                 Id = order.OrderId,

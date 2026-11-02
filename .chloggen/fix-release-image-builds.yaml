@@ -1,0 +1,16 @@
+# Use this changelog template to create an entry for release notes.
+
+# One of 'breaking', 'deprecation', 'new_component', 'enhancement', 'bug_fix'
+change_type: bug_fix
+
+# The name of the component, or a single word describing the area of concern, (e.g. frontend)
+component: accounting, cart, flagd-ui
+
+# A brief description of the change. Surround your text with quotes ("") if it needs to start with a backtick (`).
+note: Fix the accounting and cart image builds, and keep the flag scheduler away from flags that do not rest at off.
+
+# Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
+issues: [53]
+
+# (Optional) One or more lines of additional information to render under the primary note.
+subtext:

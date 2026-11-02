@@ -54,7 +54,10 @@
         "on": true,
         "off": false
       },
-      "defaultVariant": "on"
+      "defaultVariant": "on",
+      "metadata": {
+        "schedulable": false
+      }
     },
     "auth.user-status-check": {
       "description": "Post-SSO employee status check (Globex)",
@@ -77,6 +80,9 @@
           "on",
           "off"
         ]
+      },
+      "metadata": {
+        "schedulable": false
       }
     },
     "cartFailure": {
@@ -152,7 +158,10 @@
         "on": true,
         "off": false
       },
-      "defaultVariant": "on"
+      "defaultVariant": "on",
+      "metadata": {
+        "schedulable": false
+      }
     },
     "frontendAllowsMastercard2Series": {
       "description": "Simulates a frontend fix that starts letting 2-series Mastercards through to checkout. Payment's card validator still mis-types them as unknown and rejects them, so turning this on makes ~10% of load-generator checkouts fail with 'Credit card info is invalid'.",
