@@ -99,7 +99,7 @@ public class CartService : Oteldemo.CartService.CartServiceBase
                     dbActivity?.SetTag("db.type", "sql");
                     if (cart.Items.Count > 6)
                     {
-                        await Task.Delay(random.Next(100, 300));
+                        await Task.Delay(Random.Shared.Next(100, 300));
                     }
                 }
                 totalCart += item.Quantity;
@@ -149,8 +149,8 @@ public class CartService : Oteldemo.CartService.CartServiceBase
                 await _cartStore.EmptyCartAsync(request.UserId);
             }
             
-            _logger.LogInformation("Cart emptied for user {user.id}, cartFailure flag: {CartFailureEnabled}", 
-                request.UserId, cartFailureEnabled);
+            _logger.LogInformation("Cart emptied for user {user.id}, cartFailure rate: {CartFailureRate}", 
+                request.UserId, cartFailureRate);
         }
         catch (RpcException ex)
         {
@@ -160,9 +160,9 @@ public class CartService : Oteldemo.CartService.CartServiceBase
             _logger.LogError("Failed to empty cart for user {user.id}: {ErrorMessage}", 
                 request.UserId, ex.Message);
             
-            var cartFailureEnabled = await _featureFlagHelper.GetBooleanValueAsync("cartFailure", false);
-            _logger.LogInformation("Cart empty failure context - User: {user.id}, CartFailureFlag: {CartFailureEnabled}, RequestedAt: {Timestamp}", 
-                request.UserId, cartFailureEnabled, DateTimeOffset.UtcNow);
+            var cartFailureRate = await _featureFlagHelper.GetDoubleValueAsync("cartFailure", 0);
+            _logger.LogInformation("Cart empty failure context - User: {user.id}, CartFailureRate: {CartFailureRate}, RequestedAt: {Timestamp}", 
+                request.UserId, cartFailureRate, DateTimeOffset.UtcNow);
             _logger.LogInformation("Cart failure environment - Session: {SessionId}, TraceId: {TraceId}", 
                 activity?.GetBaggageItem("session.id"), activity?.TraceId);
             _logger.LogInformation("Store types - Primary: {PrimaryStoreType}, Bad: {BadStoreType}, User-Agent: {UserAgent}", 

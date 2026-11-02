@@ -8,6 +8,8 @@
     <SelfContained>true</SelfContained>
     <PublishTrimmed>false</PublishTrimmed>
     <ProtosDir>$(ProjectDir)..\pb</ProtosDir>
+    <!-- CartService logs with ILogger calls that trip CA1873, and Release treats warnings as errors. -->
+    <NoWarn>$(NoWarn);CA1873</NoWarn>
   </PropertyGroup>
 
   <PropertyGroup Condition="!Exists('$(ProtosDir)')">

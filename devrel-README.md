@@ -156,7 +156,7 @@ about 10s longer. Password logins and Globex are unaffected.
 - `oteldemo.AuthService/Login`: P95 `duration_ms` goes from about 130ms to about 10s, grouped by `demo.auth.method` and
   `demo.company`. About 40% of logins are affected, and login volume drops because loadgen users block.
 - `CheckUserStatus` spans: `demo.auth.status_check.result = error`, `demo.auth.status_check.enforced = false`, P95 about
-  10s. Use `parent.app.company` to group by company.
+  10s. Use `parent.demo.company` to group by company.
 - The Honeycomb trigger "Login latency check" (P95 of Login `duration_ms` > 500) sends a webhook to incident.io, which
   opens an incident within a couple of 5-minute evaluations.
 
