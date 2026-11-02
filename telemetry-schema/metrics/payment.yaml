@@ -22,3 +22,11 @@ metrics:
     attributes:
       - ref: demo.payment.currency
         requirement_level: required
+  - name: demo.payment.refunds
+    brief: Payment refund counter
+    instrument: counter
+    unit: "{refund}"
+    stability: stable
+    requirement_level: recommended
+    annotations:
+      service: payment

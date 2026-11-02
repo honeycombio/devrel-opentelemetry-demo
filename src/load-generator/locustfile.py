@@ -401,7 +401,6 @@ class WebsiteUser(HttpUser):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.tracer = trace.get_tracer(__name__)
-        self._last_ai_product_run = 0.0
         self._last_store_chat_run = 0.0
         self._last_pasted_email_run = 0.0
         self._last_refund_backup_run = 0.0
@@ -428,40 +427,6 @@ class WebsiteUser(HttpUser):
                 "productIds": [product],
             }
             self.client.get("/api/recommendations", params=params)
-
-    @task(1)
-    def get_product_reviews(self):
-        product = random.choice(products)
-        with self.tracer.start_as_current_span("user_get_product_reviews", context=Context(), attributes={"product.id": product}):
-            logging.info(f"User getting product reviews for product: {product}")
-            self.client.get("/api/product-reviews/" + product)
-
-    @task(1)
-    def ask_product_ai_assistant(self):
-        # Rate-limit per user to ~1/min — this is the most expensive call
-        # against product-reviews and we don't want it dominating traffic.
-        if not agent_load_enabled:
-            return
-        now = time.monotonic()
-        if now - self._last_ai_product_run < AI_TASK_MIN_INTERVAL_SECONDS:
-            return
-        self._last_ai_product_run = now
-        product = random.choice(products)
-        question = random.choice([
-            "Can you summarize the product reviews?",
-            "What magnification is best for stargazing with this product?",
-            "Is this product suitable for beginners?",
-            "How does this compare to other products in its category?",
-            "What accessories do I need to get started with this?",
-            "Is this good for observing planets or deep sky objects?",
-            "What is the field of view like on this product?",
-            "How portable is this for travel?",
-            "What are the main pros and cons of this product?",
-            "Would this work well for daytime nature observation?",
-        ])
-        with self.tracer.start_as_current_span("user_ask_product_ai_assistant", context=Context(), attributes={"product.id": product, "question": question}):
-            logging.info(f"Asking the AI Assistant a question for: {product} {question}")
-            self.client.post(f"/api/product-ask-ai-assistant/{product}", json={"question": question})
 
     # Small fixed pool of customer emails used by the refund-backup task. Reusing
     # the same emails (instead of a fresh UUID per session) means orders
@@ -758,7 +723,7 @@ class WebsiteUser(HttpUser):
             body = {"email": email, "password": password, "method": "password"}
 
         with self.tracer.start_as_current_span("user_login", context=Context(),
-                                               attributes={"app.company": user["company"], "app.auth.method": user["method"]}):
+                                               attributes={"demo.company": user["company"], "demo.auth.method": user["method"]}):
             with self.client.post("/api/login", json=body, catch_response=True) as response:
                 # Rejected logins (bad password, blocked account) are normal traffic, not failures.
                 if response.status_code < 500:

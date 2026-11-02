@@ -153,9 +153,9 @@ about 10s longer. Password logins and Globex are unaffected.
 
 **What you see in Honeycomb** (auth dataset, after the deploy marker):
 
-- `oteldemo.AuthService/Login`: P95 `duration_ms` goes from about 130ms to about 10s, grouped by `app.auth.method` and
-  `app.company`. About 40% of logins are affected, and login volume drops because loadgen users block.
-- `CheckUserStatus` spans: `app.auth.status_check.result = error`, `app.auth.status_check.enforced = false`, P95 about
+- `oteldemo.AuthService/Login`: P95 `duration_ms` goes from about 130ms to about 10s, grouped by `demo.auth.method` and
+  `demo.company`. About 40% of logins are affected, and login volume drops because loadgen users block.
+- `CheckUserStatus` spans: `demo.auth.status_check.result = error`, `demo.auth.status_check.enforced = false`, P95 about
   10s. Use `parent.app.company` to group by company.
 - The Honeycomb trigger "Login latency check" (P95 of Login `duration_ms` > 500) sends a webhook to incident.io, which
   opens an incident within a couple of 5-minute evaluations.
@@ -206,15 +206,15 @@ flag changes also post a Honeycomb marker).
 
 **What you see in Honeycomb:**
 
-- `charge` spans (payment): `app.payment.card_type = unknown`, `app.payment.card_valid = false`, `error = true`.
+- `charge` spans (payment): `demo.payment.card_type = unknown`, `demo.payment.card_valid = false`, `error = true`.
 - `oteldemo.CheckoutService/PlaceOrder` server spans (checkout, the span the Checkout SLOs are measured on):
-  `app.payment.strategy = CC_MASTERCARD`. So the client recognised the card as a Mastercard and payment did not. The
+  `demo.payment.strategy = CC_MASTERCARD`. So the client recognised the card as a Mastercard and payment did not. The
   strategy is chosen by the client, never derived downstream: the browser names the network as you type (and shows it
   under the card number), and the loadgen plays the browser by sending the same `PlaceOrderRequest.payment_strategy`
   enum (`PaymentStrategy` in `pb/demo.proto`, room for non-card strategies like Google Pay later). Both Mastercard
   series are `CC_MASTERCARD`; the browser's detector (`src/frontend/utils/PaymentStrategy.ts`) knows the 2-series,
-  payment's validator doesn't. Failed checkouts group cleanly: `app.payment.strategy = CC_MASTERCARD` vs
-  `app.payment.card_type = unknown`.
+  payment's validator doesn't. Failed checkouts group cleanly: `demo.payment.strategy = CC_MASTERCARD` vs
+  `demo.payment.card_type = unknown`.
 - Frontend-proxy `ingress` root spans for those traces return `http.status_code = 500`.
 - Checkout Availability (`devrel-demos`, environment `demo`: PlaceOrder gRPC status 0, 99% over 7 days) and Frontend
   Availability burn budget. The checkout SLO's exhaustion alert posts to Slack `#general`, so expect noise.
@@ -238,7 +238,7 @@ network mix appears a few minutes after the new loadgen pods start.
 **Not done yet:**
 
 - Deploy `checkout`, `frontend` and `load-generator` (`./run checkout frontend load-generator`; the new proto field is additive, so the other services' regenerated code
-  needs no rebuild) and confirm `app.payment.strategy` shows on `PlaceOrder` spans for loadgen and for a browser checkout.
+  needs no rebuild) and confirm `demo.payment.strategy` shows on `PlaceOrder` spans for loadgen and for a browser checkout.
 - Flip the flag in prod and confirm Checkout Availability's burn alerts (and the `#general` exhaustion alert) behave as
   hoped. If 22% failures is too loud or too quiet, tune the `mastercard_2series` weight in `CARD_NETWORKS`.
 - flagd-ui flag changes post a Honeycomb marker, which can give away a blind scenario. A per-flag skip in the

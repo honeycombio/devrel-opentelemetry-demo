@@ -80,7 +80,7 @@ people_file = open('people.json')
 people = json.load(people_file)
 
 # this doesn't happen
-logging.warning("Time to generate some errors!", extra={"app.user.id": ERROR_CUSTOMER_ID})
+logging.warning("Time to generate some errors!", extra={"user.id": ERROR_CUSTOMER_ID})
 
 class ErrorCustomer(HttpUser):
     host = "http://localhost:9191"
@@ -96,27 +96,27 @@ class ErrorCustomer(HttpUser):
         """Browse invalid products to generate 404 errors"""
         invalid_product = random.choice(invalid_products)
         
-        otel_logger.info(f"Attempting to browse invalid product: {invalid_product}", extra={"app.user.id": self.customer_id})
-        otel_logger.error(f"Starting invalid product browse for customer {self.customer_id}", extra={"app.user.id": self.customer_id})
-        otel_logger.error(f"Selected invalid product for testing: {invalid_product}", extra={"app.user.id": self.customer_id})
+        otel_logger.info(f"Attempting to browse invalid product: {invalid_product}", extra={"user.id": self.customer_id})
+        otel_logger.error(f"Starting invalid product browse for customer {self.customer_id}", extra={"user.id": self.customer_id})
+        otel_logger.error(f"Selected invalid product for testing: {invalid_product}", extra={"user.id": self.customer_id})
 
         with self.client.get(f"/api/products/{invalid_product}", catch_response=True) as response:
-            otel_logger.error(f"API request sent to /api/products/{invalid_product}", extra={"app.user.id": self.customer_id})
+            otel_logger.error(f"API request sent to /api/products/{invalid_product}", extra={"user.id": self.customer_id})
             
             if response.status_code == 404:
-                otel_logger.error(f"Product not found: {invalid_product} - Expected 404 error generated", extra={"app.user.id": self.customer_id})
-                otel_logger.error(f"Successfully generated 404 error for customer {self.customer_id} with product {invalid_product}", extra={"app.user.id": self.customer_id})
+                otel_logger.error(f"Product not found: {invalid_product} - Expected 404 error generated", extra={"user.id": self.customer_id})
+                otel_logger.error(f"Successfully generated 404 error for customer {self.customer_id} with product {invalid_product}", extra={"user.id": self.customer_id})
                 response.success()  # Mark as successful for load testing purposes
             elif response.status_code >= 400:
-                otel_logger.error(f"Unexpected error browsing product {invalid_product}: HTTP {response.status_code} - {response.text}", extra={"app.user.id": self.customer_id})
-                otel_logger.error(f"Unexpected HTTP error code {response.status_code} for customer {self.customer_id}", extra={"app.user.id": self.customer_id})
+                otel_logger.error(f"Unexpected error browsing product {invalid_product}: HTTP {response.status_code} - {response.text}", extra={"user.id": self.customer_id})
+                otel_logger.error(f"Unexpected HTTP error code {response.status_code} for customer {self.customer_id}", extra={"user.id": self.customer_id})
                 response.success()
             else:
-                otel_logger.warning(f"Expected error but got success for invalid product {invalid_product}: HTTP {response.status_code}", extra={"app.user.id": self.customer_id})
-                otel_logger.error(f"Unexpected success response for invalid product - this indicates a system issue", extra={"app.user.id": self.customer_id})
+                otel_logger.warning(f"Expected error but got success for invalid product {invalid_product}: HTTP {response.status_code}", extra={"user.id": self.customer_id})
+                otel_logger.error(f"Unexpected success response for invalid product - this indicates a system issue", extra={"user.id": self.customer_id})
                 response.failure(f"Expected 404 but got {response.status_code}")
                 
-        otel_logger.error(f"Completed invalid product browse attempt for customer {self.customer_id}", extra={"app.user.id": self.customer_id})
+        otel_logger.error(f"Completed invalid product browse attempt for customer {self.customer_id}", extra={"user.id": self.customer_id})
                 
     @task(3)
     def add_invalid_product_to_cart(self):
@@ -124,8 +124,8 @@ class ErrorCustomer(HttpUser):
         invalid_product = random.choice(invalid_products)
         quantity = random.choice([1, 2, 3])
         
-        otel_logger.error(f"Starting add invalid product to cart for customer {self.customer_id}", extra={"app.user.id": self.customer_id})
-        otel_logger.error(f"Selected invalid product {invalid_product} with quantity {quantity}", extra={"app.user.id": self.customer_id})
+        otel_logger.error(f"Starting add invalid product to cart for customer {self.customer_id}", extra={"user.id": self.customer_id})
+        otel_logger.error(f"Selected invalid product {invalid_product} with quantity {quantity}", extra={"user.id": self.customer_id})
         
         cart_item = {
             "item": {
@@ -134,80 +134,80 @@ class ErrorCustomer(HttpUser):
             },
             "userId": self.customer_id,
         }
-        otel_logger.error(f"Constructed cart item payload: {cart_item}", extra={"app.user.id": self.customer_id})
+        otel_logger.error(f"Constructed cart item payload: {cart_item}", extra={"user.id": self.customer_id})
         
         with self.client.post("/api/cart", json=cart_item, catch_response=True) as response:
-            otel_logger.error(f"Posted to /api/cart with invalid product {invalid_product}", extra={"app.user.id": self.customer_id})
+            otel_logger.error(f"Posted to /api/cart with invalid product {invalid_product}", extra={"user.id": self.customer_id})
             
             # Expect this to fail, but mark as success for load testing
             if response.status_code >= 400:
-                otel_logger.error(f"Cart add failed as expected: HTTP {response.status_code} for product {invalid_product}", extra={"app.user.id": self.customer_id})
-                otel_logger.error(f"Error response body: {response.text}", extra={"app.user.id": self.customer_id})
+                otel_logger.error(f"Cart add failed as expected: HTTP {response.status_code} for product {invalid_product}", extra={"user.id": self.customer_id})
+                otel_logger.error(f"Error response body: {response.text}", extra={"user.id": self.customer_id})
                 response.success()
             else:
-                otel_logger.error(f"Unexpected success adding invalid product {invalid_product} to cart", extra={"app.user.id": self.customer_id})
+                otel_logger.error(f"Unexpected success adding invalid product {invalid_product} to cart", extra={"user.id": self.customer_id})
             
         # Now try to get the cart after adding the item
-        otel_logger.error(f"Attempting to retrieve cart for customer {self.customer_id}", extra={"app.user.id": self.customer_id})
+        otel_logger.error(f"Attempting to retrieve cart for customer {self.customer_id}", extra={"user.id": self.customer_id})
         cart_response = self.client.get(f"/api/cart?sessionId={self.customer_id}&currencyCode=")
         
-        otel_logger.error(f"Cart retrieval completed with status {cart_response.status_code}", extra={"app.user.id": self.customer_id})
+        otel_logger.error(f"Cart retrieval completed with status {cart_response.status_code}", extra={"user.id": self.customer_id})
         if cart_response.status_code >= 400:
-            otel_logger.error(f"Cart retrieval failed: HTTP {cart_response.status_code} - {cart_response.text}", extra={"app.user.id": self.customer_id})
+            otel_logger.error(f"Cart retrieval failed: HTTP {cart_response.status_code} - {cart_response.text}", extra={"user.id": self.customer_id})
         else:
-            otel_logger.error(f"Cart retrieved successfully, response length: {len(cart_response.text)} chars", extra={"app.user.id": self.customer_id})
+            otel_logger.error(f"Cart retrieved successfully, response length: {len(cart_response.text)} chars", extra={"user.id": self.customer_id})
             
-        otel_logger.error(f"Completed add invalid product to cart attempt for customer {self.customer_id}", extra={"app.user.id": self.customer_id})
+        otel_logger.error(f"Completed add invalid product to cart attempt for customer {self.customer_id}", extra={"user.id": self.customer_id})
                 
     @task(1)
     def browse_valid_product(self):
         """Occasionally browse valid products for contrast"""
         valid_product = random.choice(valid_products)
         
-        otel_logger.error(f"Browsing valid product {valid_product} for contrast - customer {self.customer_id}", extra={"app.user.id": self.customer_id})
+        otel_logger.error(f"Browsing valid product {valid_product} for contrast - customer {self.customer_id}", extra={"user.id": self.customer_id})
         
         response = self.client.get(f"/api/products/{valid_product}")
         
-        otel_logger.error(f"Valid product browse completed with status {response.status_code}", extra={"app.user.id": self.customer_id})
+        otel_logger.error(f"Valid product browse completed with status {response.status_code}", extra={"user.id": self.customer_id})
         
     @task(2)
     def get_recommendations_for_invalid_product(self):
         """Get recommendations for invalid products"""
         invalid_product = random.choice(invalid_products)
         
-        otel_logger.error(f"Starting recommendations request for invalid product - customer {self.customer_id}", extra={"app.user.id": self.customer_id})
-        otel_logger.error(f"Requesting recommendations for invalid product: {invalid_product}", extra={"app.user.id": self.customer_id})
+        otel_logger.error(f"Starting recommendations request for invalid product - customer {self.customer_id}", extra={"user.id": self.customer_id})
+        otel_logger.error(f"Requesting recommendations for invalid product: {invalid_product}", extra={"user.id": self.customer_id})
         
         params = {
             "productIds": [invalid_product],
         }
-        otel_logger.error(f"Recommendation request params: {params}", extra={"app.user.id": self.customer_id})
+        otel_logger.error(f"Recommendation request params: {params}", extra={"user.id": self.customer_id})
         
         with self.client.get("/api/recommendations", params=params, catch_response=True) as response:
-            otel_logger.error(f"Recommendations API called for invalid product {invalid_product}", extra={"app.user.id": self.customer_id})
+            otel_logger.error(f"Recommendations API called for invalid product {invalid_product}", extra={"user.id": self.customer_id})
             
             if response.status_code >= 400:
-                otel_logger.error(f"Recommendations failed as expected: HTTP {response.status_code}", extra={"app.user.id": self.customer_id})
-                otel_logger.error(f"Recommendations error response: {response.text}", extra={"app.user.id": self.customer_id})
+                otel_logger.error(f"Recommendations failed as expected: HTTP {response.status_code}", extra={"user.id": self.customer_id})
+                otel_logger.error(f"Recommendations error response: {response.text}", extra={"user.id": self.customer_id})
                 response.success()
             else:
-                otel_logger.error(f"Unexpected success getting recommendations for invalid product {invalid_product}", extra={"app.user.id": self.customer_id})
+                otel_logger.error(f"Unexpected success getting recommendations for invalid product {invalid_product}", extra={"user.id": self.customer_id})
                 
-        otel_logger.error(f"Completed recommendations request for customer {self.customer_id}", extra={"app.user.id": self.customer_id})
+        otel_logger.error(f"Completed recommendations request for customer {self.customer_id}", extra={"user.id": self.customer_id})
                 
     @task(1)
     def checkout_with_invalid_items(self):
         """Try to checkout with invalid items in cart"""
-        otel_logger.error(f"Starting checkout with invalid items flow - customer {self.customer_id}", extra={"app.user.id": self.customer_id})
+        otel_logger.error(f"Starting checkout with invalid items flow - customer {self.customer_id}", extra={"user.id": self.customer_id})
         
         # First add some invalid items
         num_items = random.choice([1, 2])
-        otel_logger.error(f"Adding {num_items} invalid items to cart before checkout", extra={"app.user.id": self.customer_id})
+        otel_logger.error(f"Adding {num_items} invalid items to cart before checkout", extra={"user.id": self.customer_id})
         
         for i in range(num_items):
             invalid_product = random.choice(invalid_products)
             
-            otel_logger.error(f"Adding invalid item {i+1}/{num_items}: {invalid_product}", extra={"app.user.id": self.customer_id})
+            otel_logger.error(f"Adding invalid item {i+1}/{num_items}: {invalid_product}", extra={"user.id": self.customer_id})
             
             cart_item = {
                 "item": {
@@ -218,34 +218,34 @@ class ErrorCustomer(HttpUser):
             }
             
             response = self.client.post("/api/cart", json=cart_item)
-            otel_logger.error(f"Added invalid product {invalid_product} to cart - status: {response.status_code}", extra={"app.user.id": self.customer_id})
+            otel_logger.error(f"Added invalid product {invalid_product} to cart - status: {response.status_code}", extra={"user.id": self.customer_id})
             
             # Try to get the cart after adding each item
-            otel_logger.error(f"Retrieving cart after adding item {i+1}/{num_items}", extra={"app.user.id": self.customer_id})
+            otel_logger.error(f"Retrieving cart after adding item {i+1}/{num_items}", extra={"user.id": self.customer_id})
             cart_response = self.client.get(f"/api/cart?sessionId={self.customer_id}&currencyCode=")
-            otel_logger.error(f"Cart retrieval after item {i+1} - status: {cart_response.status_code}", extra={"app.user.id": self.customer_id})
+            otel_logger.error(f"Cart retrieval after item {i+1} - status: {cart_response.status_code}", extra={"user.id": self.customer_id})
                 
         # Try to checkout
         checkout_person = random.choice(people)
         checkout_person["userId"] = self.customer_id
         
-        otel_logger.error(f"Attempting checkout with invalid cart contents for customer {self.customer_id}", extra={"app.user.id": self.customer_id})
-        otel_logger.error(f"Checkout person data: {checkout_person['email']}", extra={"app.user.id": self.customer_id})
+        otel_logger.error(f"Attempting checkout with invalid cart contents for customer {self.customer_id}", extra={"user.id": self.customer_id})
+        otel_logger.error(f"Checkout person data: {checkout_person['email']}", extra={"user.id": self.customer_id})
         
         with self.client.post("/api/checkout", json=checkout_person, catch_response=True) as response:
-            otel_logger.error(f"Checkout API called with invalid cart items", extra={"app.user.id": self.customer_id})
+            otel_logger.error(f"Checkout API called with invalid cart items", extra={"user.id": self.customer_id})
             
             if response.status_code >= 400:
-                otel_logger.error(f"Checkout failed as expected: HTTP {response.status_code}", extra={"app.user.id": self.customer_id})
-                otel_logger.error(f"Checkout error response: {response.text}", extra={"app.user.id": self.customer_id})
+                otel_logger.error(f"Checkout failed as expected: HTTP {response.status_code}", extra={"user.id": self.customer_id})
+                otel_logger.error(f"Checkout error response: {response.text}", extra={"user.id": self.customer_id})
                 response.success()
             else:
-                otel_logger.error(f"Unexpected checkout success with invalid items - this indicates a system issue", extra={"app.user.id": self.customer_id})
+                otel_logger.error(f"Unexpected checkout success with invalid items - this indicates a system issue", extra={"user.id": self.customer_id})
                 
-        otel_logger.error(f"Completed checkout attempt for customer {self.customer_id}", extra={"app.user.id": self.customer_id})
+        otel_logger.error(f"Completed checkout attempt for customer {self.customer_id}", extra={"user.id": self.customer_id})
 
     def on_start(self):
-        otel_logger.error(f"Initializing error customer session for {self.customer_id}", extra={"app.user.id": self.customer_id})
+        otel_logger.error(f"Initializing error customer session for {self.customer_id}", extra={"user.id": self.customer_id})
         
         session_id = str(uuid.uuid4())
         
@@ -255,13 +255,13 @@ class ErrorCustomer(HttpUser):
         ctx = baggage.set_baggage("customer.type", "error_generator", context=ctx)
         context.attach(ctx)
         
-        otel_logger.error(f"Baggage context attached for error customer {self.customer_id}", extra={"app.user.id": self.customer_id})
+        otel_logger.error(f"Baggage context attached for error customer {self.customer_id}", extra={"user.id": self.customer_id})
         
-        otel_logger.error(f"Starting homepage visit for error customer session", extra={"app.user.id": self.customer_id})
+        otel_logger.error(f"Starting homepage visit for error customer session", extra={"user.id": self.customer_id})
         
         # Start with homepage
         homepage_response = self.client.get("/")
         
-        otel_logger.error(f"Homepage loaded with status {homepage_response.status_code} for customer {self.customer_id}", extra={"app.user.id": self.customer_id})
+        otel_logger.error(f"Homepage loaded with status {homepage_response.status_code} for customer {self.customer_id}", extra={"user.id": self.customer_id})
         
-        otel_logger.error(f"Error customer {self.customer_id} session fully initialized and ready for error generation", extra={"app.user.id": self.customer_id})
+        otel_logger.error(f"Error customer {self.customer_id} session fully initialized and ready for error generation", extra={"user.id": self.customer_id})

@@ -43,3 +43,20 @@ attributes:
     stability: stable
     note: Unique identifier for the payment transaction
     examples: ["txn-abc123", "PAY-456789"]
+  - key: demo.payment.strategy
+    type: string
+    brief: Payment method the client reports
+    stability: stable
+    note: How the browser or load generator says the customer is paying. Not derived from the card number, so it can disagree with demo.payment.card_type.
+    examples: ["CC_VISA", "CC_MASTERCARD", "CC_AMEX", "CC_DISCOVER"]
+  - key: demo.payment.declined
+    type: boolean
+    brief: Whether the card issuer declined the charge
+    stability: stable
+    note: Set when the paymentFailure flag simulates an issuer decline.
+  - key: demo.payment.decline_reason
+    type: string
+    brief: Reason the issuer declined the charge
+    stability: stable
+    note: Only set when demo.payment.declined is true.
+    examples: ["insufficient_funds", "do_not_honor"]

@@ -52,7 +52,7 @@ const HoneycombFrontendTracer = (sessionId: string) => {
                   ...configDefaults,
                     // clearTimingResources: true,
                     applyCustomAttributesOnSpan(span) {
-                        span.setAttribute('app.synthetic_request', IS_SYNTHETIC_REQUEST);
+                        span.setAttribute('demo.synthetic_request', IS_SYNTHETIC_REQUEST);
                     },
                 },
                 '@opentelemetry/instrumentation-xml-http-request': configDefaults,
@@ -65,7 +65,7 @@ const HoneycombFrontendTracer = (sessionId: string) => {
         sessionProvider: {
             getSessionId: () => sessionId
         },
-        // adds the corporate login (app.company, app.corporate_user.id) to browser spans
+        // adds the corporate login (demo.company, demo.corporate_user.id) to browser spans
         spanProcessors: [new SessionIdProcessor()],
     });
 

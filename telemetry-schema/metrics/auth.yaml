@@ -1,0 +1,20 @@
+# Copyright The OpenTelemetry Authors
+# SPDX-License-Identifier: Apache-2.0
+
+file_format: definition/2
+metrics:
+  - name: demo.auth.logins
+    brief: Login attempts
+    instrument: counter
+    unit: "{login}"
+    stability: stable
+    requirement_level: recommended
+    annotations:
+      service: auth
+    attributes:
+      - ref: demo.company
+        requirement_level: required
+      - ref: demo.auth.method
+        requirement_level: required
+      - ref: demo.auth.result
+        requirement_level: required

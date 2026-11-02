@@ -43,13 +43,13 @@ func (a *auth) Login(ctx context.Context, req *pb.LoginRequest) (*pb.LoginRespon
 		method = methodPassword
 	}
 	span.SetAttributes(
-		attribute.String("app.auth.method", method),
-		attribute.String("app.auth.email_domain", emailDomain(req.Email)),
+		attribute.String("demo.auth.method", method),
+		attribute.String("demo.auth.email_domain", emailDomain(req.Email)),
 	)
 	if sessionID := baggage.FromContext(ctx).Member("session.id").Value(); sessionID != "" {
 		span.SetAttributes(
 			attribute.String("session.id", sessionID),
-			attribute.String("app.user.id", sessionID),
+			attribute.String("user.id", sessionID),
 		)
 	}
 
@@ -59,12 +59,12 @@ func (a *auth) Login(ctx context.Context, req *pb.LoginRequest) (*pb.LoginRespon
 	if user != nil {
 		company = user.CompanyID
 	}
-	span.SetAttributes(attribute.String("app.auth.result", result))
+	span.SetAttributes(attribute.String("demo.auth.result", result))
 	a.auditLogin(ctx, user, method, result)
 	a.logins.Add(ctx, 1, metric.WithAttributes(
-		attribute.String("app.company", company),
-		attribute.String("app.auth.method", method),
-		attribute.String("app.auth.result", result),
+		attribute.String("demo.company", company),
+		attribute.String("demo.auth.method", method),
+		attribute.String("demo.auth.result", result),
 	))
 	logger.LogAttrs(ctx, slog.LevelInfo, "login",
 		slog.String("company", company),
@@ -97,8 +97,8 @@ func (a *auth) authenticate(ctx context.Context, req *pb.LoginRequest, method st
 		return nil, resultError, status.Error(codes.Internal, "could not look up user")
 	}
 	span.SetAttributes(
-		attribute.String("app.company", user.CompanyID),
-		attribute.String("app.corporate_user.id", user.ID),
+		attribute.String("demo.company", user.CompanyID),
+		attribute.String("demo.corporate_user.id", user.ID),
 	)
 
 	if user.LoginMethod != method {
@@ -140,15 +140,15 @@ func verifyPassword(ctx context.Context, user *corporateUser, password string) b
 	_, span := tracer.Start(ctx, "VerifyPassword")
 	defer span.End()
 	span.SetAttributes(
-		attribute.String("app.auth.hash_algorithm", "bcrypt"),
-		attribute.Int("app.auth.hash_cost", bcrypt.DefaultCost),
+		attribute.String("demo.auth.hash_algorithm", "bcrypt"),
+		attribute.Int("demo.auth.hash_cost", bcrypt.DefaultCost),
 	)
 	if user.PasswordHash == nil {
 		span.SetStatus(otelcodes.Error, "no password set")
 		return false
 	}
 	ok := bcrypt.CompareHashAndPassword([]byte(*user.PasswordHash), []byte(password)) == nil
-	span.SetAttributes(attribute.Bool("app.auth.password_match", ok))
+	span.SetAttributes(attribute.Bool("demo.auth.password_match", ok))
 	return ok
 }
 

@@ -21,3 +21,9 @@ attributes:
     stability: stable
     note: The loyalty tier or level of the customer making the payment. This can be used to track payment patterns by customer segment.
     examples: ["gold", "platinum", "silver", "bronze"]
+  - key: demo.user_context.city
+    type: string
+    brief: City of the customer's address
+    stability: stable
+    note: The city from the shipping address of the order being placed.
+    examples: ["Mountain View", "London"]

@@ -21,27 +21,27 @@ const handler = async ({ method, query, headers }: NextApiRequest, res: NextApiR
         const product = await ProductCatalogService.getProduct(productId as string, currencyCode as string);
         
         logger.info({
-          'app.user.id': sessionId,
-          'app.product.id': productId,
-          'app.product.name': product.name,
-          'app.product.price': product.priceUsd?.nanos ? product.priceUsd.nanos / 1000000000 : 0,
-          'app.request.currency': currencyCode,
+          'user.id': sessionId,
+          'demo.product.id': productId,
+          'demo.product.name': product.name,
+          'demo.product.price': product.priceUsd?.nanos ? product.priceUsd.nanos / 1000000000 : 0,
+          'demo.user_context.selected_currency': currencyCode,
         }, 'Product retrieved successfully');
 
         return res.status(200).json(product);
       } catch (error) {
         logger.error({
-          'app.user.id': sessionId,
-          'app.product.id': productId,
-          'app.request.currency': currencyCode,
+          'user.id': sessionId,
+          'demo.product.id': productId,
+          'demo.user_context.selected_currency': currencyCode,
           err: error,
         }, 'Failed to retrieve product');
         
         logger.info({
-          'app.user.id': sessionId,
-          'app.product.id': productId,
-          'app.error.type': 'product_not_found',
-          'app.request.currency': currencyCode,
+          'user.id': sessionId,
+          'demo.product.id': productId,
+          'error.type': 'product_not_found',
+          'demo.user_context.selected_currency': currencyCode,
         }, 'Product lookup failed - invalid product ID requested');
         
         throw error;

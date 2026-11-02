@@ -18,3 +18,33 @@ attributes:
       is enabled and the current activity has a valid trace ID. Demonstrates an
       incorrect attempt at metric-to-trace correlation; use exemplars instead.
     examples: ["4bf92f3577b34da6a3ce929d0e0e4736"]
+  - key: demo.cart.unique_items.count
+    type: int
+    brief: Number of distinct products in the cart
+    stability: stable
+    note: The count of distinct products, ignoring quantity. Also used as a flag evaluation context key.
+    examples: [1, 4]
+  - key: demo.cart.total_quantity
+    type: int
+    brief: Total quantity of items in the cart
+    stability: stable
+    note: The sum of the quantity of every item in the cart.
+    examples: [2, 9]
+  - key: demo.cart.quantity_added
+    type: int
+    brief: Quantity added to the cart
+    stability: stable
+    note: The quantity of a product a successful add-to-cart request added.
+    examples: [1, 3]
+  - key: demo.cart.quantity_requested
+    type: int
+    brief: Quantity requested for the cart
+    stability: stable
+    note: The quantity of a product an add-to-cart request asked for, recorded on failures too.
+    examples: [1, 3]
+  - key: demo.cart.action
+    type: string
+    brief: Cart action
+    stability: stable
+    note: The cart operation the frontend API request performed.
+    examples: ["empty"]

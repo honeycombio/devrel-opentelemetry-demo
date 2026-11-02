@@ -22,3 +22,7 @@ attribute_groups:
       - ref: demo.order.amount
       - ref: demo.order.items.count
       - ref: demo.cart.items.count
+      - ref: demo.user_context.city
+      - ref: demo.payment.strategy
+      - ref: demo.product.id
+      - ref: demo.product.quantity

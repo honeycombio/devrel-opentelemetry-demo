@@ -18,7 +18,7 @@ const InstrumentationMiddleware = (handler: NextApiHandler): NextApiHandler => {
 
     // The browser sends the corporate login as baggage; put it on the server span too.
     const baggage = propagation.getActiveBaggage();
-    for (const key of ['app.corporate_user.id', 'app.company']) {
+    for (const key of ['demo.corporate_user.id', 'demo.company']) {
       const value = baggage?.getEntry(key)?.value;
       if (value) span?.setAttribute(key, value);
     }

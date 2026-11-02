@@ -40,7 +40,7 @@ module.exports.charge = async request => {
     if (failureRate > 0 && Math.random() < failureRate) {
       // n% chance the issuer's authorization network declines the charge
       const declineReason = random(ISSUER_DECLINE_REASONS);
-      span.setAttributes({ 'app.payment.declined': true, 'app.payment.decline_reason': declineReason });
+      span.setAttributes({ 'demo.payment.declined': true, 'demo.payment.decline_reason': declineReason });
       throw new Error(`Payment declined by card issuer: ${declineReason}`);
     }
 
@@ -78,7 +78,7 @@ module.exports.charge = async request => {
     const synthetic = baggage?.getEntry('synthetic_request')?.value === 'true';
     span.setAttributes({
       'demo.payment.charged': !synthetic,
-      'app.payment.transaction.id': transactionId
+      'demo.payment.transaction.id': transactionId
     });
 
     const { units, nanos, currencyCode } = request.amount;

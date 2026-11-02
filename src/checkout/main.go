@@ -312,10 +312,10 @@ func (cs *checkout) PlaceOrder(ctx context.Context, req *pb.PlaceOrderRequest) (
 	span.SetAttributes(
 		attribute.String("user.id", req.UserId),
 		attribute.String("demo.user_context.selected_currency", req.UserCurrency),
-		attribute.String("app.user.city", req.Address.City),
+		attribute.String("demo.user_context.city", req.Address.City),
 		// What the client (browser or loadgen) says the customer is paying with, e.g. CC_MASTERCARD.
 		// Not derived from the card number here: payment may classify the same card differently.
-		attribute.String("app.payment.strategy", req.PaymentStrategy.String()),
+		attribute.String("demo.payment.strategy", req.PaymentStrategy.String()),
 	)
 
 	if flags.EmitRawPii.Value(ctx, openfeature.EvaluationContext{}) {
@@ -534,8 +534,8 @@ func (cs *checkout) prepareOrderItemsAndShippingQuoteFromCart(ctx context.Contex
 	for _, it := range orderItems {
 		ctx, taxSpan := tracer.Start(ctx, "calculateTax",
 			trace.WithAttributes(
-				attribute.String("app.product.id", it.GetItem().GetProductId()),
-				attribute.Int("app.product.quantity", int(it.GetItem().GetQuantity())),
+				attribute.String("demo.product.id", it.GetItem().GetProductId()),
+				attribute.Int("demo.product.quantity", int(it.GetItem().GetQuantity())),
 			))
 		func() {
 			defer func() {

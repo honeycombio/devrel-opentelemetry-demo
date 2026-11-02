@@ -17,3 +17,5 @@ attribute_groups:
       - ref: demo.ad.category
       - ref: demo.cart.items.count
       - ref: gen_ai.input.messages
+      - ref: demo.company
+      - ref: demo.auth.method

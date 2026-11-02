@@ -40,7 +40,7 @@ public class CartService : Oteldemo.CartService.CartServiceBase
         {
             await _cartStore.AddItemAsync(request.UserId, request.Item.ProductId, request.Item.Quantity);
 
-            _logger.LogInformation("Added {Quantity} of product {ProductId} to cart for user {app.user.id}", 
+            _logger.LogInformation("Added {Quantity} of product {ProductId} to cart for user {user.id}", 
                 request.Item.Quantity, request.Item.ProductId, request.UserId);
 
             return Empty;
@@ -50,10 +50,10 @@ public class CartService : Oteldemo.CartService.CartServiceBase
             activity?.AddException(ex);
             activity?.SetStatus(ActivityStatusCode.Error, ex.Message);
             
-            _logger.LogError("Failed to add product {ProductId} to cart for user {app.user.id}: {ErrorMessage}", 
+            _logger.LogError("Failed to add product {ProductId} to cart for user {user.id}: {ErrorMessage}", 
                 request.Item.ProductId, request.UserId, ex.Message);
             
-            _logger.LogInformation("Cart operation failure context - User: {app.user.id}, Product: {ProductId}, Quantity: {Quantity}, RequestedAt: {Timestamp}", 
+            _logger.LogInformation("Cart operation failure context - User: {user.id}, Product: {ProductId}, Quantity: {Quantity}, RequestedAt: {Timestamp}", 
                 request.UserId, request.Item.ProductId, request.Item.Quantity, DateTimeOffset.UtcNow);
             _logger.LogInformation("Cart failure environment - Session: {SessionId}, TraceId: {TraceId}", 
                 activity?.GetBaggageItem("session.id"), activity?.TraceId);
@@ -74,12 +74,12 @@ public class CartService : Oteldemo.CartService.CartServiceBase
         {
             var cart = await _cartStore.GetCartAsync(request.UserId);
             var totalCart = 0;
-            activity?.SetTag("app.cart.unique_items.count", cart.Items.Count);
+            activity?.SetTag("demo.cart.unique_items.count", cart.Items.Count);
 
             _featureFlagHelper.SetContext(
                 EvaluationContext.Builder()
                     .Set("cart.unique_items.count", cart.Items.Count)
-                    .Set("app.user.id", request.UserId)
+                    .Set("user.id", request.UserId)
                     .Build());
 
             var shouldDoDatabaseCall = await _featureFlagHelper.GetBooleanValueAsync("cartservice.add-db-call", false);
@@ -94,7 +94,7 @@ public class CartService : Oteldemo.CartService.CartServiceBase
                 if (shouldDoDatabaseCall)
                 {
                     using var dbActivity = ActivitySource.StartActivity("SELECT * FROM products WHERE id = @id", ActivityKind.Client);
-                    dbActivity?.SetTag("app.product.id", item.ProductId);
+                    dbActivity?.SetTag("demo.product.id", item.ProductId);
                     dbActivity?.SetTag("db.statement", "SELECT * FROM products WHERE id = @id");
                     dbActivity?.SetTag("db.type", "sql");
                     if (cart.Items.Count > 6)
@@ -106,7 +106,7 @@ public class CartService : Oteldemo.CartService.CartServiceBase
             }
             activity?.SetTag("demo.cart.items.count", totalCart);
 
-            _logger.LogInformation("Cart retrieved for user {app.user.id} with {ItemCount} unique items, {TotalQuantity} total items", 
+            _logger.LogInformation("Cart retrieved for user {user.id} with {ItemCount} unique items, {TotalQuantity} total items", 
                 request.UserId, cart.Items.Count, totalCart);
 
             return cart;
@@ -116,10 +116,10 @@ public class CartService : Oteldemo.CartService.CartServiceBase
             activity?.AddException(ex);
             activity?.SetStatus(ActivityStatusCode.Error, ex.Message);
             
-            _logger.LogError("Failed to retrieve cart for user {app.user.id}: {ErrorMessage}", 
+            _logger.LogError("Failed to retrieve cart for user {user.id}: {ErrorMessage}", 
                 request.UserId, ex.Message);
             
-            _logger.LogInformation("Cart retrieval failure context - User: {app.user.id}, RequestedAt: {Timestamp}", 
+            _logger.LogInformation("Cart retrieval failure context - User: {user.id}, RequestedAt: {Timestamp}", 
                 request.UserId, DateTimeOffset.UtcNow);
             _logger.LogInformation("Cart failure environment - Session: {SessionId}, TraceId: {TraceId}", 
                 activity?.GetBaggageItem("session.id"), activity?.TraceId);
@@ -141,7 +141,7 @@ public class CartService : Oteldemo.CartService.CartServiceBase
             var cartFailureRate = await _featureFlagHelper.GetDoubleValueAsync("cartFailure", 0);
             if (cartFailureRate > 0 && Random.Shared.NextDouble() < cartFailureRate)
             {
-                _logger.LogInformation("Using bad cart store due to cartFailure feature flag for user {app.user.id}", request.UserId);
+                _logger.LogInformation("Using bad cart store due to cartFailure feature flag for user {user.id}", request.UserId);
                 await _badCartStore.EmptyCartAsync(request.UserId);
             }
             else
@@ -149,7 +149,7 @@ public class CartService : Oteldemo.CartService.CartServiceBase
                 await _cartStore.EmptyCartAsync(request.UserId);
             }
             
-            _logger.LogInformation("Cart emptied for user {app.user.id}, cartFailure flag: {CartFailureEnabled}", 
+            _logger.LogInformation("Cart emptied for user {user.id}, cartFailure flag: {CartFailureEnabled}", 
                 request.UserId, cartFailureEnabled);
         }
         catch (RpcException ex)
@@ -157,11 +157,11 @@ public class CartService : Oteldemo.CartService.CartServiceBase
             Activity.Current?.AddException(ex);
             Activity.Current?.SetStatus(ActivityStatusCode.Error, ex.Message);
             
-            _logger.LogError("Failed to empty cart for user {app.user.id}: {ErrorMessage}", 
+            _logger.LogError("Failed to empty cart for user {user.id}: {ErrorMessage}", 
                 request.UserId, ex.Message);
             
             var cartFailureEnabled = await _featureFlagHelper.GetBooleanValueAsync("cartFailure", false);
-            _logger.LogInformation("Cart empty failure context - User: {app.user.id}, CartFailureFlag: {CartFailureEnabled}, RequestedAt: {Timestamp}", 
+            _logger.LogInformation("Cart empty failure context - User: {user.id}, CartFailureFlag: {CartFailureEnabled}, RequestedAt: {Timestamp}", 
                 request.UserId, cartFailureEnabled, DateTimeOffset.UtcNow);
             _logger.LogInformation("Cart failure environment - Session: {SessionId}, TraceId: {TraceId}", 
                 activity?.GetBaggageItem("session.id"), activity?.TraceId);

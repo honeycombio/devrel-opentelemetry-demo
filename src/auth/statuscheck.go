@@ -30,13 +30,13 @@ func statusCheckURL(user *corporateUser) string {
 func (a *auth) checkUserStatus(ctx context.Context, user *corporateUser) error {
 	ctx, span := tracer.Start(ctx, "CheckUserStatus")
 	defer span.End()
-	span.SetAttributes(attribute.Bool("app.auth.status_check.enforced", user.EnforceStatusCheck))
+	span.SetAttributes(attribute.Bool("demo.auth.status_check.enforced", user.EnforceStatusCheck))
 
 	status, err := a.fetchUserStatus(ctx, user)
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(otelcodes.Error, "user status check failed")
-		span.SetAttributes(attribute.String("app.auth.status_check.result", "error"))
+		span.SetAttributes(attribute.String("demo.auth.status_check.result", "error"))
 		logger.WarnContext(ctx, "user status check failed",
 			slog.String("company", user.CompanyID), slog.String("error", err.Error()))
 		if user.EnforceStatusCheck {
@@ -46,14 +46,14 @@ func (a *auth) checkUserStatus(ctx context.Context, user *corporateUser) error {
 	}
 
 	if status != "active" {
-		span.SetAttributes(attribute.String("app.auth.status_check.result", "not_current"))
+		span.SetAttributes(attribute.String("demo.auth.status_check.result", "not_current"))
 		logger.InfoContext(ctx, "user is not current", slog.String("company", user.CompanyID))
 		if user.EnforceStatusCheck {
 			return errUserNotCurrent
 		}
 		return nil
 	}
-	span.SetAttributes(attribute.String("app.auth.status_check.result", "active"))
+	span.SetAttributes(attribute.String("demo.auth.status_check.result", "active"))
 	return nil
 }
 

@@ -8,7 +8,7 @@ const logger = require('./logger');
 const transactions = require('./transactionStore');
 const tracer = trace.getTracer('payment');
 const meter = metrics.getMeter('payment');
-const refundsCounter = meter.createCounter('app.payment.refunds');
+const refundsCounter = meter.createCounter('demo.payment.refunds');
 
 module.exports.refund = async request => {
   const span = tracer.startSpan('refund');
@@ -34,7 +34,7 @@ module.exports.refund = async request => {
 
     transactions.set(transactionId, { status: 'refunded', amount: transactions.get(transactionId)?.amount });
 
-    span.setAttribute('app.payment.transaction.id', transactionId);
+    span.setAttribute('demo.payment.transaction.id', transactionId);
 
     logger.info({ transactionId, refundTransactionId }, 'Refund complete.');
     refundsCounter.add(1);

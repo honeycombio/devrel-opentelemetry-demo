@@ -152,7 +152,7 @@ func main() {
 	}
 	defer st.close()
 
-	logins, err := otel.Meter("auth").Int64Counter("app.auth.logins",
+	logins, err := otel.Meter("auth").Int64Counter("demo.auth.logins",
 		metric.WithDescription("Login attempts, by company, method and result"))
 	if err != nil {
 		logger.Error(err.Error())

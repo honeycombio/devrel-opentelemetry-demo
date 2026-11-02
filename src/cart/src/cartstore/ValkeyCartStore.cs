@@ -152,7 +152,7 @@ public class ValkeyCartStore : ICartStore
             Oteldemo.Cart cart;
             if (value.IsNull)
             {
-                _logger.LogInformation("Cart for user {app.user.id} not found. Creating a new one.", userId);
+                _logger.LogInformation("Cart for user {user.id} not found. Creating a new one.", userId);
                 cart = new Oteldemo.Cart
                 {
                     UserId = userId
@@ -226,7 +226,7 @@ public class ValkeyCartStore : ICartStore
                 return Oteldemo.Cart.Parser.ParseFrom((byte[])value);
             }
 
-            _logger.LogInformation("Cart for user {app.user.id} not found in the cache.", userId);
+            _logger.LogInformation("Cart for user {user.id} not found in the cache.", userId);
             // We decided to return empty cart in cases when user wasn't in the cache before
             return new Oteldemo.Cart();
         }

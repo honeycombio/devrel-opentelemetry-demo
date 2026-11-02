@@ -51,3 +51,9 @@ attributes:
     stability: stable
     note: The count of products matching a search query
     examples: [0, 10, 50]
+  - key: demo.product.price
+    type: double
+    brief: Product price
+    stability: stable
+    note: The price of the product in US dollars.
+    examples: [19.99, 349.95]

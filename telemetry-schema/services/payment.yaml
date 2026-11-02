@@ -17,3 +17,6 @@ attribute_groups:
       - ref: demo.payment.card_cvv
       - ref: demo.payment.charged
       - ref: demo.payment.amount
+      - ref: demo.payment.transaction.id
+      - ref: demo.payment.declined
+      - ref: demo.payment.decline_reason

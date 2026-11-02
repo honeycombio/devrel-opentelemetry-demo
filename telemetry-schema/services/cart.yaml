@@ -13,3 +13,4 @@ attribute_groups:
       - ref: demo.product.quantity
       - ref: demo.cart.items.count
       - ref: demo.cart.trace_id
+      - ref: demo.cart.unique_items.count
