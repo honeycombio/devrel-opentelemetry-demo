@@ -16,7 +16,6 @@ internal class OrderServiceImpl : OrderService.OrderServiceBase
     private readonly CurrencyService.CurrencyServiceClient _currencyClient;
     private readonly ILogger<OrderServiceImpl> _logger;
 
-    // Observatory Hour: "spend more, save more" on these categories, counted over the last 30 minutes.
     private const string PromoCode = "OBSERVATORY";
     private static readonly TimeSpan PromoLookback = TimeSpan.FromMinutes(30);
     private static readonly string[] PromoCategories = ["accessories", "books"];
@@ -171,8 +170,6 @@ internal class OrderServiceImpl : OrderService.OrderServiceBase
         var ct = context.CancellationToken;
         var windowStart = DateTime.UtcNow - PromoLookback;
 
-        // The tier depends on what this customer has already spent in the window. The orders table keeps the final
-        // total but not which lines were eligible, so work it out again from each earlier order's items.
         var earlierOrders = await db.Orders
             .Where(o => o.Email == request.Email && o.CreatedAt >= windowStart)
             .ToListAsync(ct);
@@ -224,12 +221,12 @@ internal class OrderServiceImpl : OrderService.OrderServiceBase
         var discount = FromDecimal(request.UserCurrency, Math.Round(thisOrderEligible * percent / 100m, 2));
 
         var activity = Activity.Current;
-        activity?.SetTag("app.promo.code", PromoCode);
-        activity?.SetTag("app.promo.window_start", windowStart.ToString("O"));
-        activity?.SetTag("app.promo.orders_scanned", earlierOrders.Count);
-        activity?.SetTag("app.promo.items_scanned", itemsScanned);
-        activity?.SetTag("app.promo.eligible_spend_usd", (double)spendUsd);
-        activity?.SetTag("app.promo.discount_percent", percent);
+        activity?.SetTag("demo.promo.code", PromoCode);
+        activity?.SetTag("demo.promo.window_start", windowStart.ToString("O"));
+        activity?.SetTag("demo.promo.orders_scanned", earlierOrders.Count);
+        activity?.SetTag("demo.promo.items_scanned", itemsScanned);
+        activity?.SetTag("demo.promo.eligible_spend_usd", (double)spendUsd);
+        activity?.SetTag("demo.promo.discount_percent", percent);
 
         return new ValidatePromoResponse
         {

@@ -177,9 +177,9 @@ shows the real activation. If you rehearse in prod, do it more than 6 hours earl
 
 Instrument these so the story is findable:
 
-- `checkout`: on `PlaceOrder`, `app.promo.code`, `app.promo.discount_percent`, `app.promo.orders_scanned`,
-  `app.promo.validation_ms`.
-- `accounting`: on `ValidatePromo`, `app.promo.orders_scanned`, `app.promo.items_scanned`.
+- `checkout`: on `PlaceOrder`, `demo.promo.code`, `demo.promo.discount_percent`, `demo.promo.orders_scanned`,
+  `demo.promo.validation_ms`.
+- `accounting`: on `ValidatePromo`, `demo.promo.orders_scanned`, `demo.promo.items_scanned`.
 - Keep existing auto-instrumentation, so every catalog and currency call shows as a child span.
 
 The investigation path:
@@ -187,11 +187,11 @@ The investigation path:
 1. Heatmap of `duration_ms` for `oteldemo.CheckoutService/PlaceOrder` (and `POST /api/checkout`) over the last
    6 hours: flat, then a fin. P50 stays flat.
 2. The marker at the foot of the fin: `Flag changed: promo.observatory-hour (off → on)`. Nothing was deployed.
-3. BubbleUp on the fin: `app.promo.code = OBSERVATORY`, high `app.promo.orders_scanned`, and `app.user.id` / email
+3. BubbleUp on the fin: `demo.promo.code = OBSERVATORY`, high `demo.promo.orders_scanned`, and `app.user.id` / email
    concentrated in two customers.
 4. Open a slow trace: a long staircase of repeated `GetProduct` and `Convert` child spans under `ValidatePromo`
    (about a thousand in the latest orders, a handful in a fast one).
-5. Group `ValidatePromo` duration by `app.promo.orders_scanned`: a clean straight line. That is the proof of cause.
+5. Group `ValidatePromo` duration by `demo.promo.orders_scanned`: a clean straight line. That is the proof of cause.
 6. Tie it to the code: the PR that added Observatory Hour, merged days before. This mirrors the Slow login story, so
    the Canvas connectors (GitHub PR, Linear ticket) can be pointed at it.
 
@@ -292,8 +292,8 @@ The amplitude depends on per-RPC latency, which differs between the orb's k3d cl
   the default variant, so a clock rule would have to live in code in two places. Add it if you want unattended runs.
 - **Checkout** (`src/checkout/main.go`): when the flag is on and the request has a promo code, `applyPromo` calls
   `OrderService/ValidatePromo` and subtracts the discount. A failed validation is logged and skipped, never a failed checkout.
-  Span attributes: `app.promo.code`, `app.promo.validation_ms`, `app.promo.valid`, `app.promo.discount_percent`,
-  `app.promo.orders_scanned`, `app.promo.items_scanned`.
+  Span attributes: `demo.promo.code`, `demo.promo.validation_ms`, `demo.promo.valid`, `demo.promo.discount_percent`,
+  `demo.promo.orders_scanned`, `demo.promo.items_scanned`.
 - **Accounting** (`src/accounting/OrderServiceImpl.cs`): `ValidatePromo`, the naive loop over the customer's orders from the
   last 30 minutes. It needs `PRODUCT_CATALOG_ADDR` and `CURRENCY_ADDR`, set in `deploy/config-files/demo/values.yaml`
   and `docker-compose.yml`. Checkout gets `ACCOUNTING_ADDR` the same way.

@@ -273,10 +273,10 @@ wanted here: it is the "what changed?" clue. Turn it off about 30 minutes later,
 
 - `oteldemo.CheckoutService/PlaceOrder` and `POST /api/checkout` duration: P99 and the heatmap climb for about 30
   minutes, then drop; P50 stays flat. Nothing errors, so Checkout Availability does not move.
-- `PlaceOrder` spans: `app.promo.code`, `app.promo.validation_ms`, `app.promo.orders_scanned`,
-  `app.promo.items_scanned`, `app.promo.discount_percent`. `validation_ms` against `orders_scanned` is a straight line.
+- `PlaceOrder` spans: `demo.promo.code`, `demo.promo.validation_ms`, `demo.promo.orders_scanned`,
+  `demo.promo.items_scanned`, `demo.promo.discount_percent`. `validation_ms` against `orders_scanned` is a straight line.
 - `ValidatePromo` (accounting): a long staircase of `GetProduct` and `Convert` child spans, longer on each order.
-- BubbleUp on the fin: `app.promo.code = OBSERVATORY` and the two circle-club emails.
+- BubbleUp on the fin: `demo.promo.code = OBSERVATORY` and the two circle-club emails.
 
 **Before the booth:** check Kafka and accounting are healthy (orders reach Postgres only through them; no history means
 no fin), and freeze releases: a release restarts flagd and puts the flag back to `off`.

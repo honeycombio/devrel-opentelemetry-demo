@@ -1,0 +1,15 @@
+# One of 'breaking', 'deprecation', 'new_component', 'enhancement', 'bug_fix'
+change_type: enhancement
+
+# The name of the component, or a single word describing the area of concern, (e.g. frontend)
+component: checkout, accounting, frontend, load-generator
+
+# A brief description of the change. Surround your text with quotes ("") if it needs to start with a backtick (`).
+note: Add the Observatory Hour promo story. Checkout takes a promo code and, while the `promo.observatory-hour` flag is on, asks accounting to price it from the customer's last 30 minutes of orders, which gets slower for heavy buyers.
+
+# Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
+issues: [48]
+
+# (Optional) One or more lines of additional information to render under the primary note.
+subtext:
+    Assisted-by: Claude Opus 5.5 (Amp)

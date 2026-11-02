@@ -250,7 +250,6 @@ func main() {
 	svc.paymentSvcClient = pb.NewPaymentServiceClient(c)
 	defer c.Close()
 
-	// Accounting only runs in the full demo layer, so checkout starts without it and skips the promo.
 	if accountingAddr := os.Getenv("ACCOUNTING_ADDR"); accountingAddr != "" {
 		c = mustCreateClient(accountingAddr)
 		svc.orderSvcClient = pb.NewOrderServiceClient(c)
@@ -717,8 +716,6 @@ func (cs *checkout) convertCurrency(ctx context.Context, from *pb.Money, toCurre
 	return result, err
 }
 
-// applyPromo takes the discount accounting prices for this customer off the total.
-// A promo that cannot be validated is skipped; it never fails the checkout.
 func (cs *checkout) applyPromo(ctx context.Context, req *pb.PlaceOrderRequest, items []*pb.OrderItem, total *pb.Money) (*pb.Money, error) {
 	span := trace.SpanFromContext(ctx)
 	span.SetAttributes(attribute.String("demo.promo.code", req.PromoCode))
