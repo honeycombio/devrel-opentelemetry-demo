@@ -9,7 +9,7 @@ export interface OtelServicesArgs {
 }
 
 /**
- * Deploys the otel-services Helm chart (storechat, llm-evals, product-reviews, llm, auth).
+ * Deploys the otel-services Helm chart (storechat, llm-evals, auth).
  * The Helm release is named "otel-services", which means the Kubernetes ServiceAccount
  * will also be named "otel-services" — matching the BedrockPodIdentityAssociation.
  */
@@ -63,9 +63,6 @@ export class OtelServices extends pulumi.ComponentResource {
                         },
                     },
                 },
-                // product-reviews and llm are deployed directly by Pulumi in oteldemo.ts
-                productReviews: { enabled: false },
-                llm: { enabled: false },
             },
             otel: {
                 collectorName: args.collectorName,

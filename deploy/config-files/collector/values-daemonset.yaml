@@ -194,13 +194,12 @@ config:
                 - attributes["server.address"] == "flagd"
 
     # Keep only spans worth evaluating: store-chat's per-turn supervisor
-    # invocation, and product-reviews' Bedrock chat spans (the consumer
-    # filters out tool-use rounds). Same drop-everything-else pattern.
+    # invocation. Same drop-everything-else pattern.
     filter/keep_eval_anchors:
         error_mode: ignore
         traces:
             span:
-                - 'not ((resource.attributes["service.name"] == "store-chat" and name == "invoke_agent supervisor") or (resource.attributes["service.name"] == "product-reviews" and IsMatch(name, "^chat ")))'
+                - 'not (resource.attributes["service.name"] == "store-chat" and name == "invoke_agent supervisor")'
 
     # Keep only flagd-ui's "Flag changed:" log records for the markers
     # pipeline. flagd-ui's Storage GenServer logs that string via
@@ -226,7 +225,7 @@ config:
                   - 'set(attributes["marker.message"], ExtractPatterns(body, "(?P<msg>Flag changed: [^\n]+)")["msg"])'
 
     # ── GenAI span shaping ──────────────────────────────────────────────
-    # Strands (storechat) and product-reviews emit GenAI telemetry that needs
+    # Strands (storechat) emits GenAI telemetry that needs
     # shaping before it's useful in Honeycomb. Split into three small
     # processors so each job is self-contained:
     #   1. genai_copy_events_to_span      — promote Strands' span-EVENT
@@ -239,8 +238,7 @@ config:
     # 1. COPY TO SPAN — Strands emits messages + usage on a
     #    `gen_ai.client.inference.operation.details` span event; copy each
     #    attribute up to the span verbatim so downstream reads them as span
-    #    attributes. product-reviews already sets these directly on the span,
-    #    so it skips this step and is handled entirely by (2).
+    #    attributes.
     transform/genai_copy_events_to_span:
         error_mode: ignore
         trace_statements:
@@ -264,9 +262,8 @@ config:
 
     # 2. CANONICALISE TOKEN NAMES — rename cache attributes to the semconv 1.41
     #    canonical dotted form. Runs at span level (not in the copy step)
-    #    because product-reviews sets a non-canonical cache_write.input_tokens
-    #    directly on the span and never passes through copy; handling it here in
-    #    one place covers that and Strands' promoted underscore names alike.
+    #    so the rename sees both Strands' promoted underscore names and any
+    #    set directly on the span.
     transform/genai_canonicalize_token_names:
         error_mode: ignore
         trace_statements:
@@ -275,20 +272,17 @@ config:
                   - attributes["gen_ai.usage.input_tokens"] != nil
               statements:
                   # Strands -> underscore (cache_read_input_tokens /
-                  # cache_write_input_tokens); product-reviews -> non-canonical
-                  # cache_write.input_tokens. Targets: cache_read.input_tokens and
+                  # cache_write_input_tokens). Targets: cache_read.input_tokens and
                   # cache_creation.input_tokens (the registered write attribute).
                   - set(attributes["gen_ai.usage.cache_read.input_tokens"], attributes["gen_ai.usage.cache_read_input_tokens"]) where attributes["gen_ai.usage.cache_read_input_tokens"] != nil and attributes["gen_ai.usage.cache_read.input_tokens"] == nil
                   - set(attributes["gen_ai.usage.cache_creation.input_tokens"], attributes["gen_ai.usage.cache_write_input_tokens"]) where attributes["gen_ai.usage.cache_write_input_tokens"] != nil and attributes["gen_ai.usage.cache_creation.input_tokens"] == nil
-                  - set(attributes["gen_ai.usage.cache_creation.input_tokens"], attributes["gen_ai.usage.cache_write.input_tokens"]) where attributes["gen_ai.usage.cache_write.input_tokens"] != nil and attributes["gen_ai.usage.cache_creation.input_tokens"] == nil
 
     # 3. FIX TOKEN COUNTS — runs on span attributes only, after names are
-    #    canonical. Covers Strands (events) and product-reviews (native span
-    #    attrs) alike in one span-context pass.
+    #    canonical. Covers Strands (events).
     #
     #    ASSUMPTION: our SDKs report gen_ai.usage.input_tokens as the UNCACHED
     #    portion only (raw Bedrock inputTokens), with cache read/creation counted
-    #    separately. Verified for Strands + product-reviews. If an SDK is ever
+    #    separately. Verified for Strands. If an SDK is ever
     #    upgraded to emit semconv-compliant input_tokens (already inclusive of
     #    cached tokens), revisit — the additive step below would double-count.
     transform/genai_fix_token_counts:

@@ -203,24 +203,6 @@
         "off": 0
       }
     },
-    "llmInaccurateResponse": {
-      "defaultVariant": "off",
-      "description": "LLM returns an inaccurate product summary for product ID L9ECAV7KIM",
-      "state": "ENABLED",
-      "variants": {
-        "off": false,
-        "on": true
-      }
-    },
-    "llmRateLimitError": {
-      "defaultVariant": "off",
-      "description": "LLM intermittently returns a rate limit error",
-      "state": "ENABLED",
-      "variants": {
-        "off": false,
-        "on": true
-      }
-    },
     "loadGeneratorFloodHomepage": {
       "defaultVariant": "off",
       "description": "Flood the frontend with a large amount of requests.",

@@ -92,10 +92,6 @@ build:
         dockerfile: src/kafka/Dockerfile
         buildArgs:
           OTEL_JAVA_AGENT_VERSION: 2.31.1
-    - image: llm
-      context: .
-      docker:
-        dockerfile: src/llm/Dockerfile
     - image: load-generator
       context: .
       docker:
@@ -112,10 +108,6 @@ build:
       context: .
       docker:
         dockerfile: src/product-catalog/Dockerfile
-    - image: product-reviews
-      context: .
-      docker:
-        dockerfile: src/product-reviews/Dockerfile
     - image: quote
       context: .
       docker:
@@ -254,7 +246,6 @@ deploy:
         setValues:
           services.llmEvals.enabled: "true"
           services.storechat.kafkaAddr: "kafka:9092"
-          services.productReviews.kafkaAddr: "kafka:9092"
         setValueTemplates:
           services.storechat.awsRegion: "{{.BEDROCK_AWS_REGION}}"
           services.storechat.bedrockHaikuProfileArn: "{{.BEDROCK_HAIKU_PROFILE_ARN}}"
@@ -267,10 +258,6 @@ deploy:
           services.llmEvals.kafkaAddr: "kafka:9092"
           services.llmEvals.imageOverride.repository: "{{if .IMAGE_REPO_llm_evals }}{{.IMAGE_REPO_llm_evals}}{{end}}"
           services.llmEvals.imageOverride.tag: "{{if .IMAGE_REPO_llm_evals }}{{.IMAGE_TAG_llm_evals}}@{{.IMAGE_DIGEST_llm_evals}}{{end}}"
-          services.productReviews.imageOverride.repository: "{{if .IMAGE_REPO_product_reviews }}{{.IMAGE_REPO_product_reviews}}{{end}}"
-          services.productReviews.imageOverride.tag: "{{if .IMAGE_REPO_product_reviews }}{{.IMAGE_TAG_product_reviews}}@{{.IMAGE_DIGEST_product_reviews}}{{end}}"
-          services.llm.imageOverride.repository: "{{if .IMAGE_REPO_llm }}{{.IMAGE_REPO_llm}}{{end}}"
-          services.llm.imageOverride.tag: "{{if .IMAGE_REPO_llm }}{{.IMAGE_TAG_llm}}@{{.IMAGE_DIGEST_llm}}{{end}}"
           services.auth.imageOverride.repository: "{{if .IMAGE_REPO_auth }}{{.IMAGE_REPO_auth}}{{end}}"
           services.auth.imageOverride.tag: "{{if .IMAGE_REPO_auth }}{{.IMAGE_TAG_auth}}@{{.IMAGE_DIGEST_auth}}{{end}}"
           services.auth.sidecar.imageOverride.repository: "{{if .IMAGE_REPO_sso_mocks }}{{.IMAGE_REPO_sso_mocks}}{{end}}"
@@ -326,10 +313,3 @@ profiles:
       - op: replace
         path: /deploy/helm/releases/1/setValues/services.llmEvals.enabled
         value: "false"
-      # product-reviews: use the in-cluster fake `llm` service instead of Bedrock.
-      - op: add
-        path: /deploy/helm/releases/1/setValues/services.productReviews.extraEnv[0].name
-        value: LLM_PROVIDER
-      - op: add
-        path: /deploy/helm/releases/1/setValues/services.productReviews.extraEnv[0].value
-        value: openai
