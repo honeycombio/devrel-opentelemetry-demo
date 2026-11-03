@@ -12,13 +12,17 @@ export PATH="$HOME/.local/bin:$PATH"
 
 .agents/orb-docker-up.sh
 
-.agents/pulumi-login >/dev/null || echo "Couldn't log in to Pulumi with Amp OIDC." >&2
+if ! .agents/pulumi-login >/dev/null; then
+  echo "Couldn't log in to Pulumi with Amp OIDC, so the devrel-demo-aws kubectl context wasn't added." >&2
+  exit 0
+fi
 
-# update-kubeconfig makes the new context current; keep whatever was current
-# (usually k3d-orb, or nothing) so a bare kubectl never lands on the shared cluster.
+# set-kubecontext.sh reads the cluster from the infra-aws stack outputs and
+# makes its context current; keep whatever was current (usually k3d-orb, or
+# nothing) so a bare kubectl never lands on the shared cluster.
 current=$(kubectl config current-context 2>/dev/null || true)
-if aws eks update-kubeconfig --name main-eksCluster-6a6e98a --region eu-west-1 --alias devrel-demo-aws >/dev/null; then
+if AWS_PROFILE=default scripts/set-kubecontext.sh aws >/dev/null; then
   if [[ -n "$current" ]]; then kubectl config use-context "$current" >/dev/null; else kubectl config unset current-context >/dev/null; fi
 else
-  echo "Couldn't add the devrel-demo-aws kubectl context (Amp OIDC role not assumable?)." >&2
+  echo "Couldn't add the devrel-demo-aws kubectl context." >&2
 fi
