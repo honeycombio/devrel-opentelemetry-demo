@@ -171,11 +171,14 @@ deploy:
                 valueFrom:
                   fieldRef:
                     fieldPath: metadata.namespace
+              # Ingest key for the Honeycomb dogfood copy (otlp/dogfood exporter).
+              - name: HONEYCOMB_DOGFOOD_INGEST_KEY
         setValueTemplates:
           components.load-generator.envOverrides[0].value: "{{.AGENT_LOAD_ENABLED}}"
           opentelemetry-collector.extraEnvs[0].value: "{{.HONEYCOMB_INGEST_KEY}}"
           opentelemetry-collector.extraEnvs[1].value: "{{.HONEYCOMB_MARKERS_API_KEY}}"
           opentelemetry-collector.extraEnvs[2].value: "{{.CLOUD_PROVIDER}}"
+          opentelemetry-collector.extraEnvs[5].value: "{{.HONEYCOMB_DOGFOOD_INGEST_KEY}}"
           opentelemetry-collector.clusterRole.name: "{{.USER}}-otel-collector"
           opentelemetry-collector.clusterRole.clusterRoleBinding.name: "{{.USER}}-otel-collector"
           opentelemetry-collector.image.repository: "{{if .IMAGE_REPO_otelcollector }}{{.IMAGE_REPO_otelcollector}}{{else}}ghcr.io/honeycombio/devrel-opentelemetry-demo{{end}}"

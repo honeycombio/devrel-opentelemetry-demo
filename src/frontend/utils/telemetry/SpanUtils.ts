@@ -16,7 +16,7 @@ export async function tracedQuery<T>(
       return result;
     } catch (err) {
       recordExceptionOrErrorMessage(err, span);
-      return Promise.reject("query failed")
+      throw err;
     } finally {
       span.end();
     }

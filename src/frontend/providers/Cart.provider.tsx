@@ -7,6 +7,9 @@ import ApiGateway from '../gateways/Api.gateway';
 import { CartItem, OrderResult, PlaceOrderRequest } from '../protos/demo';
 import { IProductCart } from '../types/Cart';
 import { useCurrency } from './Currency.provider';
+import { spanAttributesForRpc, tracedMutation, tracedQuery } from '../utils/telemetry/SpanUtils';
+
+const TRACER = 'cart-provider';
 
 interface IContext {
   cart: IProductCart;
@@ -44,20 +47,20 @@ const CartProvider = ({ children }: IProps) => {
 
   const { data: cart = { userId: '', items: [] } } = useQuery({
     queryKey: ['cart', selectedCurrency],
-    queryFn: () => ApiGateway.getCart(selectedCurrency),
+    queryFn: () => tracedQuery('getCart', () => ApiGateway.getCart(selectedCurrency), TRACER),
   });
   const addCartMutation = useMutation({
-    mutationFn: ApiGateway.addCartItem,
+    mutationFn: tracedMutation('addCartItem', ApiGateway.addCartItem, TRACER, spanAttributesForRpc('CartService', 'addCartItem', 'CartProvider')),
     ...mutationOptions,
   });
 
   const emptyCartMutation = useMutation({
-    mutationFn: ApiGateway.emptyCart,
+    mutationFn: tracedMutation('emptyCart', ApiGateway.emptyCart, TRACER, spanAttributesForRpc('CartService', 'emptyCart', 'CartProvider')),
     ...mutationOptions,
   });
 
   const placeOrderMutation = useMutation({
-    mutationFn: ApiGateway.placeOrder,
+    mutationFn: tracedMutation('placeOrder', ApiGateway.placeOrder, TRACER, spanAttributesForRpc('CartService', 'placeOrder', 'CartProvider')),
     ...mutationOptions,
   });
 
@@ -76,7 +79,8 @@ const CartProvider = ({ children }: IProps) => {
     },
     [addCartMutation, cart.items, selectedCurrency]
   );
-  const emptyCart = useCallback(() => emptyCartMutation.mutateAsync(), [emptyCartMutation]);
+  // emptyCart takes no variables, but tracedMutation's wrapper needs one argument.
+  const emptyCart = useCallback(() => emptyCartMutation.mutateAsync(undefined), [emptyCartMutation]);
   const placeOrder = useCallback(
     (order: PlaceOrderRequest) => placeOrderMutation.mutateAsync({ ...order, currencyCode: selectedCurrency }),
     [placeOrderMutation, selectedCurrency]
