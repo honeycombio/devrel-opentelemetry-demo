@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+# Logs the Pulumi CLI in to the honeycomb-devrel org as the DevRel team, with
+# no stored access token: Pulumi Cloud exchanges an Amp OIDC token
+# (https://ampcode.com/manual/orbs/oidc) for a 12-hour team token. The org
+# trusts Amp's issuer through an OIDC issuer policy that allows this Amp
+# project's thread tokens. ./run needs it for `pulumi stack output`.
+# .agents/resume runs it; run it again when the token expires.
+set -euo pipefail
+
+export PATH="$HOME/.local/bin:$PATH"
+ORG=honeycomb-devrel
+
+token_file="$(mktemp)"
+chmod 600 "$token_file"
+trap 'rm -f "$token_file"' EXIT
+amp orb id-token --audience "urn:pulumi:org:$ORG" --ttl-seconds 300 >"$token_file"
+
+pulumi login https://api.pulumi.com --oidc-token "file://$token_file" \
+  --oidc-org "$ORG" --oidc-team DevRel --oidc-expiration 12h

@@ -4,7 +4,7 @@
 # The demo only runs in Docker / Kubernetes. Orbs ship dockerd, so this installs
 # what .agents/orb-run needs to run the whole demo in a k3d (k3s in Docker)
 # cluster with skaffold: helm, kubectl, skaffold, k3d, docker buildx, plus the
-# k3d images. It also installs the lint tooling from CI (markdownlint,
+# k3d images, and the AWS and Pulumi CLIs with Amp OIDC credentials. It also installs the lint tooling from CI (markdownlint,
 # yamllint) and the Python load generator's dependencies.
 # Start Docker with .agents/orb-docker-up.sh (.agents/resume does), then run
 # .agents/orb-run. The full demo needs an a1.large or bigger orb.
@@ -18,6 +18,8 @@ SKAFFOLD_VERSION=v2.25.0
 KUBECTL_VERSION=v1.37.1
 K3D_VERSION=v5.9.0
 BUILDX_VERSION=v0.38.1
+AWSCLI_VERSION=2.36.30
+PULUMI_VERSION=v3.273.0
 bin_dir="$HOME/.local/bin"
 mkdir -p "$bin_dir"
 export PATH="$bin_dir:$PATH"
@@ -59,6 +61,31 @@ if [ "$("$buildx" version 2>/dev/null | awk '{print $2}')" != "$BUILDX_VERSION" 
   chmod +x "$buildx"
 fi
 skaffold config set --global collect-metrics false >/dev/null 2>&1 || true
+
+# --- AWS: the demo account's EKS cluster and ECR, with no stored keys.
+# .agents/aws-credential-process exchanges an Amp OIDC token for the orb's role
+# whenever the AWS CLI needs credentials; setup itself has no thread identity.
+step "aws CLI $AWSCLI_VERSION"
+if [ "$(aws --version 2>/dev/null | sed -n 's|^aws-cli/\([^ ]*\).*|\1|p')" != "$AWSCLI_VERSION" ]; then
+  aws_tmp="$(mktemp -d)"
+  curl -fsSL -o "$aws_tmp/awscli.zip" "https://awscli.amazonaws.com/awscli-exe-linux-x86_64-$AWSCLI_VERSION.zip"
+  unzip -q "$aws_tmp/awscli.zip" -d "$aws_tmp"
+  "$aws_tmp/aws/install" --bin-dir "$bin_dir" --install-dir "$HOME/.local/aws-cli" --update
+  rm -rf "$aws_tmp"
+fi
+# ./run and scripts/set-kubecontext.sh default to devrel-sandbox; CLAUDE.md and
+# other scripts call this account really-devrel-sandbox.
+for profile in default devrel-sandbox really-devrel-sandbox; do
+  aws configure set region eu-west-1 --profile "$profile"
+  aws configure set credential_process "$repo_root/.agents/aws-credential-process" --profile "$profile"
+done
+
+# Pulumi, for ./run's stack outputs. .agents/pulumi-login logs in with Amp OIDC.
+step "pulumi $PULUMI_VERSION"
+if [ "$(pulumi version 2>/dev/null)" != "$PULUMI_VERSION" ]; then
+  curl -fsSL "https://get.pulumi.com/releases/sdk/pulumi-$PULUMI_VERSION-linux-x64.tar.gz" \
+    | tar -xz -C "$bin_dir" --strip-components=1
+fi
 
 # --- Pre-pull the k3d images into Docker's image store, which the snapshot
 # keeps. dockerd is a service in a live orb; start a throwaway one here if
@@ -115,6 +142,7 @@ $marker
 - Language toolchains (Go, .NET, Java, Node, ...) are NOT installed; services are built inside Docker.
 - Telemetry to Honeycomb needs the personal Amp secret \`DEVREL_OTEL_DEMO_HONEYCOMB_API_KEY\` (HONEYCOMB_API_KEY is deliberately ignored by .agents/orb-run). If it is unset, tell the user and have them add it with \`manage_amp(topic: 'secrets', operation: 'set', parameters: { scope: 'personal', name: 'DEVREL_OTEL_DEMO_HONEYCOMB_API_KEY' })\` (a masked dialog) or in Amp Settings > Secrets & Env Vars. Never ask them to paste the key into the chat. Then run \`amp orb restart-processes\` and re-run .agents/orb-run.
 - Bedrock (AWS) is not reachable, so store-chat and llm-evals do not work here; llm-evals is off.
+- AWS (account 657166037864, eu-west-1) works with no keys or login: the \`default\`, \`devrel-sandbox\` and \`really-devrel-sandbox\` profiles get credentials from Amp OIDC (\`.agents/aws-credential-process\`, role \`amp-orb-devrel-otel-demo\`). It can push to the \`localdemo/*\` ECR repos and is cluster-admin on the demo EKS cluster, whose kubectl context \`devrel-demo-aws\` \`.agents/resume\` adds without making it current. ECR login: \`aws ecr get-login-password | docker login --username AWS --password-stdin 657166037864.dkr.ecr.eu-west-1.amazonaws.com\`. No Bedrock. Pulumi is logged in to honeycomb-devrel as the DevRel team the same way (\`.agents/pulumi-login\`, run by \`.agents/resume\`; the token lasts 12 hours, so re-run it if \`pulumi\` says you are logged out). So \`./run\` works from an orb, but it deploys to the shared demo cluster: ask the user before running it.
 EOF
 } >> "$agents_md"
 
