@@ -2,14 +2,17 @@
 # Runs after an orb starts or wakes. Dockerd is not part of the snapshot's
 # running processes, so start it again (a no-op if it is already up). The k3d
 # cluster is created on demand by .agents/orb-run, not here, to stay fast.
-# Also add the demo EKS cluster's kubectl context, which needs the thread's
-# Amp OIDC identity that setup doesn't have (see .agents/aws-credential-process).
+# Also log in to Pulumi and add the demo EKS cluster's kubectl context, which
+# need the thread's Amp OIDC identity that setup doesn't have (see
+# .agents/pulumi-login and .agents/aws-credential-process).
 set -euo pipefail
 
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
 export PATH="$HOME/.local/bin:$PATH"
 
 .agents/orb-docker-up.sh
+
+.agents/pulumi-login >/dev/null || echo "Couldn't log in to Pulumi with Amp OIDC." >&2
 
 # update-kubeconfig makes the new context current; keep whatever was current
 # (usually k3d-orb, or nothing) so a bare kubectl never lands on the shared cluster.
