@@ -3,6 +3,7 @@ import os
 
 import grpc
 import httpx
+from opentelemetry.instrumentation.grpc import client_interceptor, intercept_channel
 from strands import tool
 
 from genproto import demo_pb2, demo_pb2_grpc
@@ -10,7 +11,9 @@ from genproto import demo_pb2, demo_pb2_grpc
 ACCOUNTING_ADDR = os.environ.get("ACCOUNTING_ADDR", "accounting:5060")
 SHIPPING_ADDR = os.environ.get("SHIPPING_ADDR", "http://shipping:8080")
 
-_accounting_channel = grpc.insecure_channel(ACCOUNTING_ADDR)
+_accounting_channel = intercept_channel(
+    grpc.insecure_channel(ACCOUNTING_ADDR), client_interceptor()
+)
 _order_stub = demo_pb2_grpc.OrderServiceStub(_accounting_channel)
 
 

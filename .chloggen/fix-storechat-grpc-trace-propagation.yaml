@@ -1,0 +1,7 @@
+change_type: bug_fix
+
+component: storechat
+
+note: Propagate trace context on the gRPC calls the order tools make to the accounting service, so order lookups and refunds appear in the same trace as the chat request.
+
+issues: [57]
