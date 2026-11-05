@@ -4,6 +4,10 @@ This is the DevRel OpenTelemetry Demo project. Our job is to "make it real" -- t
 
 This is a fork of the OpenTelemetry Demo. It's a fake e-commerce app.
 
+## Features are documented as intent specs
+
+The end-state behavior of every feature and demo story is described in `openspec/specs/` (intent, not code), so it can be re-implemented after an upstream merge. When you add or change application behavior, update the matching spec in the same change. See `AGENTS.md` and `openspec/README.md`.
+
 ## Building and Deploying
 
 ### Local Kubernetes deployment via Skaffold
