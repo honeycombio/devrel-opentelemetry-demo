@@ -1,0 +1,16 @@
+# Copyright The OpenTelemetry Authors
+# SPDX-License-Identifier: Apache-2.0
+
+file_format: definition/2
+attribute_groups:
+  - id: service.accounting
+    visibility: public
+    brief: Accounting service attributes
+    stability: stable
+    attributes:
+      - ref: demo.promo.code
+      - ref: demo.promo.window_start
+      - ref: demo.promo.orders_scanned
+      - ref: demo.promo.items_scanned
+      - ref: demo.promo.eligible_spend_usd
+      - ref: demo.promo.discount_percent

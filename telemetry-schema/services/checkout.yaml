@@ -26,3 +26,9 @@ attribute_groups:
       - ref: demo.payment.strategy
       - ref: demo.product.id
       - ref: demo.product.quantity
+      - ref: demo.promo.code
+      - ref: demo.promo.valid
+      - ref: demo.promo.discount_percent
+      - ref: demo.promo.validation_ms
+      - ref: demo.promo.orders_scanned
+      - ref: demo.promo.items_scanned

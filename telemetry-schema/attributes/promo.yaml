@@ -1,0 +1,53 @@
+# Copyright The OpenTelemetry Authors
+# SPDX-License-Identifier: Apache-2.0
+
+file_format: definition/2
+attributes:
+  - key: demo.promo.code
+    type: string
+    brief: Promo code on the order
+    stability: stable
+    note: The promo code the customer entered at checkout
+    examples: ["OBSERVATORY"]
+  - key: demo.promo.valid
+    type: boolean
+    brief: Whether the promo code was accepted
+    stability: stable
+    note: Set by checkout from the accounting service's answer
+    examples: [true, false]
+  - key: demo.promo.discount_percent
+    type: int
+    brief: Discount tier applied
+    stability: stable
+    note: The percentage taken off the order's eligible items
+    examples: [5, 10, 15]
+  - key: demo.promo.validation_ms
+    type: int
+    brief: Time checkout waited for promo validation
+    stability: stable
+    note: Milliseconds spent in the call to accounting
+    examples: [40, 1500]
+  - key: demo.promo.orders_scanned
+    type: int
+    brief: Earlier orders walked to price the promo
+    stability: stable
+    note: The customer's orders inside the promo's 30 minute lookback
+    examples: [0, 12, 114]
+  - key: demo.promo.items_scanned
+    type: int
+    brief: Earlier order lines walked to price the promo
+    stability: stable
+    note: The lines of the scanned orders, each looked up in product-catalog
+    examples: [0, 96, 912]
+  - key: demo.promo.window_start
+    type: string
+    brief: Start of the promo lookback
+    stability: stable
+    note: ISO 8601 time 30 minutes before the validation
+    examples: ["2026-11-02T12:00:00.0000000Z"]
+  - key: demo.promo.eligible_spend_usd
+    type: double
+    brief: Eligible spend that sets the discount tier
+    stability: stable
+    note: Eligible spend in the lookback plus this order, in USD
+    examples: [120.5, 640.0]

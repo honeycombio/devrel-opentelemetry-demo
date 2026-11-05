@@ -162,6 +162,7 @@ type checkout struct {
 	emailSvcClient          pb.EmailServiceClient
 	paymentSvcClient        pb.PaymentServiceClient
 	httpClient              *http.Client
+	orderSvcClient          pb.OrderServiceClient
 }
 
 func main() {
@@ -248,6 +249,12 @@ func main() {
 	c = mustCreateClient(svc.paymentSvcAddr)
 	svc.paymentSvcClient = pb.NewPaymentServiceClient(c)
 	defer c.Close()
+
+	if accountingAddr := os.Getenv("ACCOUNTING_ADDR"); accountingAddr != "" {
+		c = mustCreateClient(accountingAddr)
+		svc.orderSvcClient = pb.NewOrderServiceClient(c)
+		defer c.Close()
+	}
 
 	svc.kafkaBrokerSvcAddr = os.Getenv("KAFKA_ADDR")
 
@@ -392,6 +399,13 @@ func (cs *checkout) PlaceOrder(ctx context.Context, req *pb.PlaceOrderRequest) (
 			span.SetStatus(otelcodes.Error, "invalid money calculation")
 			span.RecordError(err)
 			return nil, status.Errorf(codes.Internal, "failed to calculate order total: %+v", err)
+		}
+	}
+
+	if req.PromoCode != "" && cs.orderSvcClient != nil && flags.PromoObservatoryHour.Value(ctx, openfeature.EvaluationContext{}) {
+		total, err = cs.applyPromo(ctx, req, prep.orderItems, total)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to apply promo: %+v", err)
 		}
 	}
 
@@ -700,6 +714,35 @@ func (cs *checkout) convertCurrency(ctx context.Context, from *pb.Money, toCurre
 		return nil, fmt.Errorf("failed to convert currency: %+v", err)
 	}
 	return result, err
+}
+
+func (cs *checkout) applyPromo(ctx context.Context, req *pb.PlaceOrderRequest, items []*pb.OrderItem, total *pb.Money) (*pb.Money, error) {
+	span := trace.SpanFromContext(ctx)
+	span.SetAttributes(attribute.String("demo.promo.code", req.PromoCode))
+
+	start := time.Now()
+	resp, err := cs.orderSvcClient.ValidatePromo(ctx, &pb.ValidatePromoRequest{
+		Email:        req.Email,
+		PromoCode:    req.PromoCode,
+		UserCurrency: req.UserCurrency,
+		Items:        items,
+	})
+	span.SetAttributes(attribute.Int64("demo.promo.validation_ms", time.Since(start).Milliseconds()))
+	if err != nil {
+		logger.WarnContext(ctx, "promo validation failed, continuing without discount", slog.String("error", err.Error()))
+		span.AddEvent("promo validation failed", trace.WithAttributes(semconv.ExceptionMessageKey.String(err.Error())))
+		return total, nil
+	}
+	span.SetAttributes(
+		attribute.Bool("demo.promo.valid", resp.Valid),
+		attribute.Int("demo.promo.discount_percent", int(resp.DiscountPercent)),
+		attribute.Int("demo.promo.orders_scanned", int(resp.OrdersScanned)),
+		attribute.Int("demo.promo.items_scanned", int(resp.ItemsScanned)),
+	)
+	if !resp.Valid || resp.Discount == nil {
+		return total, nil
+	}
+	return money.Sum(total, money.Negate(resp.Discount))
 }
 
 func (cs *checkout) chargeCard(ctx context.Context, amount *pb.Money, paymentInfo *pb.CreditCardInfo) (string, error) {
