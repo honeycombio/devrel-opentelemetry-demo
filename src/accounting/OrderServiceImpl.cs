@@ -168,6 +168,21 @@ internal class OrderServiceImpl : OrderService.OrderServiceBase
 
         using var db = _dbContextFactory.CreateDbContext();
         var ct = context.CancellationToken;
+
+        var company = await db.Database
+            .SqlQuery<string>($"""
+                SELECT c.company_id AS "Value"
+                  FROM auth.corporate_user u
+                  JOIN auth.company c ON c.company_id = u.company_id
+                 WHERE u.email = {request.Email.ToLowerInvariant()} AND c.login_method = 'sso'
+                """)
+            .FirstOrDefaultAsync(ct);
+        if (company == null)
+        {
+            Activity.Current?.SetTag("demo.promo.code", PromoCode);
+            return new ValidatePromoResponse { Valid = false };
+        }
+
         var windowStart = DateTime.UtcNow - PromoLookback;
 
         var earlierOrders = await db.Orders
@@ -222,6 +237,7 @@ internal class OrderServiceImpl : OrderService.OrderServiceBase
 
         var activity = Activity.Current;
         activity?.SetTag("demo.promo.code", PromoCode);
+        activity?.SetTag("demo.company", company);
         activity?.SetTag("demo.promo.window_start", windowStart.ToString("O"));
         activity?.SetTag("demo.promo.orders_scanned", earlierOrders.Count);
         activity?.SetTag("demo.promo.items_scanned", itemsScanned);
@@ -235,6 +251,7 @@ internal class OrderServiceImpl : OrderService.OrderServiceBase
             Discount = discount,
             OrdersScanned = earlierOrders.Count,
             ItemsScanned = itemsScanned,
+            Company = company,
         };
     }
 

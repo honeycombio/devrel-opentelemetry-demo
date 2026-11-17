@@ -32,3 +32,4 @@ attribute_groups:
       - ref: demo.promo.validation_ms
       - ref: demo.promo.orders_scanned
       - ref: demo.promo.items_scanned
+      - ref: demo.company

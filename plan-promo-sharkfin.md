@@ -151,7 +151,7 @@ A flagd flag `promo.observatory-hour` with variants:
   - In a session: add 10 to 15 items to the cart, check out with `OBSERVATORY`, wait 20 to 40 s, repeat. It stops when
     the 30 minutes are up or the flag goes `off`.
   - After a loadgen restart mid-promo it simply starts a fresh session. That is harmless.
-- About a third of organic checkouts also send the code while the flag is on. They have no recent orders, so they are
+- About a tenth of organic checkouts also send the code while the flag is on. They have no recent orders, so they are
   fast. This is the control group that makes the story readable.
 - Volume: roughly 1 to 2 orders a minute per buyer *(estimate)*, about 100 orders in the session, against organic
   checkouts of a few a minute. A visible but modest pulse, and a good red herring ("is it just traffic?").
@@ -187,7 +187,7 @@ The investigation path:
 1. Heatmap of `duration_ms` for `oteldemo.CheckoutService/PlaceOrder` (and `POST /api/checkout`) over the last
    6 hours: flat, then a fin. P50 stays flat.
 2. The marker at the foot of the fin: `Flag changed: promo.observatory-hour (off → on)`. Nothing was deployed.
-3. BubbleUp on the fin: `demo.promo.code = OBSERVATORY`, high `demo.promo.orders_scanned`, and `app.user.id` / email
+3. BubbleUp on the fin: `demo.promo.code = OBSERVATORY`, high `demo.promo.orders_scanned`, and `user.hash` (hash of the email)
    concentrated in two customers.
 4. Open a slow trace: a long staircase of repeated `GetProduct` and `Convert` child spans under `ValidatePromo`
    (about a thousand in the latest orders, a handful in a fast one).
@@ -298,7 +298,19 @@ The amplitude depends on per-RPC latency, which differs between the orb's k3d cl
   last 30 minutes. It needs `PRODUCT_CATALOG_ADDR` and `CURRENCY_ADDR`, set in `deploy/config-files/demo/values.yaml`
   and `docker-compose.yml`. Checkout gets `ACCOUNTING_ADDR` the same way.
 - **Frontend:** an optional "Promo Code" field on the checkout form.
-- **Load generator:** `CircleClubBuyer` (two per process), a third of ordinary checkouts send the code while the flag is on.
+- **Load generator:** `CircleClubBuyer` (two per process), a tenth of ordinary checkouts send the code while the flag is on.
   Orders are every 10 to 20 s, not 20 to 40 s: the measured cost per earlier order was lower than estimated.
 - **A cart holds each product once**, so an order has at most 8 to 10 lines (not 10 to 15). The buyers buy all five promo
   products and three others.
+
+## Update: SSO corporate customers only
+
+The promo is limited to corporate customers who sign in with SSO.
+
+- `OrderService/ValidatePromo` looks the email up in `auth.corporate_user` joined to `auth.company` (`login_method = 'sso'`) and
+  refuses before reading any order history. Password-login companies and anonymous shoppers get `valid = false`.
+- The check is by email, not by a login token, because the demo's corporate session lives only in the browser.
+- The response carries `company`; checkout records it as `demo.company` on `PlaceOrder`.
+- The checkout form shows the promo field only for a corporate session (which needs `frontend.login-link` on).
+- The loadgen buyers are two SSO users of Kramerica who log in through `/api/login` first. This replaces the earlier
+  `circle-club-*` emails and the "astronomy clubs, schools and resellers" wording: the buyers are staff of a corporate customer.

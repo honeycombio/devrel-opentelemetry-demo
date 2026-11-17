@@ -371,11 +371,11 @@ def make_checkout_person(user: str, email: str) -> dict:
     return person
 
 
-# Observatory Hour: while marketing has the promo on (flagd promo.observatory-hour), a third of
-# ordinary checkouts try the code. They have no recent orders, so for them it is cheap.
+# Observatory Hour: while marketing has the promo on (flagd promo.observatory-hour), a tenth of
+# ordinary checkouts try the code. They are not SSO corporate customers, so the promo refuses them straight away.
 PROMO_FLAG = "promo.observatory-hour"
 PROMO_CODE = "OBSERVATORY"
-ORGANIC_PROMO_SHARE = 1 / 3
+ORGANIC_PROMO_SHARE = 1 / 10
 
 
 def maybe_add_promo(person: dict) -> dict:
@@ -782,18 +782,19 @@ class WebsiteUser(HttpUser):
 
 
 class CircleClubBuyer(HttpUser):
-    """A bulk buyer (astronomy club, school, reseller) who stocks up while the Observatory Hour promo is on.
+    """A bulk buyer (an employee of a corporate customer, signed in with SSO) who stocks up while the Observatory Hour promo is on.
 
     Each one starts a 30-minute shopping session when it sees the flag go on, placing a big order every 10 to
     20 seconds. The promo counts spend over the last 30 minutes, so each order makes the next price check
     walk more earlier orders. When the session ends the orders age out and the lookup is cheap again.
     It starts a new session only after the flag has been seen off, so one flip is one fin.
 
-    There are two buyers per loadgen process, each with its own customer email.
+    There are two buyers per loadgen process, each an employee of the same company.
     """
     fixed_count = 2
     SESSION_SECONDS = 30 * 60
-    EMAILS = ["circle-club-1@aurelia.honeydemo.io", "circle-club-2@aurelia.honeydemo.io"]
+    # Two SSO employees of one corporate customer; the promo is for SSO corporate accounts only.
+    EMAILS = [u["email"] for u in corporate_users if u["company"] == "kramerica" and u["method"] == "sso"][:2]
     # Everything a club would stock up on: five promo products (accessories, books) and three that are not.
     PRODUCTS = ["L9ECAV7KIM", "LS4PSXUNUM", "6E92ZMYYFZ", "0PUK6V6EV0", "HQTGWGPNH4",
                 "OLJCESPC7Z", "2ZYFJ3GM2N", "1YMWWN1N4O"]
@@ -823,13 +824,14 @@ class CircleClubBuyer(HttpUser):
                 return
             self.armed = False
             self.session_started = now
+            self.client.post("/api/login", json={"email": self.email, "method": "sso"})
             logging.info(f"Promo is on: {self.email} starts a shopping session")
         elif now - self.session_started > self.SESSION_SECONDS:
             return
         user = str(uuid.uuid1())
         with self.tracer.start_as_current_span("user_bulk_promo_checkout", context=Context(),
                                                attributes={"user.id": user, "email": self.email}):
-            for product in self.PRODUCTS:
+            for product in random.sample(self.PRODUCTS, random.randint(5, len(self.PRODUCTS))):
                 self.client.post("/api/cart", json={
                     "item": {"productId": product, "quantity": random.randint(2, 6)},
                     "userId": user,

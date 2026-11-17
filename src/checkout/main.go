@@ -5,6 +5,8 @@ package main
 import (
 	"bytes"
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -718,7 +720,11 @@ func (cs *checkout) convertCurrency(ctx context.Context, from *pb.Money, toCurre
 
 func (cs *checkout) applyPromo(ctx context.Context, req *pb.PlaceOrderRequest, items []*pb.OrderItem, total *pb.Money) (*pb.Money, error) {
 	span := trace.SpanFromContext(ctx)
-	span.SetAttributes(attribute.String("demo.promo.code", req.PromoCode))
+	emailSum := sha256.Sum256([]byte(strings.ToLower(req.Email)))
+	span.SetAttributes(
+		attribute.String("demo.promo.code", req.PromoCode),
+		attribute.String("user.hash", hex.EncodeToString(emailSum[:])),
+	)
 
 	start := time.Now()
 	resp, err := cs.orderSvcClient.ValidatePromo(ctx, &pb.ValidatePromoRequest{
@@ -742,6 +748,7 @@ func (cs *checkout) applyPromo(ctx context.Context, req *pb.PlaceOrderRequest, i
 	if !resp.Valid || resp.Discount == nil {
 		return total, nil
 	}
+	span.SetAttributes(attribute.String("demo.company", resp.Company))
 	return money.Sum(total, money.Negate(resp.Discount))
 }
 

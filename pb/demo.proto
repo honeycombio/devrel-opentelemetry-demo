@@ -305,6 +305,8 @@ message ValidatePromoResponse {
     // How many of the customer's earlier orders and line items were walked to price the tier.
     int32 orders_scanned = 4;
     int32 items_scanned = 5;
+    // Company of the SSO corporate customer the promo was priced for. Empty when the promo was refused.
+    string company = 6;
 }
 
 message GetOrdersByEmailRequest {

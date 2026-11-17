@@ -302,6 +302,8 @@ export interface ValidatePromoResponse {
   /** How many of the customer's earlier orders and line items were walked to price the tier. */
   ordersScanned: number;
   itemsScanned: number;
+  /** Company of the SSO corporate customer the promo was priced for. Empty when the promo was refused. */
+  company: string;
 }
 
 export interface GetOrdersByEmailRequest {
@@ -3690,7 +3692,7 @@ export const ValidatePromoRequest: MessageFns<ValidatePromoRequest> = {
 };
 
 function createBaseValidatePromoResponse(): ValidatePromoResponse {
-  return { valid: false, discountPercent: 0, discount: undefined, ordersScanned: 0, itemsScanned: 0 };
+  return { valid: false, discountPercent: 0, discount: undefined, ordersScanned: 0, itemsScanned: 0, company: "" };
 }
 
 export const ValidatePromoResponse: MessageFns<ValidatePromoResponse> = {
@@ -3709,6 +3711,9 @@ export const ValidatePromoResponse: MessageFns<ValidatePromoResponse> = {
     }
     if (message.itemsScanned !== 0) {
       writer.uint32(40).int32(message.itemsScanned);
+    }
+    if (message.company !== "") {
+      writer.uint32(50).string(message.company);
     }
     return writer;
   },
@@ -3766,6 +3771,14 @@ export const ValidatePromoResponse: MessageFns<ValidatePromoResponse> = {
             message.itemsScanned = reader.int32();
             continue;
           }
+          case 6: {
+            if (tag !== 50) {
+              break;
+            }
+
+            message.company = reader.string();
+            continue;
+          }
         }
         if ((tag & 7) === 4 || tag === 0) {
           break;
@@ -3797,6 +3810,7 @@ export const ValidatePromoResponse: MessageFns<ValidatePromoResponse> = {
         : isSet(object.items_scanned)
         ? globalThis.Number(object.items_scanned)
         : 0,
+      company: isSet(object.company) ? globalThis.String(object.company) : "",
     };
   },
 
@@ -3817,6 +3831,9 @@ export const ValidatePromoResponse: MessageFns<ValidatePromoResponse> = {
     if (message.itemsScanned !== 0) {
       obj.itemsScanned = Math.round(message.itemsScanned);
     }
+    if (message.company !== "") {
+      obj.company = message.company;
+    }
     return obj;
   },
 
@@ -3832,6 +3849,7 @@ export const ValidatePromoResponse: MessageFns<ValidatePromoResponse> = {
       : undefined;
     message.ordersScanned = object.ordersScanned ?? 0;
     message.itemsScanned = object.itemsScanned ?? 0;
+    message.company = object.company ?? "";
     return message;
   },
 };

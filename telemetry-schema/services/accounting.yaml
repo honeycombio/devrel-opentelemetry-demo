@@ -14,3 +14,4 @@ attribute_groups:
       - ref: demo.promo.items_scanned
       - ref: demo.promo.eligible_spend_usd
       - ref: demo.promo.discount_percent
+      - ref: demo.company

@@ -1977,6 +1977,8 @@ type ValidatePromoResponse struct {
 	// How many of the customer's earlier orders and line items were walked to price the tier.
 	OrdersScanned int32 `protobuf:"varint,4,opt,name=orders_scanned,json=ordersScanned,proto3" json:"orders_scanned,omitempty"`
 	ItemsScanned  int32 `protobuf:"varint,5,opt,name=items_scanned,json=itemsScanned,proto3" json:"items_scanned,omitempty"`
+	// Company of the SSO corporate customer the promo was priced for. Empty when the promo was refused.
+	Company       string `protobuf:"bytes,6,opt,name=company,proto3" json:"company,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2044,6 +2046,13 @@ func (x *ValidatePromoResponse) GetItemsScanned() int32 {
 		return x.ItemsScanned
 	}
 	return 0
+}
+
+func (x *ValidatePromoResponse) GetCompany() string {
+	if x != nil {
+		return x.Company
+	}
+	return ""
 }
 
 type GetOrdersByEmailRequest struct {
@@ -3307,13 +3316,14 @@ const file_demo_proto_rawDesc = "" +
 	"\n" +
 	"promo_code\x18\x02 \x01(\tR\tpromoCode\x12#\n" +
 	"\ruser_currency\x18\x03 \x01(\tR\fuserCurrency\x12)\n" +
-	"\x05items\x18\x04 \x03(\v2\x13.oteldemo.OrderItemR\x05items\"\xd1\x01\n" +
+	"\x05items\x18\x04 \x03(\v2\x13.oteldemo.OrderItemR\x05items\"\xeb\x01\n" +
 	"\x15ValidatePromoResponse\x12\x14\n" +
 	"\x05valid\x18\x01 \x01(\bR\x05valid\x12)\n" +
 	"\x10discount_percent\x18\x02 \x01(\x05R\x0fdiscountPercent\x12+\n" +
 	"\bdiscount\x18\x03 \x01(\v2\x0f.oteldemo.MoneyR\bdiscount\x12%\n" +
 	"\x0eorders_scanned\x18\x04 \x01(\x05R\rordersScanned\x12#\n" +
-	"\ritems_scanned\x18\x05 \x01(\x05R\fitemsScanned\"/\n" +
+	"\ritems_scanned\x18\x05 \x01(\x05R\fitemsScanned\x12\x18\n" +
+	"\acompany\x18\x06 \x01(\tR\acompany\"/\n" +
 	"\x17GetOrdersByEmailRequest\x12\x14\n" +
 	"\x05email\x18\x01 \x01(\tR\x05email\"I\n" +
 	"\x18GetOrdersByEmailResponse\x12-\n" +

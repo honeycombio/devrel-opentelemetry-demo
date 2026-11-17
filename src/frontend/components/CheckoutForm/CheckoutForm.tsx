@@ -60,10 +60,15 @@ const CheckoutForm = ({ onSubmit }: IProps) => {
     promoCode: '',
   });
 
+  const [isCorporate, setIsCorporate] = useState(false);
+
   // Logged-in corporate users check out with their work email. sessionStorage is browser-only.
   useEffect(() => {
     const { corporateEmail } = SessionGateway.getSession();
-    if (corporateEmail) setFormData(formData => ({ ...formData, email: corporateEmail }));
+    if (corporateEmail) {
+      setFormData(formData => ({ ...formData, email: corporateEmail }));
+      setIsCorporate(true);
+    }
   }, []);
 
   const handleChange = useCallback((e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -203,15 +208,17 @@ const CheckoutForm = ({ onSubmit }: IProps) => {
         />
       </S.CardRow>
 
-      <Input
-        type="text"
-        label="Promo Code (optional)"
-        id="promo_code"
-        name="promoCode"
-        placeholder="OBSERVATORY"
-        value={promoCode}
-        onChange={handleChange}
-      />
+      {isCorporate && (
+        <Input
+          type="text"
+          label="Promo Code (optional)"
+          id="promo_code"
+          name="promoCode"
+          placeholder="OBSERVATORY"
+          value={promoCode}
+          onChange={handleChange}
+        />
+      )}
 
       <S.SubmitContainer>
         <Link href="/">
