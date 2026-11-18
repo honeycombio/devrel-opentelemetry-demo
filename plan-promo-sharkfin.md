@@ -314,3 +314,7 @@ The promo is limited to corporate customers who sign in with SSO.
 - The checkout form shows the promo field only for a corporate session (which needs `frontend.login-link` on).
 - The loadgen buyers are two SSO users of Kramerica who log in through `/api/login` first. This replaces the earlier
   `circle-club-*` emails and the "astronomy clubs, schools and resellers" wording: the buyers are staff of a corporate customer.
+
+Loadgen mix with the promo on: anonymous shoppers (never send the code), `corporate_checkout` users (sign in, then half enter the code;
+SSO priced and fast, password refused), and the two Kramerica `CircleClubBuyer`s (the slow ones). The earlier "a tenth of anonymous
+checkouts send the code" was dropped: the UI hides the field from anonymous shoppers.

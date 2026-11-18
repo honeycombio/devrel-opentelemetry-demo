@@ -371,17 +371,15 @@ def make_checkout_person(user: str, email: str) -> dict:
     return person
 
 
-# Observatory Hour: while marketing has the promo on (flagd promo.observatory-hour), a tenth of
-# ordinary checkouts try the code. They are not SSO corporate customers, so the promo refuses them straight away.
+# Observatory Hour (flagd promo.observatory-hour). Checkout traffic is three groups:
+#   anonymous shoppers: no promo field in the UI, so they never send the code;
+#   corporate customers who sign in first: while the promo is on, half of them enter the code. SSO accounts
+#     are priced (and are fast, with no recent orders); password accounts are refused;
+#   CircleClubBuyer (below): the heavy SSO buyers whose growing order history makes the promo slow.
 PROMO_FLAG = "promo.observatory-hour"
 PROMO_CODE = "OBSERVATORY"
-ORGANIC_PROMO_SHARE = 1 / 10
-
-
-def maybe_add_promo(person: dict) -> dict:
-    if random.random() < ORGANIC_PROMO_SHARE and get_flagd_bool(PROMO_FLAG):
-        person["promoCode"] = PROMO_CODE
-    return person
+CORPORATE_PROMO_SHARE = 1 / 2
+CIRCLE_CLUB_EMAILS = {u["email"] for u in corporate_users if u["company"] == "kramerica" and u["method"] == "sso"}
 
 
 # Per-user cooldown on the AI tasks (ask_product_ai_assistant and
@@ -706,7 +704,7 @@ class WebsiteUser(HttpUser):
         user = str(uuid.uuid1())
         with self.tracer.start_as_current_span("user_checkout_single", context=context.get_current(), attributes={"user.id": user}):
             self.add_to_cart(user=user)
-            checkout_person = maybe_add_promo(make_checkout_person(user, random_email()))
+            checkout_person = make_checkout_person(user, random_email())
             self.client.post("/api/checkout", json=checkout_person)
             logging.info(f"Checkout completed for user {user}")
 
@@ -718,9 +716,27 @@ class WebsiteUser(HttpUser):
                                             attributes={"user.id": user, "demo.cart.items.count": item_count}):
             for i in range(item_count):
                 self.add_to_cart(user=user)
-            checkout_person = maybe_add_promo(make_checkout_person(user, random_email()))
+            checkout_person = make_checkout_person(user, random_email())
             self.client.post("/api/checkout", json=checkout_person)
             logging.info(f"Multi-item checkout completed for user {user}")
+
+    @task(2)
+    def corporate_checkout(self):
+        user = str(uuid.uuid1())
+        employee = random.choice([u for u in corporate_users if u["email"] not in CIRCLE_CLUB_EMAILS])
+        body = {"email": employee["email"], "method": employee["method"]}
+        if employee["method"] == "password":
+            body["password"] = employee["password"]
+        with self.tracer.start_as_current_span("user_corporate_checkout", context=Context(),
+                                               attributes={"user.id": user, "demo.company": employee["company"],
+                                                           "demo.auth.method": employee["method"]}):
+            self.client.post("/api/login", json=body)
+            self.add_to_cart(user=user)
+            person = make_checkout_person(user, employee["email"])
+            if random.random() < CORPORATE_PROMO_SHARE and get_flagd_bool(PROMO_FLAG):
+                person["promoCode"] = PROMO_CODE
+            self.client.post("/api/checkout", json=person)
+            logging.info(f"Corporate checkout completed for {employee['email']}")
 
     @task(4)
     def login(self):
@@ -794,7 +810,7 @@ class CircleClubBuyer(HttpUser):
     fixed_count = 2
     SESSION_SECONDS = 30 * 60
     # Two SSO employees of one corporate customer; the promo is for SSO corporate accounts only.
-    EMAILS = [u["email"] for u in corporate_users if u["company"] == "kramerica" and u["method"] == "sso"][:2]
+    EMAILS = sorted(CIRCLE_CLUB_EMAILS)[:2]
     # Everything a club would stock up on: five promo products (accessories, books) and three that are not.
     PRODUCTS = ["L9ECAV7KIM", "LS4PSXUNUM", "6E92ZMYYFZ", "0PUK6V6EV0", "HQTGWGPNH4",
                 "OLJCESPC7Z", "2ZYFJ3GM2N", "1YMWWN1N4O"]

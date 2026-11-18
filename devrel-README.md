@@ -264,8 +264,10 @@ earlier and was unreachable until marketing switched the promo on. Full design a
   `login_method` to be `sso`. Password-login corporate accounts and anonymous shoppers are refused immediately, before
   any history is read. (It checks the email, not a login token: the demo's login lives in the browser session.)
 - **The cohort:** two `CircleClubBuyer` locust users (SSO employees of Kramerica) sign in through `/api/login`, see the flag
-  go on, and each starts a 30-minute shopping session, placing a five to eight-line order every 10 to 20 s with the code. A tenth of ordinary
-  loadgen checkouts also send the code; they are not corporate customers, so the promo refuses them and they stay fast. A buyer
+  go on, and each starts a 30-minute shopping session, placing a five to eight-line order every 10 to 20 s with the code. The rest of the checkout traffic is
+  anonymous shoppers (no promo field, never send the code) and `corporate_checkout` users, who sign in first and, while the
+  flag is on, enter the code half the time: SSO accounts are priced but fast (no recent orders), password accounts are
+  refused. Anonymous checkouts are two thirds of the non-bulk traffic, corporate one third. A buyer
   starts a new session only after it has seen the flag off, so one flip is one fin. With two loadgen replicas there are
   four buyers, two per email, so each customer's history grows twice as fast.
 
