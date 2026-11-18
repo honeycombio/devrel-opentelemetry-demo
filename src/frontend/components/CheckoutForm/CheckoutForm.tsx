@@ -23,6 +23,7 @@ export interface IFormData {
   creditCardCvv: number;
   creditCardExpirationYear: number;
   creditCardExpirationMonth: number;
+  promoCode: string;
 }
 
 interface IProps {
@@ -42,6 +43,7 @@ const CheckoutForm = ({ onSubmit }: IProps) => {
       creditCardExpirationMonth,
       creditCardExpirationYear,
       creditCardNumber,
+      promoCode,
     },
     setFormData,
   ] = useState<IFormData>({
@@ -55,12 +57,18 @@ const CheckoutForm = ({ onSubmit }: IProps) => {
     creditCardCvv: 672,
     creditCardExpirationYear: 2030,
     creditCardExpirationMonth: 1,
+    promoCode: '',
   });
+
+  const [isCorporate, setIsCorporate] = useState(false);
 
   // Logged-in corporate users check out with their work email. sessionStorage is browser-only.
   useEffect(() => {
     const { corporateEmail } = SessionGateway.getSession();
-    if (corporateEmail) setFormData(formData => ({ ...formData, email: corporateEmail }));
+    if (corporateEmail) {
+      setFormData(formData => ({ ...formData, email: corporateEmail }));
+      setIsCorporate(true);
+    }
   }, []);
 
   const handleChange = useCallback((e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -86,6 +94,7 @@ const CheckoutForm = ({ onSubmit }: IProps) => {
           creditCardExpirationMonth,
           creditCardExpirationYear,
           creditCardNumber,
+          promoCode,
         });
       }}
     >
@@ -198,6 +207,18 @@ const CheckoutForm = ({ onSubmit }: IProps) => {
           onChange={handleChange}
         />
       </S.CardRow>
+
+      {isCorporate && (
+        <Input
+          type="text"
+          label="Promo Code (optional)"
+          id="promo_code"
+          name="promoCode"
+          placeholder="OBSERVATORY"
+          value={promoCode}
+          onChange={handleChange}
+        />
+      )}
 
       <S.SubmitContainer>
         <Link href="/">

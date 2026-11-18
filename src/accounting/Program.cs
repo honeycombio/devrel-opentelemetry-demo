@@ -26,6 +26,14 @@ var paymentAddr = Environment.GetEnvironmentVariable("PAYMENT_ADDR") ?? "payment
 var paymentChannel = Grpc.Net.Client.GrpcChannel.ForAddress($"http://{paymentAddr}");
 builder.Services.AddSingleton(new Oteldemo.PaymentService.PaymentServiceClient(paymentChannel));
 
+var catalogAddr = Environment.GetEnvironmentVariable("PRODUCT_CATALOG_ADDR") ?? "product-catalog:8080";
+var catalogChannel = Grpc.Net.Client.GrpcChannel.ForAddress($"http://{catalogAddr}");
+builder.Services.AddSingleton(new Oteldemo.ProductCatalogService.ProductCatalogServiceClient(catalogChannel));
+
+var currencyAddr = Environment.GetEnvironmentVariable("CURRENCY_ADDR") ?? "currency:8080";
+var currencyChannel = Grpc.Net.Client.GrpcChannel.ForAddress($"http://{currencyAddr}");
+builder.Services.AddSingleton(new Oteldemo.CurrencyService.CurrencyServiceClient(currencyChannel));
+
 var app = builder.Build();
 
 app.MapGrpcService<OrderServiceImpl>();

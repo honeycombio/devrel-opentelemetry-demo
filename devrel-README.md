@@ -245,6 +245,59 @@ network mix appears a few minutes after the new loadgen pods start.
   collector's flag-change pipeline (`skaffold-config/demo-values.yaml` and
   `deploy/config-files/collector/values-daemonset.yaml`) would fix that; not looked at in detail yet.
 
+### Observatory Hour (a promo that is activated, not deployed)
+
+Shows a latency "sharkfin" that starts when someone flips a flag, with no deploy behind it. The slow code shipped days
+earlier and was unreachable until marketing switched the promo on. Full design and numbers: `plan-promo-sharkfin.md`.
+
+**The setup:**
+
+- Checkout accepts an optional promo code (a field on the checkout form, shown only to a signed-in corporate user;
+  `PlaceOrderRequest.promo_code`). The only code is `OBSERVATORY`, and it is for **SSO corporate customers only**: "spend more, save more" on accessories and books, tiered 5% / 10% / 15% on eligible spend in the
+  customer's **last 30 minutes** of orders.
+- While the flagd flag `promo.observatory-hour` is `off` (the default), checkout ignores the code and makes no extra call.
+- **The bug:** when it is on, checkout calls `OrderService/ValidatePromo` in accounting. The orders table keeps the
+  final total but not which lines were eligible, so accounting rebuilds the spend: for each of the customer's orders
+  from the last 30 minutes, for each line, it calls product-catalog `GetProduct` and (if eligible) currency `Convert`,
+  one after another. Cost grows with the number of earlier orders, so only heavy buyers feel it.
+- **Who qualifies:** accounting checks the order's email against `auth.corporate_user` and requires the company's
+  `login_method` to be `sso`. Password-login corporate accounts and anonymous shoppers are refused immediately, before
+  any history is read. (It checks the email, not a login token: the demo's login lives in the browser session.)
+- **The cohort:** two `CircleClubBuyer` locust users (SSO employees of Kramerica) sign in through `/api/login`, see the flag
+  go on, and each starts a 30-minute shopping session, placing a five to eight-line order every 10 to 20 s with the code. The rest of the checkout traffic is
+  anonymous shoppers (no promo field, never send the code) and `corporate_checkout` users, who sign in first and, while the
+  flag is on, enter the code half the time: SSO accounts are priced but fast (no recent orders), password accounts are
+  refused. Anonymous checkouts are two thirds of the non-bulk traffic, corporate one third. A buyer
+  starts a new session only after it has seen the flag off, so one flip is one fin. With two loadgen replicas there are
+  four buyers, two per email, so each customer's history grows twice as fast.
+
+**Schedule:** in the demo deployment flagd-ui's flag scheduler starts by itself and turns `promo.observatory-hour` on for 30
+minutes once in every 6 hour interval (`FLAGD_UI_SCHEDULE_FLAGS`, `FLAGD_UI_SCHEDULE_INTERVAL_MINUTES`,
+`FLAGD_UI_SCHEDULE_DURATION_MINUTES` on the flagd-ui sidecar in `deploy/config-files/demo/values.yaml`). The window starts at a
+random point in each interval, not on the hour. The schedule restarts whenever flagd-ui restarts (every release), so a
+release re-rolls the next window. flagd runs as a single pod so there is one scheduler; the scheduler's flips post the same
+"Flag changed" marker as a manual one. To stop it, open the Scheduler page in flagd-ui and stop it, or unset
+`FLAGD_UI_SCHEDULE_FLAGS`. Local `./run` namespaces get the same schedule from the same values file.
+
+**The trigger (by hand):** turn `promo.observatory-hour` on in flagd-ui. flagd-ui flag changes post a Honeycomb marker, which is
+wanted here: it is the "what changed?" clue. Turn it off about 30 minutes later, once the buyers have finished.
+
+**What you see in Honeycomb:**
+
+- `oteldemo.CheckoutService/PlaceOrder` and `POST /api/checkout` duration: P99 and the heatmap climb for about 30
+  minutes, then drop; P50 stays flat. Nothing errors, so Checkout Availability does not move.
+- `PlaceOrder` spans: `demo.promo.code`, `demo.promo.validation_ms`, `demo.promo.orders_scanned`,
+  `demo.promo.items_scanned`, `demo.promo.discount_percent`. `validation_ms` against `orders_scanned` is a straight line.
+- `ValidatePromo` (accounting): a long staircase of `GetProduct` and `Convert` child spans, longer on each order.
+- BubbleUp on the fin: `demo.promo.code = OBSERVATORY`, `demo.company = kramerica` and two values of `user.hash` (a hash of
+  the customer's email) making up the whole selection. The code alone is only a necessary condition: early orders in a session carry it and are fast, so
+  `demo.promo.orders_scanned` and `demo.promo.validation_ms` are what separate the slow ones.
+
+**Before the booth:** check Kafka and accounting are healthy (orders reach Postgres only through them; no history means
+no fin), and freeze releases: a release restarts flagd and puts the flag back to `off`.
+
+**To put it back:** turn the flag off. Orders older than 30 minutes drop out of the lookback by themselves.
+
 ## Iteration
 
 We can deploy from local to the cluster in a new namespace, using `skaffold`

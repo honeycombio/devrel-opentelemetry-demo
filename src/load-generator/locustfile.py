@@ -110,6 +110,9 @@ def get_flagd_value(FlagName):
     client = api.get_client()
     return client.get_integer_value(FlagName, 0)
 
+def get_flagd_bool(FlagName):
+    return api.get_client().get_boolean_value(FlagName, False)
+
 categories = [
     "binoculars",
     "telescopes",
@@ -366,6 +369,17 @@ def make_checkout_person(user: str, email: str) -> dict:
     person = {**random.choice(people), "userId": user, "email": email, "paymentStrategy": payment_strategy}
     person["creditCard"] = {**person["creditCard"], "creditCardNumber": card_number}
     return person
+
+
+# Observatory Hour (flagd promo.observatory-hour). Checkout traffic is three groups:
+#   anonymous shoppers: no promo field in the UI, so they never send the code;
+#   corporate customers who sign in first: while the promo is on, half of them enter the code. SSO accounts
+#     are priced (and are fast, with no recent orders); password accounts are refused;
+#   CircleClubBuyer (below): the heavy SSO buyers whose growing order history makes the promo slow.
+PROMO_FLAG = "promo.observatory-hour"
+PROMO_CODE = "OBSERVATORY"
+CORPORATE_PROMO_SHARE = 1 / 2
+CIRCLE_CLUB_EMAILS = {u["email"] for u in corporate_users if u["company"] == "kramerica" and u["method"] == "sso"}
 
 
 # Per-user cooldown on the AI tasks (ask_product_ai_assistant and
@@ -706,6 +720,24 @@ class WebsiteUser(HttpUser):
             self.client.post("/api/checkout", json=checkout_person)
             logging.info(f"Multi-item checkout completed for user {user}")
 
+    @task(2)
+    def corporate_checkout(self):
+        user = str(uuid.uuid1())
+        employee = random.choice([u for u in corporate_users if u["email"] not in CIRCLE_CLUB_EMAILS])
+        body = {"email": employee["email"], "method": employee["method"]}
+        if employee["method"] == "password":
+            body["password"] = employee["password"]
+        with self.tracer.start_as_current_span("user_corporate_checkout", context=Context(),
+                                               attributes={"user.id": user, "demo.company": employee["company"],
+                                                           "demo.auth.method": employee["method"]}):
+            self.client.post("/api/login", json=body)
+            self.add_to_cart(user=user)
+            person = make_checkout_person(user, employee["email"])
+            if random.random() < CORPORATE_PROMO_SHARE and get_flagd_bool(PROMO_FLAG):
+                person["promoCode"] = PROMO_CODE
+            self.client.post("/api/checkout", json=person)
+            logging.info(f"Corporate checkout completed for {employee['email']}")
+
     @task(4)
     def login(self):
         # About a third of corporate logins are Globex; the rest spread evenly across tenants.
@@ -763,6 +795,67 @@ class WebsiteUser(HttpUser):
         context.attach(ctx)
         with self.tracer.start_as_current_span("user_session_start", context=context.get_current()):
             self.index()
+
+
+class CircleClubBuyer(HttpUser):
+    """A bulk buyer (an employee of a corporate customer, signed in with SSO) who stocks up while the Observatory Hour promo is on.
+
+    Each one starts a 30-minute shopping session when it sees the flag go on, placing a big order every 10 to
+    20 seconds. The promo counts spend over the last 30 minutes, so each order makes the next price check
+    walk more earlier orders. When the session ends the orders age out and the lookup is cheap again.
+    It starts a new session only after the flag has been seen off, so one flip is one fin.
+
+    There are two buyers per loadgen process, each an employee of the same company.
+    """
+    fixed_count = 2
+    SESSION_SECONDS = 30 * 60
+    # Two SSO employees of one corporate customer; the promo is for SSO corporate accounts only.
+    EMAILS = sorted(CIRCLE_CLUB_EMAILS)[:2]
+    # Everything a club would stock up on: five promo products (accessories, books) and three that are not.
+    PRODUCTS = ["L9ECAV7KIM", "LS4PSXUNUM", "6E92ZMYYFZ", "0PUK6V6EV0", "HQTGWGPNH4",
+                "OLJCESPC7Z", "2ZYFJ3GM2N", "1YMWWN1N4O"]
+    _next_email = 0
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.tracer = trace.get_tracer(__name__)
+        self.email = CircleClubBuyer.EMAILS[CircleClubBuyer._next_email % len(CircleClubBuyer.EMAILS)]
+        CircleClubBuyer._next_email += 1
+        self.armed = True
+        self.session_started = None
+
+    def wait_time(self):
+        # Poll the flag quickly while idle, then pace the orders.
+        return random.uniform(10, 20) if self.session_started is not None else random.uniform(2, 5)
+
+    @task
+    def shop(self):
+        if not get_flagd_bool(PROMO_FLAG):
+            self.armed = True
+            self.session_started = None
+            return
+        now = time.monotonic()
+        if self.session_started is None:
+            if not self.armed:
+                return
+            self.armed = False
+            self.session_started = now
+            self.client.post("/api/login", json={"email": self.email, "method": "sso"})
+            logging.info(f"Promo is on: {self.email} starts a shopping session")
+        elif now - self.session_started > self.SESSION_SECONDS:
+            return
+        user = str(uuid.uuid1())
+        with self.tracer.start_as_current_span("user_bulk_promo_checkout", context=Context(),
+                                               attributes={"user.id": user, "email": self.email}):
+            for product in random.sample(self.PRODUCTS, random.randint(5, len(self.PRODUCTS))):
+                self.client.post("/api/cart", json={
+                    "item": {"productId": product, "quantity": random.randint(2, 6)},
+                    "userId": user,
+                })
+            person = make_checkout_person(user, self.email)
+            person["promoCode"] = PROMO_CODE
+            self.client.post("/api/checkout", json=person)
+            logging.info(f"Bulk promo checkout completed for {self.email}")
 
 
 browser_traffic_enabled = os.environ.get("LOCUST_BROWSER_TRAFFIC_ENABLED", "").lower() in ("true", "yes", "on")

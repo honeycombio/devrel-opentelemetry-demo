@@ -15,6 +15,11 @@
       "defaultValue": false,
       "description": "simulates payment unreachable issue",
       "flagType": "boolean"
+    },
+    "promo.observatory-hour": {
+      "defaultValue": false,
+      "description": "Observatory Hour promo is active: checkout prices the OBSERVATORY promo code",
+      "flagType": "boolean"
     }
   }
 }

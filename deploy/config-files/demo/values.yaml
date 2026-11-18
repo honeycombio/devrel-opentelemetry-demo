@@ -20,6 +20,15 @@ components:
         value: "5060"
       - name: ASPNETCORE_URLS
         value: "http://*:5060"
+      # ValidatePromo walks a customer's earlier orders, calling these per item.
+      - name: PRODUCT_CATALOG_ADDR
+        value: product-catalog:8080
+      - name: CURRENCY_ADDR
+        value: currency:8080
+  checkout:
+    envOverrides:
+      - name: ACCOUNTING_ADDR
+        value: accounting:5060
   load-generator:
     replicas: 2
     envOverrides:
@@ -81,6 +90,9 @@ components:
       - name: TELEMETRY_DOCS_PORT
         value: "8000"
   flagd:
+    # One pod: each flagd-ui sidecar edits its own copy of the flag file and runs its own scheduler,
+    # so more than one pod would flip the promo flag independently of the others.
+    replicas: 1
     # Rebind the chart's `config-ro` volume to our flagd-custom-config ConfigMap
     # (a superset of the chart's default flags). flagd and the flagd-ui sidecar
     # both mount config-ro, so the UI can now see and edit every flag.
@@ -109,6 +121,12 @@ components:
             value: http://$(OTEL_COLLECTOR_NAME):4318
           - name: FLAGD_UI_PORT
             value: "4000"
+          - name: FLAGD_UI_SCHEDULE_FLAGS
+            value: promo.observatory-hour:on
+          - name: FLAGD_UI_SCHEDULE_INTERVAL_MINUTES
+            value: "360"
+          - name: FLAGD_UI_SCHEDULE_DURATION_MINUTES
+            value: "30"
           - name: SECRET_KEY_BASE
             value: yYrECL4qbNwleYInGJYvVnSkwJuSQJ4ijPTx5tirGUXrbznFIBFVJdPl5t6O9ASw
         volumeMounts:

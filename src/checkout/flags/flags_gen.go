@@ -91,3 +91,25 @@ var PaymentUnreachable = struct {
 		return client.BooleanValueDetails(ctx, "paymentUnreachable", false, evalCtx)
 	},
 }
+
+// PromoObservatoryHour returns the value of the "promo.observatory-hour" feature flag.
+// Observatory Hour promo is active: checkout prices the OBSERVATORY promo code
+//
+// The flag is a type of boolean and defaults to false.
+var PromoObservatoryHour = struct {
+	fmt.Stringer
+	// Value returns the value of the [PromoObservatoryHour] flag.
+	Value evaluationValue[bool]
+
+	// ValueWithDetails returns the evaluation details of the [PromoObservatoryHour] flag
+	// and the evaluation error, if any.
+	ValueWithDetails evaluationDetails[bool]
+}{
+	Stringer: stringer("promo.observatory-hour"),
+	Value: func(ctx context.Context, evalCtx openfeature.EvaluationContext) bool {
+		return client.Boolean(ctx, "promo.observatory-hour", false, evalCtx)
+	},
+	ValueWithDetails: func(ctx context.Context, evalCtx openfeature.EvaluationContext) (openfeature.GenericEvaluationDetails[bool], error) {
+		return client.BooleanValueDetails(ctx, "promo.observatory-hour", false, evalCtx)
+	},
+}
