@@ -86,6 +86,68 @@ defmodule FlagdUi.SchedulerTest do
     end
   end
 
+  describe "autostart_config/1" do
+    test "is nil when no flags are configured" do
+      assert Scheduler.autostart_config(%{}) == nil
+
+      assert Scheduler.autostart_config(%{"FLAGD_UI_SCHEDULE_FLAGS" => " , nonsense,flag:"}) ==
+               nil
+    end
+
+    test "defaults to a 30 minute hold every 6 hours" do
+      config =
+        Scheduler.autostart_config(%{"FLAGD_UI_SCHEDULE_FLAGS" => "promo.observatory-hour:on"})
+
+      assert config == %{
+               interval_ms: 6 * 60 * 60 * 1000,
+               min_duration_ms: 30 * 60 * 1000,
+               max_duration_ms: 30 * 60 * 1000,
+               flags: %{"promo.observatory-hour" => ["on"]}
+             }
+    end
+
+    test "reads interval and duration, ignoring values that are not positive whole minutes" do
+      env = %{
+        "FLAGD_UI_SCHEDULE_FLAGS" => "adFailure:on, cartFailure:50%,cartFailure:100%",
+        "FLAGD_UI_SCHEDULE_INTERVAL_MINUTES" => "60",
+        "FLAGD_UI_SCHEDULE_DURATION_MINUTES" => "0"
+      }
+
+      config = Scheduler.autostart_config(env)
+
+      assert config.interval_ms == 60 * 60 * 1000
+      assert config.min_duration_ms == 30 * 60 * 1000
+      assert config.flags == %{"adFailure" => ["on"], "cartFailure" => ["50%", "100%"]}
+    end
+  end
+
+  describe "autostart" do
+    test "begins scheduling on its own and holds the flag for the configured time" do
+      config = immediate_config(%{flags: %{"adFailure" => ["on"]}})
+
+      {:ok, _pid} =
+        start_supervised(
+          {Scheduler, [name: AutostartScheduler, storage: Storage, autostart: config]},
+          id: AutostartScheduler
+        )
+
+      assert eventually(fn -> variant_of("adFailure") == "on" end)
+      assert Scheduler.state(AutostartScheduler).running
+    end
+
+    test "stays stopped when the configuration is unusable" do
+      config = immediate_config(%{flags: %{}})
+
+      {:ok, _pid} =
+        start_supervised(
+          {Scheduler, [name: BadAutostartScheduler, storage: Storage, autostart: config]},
+          id: BadAutostartScheduler
+        )
+
+      refute Scheduler.state(BadAutostartScheduler).running
+    end
+  end
+
   describe "start_schedule/2 validation" do
     setup do
       {:ok, scheduler: start_scheduler(ValidationScheduler)}

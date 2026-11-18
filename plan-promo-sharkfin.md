@@ -318,3 +318,10 @@ The promo is limited to corporate customers who sign in with SSO.
 Loadgen mix with the promo on: anonymous shoppers (never send the code), `corporate_checkout` users (sign in, then half enter the code;
 SSO priced and fast, password refused), and the two Kramerica `CircleClubBuyer`s (the slow ones). The earlier "a tenth of anonymous
 checkouts send the code" was dropped: the UI hides the field from anonymous shoppers.
+
+## Update: scheduled by flagd-ui's scheduler
+
+flagd-ui already had a random flag scheduler that was only started from its UI. It now also starts from `FLAGD_UI_SCHEDULE_FLAGS`
+(`flag:variant` pairs), `FLAGD_UI_SCHEDULE_INTERVAL_MINUTES` (default 360) and `FLAGD_UI_SCHEDULE_DURATION_MINUTES` (default 30).
+The deployment sets them for `promo.observatory-hour:on`, so the promo is on for 30 minutes at a random point in every 6 hours.
+The earlier `scheduled` flag variant with a `$flagd.timestamp` rule was not built.

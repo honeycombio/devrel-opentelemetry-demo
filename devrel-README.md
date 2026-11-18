@@ -271,7 +271,15 @@ earlier and was unreachable until marketing switched the promo on. Full design a
   starts a new session only after it has seen the flag off, so one flip is one fin. With two loadgen replicas there are
   four buyers, two per email, so each customer's history grows twice as fast.
 
-**The trigger:** turn `promo.observatory-hour` on in flagd-ui. flagd-ui flag changes post a Honeycomb marker, which is
+**Schedule:** in the demo deployment flagd-ui's flag scheduler starts by itself and turns `promo.observatory-hour` on for 30
+minutes once in every 6 hour interval (`FLAGD_UI_SCHEDULE_FLAGS`, `FLAGD_UI_SCHEDULE_INTERVAL_MINUTES`,
+`FLAGD_UI_SCHEDULE_DURATION_MINUTES` on the flagd-ui sidecar in `deploy/config-files/demo/values.yaml`). The window starts at a
+random point in each interval, not on the hour. The schedule restarts whenever flagd-ui restarts (every release), so a
+release re-rolls the next window. flagd runs as a single pod so there is one scheduler; the scheduler's flips post the same
+"Flag changed" marker as a manual one. To stop it, open the Scheduler page in flagd-ui and stop it, or unset
+`FLAGD_UI_SCHEDULE_FLAGS`. Local `./run` namespaces get the same schedule from the same values file.
+
+**The trigger (by hand):** turn `promo.observatory-hour` on in flagd-ui. flagd-ui flag changes post a Honeycomb marker, which is
 wanted here: it is the "what changed?" clue. Turn it off about 30 minutes later, once the buyers have finished.
 
 **What you see in Honeycomb:**

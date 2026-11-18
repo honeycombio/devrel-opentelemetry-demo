@@ -44,6 +44,51 @@ defmodule FlagdUi.Scheduler do
   @doc "Default configuration used before the scheduler is first started."
   def default_config, do: @default_config
 
+  @doc """
+  Builds a schedule from environment variables, or returns nil when none is configured.
+
+  `FLAGD_UI_SCHEDULE_FLAGS` is a comma separated list of `flag:variant` pairs to schedule,
+  for example `promo.observatory-hour:on`. `FLAGD_UI_SCHEDULE_INTERVAL_MINUTES` (default 360)
+  and `FLAGD_UI_SCHEDULE_DURATION_MINUTES` (default 30) set how often a flag is activated
+  and for how long. Pass the result to the scheduler as `:autostart`.
+  """
+  def autostart_config(env \\ System.get_env()) do
+    case env |> Map.get("FLAGD_UI_SCHEDULE_FLAGS", "") |> parse_flag_selection() do
+      flags when map_size(flags) == 0 ->
+        nil
+
+      flags ->
+        duration_ms = minutes_ms(env, "FLAGD_UI_SCHEDULE_DURATION_MINUTES", 30)
+
+        %{
+          interval_ms: minutes_ms(env, "FLAGD_UI_SCHEDULE_INTERVAL_MINUTES", 360),
+          min_duration_ms: duration_ms,
+          max_duration_ms: duration_ms,
+          flags: flags
+        }
+    end
+  end
+
+  defp parse_flag_selection(value) do
+    value
+    |> String.split(",", trim: true)
+    |> Enum.map(&String.trim/1)
+    |> Enum.flat_map(fn pair ->
+      case String.split(pair, ":", parts: 2) do
+        [flag, variant] when flag != "" and variant != "" -> [{flag, variant}]
+        _ -> []
+      end
+    end)
+    |> Enum.group_by(&elem(&1, 0), &elem(&1, 1))
+  end
+
+  defp minutes_ms(env, key, default) do
+    case Integer.parse(Map.get(env, key, "")) do
+      {minutes, ""} when minutes > 0 -> minutes * 60 * 1000
+      _ -> default * 60 * 1000
+    end
+  end
+
   @doc "Returns the scheduler state suitable for rendering."
   def state(server \\ Scheduler), do: GenServer.call(server, :state)
 
@@ -100,21 +145,40 @@ defmodule FlagdUi.Scheduler do
   def init(opts) do
     Process.flag(:trap_exit, true)
 
-    {:ok,
-     %{
-       storage: Keyword.get(opts, :storage, Storage),
-       config: @default_config,
-       running: false,
-       epoch: 0,
-       rand: nil,
-       seed_used: nil,
-       interval_count: 0,
-       next_up: [],
-       active: %{},
-       history: [],
-       timers: %{},
-       eligible: []
-     }}
+    state = %{
+      storage: Keyword.get(opts, :storage, Storage),
+      config: @default_config,
+      running: false,
+      epoch: 0,
+      rand: nil,
+      seed_used: nil,
+      interval_count: 0,
+      next_up: [],
+      active: %{},
+      history: [],
+      timers: %{},
+      eligible: []
+    }
+
+    case Keyword.get(opts, :autostart) do
+      nil -> {:ok, state}
+      config -> {:ok, state, {:continue, {:autostart, config}}}
+    end
+  end
+
+  @impl true
+  def handle_continue({:autostart, config}, state) do
+    case start(config, state) do
+      {:ok, new_state} ->
+        broadcast(new_state)
+
+        {:noreply, new_state}
+
+      {:error, reason} ->
+        Logger.warning("Flag scheduler not autostarted: #{reason}")
+
+        {:noreply, state}
+    end
   end
 
   @impl true
@@ -122,34 +186,8 @@ defmodule FlagdUi.Scheduler do
 
   @impl true
   def handle_call({:start_schedule, config}, _from, state) do
-    config = Map.merge(@default_config, config)
-
-    case validate(config) do
-      :ok ->
-        {seed, rand} = seed_rand(config.seed)
-        state = state |> cancel_timers() |> revert_all()
-
-        # Frozen for the run: the flags' own resting variants are read back from
-        # storage as this run writes over them, so re-deriving mid-run would
-        # mistake a flag's currently active variant for its rest state.
-        eligible = state.storage |> GenServer.call(:read) |> eligible_flag_specs()
-
-        new_state =
-          state
-          |> Map.merge(%{
-            config: config,
-            eligible: eligible,
-            running: true,
-            epoch: state.epoch + 1,
-            rand: rand,
-            seed_used: seed,
-            interval_count: 0,
-            history: []
-          })
-          |> begin_interval()
-
-        Logger.info("Flag scheduler started with seed #{seed}")
-
+    case start(config, state) do
+      {:ok, new_state} ->
         broadcast(new_state)
 
         {:reply, :ok, new_state}
@@ -243,6 +281,42 @@ defmodule FlagdUi.Scheduler do
     revert_all(state)
 
     :ok
+  end
+
+  defp start(config, state) do
+    config = Map.merge(@default_config, config)
+
+    case validate(config) do
+      :ok ->
+        {seed, rand} = seed_rand(config.seed)
+        state = state |> cancel_timers() |> revert_all()
+
+        # Frozen for the run: the flags' own resting variants are read back from
+        # storage as this run writes over them, so re-deriving mid-run would
+        # mistake a flag's currently active variant for its rest state.
+        eligible = state.storage |> GenServer.call(:read) |> eligible_flag_specs()
+
+        new_state =
+          state
+          |> Map.merge(%{
+            config: config,
+            eligible: eligible,
+            running: true,
+            epoch: state.epoch + 1,
+            rand: rand,
+            seed_used: seed,
+            interval_count: 0,
+            history: []
+          })
+          |> begin_interval()
+
+        Logger.info("Flag scheduler started with seed #{seed}")
+
+        {:ok, new_state}
+
+      {:error, reason} ->
+        {:error, reason}
+    end
   end
 
   defp begin_interval(%{config: config, epoch: epoch} = state) do

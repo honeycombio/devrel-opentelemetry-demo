@@ -2,10 +2,10 @@
 change_type: enhancement
 
 # The name of the component, or a single word describing the area of concern, (e.g. frontend)
-component: checkout, accounting, frontend, load-generator
+component: checkout, accounting, frontend, load-generator, flagd-ui
 
 # A brief description of the change. Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Add the Observatory Hour promo story. Checkout takes a promo code and, while the `promo.observatory-hour` flag is on, asks accounting to price it from the customer's last 30 minutes of orders, which gets slower for heavy buyers.
+note: Add the Observatory Hour promo story. Checkout takes a promo code and, while the `promo.observatory-hour` flag is on, asks accounting to price it from the customer's last 30 minutes of orders, which gets slower for heavy buyers. flagd-ui can now start its flag scheduler from `FLAGD_UI_SCHEDULE_*` environment variables, and the demo deployment uses that to turn the promo on for 30 minutes every 6 hours.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [48]
