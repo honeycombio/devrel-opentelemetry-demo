@@ -850,6 +850,7 @@ static const char* OrderService_method_names[] = {
   "/oteldemo.OrderService/GetOrdersByEmail",
   "/oteldemo.OrderService/GetOrder",
   "/oteldemo.OrderService/RefundOrder",
+  "/oteldemo.OrderService/ValidatePromo",
 };
 
 std::unique_ptr< OrderService::Stub> OrderService::NewStub(const std::shared_ptr< ::grpc::ChannelInterface>& channel, const ::grpc::StubOptions& options) {
@@ -862,6 +863,7 @@ OrderService::Stub::Stub(const std::shared_ptr< ::grpc::ChannelInterface>& chann
   : channel_(channel), rpcmethod_GetOrdersByEmail_(OrderService_method_names[0], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
   , rpcmethod_GetOrder_(OrderService_method_names[1], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
   , rpcmethod_RefundOrder_(OrderService_method_names[2], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
+  , rpcmethod_ValidatePromo_(OrderService_method_names[3], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
   {}
 
 ::grpc::Status OrderService::Stub::GetOrdersByEmail(::grpc::ClientContext* context, const ::oteldemo::GetOrdersByEmailRequest& request, ::oteldemo::GetOrdersByEmailResponse* response) {
@@ -933,6 +935,29 @@ void OrderService::Stub::async::RefundOrder(::grpc::ClientContext* context, cons
   return result;
 }
 
+::grpc::Status OrderService::Stub::ValidatePromo(::grpc::ClientContext* context, const ::oteldemo::ValidatePromoRequest& request, ::oteldemo::ValidatePromoResponse* response) {
+  return ::grpc::internal::BlockingUnaryCall< ::oteldemo::ValidatePromoRequest, ::oteldemo::ValidatePromoResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), rpcmethod_ValidatePromo_, context, request, response);
+}
+
+void OrderService::Stub::async::ValidatePromo(::grpc::ClientContext* context, const ::oteldemo::ValidatePromoRequest* request, ::oteldemo::ValidatePromoResponse* response, std::function<void(::grpc::Status)> f) {
+  ::grpc::internal::CallbackUnaryCall< ::oteldemo::ValidatePromoRequest, ::oteldemo::ValidatePromoResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_ValidatePromo_, context, request, response, std::move(f));
+}
+
+void OrderService::Stub::async::ValidatePromo(::grpc::ClientContext* context, const ::oteldemo::ValidatePromoRequest* request, ::oteldemo::ValidatePromoResponse* response, ::grpc::ClientUnaryReactor* reactor) {
+  ::grpc::internal::ClientCallbackUnaryFactory::Create< ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_ValidatePromo_, context, request, response, reactor);
+}
+
+::grpc::ClientAsyncResponseReader< ::oteldemo::ValidatePromoResponse>* OrderService::Stub::PrepareAsyncValidatePromoRaw(::grpc::ClientContext* context, const ::oteldemo::ValidatePromoRequest& request, ::grpc::CompletionQueue* cq) {
+  return ::grpc::internal::ClientAsyncResponseReaderHelper::Create< ::oteldemo::ValidatePromoResponse, ::oteldemo::ValidatePromoRequest, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), cq, rpcmethod_ValidatePromo_, context, request);
+}
+
+::grpc::ClientAsyncResponseReader< ::oteldemo::ValidatePromoResponse>* OrderService::Stub::AsyncValidatePromoRaw(::grpc::ClientContext* context, const ::oteldemo::ValidatePromoRequest& request, ::grpc::CompletionQueue* cq) {
+  auto* result =
+    this->PrepareAsyncValidatePromoRaw(context, request, cq);
+  result->StartCall();
+  return result;
+}
+
 OrderService::Service::Service() {
   AddMethod(new ::grpc::internal::RpcServiceMethod(
       OrderService_method_names[0],
@@ -964,6 +989,16 @@ OrderService::Service::Service() {
              ::oteldemo::RefundOrderResponse* resp) {
                return service->RefundOrder(ctx, req, resp);
              }, this)));
+  AddMethod(new ::grpc::internal::RpcServiceMethod(
+      OrderService_method_names[3],
+      ::grpc::internal::RpcMethod::NORMAL_RPC,
+      new ::grpc::internal::RpcMethodHandler< OrderService::Service, ::oteldemo::ValidatePromoRequest, ::oteldemo::ValidatePromoResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(
+          [](OrderService::Service* service,
+             ::grpc::ServerContext* ctx,
+             const ::oteldemo::ValidatePromoRequest* req,
+             ::oteldemo::ValidatePromoResponse* resp) {
+               return service->ValidatePromo(ctx, req, resp);
+             }, this)));
 }
 
 OrderService::Service::~Service() {
@@ -984,6 +1019,13 @@ OrderService::Service::~Service() {
 }
 
 ::grpc::Status OrderService::Service::RefundOrder(::grpc::ServerContext* context, const ::oteldemo::RefundOrderRequest* request, ::oteldemo::RefundOrderResponse* response) {
+  (void) context;
+  (void) request;
+  (void) response;
+  return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+}
+
+::grpc::Status OrderService::Service::ValidatePromo(::grpc::ServerContext* context, const ::oteldemo::ValidatePromoRequest* request, ::oteldemo::ValidatePromoResponse* response) {
   (void) context;
   (void) request;
   (void) response;

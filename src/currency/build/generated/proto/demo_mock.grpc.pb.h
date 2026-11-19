@@ -104,6 +104,9 @@ class MockOrderServiceStub : public OrderService::StubInterface {
   MOCK_METHOD3(RefundOrder, ::grpc::Status(::grpc::ClientContext* context, const ::oteldemo::RefundOrderRequest& request, ::oteldemo::RefundOrderResponse* response));
   MOCK_METHOD3(AsyncRefundOrderRaw, ::grpc::ClientAsyncResponseReaderInterface< ::oteldemo::RefundOrderResponse>*(::grpc::ClientContext* context, const ::oteldemo::RefundOrderRequest& request, ::grpc::CompletionQueue* cq));
   MOCK_METHOD3(PrepareAsyncRefundOrderRaw, ::grpc::ClientAsyncResponseReaderInterface< ::oteldemo::RefundOrderResponse>*(::grpc::ClientContext* context, const ::oteldemo::RefundOrderRequest& request, ::grpc::CompletionQueue* cq));
+  MOCK_METHOD3(ValidatePromo, ::grpc::Status(::grpc::ClientContext* context, const ::oteldemo::ValidatePromoRequest& request, ::oteldemo::ValidatePromoResponse* response));
+  MOCK_METHOD3(AsyncValidatePromoRaw, ::grpc::ClientAsyncResponseReaderInterface< ::oteldemo::ValidatePromoResponse>*(::grpc::ClientContext* context, const ::oteldemo::ValidatePromoRequest& request, ::grpc::CompletionQueue* cq));
+  MOCK_METHOD3(PrepareAsyncValidatePromoRaw, ::grpc::ClientAsyncResponseReaderInterface< ::oteldemo::ValidatePromoResponse>*(::grpc::ClientContext* context, const ::oteldemo::ValidatePromoRequest& request, ::grpc::CompletionQueue* cq));
 };
 
 class MockAdServiceStub : public AdService::StubInterface {
