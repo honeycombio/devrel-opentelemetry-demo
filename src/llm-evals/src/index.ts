@@ -182,6 +182,7 @@ function extractGrounding(messages: any[]): string {
 interface ReadyForLogs {
   traceId: string;
   spanId: string;
+  conversationId: string | undefined;
   completed: CompletedScorers;
 }
 
@@ -252,7 +253,13 @@ async function runPhase1(
     extractGrounding(inputMessages),
   );
 
-  return { traceId: span.traceId, spanId: span.spanId, completed };
+  const conversationId = spanAttrs['gen_ai.conversation.id'];
+  return {
+    traceId: span.traceId,
+    spanId: span.spanId,
+    conversationId: typeof conversationId === 'string' ? conversationId : undefined,
+    completed,
+  };
 }
 
 // --- Message-level pipeline -------------------------------------------------
@@ -280,7 +287,7 @@ async function processMessage(
 
   for (const r of readied) {
     if (!r) continue;
-    emitEvalLogs(r.traceId, r.spanId, r.completed);
+    emitEvalLogs(r.traceId, r.spanId, r.conversationId, r.completed);
   }
 }
 

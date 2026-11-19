@@ -18,6 +18,7 @@
 import { type Context, type Span, SpanStatusCode, trace, context, TraceFlags } from '@opentelemetry/api';
 import { logs, SeverityNumber } from '@opentelemetry/api-logs';
 import {
+  ATTR_GEN_AI_CONVERSATION_ID,
   ATTR_GEN_AI_OPERATION_NAME,
 } from '@opentelemetry/semantic-conventions/incubating';
 import { runBias } from './bias.js';
@@ -186,6 +187,7 @@ export async function runEvalScorers(
 export function emitEvalLogs(
   traceId: string,
   spanId: string,
+  conversationId: string | undefined,
   completed: CompletedScorers,
 ): void {
   const chatbotCtx = trace.setSpanContext(context.active(), {
@@ -202,6 +204,7 @@ export function emitEvalLogs(
       body: outcome.result.explanation,
       attributes: {
         'event.name': 'gen_ai.evaluation.result',
+        [ATTR_GEN_AI_CONVERSATION_ID]: conversationId,
         [ATTR_GEN_AI_EVALUATION_NAME]: outcome.result.name,
         [ATTR_GEN_AI_EVALUATION_SCORE_VALUE]: clampScore(outcome.result.score),
         [ATTR_GEN_AI_EVALUATION_SCORE_LABEL]: outcome.result.label,
