@@ -8,6 +8,9 @@ WORKDIR /build
 COPY ./ocb-config.yaml ocb-config.yaml
 
 RUN go install go.opentelemetry.io/collector/cmd/builder@v0.160.0
+# Allows symbolic-go's "-Wl,-rpath <dir>" cgo linker flag: matches "-Wl,-rpath" and its separate
+# argument, the module's own lib/linux_<arch> directory.
+ENV CGO_LDFLAGS_ALLOW='-Wl,-rpath|/go/pkg/mod/github.com/honeycombio/symbolic-go@[^/]+/lib/linux_[a-z0-9_]+'
 RUN CGO_ENABLED=1 builder --config ocb-config.yaml
 
 FROM gcr.io/distroless/cc
