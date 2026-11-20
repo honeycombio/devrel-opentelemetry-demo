@@ -58,6 +58,40 @@ a definition that is invalid or missing from the schema fails the build. The
 generated documentation is served by the `telemetry-docs` service, see
 `src/telemetry-docs/README.md`.
 
+## Intent specs
+
+This repository is a fork of the OpenTelemetry Demo. We do not keep merges from
+upstream clean. Instead, the behavior of every feature and demo story is
+described as an end-state intent spec in `openspec/specs/`, and after a merge an
+agent re-implements each spec on top of upstream's new code. Read
+`openspec/README.md` for the format and the writing rules.
+
+When you add, change or remove application behavior (new services, changed
+behavior, custom telemetry, feature flags, demo data and stories, API
+contracts):
+
+* Add or update the matching `openspec/specs/<capability>/spec.md` in the same
+  change, and add it to the index in `openspec/README.md`. A spec covers one
+  whole use case across every service it touches (for example
+  "slow login"), so extend the existing spec for a use case before creating a
+  new one.
+* Define the use case, not the service: what the change is for, and what a
+  viewer sees in Honeycomb or what a demo user or operator can do. Several
+  services are often changed for one use case; they belong in one spec. Title
+  requirements after outcomes, not after components.
+* Describe the end state, not the change. Do not mention upstream, what was
+  added or what it replaced. Do not refer to other specs: each spec is
+  self-contained, carries its own flags, attributes, metrics, routes, seeded
+  data and load generator behavior, and could be deleted without breaking the
+  others.
+* Write intent and observable behavior, not implementation. No file paths,
+  function names or library choices. State exactly the contracts that
+  dashboards, stories and other services depend on: flag names, attribute and
+  metric names, routes, RPC names and seeded data.
+* Do not write specs for deployment or local development (Helm, skaffold,
+  `./run`, orb setup, CI, collector configuration), or for build-only changes.
+* Removing a feature means deleting its spec in the same change.
+
 ## Developer environment
 
 Make sure to follow CONTRIBUTING.md on any contributions.
