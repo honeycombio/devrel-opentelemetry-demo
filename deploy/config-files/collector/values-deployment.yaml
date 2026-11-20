@@ -1,5 +1,7 @@
 mode: deployment
 nameOverride: cluster-collector
+podAnnotations:
+  resource.opentelemetry.io/service.name: cluster-telemetry-collector
 resources:
   limits:
     cpu: 1

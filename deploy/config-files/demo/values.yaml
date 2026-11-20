@@ -8,6 +8,8 @@ default:
       value: "service.name=$(OTEL_SERVICE_NAME),service.namespace=opentelemetry-demo,service.version=latest"
 components:
   accounting:
+    podAnnotations:
+      resource.opentelemetry.io/service.name: accounting
     service:
       port: 5060
     resources:
@@ -26,10 +28,14 @@ components:
       - name: CURRENCY_ADDR
         value: currency:8080
   checkout:
+    podAnnotations:
+      resource.opentelemetry.io/service.name: checkout
     envOverrides:
       - name: ACCOUNTING_ADDR
         value: accounting:5060
   load-generator:
+    podAnnotations:
+      resource.opentelemetry.io/service.name: load-generator
     replicas: 2
     envOverrides:
       # Opt in agent (Bedrock-hitting) loadgen tasks. Locals leave this
@@ -38,6 +44,8 @@ components:
       - name: AGENT_LOAD_ENABLED
         value: "true"
   frontend:
+    podAnnotations:
+      resource.opentelemetry.io/service.name: api-gateway
     replicas: 2
     envOverrides:
       - name: AUTH_ADDR
@@ -49,6 +57,8 @@ components:
   # /docker-entrypoint-initdb.d, which would hide them, so mount it elsewhere.
   # An empty list does not work here: it is dropped on the way through Pulumi.
   astronomy-db:
+    podAnnotations:
+      resource.opentelemetry.io/service.name: astronomy-db
     imageOverride:
       repository: "ghcr.io/honeycombio/devrel-opentelemetry-demo"
       tag: "latest-astronomy-db"
@@ -76,6 +86,8 @@ components:
       limits:
         memory: 512Mi
   kafka:
+    podAnnotations:
+      resource.opentelemetry.io/service.name: kafka
     # The chart default of 600Mi OOM-kills the broker: JVM heap (-Xmx400M) plus
     # off-heap (metaspace, direct buffers) plus log-segment page cache exceeds the
     # cgroup limit under load. When Kafka crash-loops, the accounting consumer can't
@@ -85,6 +97,8 @@ components:
       limits:
         memory: 1Gi
   frontend-proxy:
+    podAnnotations:
+      resource.opentelemetry.io/service.name: frontend-proxy
     envOverrides:
       - name: ENVOY_ADDR
         value: 0.0.0.0
@@ -99,6 +113,8 @@ components:
       - name: TELEMETRY_DOCS_PORT
         value: "8000"
   flagd:
+    podAnnotations:
+      resource.opentelemetry.io/service.name: flagd
     # One pod: each flagd-ui sidecar edits its own copy of the flag file and runs its own scheduler,
     # so more than one pod would flip the promo flag independently of the others.
     replicas: 1
@@ -141,6 +157,57 @@ components:
         volumeMounts:
           - name: config-rw
             mountPath: /app/data
+  ad:
+    podAnnotations:
+      resource.opentelemetry.io/service.name: ad
+  agent:
+    podAnnotations:
+      resource.opentelemetry.io/service.name: agent
+  cart:
+    podAnnotations:
+      resource.opentelemetry.io/service.name: cart
+  chatbot:
+    podAnnotations:
+      resource.opentelemetry.io/service.name: chatbot
+  currency:
+    podAnnotations:
+      resource.opentelemetry.io/service.name: currency
+  email:
+    podAnnotations:
+      resource.opentelemetry.io/service.name: email
+  fraud-detection:
+    podAnnotations:
+      resource.opentelemetry.io/service.name: fraud-detection
+  image-provider:
+    podAnnotations:
+      resource.opentelemetry.io/service.name: image-provider
+  mcp:
+    podAnnotations:
+      resource.opentelemetry.io/service.name: mcp
+  payment:
+    podAnnotations:
+      resource.opentelemetry.io/service.name: payment
+  product-catalog:
+    podAnnotations:
+      resource.opentelemetry.io/service.name: product-catalog
+  quote:
+    podAnnotations:
+      resource.opentelemetry.io/service.name: quote
+  recommendation:
+    podAnnotations:
+      resource.opentelemetry.io/service.name: recommendation
+  shipping:
+    podAnnotations:
+      resource.opentelemetry.io/service.name: shipping
+  valkey-cart:
+    podAnnotations:
+      resource.opentelemetry.io/service.name: valkey-cart
+  telemetry-docs:
+    podAnnotations:
+      resource.opentelemetry.io/service.name: telemetry-docs
+  opamp-server:
+    podAnnotations:
+      resource.opentelemetry.io/service.name: opamp-server
 
 opentelemetry-collector:
   enabled: false
