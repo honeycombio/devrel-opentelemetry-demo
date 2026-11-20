@@ -863,6 +863,8 @@ services:
       - ${POSTGRES_PORT}
     environment:
       - POSTGRES_PASSWORD
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://${OTEL_COLLECTOR_HOST}:${OTEL_COLLECTOR_PORT_HTTP}
+      - OTEL_SERVICE_NAME=astronomy-db
     healthcheck:
       test: ["CMD-SHELL", "pg_isready"]
       start_period: 10s
