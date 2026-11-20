@@ -73,6 +73,45 @@ config:
           source_identifier: attributes["log.file.path"]
           max_log_size: 102400
   processors:
+    # Envoy's OpenTelemetry tracer emits its own legacy tag names and cannot emit
+    # the stable HTTP semantic conventions yet:
+    # https://github.com/envoyproxy/envoy/issues/30821
+    transform/envoy_http_semconv:
+      error_mode: ignore
+      trace_statements:
+        - context: span
+          conditions:
+            - instrumentation_scope.name == "envoy"
+          statements:
+            # Known methods from the HTTP semconv; anything else becomes _OTHER.
+            - set(attributes["http.request.method"], attributes["http.method"]) where IsMatch(attributes["http.method"], "^(CONNECT|DELETE|GET|HEAD|OPTIONS|PATCH|POST|PUT|TRACE)$")
+            - set(attributes["http.request.method"], "_OTHER") where attributes["http.method"] != nil and attributes["http.request.method"] == nil
+            - set(attributes["http.request.method_original"], attributes["http.method"]) where attributes["http.request.method"] == "_OTHER"
+            - set(attributes["http.response.status_code"], Int(attributes["http.status_code"])) where attributes["http.status_code"] != nil and attributes["http.status_code"] != "0"
+            - set(attributes["error.type"], attributes["http.status_code"]) where attributes["error"] == "true" and attributes["http.status_code"] != nil and attributes["http.status_code"] != "0"
+            - set(attributes["error.type"], "_OTHER") where attributes["error"] == "true" and attributes["error.type"] == nil
+            - set(attributes["url.full"], attributes["http.url"]) where attributes["http.url"] != nil
+            - set(cache["url"], URL(attributes["http.url"])) where attributes["http.url"] != nil and kind == SPAN_KIND_SERVER
+            - set(attributes["url.scheme"], cache["url"]["url.scheme"]) where cache["url"]["url.scheme"] != nil
+            - set(attributes["url.path"], cache["url"]["url.path"]) where cache["url"]["url.path"] != nil
+            - set(attributes["url.query"], cache["url"]["url.query"]) where cache["url"]["url.query"] != nil and cache["url"]["url.query"] != ""
+            - set(attributes["server.address"], cache["url"]["url.domain"]) where cache["url"]["url.domain"] != nil
+            - set(attributes["server.port"], cache["url"]["url.port"]) where cache["url"]["url.port"] != nil
+            - set(attributes["user_agent.original"], attributes["user_agent"]) where attributes["user_agent"] != nil
+            - set(attributes["http.request.body.size"], Int(attributes["request_size"])) where attributes["request_size"] != nil
+            - set(attributes["http.response.body.size"], Int(attributes["response_size"])) where attributes["response_size"] != nil
+            - set(attributes["http.request.resend_count"], Int(attributes["retry.count"])) where attributes["retry.count"] != nil and attributes["retry.count"] != "0"
+            # Splits "HTTP/1.1" into the protocol version after the slash.
+            - set(attributes["network.protocol.name"], "http") where IsMatch(attributes["http.protocol"], "^HTTP/")
+            - set(attributes["network.protocol.version"], ExtractPatterns(attributes["http.protocol"], "^HTTP/(?P<version>.+)$")["version"]) where IsMatch(attributes["http.protocol"], "^HTTP/")
+            # Splits "host:port"; a value without a port is used as the address.
+            - set(cache["peer"], ExtractPatterns(attributes["peer.address"], "^(?P<address>[^:]+):(?P<port>[0-9]+)$")) where IsMatch(attributes["peer.address"], "^[^:]+:[0-9]+$")
+            - set(attributes["network.peer.address"], cache["peer"]["address"]) where cache["peer"]["address"] != nil
+            - set(attributes["network.peer.port"], Int(cache["peer"]["port"])) where cache["peer"]["port"] != nil
+            - set(attributes["network.peer.address"], attributes["peer.address"]) where attributes["peer.address"] != nil and attributes["network.peer.address"] == nil
+            # Drops the legacy names mapped above.
+            - delete_matching_keys(attributes, "^(http\\.(method|status_code|url|protocol)|user_agent|peer\\.address|request_size|response_size|retry\\.count)$")
+
     transform/service_names:
       error_mode: ignore
       log_statements:
@@ -447,6 +486,7 @@ config:
           - transform/genai_copy_events_to_span
           - transform/genai_canonicalize_token_names
           - transform/genai_fix_token_counts
+          - transform/envoy_http_semconv
           - transform/exception_type_to_error_type
           - transform/service_names
           - transform/attribution

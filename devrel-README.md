@@ -215,7 +215,7 @@ flag changes also post a Honeycomb marker).
   series are `CC_MASTERCARD`; the browser's detector (`src/frontend/utils/PaymentStrategy.ts`) knows the 2-series,
   payment's validator doesn't. Failed checkouts group cleanly: `demo.payment.strategy = CC_MASTERCARD` vs
   `demo.payment.card_type = unknown`.
-- Frontend-proxy `ingress` root spans for those traces return `http.status_code = 500`.
+- Frontend-proxy `ingress` root spans for those traces return `http.response.status_code = 500`.
 - Checkout Availability (`devrel-demos`, environment `demo`: PlaceOrder gRPC status 0, 99% over 7 days) and Frontend
   Availability burn budget. The checkout SLO's exhaustion alert posts to Slack `#general`, so expect noise.
 

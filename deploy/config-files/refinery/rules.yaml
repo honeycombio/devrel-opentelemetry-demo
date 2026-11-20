@@ -13,7 +13,9 @@ Samplers:
         - Name: Keep 500 status codes
           SampleRate: 1
           Conditions:
-            - Field: http.status_code
+            - Fields:
+                - http.response.status_code
+                - http.status_code
               Operator: ">="
               Value: 500
               Datatype: int
@@ -41,11 +43,15 @@ Samplers:
               Datatype: int
         - Name: Dynamically Sample 200s through 400s
           Conditions:
-            - Field: root.http.status_code
+            - Fields:
+                - root.http.response.status_code
+                - root.http.status_code
               Operator: ">="
               Value: 200
               Datatype: int
-            - Field: root.http.status_code
+            - Fields:
+                - root.http.response.status_code
+                - root.http.status_code
               Operator: "<"
               Value: 400
               Datatype: int
@@ -56,7 +62,9 @@ Samplers:
                 - service.name
                 - http.target
                 - http.status_code
+                - http.response.status_code
                 - http.method
+                - http.request.method
         - Name: Catchall rule
           Sampler:
             EMAThroughputSampler:
@@ -64,4 +72,5 @@ Samplers:
               FieldList:
                 - service.name
                 - http.status_code
+                - http.response.status_code
                 - status_code
