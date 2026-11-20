@@ -363,6 +363,34 @@ config:
                   - name == "exception"
               statements:
                   - set(span.attributes["error.type"], ExtractPatterns(attributes["exception.type"], "(?P<class>[^.]+)$")["class"]) where attributes["exception.type"] != nil and span.attributes["error.type"] == nil
+
+    # Artificially inflates span volume in Honeycomb by claiming each trace
+    # was sampled, without dropping anything. Writes an OTel sampling
+    # threshold (tracestate ot=th, adjusted count = 2^56 / (2^56 - th)) per
+    # trace, picked from the first trace ID hex digit (independent of the
+    # randomness bytes at the end of the ID). The 16 rates average 15.
+    transform/inflate_sample_rate:
+        error_mode: ignore
+        trace_statements:
+            - context: span
+              statements:
+                  - set(cache["bucket"], Substring(span.trace_id.string, 0, 1))
+                  - set(span.trace_state["ot"], "th:0") where cache["bucket"] == "0"               # 1
+                  - set(span.trace_state["ot"], "th:8") where cache["bucket"] == "1"               # 2
+                  - set(span.trace_state["ot"], "th:aaaaaaaaaaaaab") where cache["bucket"] == "2"  # 3
+                  - set(span.trace_state["ot"], "th:cccccccccccccd") where cache["bucket"] == "3"  # 5
+                  - set(span.trace_state["ot"], "th:cccccccccccccd") where cache["bucket"] == "4"  # 5
+                  - set(span.trace_state["ot"], "th:e") where cache["bucket"] == "5"               # 8
+                  - set(span.trace_state["ot"], "th:e6666666666667") where cache["bucket"] == "6"  # 10
+                  - set(span.trace_state["ot"], "th:eaaaaaaaaaaaab") where cache["bucket"] == "7"  # 12
+                  - set(span.trace_state["ot"], "th:eeeeeeeeeeeeef") where cache["bucket"] == "8"  # 15
+                  - set(span.trace_state["ot"], "th:f") where cache["bucket"] == "9"               # 16
+                  - set(span.trace_state["ot"], "th:f1c71c71c71c72") where cache["bucket"] == "a"  # 18
+                  - set(span.trace_state["ot"], "th:f3333333333334") where cache["bucket"] == "b"  # 20
+                  - set(span.trace_state["ot"], "th:f5555555555556") where cache["bucket"] == "c"  # 24
+                  - set(span.trace_state["ot"], "th:f6db6db6db6db7") where cache["bucket"] == "d"  # 28
+                  - set(span.trace_state["ot"], "th:f83e0f83e0f83f") where cache["bucket"] == "e"  # 33
+                  - set(span.trace_state["ot"], "th:f999999999999a") where cache["bucket"] == "f"  # 40
   exporters:
     otlp/refinery:
       endpoint: ${REFINERY_ENDPOINT}
@@ -490,6 +518,7 @@ config:
           - transform/exception_type_to_error_type
           - transform/service_names
           - transform/attribution
+          - transform/inflate_sample_rate
 
       # Eval anchor pipeline. Pushes one span per chatbot turn to Kafka;
       # the llm-evals service consumes and runs Bias/Hallucination/Relevance.
