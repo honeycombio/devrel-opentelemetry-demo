@@ -235,9 +235,7 @@ async function runPhase1(
     return null;
   }
 
-  const conversationId = spanAttrs['gen_ai.conversation.id'];
   const evalCtx: EvaluatedContext = {
-    conversationId: typeof conversationId === 'string' ? conversationId : undefined,
     responseModel: String(spanAttrs['gen_ai.request.model'] ?? 'unknown'),
     inputTokens: Number(spanAttrs['gen_ai.usage.input_tokens'] ?? 0),
     outputTokens: Number(spanAttrs['gen_ai.usage.output_tokens'] ?? 0),
@@ -255,10 +253,11 @@ async function runPhase1(
     extractGrounding(inputMessages),
   );
 
+  const conversationId = spanAttrs['gen_ai.conversation.id'];
   return {
     traceId: span.traceId,
     spanId: span.spanId,
-    conversationId: evalCtx.conversationId,
+    conversationId: typeof conversationId === 'string' ? conversationId : undefined,
     completed,
   };
 }

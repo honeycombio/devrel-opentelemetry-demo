@@ -36,7 +36,6 @@ const tracer = trace.getTracer('llm-evals');
 const logger = logs.getLogger('llm-evals');
 
 export interface EvaluatedContext {
-  conversationId: string | undefined;
   responseModel: string;
   inputTokens: number;
   outputTokens: number;
@@ -81,7 +80,6 @@ function applyEvalResultEvent(span: Span, result: EvalResult, evalCtx: Evaluated
     [ATTR_GEN_AI_EVALUATION_SCORE_VALUE]: clampScore(result.score),
     [ATTR_GEN_AI_EVALUATION_SCORE_LABEL]: result.label,
     [ATTR_GEN_AI_EVALUATION_EXPLANATION]: result.explanation,
-    [ATTR_GEN_AI_CONVERSATION_ID]: evalCtx.conversationId,
     'evaluated.model.name': evalCtx.responseModel,
     'evaluated.usage.input_tokens': evalCtx.inputTokens,
     'evaluated.usage.output_tokens': evalCtx.outputTokens,
