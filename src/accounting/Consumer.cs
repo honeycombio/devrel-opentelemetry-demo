@@ -28,7 +28,9 @@ internal class Consumer : BackgroundService
     private static readonly string TopicName = Environment.GetEnvironmentVariable("KAFKA_TOPIC") ?? "orders";
 
     private readonly ILogger _logger;
-    private readonly IConsumer<string, byte[]> _consumer;
+    private readonly string _servers;
+    private IConsumer<string, byte[]> _consumer;
+    private volatile bool _rebuildRequested;
     private readonly IDbContextFactory<AccountingDbContext>? _dbContextFactory;
     private static readonly ActivitySource MyActivitySource = new("Accounting.Consumer");
 
@@ -37,13 +39,13 @@ internal class Consumer : BackgroundService
         _logger = logger;
         _dbContextFactory = dbContextFactory;
 
-        var servers = Environment.GetEnvironmentVariable("KAFKA_ADDR")
+        _servers = Environment.GetEnvironmentVariable("KAFKA_ADDR")
             ?? throw new InvalidOperationException("The KAFKA_ADDR environment variable is not set.");
 
-        _consumer = BuildConsumer(servers);
+        _consumer = BuildConsumer();
         _consumer.Subscribe(TopicName);
 
-        _logger.LogInformation($"Connecting to Kafka: {servers}");
+        _logger.LogInformation($"Connecting to Kafka: {_servers}");
     }
 
     protected override Task ExecuteAsync(CancellationToken stoppingToken)
@@ -56,8 +58,19 @@ internal class Consumer : BackgroundService
                 {
                     try
                     {
+                        if (_rebuildRequested)
+                        {
+                            Thread.Sleep(TimeSpan.FromSeconds(1));
+                            RebuildConsumer();
+                        }
+
+                        var consumeResult = _consumer.Consume(TimeSpan.FromSeconds(1));
+                        if (consumeResult == null)
+                        {
+                            continue;
+                        }
+
                         using var activity = MyActivitySource.StartActivity("order-consumed", ActivityKind.Internal);
-                        var consumeResult = _consumer.Consume(stoppingToken);
 
                         if (ProcessMessage(consumeResult.Message) == ProcessResult.Processed)
                         {
@@ -76,22 +89,49 @@ internal class Consumer : BackgroundService
                     }
                     catch (Exception e) when (e is not OperationCanceledException)
                     {
-                        // Commit and Seek throw KafkaException, for example during a rebalance.
-                        // Keep consuming; the message is redelivered and the duplicate check skips it.
-                        _logger.LogError(e, "Consumer loop error; continuing");
+                        // Commit and Seek throw KafkaException, for example when the broker is replaced
+                        // and the group no longer exists. The old consumer can stay broken, so build a
+                        // new one. The message is redelivered and the duplicate check skips it.
+                        _logger.LogError(e, "Consumer loop error; rebuilding the consumer");
                         Thread.Sleep(TimeSpan.FromSeconds(1));
+                        RebuildConsumer();
                     }
                 }
             }
-            catch (OperationCanceledException)
-            {
-                _logger.LogInformation("Closing consumer");
-            }
             finally
             {
+                _logger.LogInformation("Closing consumer");
                 _consumer.Close();
             }
         }, stoppingToken);
+    }
+
+    private void RebuildConsumer()
+    {
+        try
+        {
+            _consumer.Dispose();
+        }
+        catch (Exception e)
+        {
+            _logger.LogWarning(e, "Failed to dispose the old consumer");
+        }
+
+        _rebuildRequested = false;
+        _consumer = BuildConsumer();
+        _consumer.Subscribe(TopicName);
+    }
+
+    private void OnKafkaLog(IConsumer<string, byte[]> consumer, LogMessage log)
+    {
+        _logger.Log(log.Level <= SyslogLevel.Error ? LogLevel.Error : LogLevel.Debug, "{Facility}: {Message}", log.Facility, log.Message);
+
+        // After the broker is replaced the consumer keeps its old assignment, never sees the
+        // new topic, and does not throw. This message is the only sign of it.
+        if (log.Level <= SyslogLevel.Error && log.Message.Contains("Unknown topic or partition", StringComparison.Ordinal))
+        {
+            _rebuildRequested = true;
+        }
     }
 
     private enum ProcessResult
@@ -192,12 +232,12 @@ internal class Consumer : BackgroundService
         }
     }
 
-    private static IConsumer<string, byte[]> BuildConsumer(string servers)
+    private IConsumer<string, byte[]> BuildConsumer()
     {
         var conf = new ConsumerConfig
         {
             GroupId = "accounting",
-            BootstrapServers = servers,
+            BootstrapServers = _servers,
             // https://github.com/confluentinc/confluent-kafka-dotnet/tree/07de95ed647af80a0db39ce6a8891a630423b952#basic-consumer-example
             AutoOffsetReset = AutoOffsetReset.Earliest,
             EnableAutoCommit = false,
@@ -206,6 +246,7 @@ internal class Consumer : BackgroundService
         };
 
         return new ConsumerBuilder<string, byte[]>(conf)
+            .SetLogHandler(OnKafkaLog)
             .Build();
     }
 
