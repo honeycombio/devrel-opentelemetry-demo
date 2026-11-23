@@ -1,0 +1,7 @@
+change_type: enhancement
+
+component: collector
+
+note: Add the `k8s.cluster.name` resource attribute to pod logs and Kubernetes events.
+
+issues: [59]
