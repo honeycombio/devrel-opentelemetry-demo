@@ -130,12 +130,6 @@ components:
             value: http://$(OTEL_COLLECTOR_NAME):4318
           - name: FLAGD_UI_PORT
             value: "4000"
-          - name: FLAGD_UI_SCHEDULE_FLAGS
-            value: promo.observatory-hour:on
-          - name: FLAGD_UI_SCHEDULE_INTERVAL_MINUTES
-            value: "360"
-          - name: FLAGD_UI_SCHEDULE_DURATION_MINUTES
-            value: "30"
           - name: SECRET_KEY_BASE
             value: yYrECL4qbNwleYInGJYvVnSkwJuSQJ4ijPTx5tirGUXrbznFIBFVJdPl5t6O9ASw
         volumeMounts:

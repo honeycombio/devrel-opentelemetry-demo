@@ -325,3 +325,17 @@ flagd-ui already had a random flag scheduler that was only started from its UI. 
 (`flag:variant` pairs), `FLAGD_UI_SCHEDULE_INTERVAL_MINUTES` (default 360) and `FLAGD_UI_SCHEDULE_DURATION_MINUTES` (default 30).
 The deployment sets them for `promo.observatory-hour:on`, so the promo is on for 30 minutes at a random point in every 6 hours.
 The earlier `scheduled` flag variant with a `$flagd.timestamp` rule was not built.
+
+## Update: one hour in every 8 at fixed times, peak under 4 s
+
+The random scheduler could not give a reliable schedule: it picked a random start in each interval and restarted its
+clock whenever flagd-ui restarted (every release). It is replaced by a flagd targeting rule on `$flagd.timestamp`:
+`on` from 01:00, 09:00 and 17:00 UTC for an hour, otherwise the default variant. The `FLAGD_UI_SCHEDULE_*` settings are
+removed from the demo deployment and the flag is `schedulable: false`. Accepted cost: a scheduled window posts no marker,
+and flagd-ui shows `off` during it. The rule has no `else` branch because flagd-ui edits the `then` variant of a
+three-part rule, which would turn the window off.
+
+Measured before the change (prod, 24 h): about 22 ms per earlier order at P50, up to about 35 ms in outliers. The fin
+reached 213 orders scanned and 5.3 s. Now the session and lookback are 60 minutes, each buyer orders every 50 to 90 s
+(about 100 orders per email in the hour with two loadgen replicas), and accounting scans at most the latest 100 orders,
+so the top is about 2.5 s P50 and stays under 4 s.

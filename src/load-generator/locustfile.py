@@ -800,15 +800,15 @@ class WebsiteUser(HttpUser):
 class CircleClubBuyer(HttpUser):
     """A bulk buyer (an employee of a corporate customer, signed in with SSO) who stocks up while the Observatory Hour promo is on.
 
-    Each one starts a 30-minute shopping session when it sees the flag go on, placing a big order every 10 to
-    20 seconds. The promo counts spend over the last 30 minutes, so each order makes the next price check
+    Each one starts a 60-minute shopping session when it sees the flag go on, placing a big order every 50 to
+    90 seconds. The promo counts spend over the last 60 minutes, so each order makes the next price check
     walk more earlier orders. When the session ends the orders age out and the lookup is cheap again.
     It starts a new session only after the flag has been seen off, so one flip is one fin.
 
     There are two buyers per loadgen process, each an employee of the same company.
     """
     fixed_count = 2
-    SESSION_SECONDS = 30 * 60
+    SESSION_SECONDS = 60 * 60
     # Two SSO employees of one corporate customer; the promo is for SSO corporate accounts only.
     EMAILS = sorted(CIRCLE_CLUB_EMAILS)[:2]
     # Everything a club would stock up on: five promo products (accessories, books) and three that are not.
@@ -826,7 +826,7 @@ class CircleClubBuyer(HttpUser):
 
     def wait_time(self):
         # Poll the flag quickly while idle, then pace the orders.
-        return random.uniform(10, 20) if self.session_started is not None else random.uniform(2, 5)
+        return random.uniform(50, 90) if self.session_started is not None else random.uniform(2, 5)
 
     @task
     def shop(self):
