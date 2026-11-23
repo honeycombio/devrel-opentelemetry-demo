@@ -10,6 +10,8 @@ presets:
   logsCollection:
     enabled: true
     includeCollectorLogs: false
+podAnnotations:
+  resource.opentelemetry.io/service.name: otel-collector
 image:
   repository: "ghcr.io/open-telemetry/opentelemetry-collector-releases/opentelemetry-collector-contrib"
 

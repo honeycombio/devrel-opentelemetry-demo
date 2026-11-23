@@ -18,6 +18,8 @@ spec:
       opentelemetry.io/name: {{ .Values.services.storechat.name }}
   template:
     metadata:
+      annotations:
+        resource.opentelemetry.io/service.name: {{ .Values.services.storechat.name }}
       labels:
         opentelemetry.io/name: {{ .Values.services.storechat.name }}
         app.kubernetes.io/component: {{ .Values.services.storechat.name }}
@@ -86,6 +88,8 @@ spec:
       opentelemetry.io/name: {{ .Values.services.llmEvals.name }}
   template:
     metadata:
+      annotations:
+        resource.opentelemetry.io/service.name: {{ .Values.services.llmEvals.name }}
       labels:
         opentelemetry.io/name: {{ .Values.services.llmEvals.name }}
         app.kubernetes.io/component: {{ .Values.services.llmEvals.name }}
@@ -144,6 +148,8 @@ spec:
       opentelemetry.io/name: {{ .Values.services.auth.name }}
   template:
     metadata:
+      annotations:
+        resource.opentelemetry.io/service.name: {{ .Values.services.auth.name }}
       labels:
         opentelemetry.io/name: {{ .Values.services.auth.name }}
         app.kubernetes.io/component: {{ .Values.services.auth.name }}
