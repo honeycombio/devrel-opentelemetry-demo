@@ -73,6 +73,14 @@ config:
           source_identifier: attributes["log.file.path"]
           max_log_size: 102400
   processors:
+    # Stamps the OTel semconv resource attribute k8s.cluster.name (from the
+    # Pulumi stack name via CLUSTER_NAME) onto every log record, covering both
+    # pod stdout (filelog) and logs received over OTLP.
+    resource/cluster_name:
+      attributes:
+        - key: k8s.cluster.name
+          value: ${env:CLUSTER_NAME}
+          action: upsert
     # Envoy's OpenTelemetry tracer emits its own legacy tag names and cannot emit
     # the stable HTTP semantic conventions yet:
     # https://github.com/envoyproxy/envoy/issues/30821
@@ -501,6 +509,7 @@ config:
           - transform/filelog_severity
           - transform/pino_trace_fields
           - transform/attribution
+          - resource/cluster_name
           - drain
 
       traces:
