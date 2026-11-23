@@ -74,6 +74,13 @@ internal class Consumer : BackgroundService
                     {
                         _logger.LogError(e, "Consume error: {0}", e.Error.Reason);
                     }
+                    catch (Exception e) when (e is not OperationCanceledException)
+                    {
+                        // Commit and Seek throw KafkaException, for example during a rebalance.
+                        // Keep consuming; the message is redelivered and the duplicate check skips it.
+                        _logger.LogError(e, "Consumer loop error; continuing");
+                        Thread.Sleep(TimeSpan.FromSeconds(1));
+                    }
                 }
             }
             catch (OperationCanceledException)
@@ -129,6 +136,8 @@ internal class Consumer : BackgroundService
             var orderEntity = new OrderEntity
             {
                 Id = order.OrderId,
+                // The time the order was placed, so replaying the topic does not make old orders look new.
+                CreatedAt = message.Timestamp.Type == TimestampType.NotAvailable ? DateTime.UtcNow : message.Timestamp.UtcDateTime,
                 Email = string.IsNullOrEmpty(order.Email) ? null : order.Email,
                 UserId = string.IsNullOrEmpty(order.UserId) ? null : order.UserId,
                 TransactionId = string.IsNullOrEmpty(order.TransactionId) ? null : order.TransactionId,
