@@ -318,13 +318,39 @@
       "defaultVariant": "off"
     },
     "promo.observatory-hour": {
-      "description": "Observatory Hour promo: spend more, save more on accessories and books with code OBSERVATORY. On activates it; off ends it.",
+      "description": "Observatory Hour promo: spend more, save more on accessories and books with code OBSERVATORY. Live 01:00-02:00, 09:00-10:00 and 17:00-18:00 UTC; on activates it outside those hours too.",
       "state": "ENABLED",
       "variants": {
         "on": true,
         "off": false
       },
-      "defaultVariant": "off"
+      "defaultVariant": "off",
+      "targeting": {
+        "if": [
+          {
+            "<": [
+              {
+                "%": [
+                  {
+                    "-": [
+                      {
+                        "var": "$flagd.timestamp"
+                      },
+                      3600
+                    ]
+                  },
+                  28800
+                ]
+              },
+              3600
+            ]
+          },
+          "on"
+        ]
+      },
+      "metadata": {
+        "schedulable": false
+      }
     }
   }
 }

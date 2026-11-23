@@ -17,7 +17,8 @@ internal class OrderServiceImpl : OrderService.OrderServiceBase
     private readonly ILogger<OrderServiceImpl> _logger;
 
     private const string PromoCode = "OBSERVATORY";
-    private static readonly TimeSpan PromoLookback = TimeSpan.FromMinutes(30);
+    private static readonly TimeSpan PromoLookback = TimeSpan.FromMinutes(60);
+    private const int PromoMaxOrders = 100;
     private static readonly string[] PromoCategories = ["accessories", "books"];
 
     public OrderServiceImpl(
@@ -187,6 +188,8 @@ internal class OrderServiceImpl : OrderService.OrderServiceBase
 
         var earlierOrders = await db.Orders
             .Where(o => o.Email == request.Email && o.CreatedAt >= windowStart)
+            .OrderByDescending(o => o.CreatedAt)
+            .Take(PromoMaxOrders)
             .ToListAsync(ct);
 
         decimal earlierEligibleUsd = 0;
