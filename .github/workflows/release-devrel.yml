@@ -96,6 +96,7 @@ jobs:
           HONEYCOMB_MARKERS_API_KEY: ${{ secrets.HONEYCOMB_MARKERS_API_KEY }}
 
   announce_deployment_finished:
+    name: Announce deployment finished
     runs-on: ubuntu-latest
     needs: [build_custom_collector, deploy]
 
@@ -103,9 +104,10 @@ jobs:
       contents: read
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         with:
           fetch-depth: 0
+          persist-credentials: false
       - name: Send Honeycomb deployment.finished event
         run: scripts/send-deployment-finished.sh "$VERSION" "$VERSION-collector" "$RUN_URL"
         env:
