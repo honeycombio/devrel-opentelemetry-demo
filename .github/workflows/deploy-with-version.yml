@@ -33,6 +33,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: actions/setup-node@v1
         with:
           node-version: 20.x
@@ -80,3 +82,11 @@ jobs:
         run: scripts/create-deploy-marker.sh "${{ github.event.inputs.version }}" "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
         env:
           HONEYCOMB_MARKERS_API_KEY: ${{ secrets.HONEYCOMB_MARKERS_API_KEY }}
+
+      - name: Send Honeycomb deployment.finished event
+        run: scripts/send-deployment-finished.sh "$VERSION" "$COLLECTOR_VERSION" "$RUN_URL"
+        env:
+          VERSION: ${{ github.event.inputs.version }}
+          COLLECTOR_VERSION: ${{ github.event.inputs.collector_version }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          HONEYCOMB_GOAL_WEBHOOK: ${{ secrets.HONEYCOMB_GOAL_WEBHOOK }}

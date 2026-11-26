@@ -1,0 +1,7 @@
+change_type: enhancement
+
+component: ci
+
+note: Send a Honeycomb `deployment.finished` goal event, with a release digest, once a DevRel release has deployed.
+
+issues: [62]
