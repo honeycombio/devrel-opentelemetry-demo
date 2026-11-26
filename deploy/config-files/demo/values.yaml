@@ -71,13 +71,14 @@ components:
       - "cron.database_name=astronomy_db"
       - "-c"
       - "compute_query_id=on"
+    # The chart turns the default env off for astronomy-db. Turn it on so it gets
+    # OTEL_COLLECTOR_NAME, which Pulumi sets to the pod collector's Service, and OTEL_SERVICE_NAME.
+    useDefault:
+      env: true
     envOverrides:
       # opentelemetry_postgres sends server-side query spans here (see src/postgresql/Dockerfile).
-      # astronomy-db does not get the chart's default env, so there is no OTEL_COLLECTOR_NAME.
       - name: OTEL_EXPORTER_OTLP_ENDPOINT
-        value: http://otel-collector:4318
-      - name: OTEL_SERVICE_NAME
-        value: astronomy-db
+        value: http://$(OTEL_COLLECTOR_NAME):4318
     mountedConfigMaps:
       - name: postgresql-init
         mountPath: /opt/postgresql-init
