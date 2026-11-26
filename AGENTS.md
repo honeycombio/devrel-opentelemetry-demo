@@ -67,6 +67,18 @@ Non-exhaustively, the important points are:
 * Manually test all changes locally before creating a PR
 * Do not add new services without collaborating with the maintainers
 
+## Pushing
+
+This project is mirrored in two GitHub organisations:
+
+* `honeycombio/devrel-opentelemetry-demo` (usually the `origin` remote)
+* `honeycomb-devrel/devrel-opentelemetry-demo`
+
+Every push must go to both. If the second remote is missing, add it first, for
+example `git remote add devrel https://github.com/honeycomb-devrel/devrel-opentelemetry-demo`.
+Push the same branch to each remote and check that both pushes succeeded before
+reporting the work as pushed.
+
 ## Commit formatting
 
 We appreciate it if users disclose the use of AI tools when the significant part
