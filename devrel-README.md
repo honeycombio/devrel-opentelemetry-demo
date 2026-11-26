@@ -71,6 +71,11 @@ skips the marker. If unset, it falls back to `HONEYCOMB_API_KEY`.
 `scripts/validate-honeycomb-keys.sh` checks both keys have the right
 permissions and point at the same environment.
 
+After a release or a "Deploy Specific Version" run finishes, the workflows post a `deployment.finished` event
+to the Honeycomb goals API with `scripts/send-deployment-finished.sh`. It needs the `HONEYCOMB_GOAL_WEBHOOK` GitHub
+secret. The event carries the version, previous version, collector version, commit, run URL and a `release_digest`
+array of the commits since the previous `*-release` tag. `DRY_RUN=1` prints the payload instead of sending it.
+
 ## AWS Setup
 
 You'll need to have the following installed:

@@ -94,3 +94,21 @@ jobs:
         run: scripts/create-deploy-marker.sh "${{ github.ref_name }}" "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
         env:
           HONEYCOMB_MARKERS_API_KEY: ${{ secrets.HONEYCOMB_MARKERS_API_KEY }}
+
+  announce_deployment_finished:
+    runs-on: ubuntu-latest
+    needs: [build_custom_collector, deploy]
+
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Send Honeycomb deployment.finished event
+        run: scripts/send-deployment-finished.sh "$VERSION" "$VERSION-collector" "$RUN_URL"
+        env:
+          VERSION: ${{ github.ref_name }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          HONEYCOMB_GOAL_WEBHOOK: ${{ secrets.HONEYCOMB_GOAL_WEBHOOK }}
