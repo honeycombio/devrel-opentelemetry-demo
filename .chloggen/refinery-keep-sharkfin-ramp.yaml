@@ -1,0 +1,14 @@
+# One of 'breaking', 'deprecation', 'new_component', 'enhancement', 'bug_fix'
+change_type: bug_fix
+
+# The name of the component, or a single word describing the area of concern, (e.g. frontend)
+component: refinery
+
+# A brief description of the change. Surround your text with quotes ("") if it needs to start with a backtick (`).
+note: Keep every Observatory Hour checkout trace that scanned earlier orders. Only traces over 1.7 s were kept before, so the latency fin showed its top end and not the climb.
+
+# Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
+issues: [63]
+
+# (Optional) One or more lines of additional information to render under the primary note.
+subtext:
