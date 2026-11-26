@@ -404,7 +404,9 @@ func (cs *checkout) PlaceOrder(ctx context.Context, req *pb.PlaceOrderRequest) (
 		}
 	}
 
-	if req.PromoCode != "" && cs.orderSvcClient != nil && flags.PromoObservatoryHour.Value(ctx, openfeature.EvaluationContext{}) {
+	if percent, ok := standardPromoPercent[strings.ToUpper(req.PromoCode)]; ok {
+		total = applyStandardPromo(span, req.PromoCode, percent, total)
+	} else if req.PromoCode != "" && cs.orderSvcClient != nil && flags.PromoObservatoryHour.Value(ctx, openfeature.EvaluationContext{}) {
 		total, err = cs.applyPromo(ctx, req, prep.orderItems, total)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to apply promo: %+v", err)
@@ -716,6 +718,22 @@ func (cs *checkout) convertCurrency(ctx context.Context, from *pb.Money, toCurre
 		return nil, fmt.Errorf("failed to convert currency: %+v", err)
 	}
 	return result, err
+}
+
+var standardPromoPercent = map[string]int64{
+	"WELCOME5":    5,
+	"STARGAZER10": 10,
+	"CLEARSKY15":  15,
+}
+
+func applyStandardPromo(span trace.Span, code string, percent int64, total *pb.Money) *pb.Money {
+	span.SetAttributes(
+		attribute.String("demo.promo.code", strings.ToUpper(code)),
+		attribute.Bool("demo.promo.valid", true),
+		attribute.Int64("demo.promo.discount_percent", percent),
+	)
+	nanos := (total.Units*1_000_000_000 + int64(total.Nanos)) * (100 - percent) / 100
+	return &pb.Money{CurrencyCode: total.CurrencyCode, Units: nanos / 1_000_000_000, Nanos: int32(nanos % 1_000_000_000)}
 }
 
 func (cs *checkout) applyPromo(ctx context.Context, req *pb.PlaceOrderRequest, items []*pb.OrderItem, total *pb.Money) (*pb.Money, error) {

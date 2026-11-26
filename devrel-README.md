@@ -257,8 +257,10 @@ earlier and was unreachable until marketing switched the promo on. Full design a
 
 **The setup:**
 
-- Checkout accepts an optional promo code (a field on the checkout form, shown only to a signed-in corporate user;
-  `PlaceOrderRequest.promo_code`). The only code is `OBSERVATORY`, and it is for **SSO corporate customers only**: "spend more, save more" on accessories and books, tiered 5% / 10% / 15% on eligible spend in the
+- Checkout accepts an optional promo code (a field on the checkout form; `PlaceOrderRequest.promo_code`). Two kinds of code exist.
+  The everyday codes `WELCOME5`, `STARGAZER10` and `CLEARSKY15` take 5%, 10% and 15% off the order, are always live, and are priced inside
+  checkout with no lookup, so they never slow anything down. About 30% of anonymous and corporate checkouts use one, flag on or off.
+  `OBSERVATORY` is the other, and it is for **SSO corporate customers only**: "spend more, save more" on accessories and books, tiered 5% / 10% / 15% on eligible spend in the
   customer's **last 60 minutes** of orders (the latest 100 at most).
 - While the flagd flag `promo.observatory-hour` is `off` (the default), checkout ignores the code and makes no extra call.
 - **The bug:** when it is on, checkout calls `OrderService/ValidatePromo` in accounting. The orders table keeps the
@@ -270,7 +272,7 @@ earlier and was unreachable until marketing switched the promo on. Full design a
   any history is read. (It checks the email, not a login token: the demo's login lives in the browser session.)
 - **The cohort:** two `CircleClubBuyer` locust users (SSO employees of Kramerica) sign in through `/api/login`, see the flag
   go on, and each starts a 60-minute shopping session, placing a five to eight-line order every 50 to 90 s with the code. The rest of the checkout traffic is
-  anonymous shoppers (no promo field, never send the code) and `corporate_checkout` users, who sign in first and, while the
+  anonymous shoppers (about 30% use an everyday code, none send `OBSERVATORY`) and `corporate_checkout` users, who sign in first and, while the
   flag is on, enter the code half the time: SSO accounts are priced but fast (no recent orders), password accounts are
   refused. Anonymous checkouts are two thirds of the non-bulk traffic, corporate one third. A buyer
   starts a new session only after it has seen the flag off, so one flip is one fin. With two loadgen replicas there are
@@ -300,6 +302,11 @@ is then the "what changed?" clue. Turn it off about an hour later, once the buye
 - BubbleUp on the fin: `demo.promo.code = OBSERVATORY`, `demo.company = kramerica` and two values of `user.hash` (a hash of
   the customer's email) making up the whole selection. The code alone is only a necessary condition: early orders in a session carry it and are fast, so
   `demo.promo.orders_scanned` and `demo.promo.validation_ms` are what separate the slow ones.
+
+**Sampling:** Refinery keeps every trace whose `PlaceOrder` has `demo.promo.orders_scanned >= 1` (rule in
+`deploy/config-files/refinery/rules.yaml`). Without it only traces over 1.7 s survived, so the heatmap showed the top of
+the fin and not the climb. That is about 200 traces an hour, well under 1% of all traces. The first order of a session scans
+nothing and is sampled like any other checkout.
 
 **Before the booth:** check Kafka and accounting are healthy (orders reach Postgres only through them; no history means
 no fin), and freeze releases if you flip it by hand: a release restarts flagd and puts a manual `on` back to `off`. The

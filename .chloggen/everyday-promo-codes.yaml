@@ -1,0 +1,14 @@
+# One of 'breaking', 'deprecation', 'new_component', 'enhancement', 'bug_fix'
+change_type: enhancement
+
+# The name of the component, or a single word describing the area of concern, (e.g. frontend)
+component: checkout
+
+# A brief description of the change. Surround your text with quotes ("") if it needs to start with a backtick (`).
+note: Add always-live promo codes (WELCOME5, STARGAZER10, CLEARSKY15) that checkout prices itself. The promo field now shows for every shopper and the load generator uses the codes.
+
+# Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
+issues: [63]
+
+# (Optional) One or more lines of additional information to render under the primary note.
+subtext:

@@ -12,6 +12,7 @@ import (
 	"testing"
 	"time"
 
+	"go.opentelemetry.io/otel/trace"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/health"
@@ -125,5 +126,17 @@ func TestServerStartupAndGracefulStop(t *testing.T) {
 		}
 	case <-time.After(2 * time.Second):
 		t.Fatal("server did not exit after GracefulStop")
+	}
+}
+
+func TestApplyStandardPromo(t *testing.T) {
+	total := &pb.Money{CurrencyCode: "EUR", Units: 33, Nanos: 330_000_000}
+	got := applyStandardPromo(trace.SpanFromContext(context.Background()), "stargazer10", 10, total)
+	want := &pb.Money{CurrencyCode: "EUR", Units: 29, Nanos: 997_000_000}
+	if got.CurrencyCode != want.CurrencyCode || got.Units != want.Units || got.Nanos != want.Nanos {
+		t.Errorf("got %v, want %v", got, want)
+	}
+	if total.Units != 33 || total.Nanos != 330_000_000 {
+		t.Errorf("input total was modified: %v", total)
 	}
 }

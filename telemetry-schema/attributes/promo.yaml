@@ -8,7 +8,7 @@ attributes:
     brief: Promo code on the order
     stability: stable
     note: The promo code the customer entered at checkout
-    examples: ["OBSERVATORY"]
+    examples: ["OBSERVATORY", "WELCOME5"]
   - key: demo.promo.valid
     type: boolean
     brief: Whether the promo code was accepted
@@ -19,7 +19,7 @@ attributes:
     type: int
     brief: Discount tier applied
     stability: stable
-    note: The percentage taken off the order's eligible items
+    note: The percentage taken off the order (its eligible items, for OBSERVATORY)
     examples: [5, 10, 15]
   - key: demo.promo.validation_ms
     type: int

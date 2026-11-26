@@ -371,8 +371,20 @@ def make_checkout_person(user: str, email: str) -> dict:
     return person
 
 
+# Everyday promo codes: a fixed percentage off, always live and cheap, so they never slow checkout down.
+# Anonymous shoppers and corporate customers use them all the time, whether or not Observatory Hour is on.
+STANDARD_PROMO_CODES = ["WELCOME5", "STARGAZER10", "CLEARSKY15"]
+STANDARD_PROMO_SHARE = 0.3
+
+
+def maybe_standard_promo(person: dict) -> dict:
+    if "promoCode" not in person and random.random() < STANDARD_PROMO_SHARE:
+        person["promoCode"] = random.choice(STANDARD_PROMO_CODES)
+    return person
+
+
 # Observatory Hour (flagd promo.observatory-hour). Checkout traffic is three groups:
-#   anonymous shoppers: no promo field in the UI, so they never send the code;
+#   anonymous shoppers: about 30% use an everyday code; they never send OBSERVATORY;
 #   corporate customers who sign in first: while the promo is on, half of them enter the code. SSO accounts
 #     are priced (and are fast, with no recent orders); password accounts are refused;
 #   CircleClubBuyer (below): the heavy SSO buyers whose growing order history makes the promo slow.
@@ -704,7 +716,7 @@ class WebsiteUser(HttpUser):
         user = str(uuid.uuid1())
         with self.tracer.start_as_current_span("user_checkout_single", context=context.get_current(), attributes={"user.id": user}):
             self.add_to_cart(user=user)
-            checkout_person = make_checkout_person(user, random_email())
+            checkout_person = maybe_standard_promo(make_checkout_person(user, random_email()))
             self.client.post("/api/checkout", json=checkout_person)
             logging.info(f"Checkout completed for user {user}")
 
@@ -716,7 +728,7 @@ class WebsiteUser(HttpUser):
                                             attributes={"user.id": user, "demo.cart.items.count": item_count}):
             for i in range(item_count):
                 self.add_to_cart(user=user)
-            checkout_person = make_checkout_person(user, random_email())
+            checkout_person = maybe_standard_promo(make_checkout_person(user, random_email()))
             self.client.post("/api/checkout", json=checkout_person)
             logging.info(f"Multi-item checkout completed for user {user}")
 
@@ -735,7 +747,7 @@ class WebsiteUser(HttpUser):
             person = make_checkout_person(user, employee["email"])
             if random.random() < CORPORATE_PROMO_SHARE and get_flagd_bool(PROMO_FLAG):
                 person["promoCode"] = PROMO_CODE
-            self.client.post("/api/checkout", json=person)
+            self.client.post("/api/checkout", json=maybe_standard_promo(person))
             logging.info(f"Corporate checkout completed for {employee['email']}")
 
     @task(4)
